@@ -1,43 +1,52 @@
-import * as BABYLON from 'babylonjs';
+import * as BABYLON from "@babylonjs/core";
+import "@babylonjs/loaders";  // ✅ Ensure GLB, GLTF, and other formats work
 
-window.addEventListener('DOMContentLoaded', () => {
-  // Get the canvas element
-  const canvas = document.getElementById('renderCanvas');
-  
-  // Initialize the BabylonJS engine
+// Wait for the page to load
+window.addEventListener("DOMContentLoaded", () => {
+  const canvas = document.getElementById("renderCanvas");
+
+  if (!canvas) {
+    console.error("❌ Canvas element not found!");
+    return;
+  }
+
   const engine = new BABYLON.Engine(canvas, true);
-  
-  // Create a basic scene
   const scene = new BABYLON.Scene(engine);
-  
-  // Set up a simple camera (ArcRotateCamera)
+
+  // Camera
   const camera = new BABYLON.ArcRotateCamera(
-    'camera',
+    "camera",
     -Math.PI / 2,
     Math.PI / 2.5,
     10,
-    new BABYLON.Vector3(0, 0, 0),
+    BABYLON.Vector3.Zero(),
     scene
   );
   camera.attachControl(canvas, true);
-  
-  // Add a hemispheric light
-  const light = new BABYLON.HemisphericLight(
-    'light',
-    new BABYLON.Vector3(0, 1, 0),
-    scene
+
+  // Light
+  new BABYLON.HemisphericLight("light", new BABYLON.Vector3(0, 1, 0), scene);
+
+  // ✅ Load the GLB model (Uses `SceneLoader.Append`)
+  BABYLON.SceneLoader.Append(
+    "/assets/",  // Path to the folder where cube.glb is located
+    "cube.glb",  // GLB file name
+    scene,
+    function (scene) {
+      console.log("✅ Loaded GLB model:", scene.meshes);
+
+      if (scene.meshes.length > 0) {
+        camera.setTarget(scene.meshes[0]);
+        scene.meshes[0].position = new BABYLON.Vector3(0, 0, 0);
+      }
+    },
+    null,
+    function (scene, message) {
+      console.error("❌ Error loading GLB model:", message);
+    }
   );
-  
-  // Create a simple box mesh
-  const box = BABYLON.MeshBuilder.CreateBox('box', { size: 2 }, scene);
-  
-  // Render loop
-  engine.runRenderLoop(() => {
-    scene.render();
-  });
-  
-  // Resize the engine on window resize
-  window.addEventListener('resize', () => {
-    engine.resize();
-  });
+
+  engine.runRenderLoop(() => scene.render());
+
+  window.addEventListener("resize", () => engine.resize());
 });
