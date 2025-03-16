@@ -1,8 +1,11 @@
 import * as BABYLON from "@babylonjs/core";
 import "@babylonjs/loaders";  // ✅ Ensure GLB, GLTF, and other formats work
 
-// Wait for the page to load
+/**
+ * Initializes the Babylon.js scene.
+ */
 window.addEventListener("DOMContentLoaded", () => {
+  /** @type {HTMLCanvasElement | null} */
   const canvas = document.getElementById("renderCanvas");
 
   if (!canvas) {
@@ -10,10 +13,14 @@ window.addEventListener("DOMContentLoaded", () => {
     return;
   }
 
+  /** @type {BABYLON.Engine} */
   const engine = new BABYLON.Engine(canvas, true);
+
+  /** @type {BABYLON.Scene} */
   const scene = new BABYLON.Scene(engine);
 
-  // Camera
+  // ✅ Camera setup
+  /** @type {BABYLON.ArcRotateCamera} */
   const camera = new BABYLON.ArcRotateCamera(
     "camera",
     -Math.PI / 2,
@@ -24,28 +31,38 @@ window.addEventListener("DOMContentLoaded", () => {
   );
   camera.attachControl(canvas, true);
 
-  // Light
+  // ✅ Lighting
   new BABYLON.HemisphericLight("light", new BABYLON.Vector3(0, 1, 0), scene);
 
-  // ✅ Load the GLB model (Uses `SceneLoader.Append`)
-  BABYLON.SceneLoader.Append(
-    "/assets/",  // Path to the folder where cube.glb is located
-    "cube.glb",  // GLB file name
-    scene,
-    function (scene) {
-      console.log("✅ Loaded GLB model:", scene.meshes);
+  /**
+   * Loads a GLB model into the Babylon.js scene.
+   * @param {string} path - The folder where the model is located.
+   * @param {string} filename - The name of the GLB file.
+   */
+  function loadModel(path, filename) {
+    BABYLON.SceneLoader.Append(
+      path,
+      filename,
+      scene,
+      function (scene) {
+        console.log("✅ Loaded GLB model:", scene.meshes);
 
-      if (scene.meshes.length > 0) {
-        camera.setTarget(scene.meshes[0]);
-        scene.meshes[0].position = new BABYLON.Vector3(0, 0, 0);
+        if (scene.meshes.length > 0) {
+          camera.setTarget(scene.meshes[0]);
+          scene.meshes[0].position = new BABYLON.Vector3(0, 0, 0);
+        }
+      },
+      null,
+      function (scene, message) {
+        console.error("❌ Error loading GLB model:", message);
       }
-    },
-    null,
-    function (scene, message) {
-      console.error("❌ Error loading GLB model:", message);
-    }
-  );
+    );
+  }
 
+  // ✅ Call function to load the model
+  loadModel("/assets/", "cube.glb");
+
+  // ✅ Start the render loop
   engine.runRenderLoop(() => scene.render());
 
   window.addEventListener("resize", () => engine.resize());
