@@ -20,9 +20,8 @@ import SelectImage from '../views/components/ui/SelectImage';
 import { ColorCircle, ColorCircle2 } from '../views/components/ui/ColorCircle';
 import Modal from '../views/components/modal/Modal';
 import BuildModal from '../views/components/modal/BuildModal';
-import NameOptions from '../views/components/customizer/NameOptions';
 import { TextOptions, ColorOption } from '../views/components/customizer/TextOptions';
-import WebOption from '../views/components/customizer/WebOption';
+import { WebOption, NameOptions } from '../views/components/customizer/WebOption';
 import Card from '../views/components/stage1/Card';
 import Hero from '../views/components/stage1/Hero';
 
