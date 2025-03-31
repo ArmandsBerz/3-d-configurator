@@ -18,9 +18,8 @@ import SelectColor from '../views/components/ui/SelectColor';
 import SelectColor2 from '../views/components/ui/SelectColor2';
 import SelectImage from '../views/components/ui/SelectImage';
 import { ColorCircle, ColorCircle2 } from '../views/components/ui/ColorCircle';
-import { BuildModal, Modal } from '../views/components/modal/BuildModal';
+import { BuildModal, Modal, Hero, Card } from '../views/components/modal/BuildModal';
 import { TextOptions, ColorOption, WebOption, NameOptions } from '../views/components/customizer/TextOptions';
-import { Hero, Card } from '../views/components/stage1/Hero';
 
 import '../views/components/nav/Nav.css';
 import '../views/components/ui/MainContainer.scss';
