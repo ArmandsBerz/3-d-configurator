@@ -1,6 +1,7 @@
 /* eslint-disable max-len */
-import './SelectImage.scss';
 import { useState } from 'react';
+import './SelectImage.scss';
+import './SelectInput.scss';
 
 function SelectImage(props) {
     const [selected, setSelected] = useState(0);
@@ -21,18 +22,14 @@ function SelectImage(props) {
 
     return (
         <div className="select-image-container pb-2">
-            {/* {props.subtitle ? <h3 style={{ fontSize: '18px' }} className="subtitle mb-2">{props.stage === 'one' && props.subtitle}</h3> : null} */}
-            {
-                props.subtitle
-                    ? <h3 style={{ fontSize: '18px' }} className="subtitle mb-2">
-                        {props.subtitle}
-                    </h3> : null
-            }
+            {props.subtitle ? (
+                <h3 style={{ fontSize: '18px' }} className="subtitle mb-2">
+                    {props.subtitle}
+                </h3>
+            ) : null}
             <div className={`grid grid-cols-${props.options.length > 2 ? '3' : '2'} gap-3`}>
                 {props.options.map((option, index) => (
-
                     <button
-                        // className={`option${isSelected(option) ? ' selected' : ''}`}
                         className={`option${isSelected(index) ? ' selected' : ''}`}
                         style={{ backgroundImage: `url(${option.src})` }}
                         key={`${option.value}${Math.random()}`}
@@ -56,11 +53,34 @@ function SelectImage(props) {
                         </div>
                         {option.title}
                     </button>
-
                 ))}
             </div>
         </div>
     );
 }
 
-export default SelectImage;
+function SelectInput(props) {
+    // const [input, setInput] = useState(props.value ? props.value : '');
+
+    const handleInput = (value) => {
+        // setInput(value);
+        props.onSelection(value);
+    };
+
+    return (
+        <div className="select-input-container mb-4">
+            {props.subtitle ? <h3 className="subtitle mb-2">{props.subtitle}</h3> : null}
+            <div className="input-container">
+                <input
+                    placeholder="Enter your text..."
+                    type="text"
+                    value={props.value ? props.value : ''}
+                    onChange={(e) => handleInput(e.target.value)}
+                    maxLength={props.maxLength ? props.maxLength : 10}
+                />
+            </div>
+        </div>
+    );
+}
+
+export { SelectImage, SelectInput };
