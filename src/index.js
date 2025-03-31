@@ -1,43 +1,69 @@
-import * as BABYLON from 'babylonjs';
+import * as BABYLON from "@babylonjs/core";
+import "@babylonjs/loaders";  // ✅ Ensure GLB, GLTF, and other formats work
 
-window.addEventListener('DOMContentLoaded', () => {
-  // Get the canvas element
-  const canvas = document.getElementById('renderCanvas');
-  
-  // Initialize the BabylonJS engine
+/**
+ * Initializes the Babylon.js scene.
+ */
+window.addEventListener("DOMContentLoaded", () => {
+  /** @type {HTMLCanvasElement | null} */
+  const canvas = document.getElementById("renderCanvas");
+
+  if (!canvas) {
+    console.error("❌ Canvas element not found!");
+    return;
+  }
+
+  /** @type {BABYLON.Engine} */
   const engine = new BABYLON.Engine(canvas, true);
-  
-  // Create a basic scene
+
+  /** @type {BABYLON.Scene} */
   const scene = new BABYLON.Scene(engine);
-  
-  // Set up a simple camera (ArcRotateCamera)
+
+  // ✅ Camera setup
+  /** @type {BABYLON.ArcRotateCamera} */
   const camera = new BABYLON.ArcRotateCamera(
-    'camera',
+    "camera",
     -Math.PI / 2,
     Math.PI / 2.5,
     10,
-    new BABYLON.Vector3(0, 0, 0),
+    BABYLON.Vector3.Zero(),
     scene
   );
   camera.attachControl(canvas, true);
-  
-  // Add a hemispheric light
-  const light = new BABYLON.HemisphericLight(
-    'light',
-    new BABYLON.Vector3(0, 1, 0),
-    scene
-  );
-  
-  // Create a simple box mesh
-  const box = BABYLON.MeshBuilder.CreateBox('box', { size: 2 }, scene);
-  
-  // Render loop
-  engine.runRenderLoop(() => {
-    scene.render();
-  });
-  
-  // Resize the engine on window resize
-  window.addEventListener('resize', () => {
-    engine.resize();
-  });
+
+  // ✅ Lighting
+  new BABYLON.HemisphericLight("light", new BABYLON.Vector3(0, 1, 0), scene);
+
+  /**
+   * Loads a GLB model into the Babylon.js scene.
+   * @param {string} path - The folder where the model is located.
+   * @param {string} filename - The name of the GLB file.
+   */
+  function loadModel(path, filename) {
+    BABYLON.SceneLoader.Append(
+      path,
+      filename,
+      scene,
+      function (scene) {
+        console.log("✅ Loaded GLB model:", scene.meshes);
+
+        if (scene.meshes.length > 0) {
+          camera.setTarget(scene.meshes[0]);
+          scene.meshes[0].position = new BABYLON.Vector3(0, 0, 0);
+        }
+      },
+      null,
+      function (scene, message) {
+        console.error("❌ Error loading GLB model:", message);
+      }
+    );
+  }
+
+  // ✅ Call function to load the model
+  loadModel("/assets/", "cube.glb");
+
+  // ✅ Start the render loop
+  engine.runRenderLoop(() => scene.render());
+
+  window.addEventListener("resize", () => engine.resize());
 });
