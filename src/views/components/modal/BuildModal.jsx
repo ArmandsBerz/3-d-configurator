@@ -6,7 +6,7 @@ import '../../../views/components/stage1/Hero.scss';
 import '../../../views/components/stage1/Card.scss';
 import '../../../views/components/ui/Filters.scss';
 import { SelectImage } from '../ui/SelectImage';
-import { SelectBuild } from '../../../components/selectGroup.jsx';
+import { SelectBuild } from '../../../views/components/ui/Select';
 import { configBuild, playerPosition } from '../../../helpers/config';
 import { useAppDispatch, useAppSelector, buildSlice } from '../../../store/rootReducer';
 

@@ -12,7 +12,7 @@ import SceneBabylon, { fonts, colorMap, additionalColors, Messenger, ZONES_WEB, 
 
 import { playerPosition, configBuild } from '../helpers/config';
 import { useAppSelector } from '../store/rootReducer';
-import Select from '../views/components/ui/Select';
+import { Select } from '../views/components/ui/Select';
 import { SelectColor, SelectColor2 } from '../views/components/ui/SelectColor';
 import { SelectImage, SelectInput } from '../views/components/ui/SelectImage';
 import { ColorCircle, ColorCircle2 } from '../views/components/ui/ColorCircle';
@@ -38,7 +38,7 @@ import '../assets/fonts/Oswald-SemiBold.ttf';
 import '../assets/fonts/Oswald-Bold.ttf';
 
 import App from '../App';
-import { SelectGroup } from '../components/selectGroup';
+import { SelectGroup } from '../../src/views/components/ui/Select'; 
 
 /* ------------------------
    ISOPEN CONTEXT & PROVIDER

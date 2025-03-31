@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { CgArrowRight } from 'react-icons/cg';
 import { OptionAccordion } from '../../../context/isopenContext';
 import { SelectColor } from '../ui/SelectColor';
-import Select from '../ui/Select';
+import { Select } from '../ui/Select';
 import { SelectImage, SelectInput } from '../ui/SelectImage';
 import { ColorCircle } from '../ui/ColorCircle';
 import SceneBabylon, { colorMap } from '../../../containers/scene/SceneBabylon';
