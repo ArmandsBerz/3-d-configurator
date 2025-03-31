@@ -1,5 +1,5 @@
 import React from 'react';
-import SelectGroup from '../../components/selectGroup';
+import { SelectGroup } from '../../components/selectGroup';
 import SceneBabylon, { colorOptions } from '../../containers/scene/SceneBabylon';
 
 // class UI extends React.Component {

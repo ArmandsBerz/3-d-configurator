@@ -38,7 +38,7 @@ import '../assets/fonts/Oswald-SemiBold.ttf';
 import '../assets/fonts/Oswald-Bold.ttf';
 
 import App from '../App';
-import SelectGroup from '../components/selectGroup';
+import { SelectGroup } from '../components/selectGroup';
 
 /* ------------------------
    ISOPEN CONTEXT & PROVIDER
