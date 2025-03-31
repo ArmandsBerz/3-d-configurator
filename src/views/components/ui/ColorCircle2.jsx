@@ -7,4 +7,4 @@ function ColorCircle2(props) {
   );
 }
 
-export default ColorCircle2;
+export { ColorCircle2 };

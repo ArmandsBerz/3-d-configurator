@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { CgArrowRight } from 'react-icons/cg';
 
 import { OptionAccordion } from '../../../context/isopenContext';
-import ColorCircle from '../ui/ColorCircle';
+import { ColorCircle } from '../ui/ColorCircle';
 import SelectColor from '../ui/SelectColor';
 import SceneBabylon, { colorMap } from '../../../containers/scene/SceneBabylon';
 
