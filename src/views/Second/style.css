@@ -1,0 +1,272 @@
+main.working-space-container{
+    height: calc(100vh - 78px);
+    max-width: 1600px;
+    position: relative;
+}
+
+.title-container{
+    display: none;
+}
+
+/* display title */
+.title-container-active{
+    display: block;
+}
+
+.options.row-2, .options.row-4{
+    display: grid;
+    grid-gap: .5rem;
+    grid-template-columns: 1fr 1fr;
+}
+
+.options.row-3, .options.row-5{
+    display: grid;
+    grid-gap: .5rem;
+    grid-template-columns: 1fr 1fr 1fr;
+}
+
+.options{
+    margin-bottom: 1.5rem;
+}
+
+.options .option{
+    background-color: var(--gray-two);
+    font-weight: 900;
+    margin-top: .15rem;
+    margin-bottom: .15rem;
+    text-align: center;
+    height: fit-content;
+}
+
+.options .option p{
+    margin: 0;
+    padding: .65rem 0;
+    font-size: .75rem;
+}
+
+.option.option-active{
+    background-color: white;
+    font-weight:900;
+    color: var(--gray-two);
+}
+
+.options.box .option{
+    background-color: #c4c4c4;
+    color: #fff;
+    padding: .5rem;
+    text-align: left;
+}
+
+.options.box .option header, .options.box .option .content h3{
+    font-size: 1.2rem;
+    font-weight: 900;
+}
+
+.options.box .option .content h3{
+    margin-bottom: 0;
+}
+
+.options.box .option p {
+    font-size: .8rem;
+    margin-top: 0;
+}
+
+.stage-second .cta-container{
+    padding: 0;
+}
+
+.stage-second{
+    max-width: 450px;
+}
+
+header .color:nth-of-type(2){
+    margin-left: 10px;
+}
+
+p.second-text ~ .color{
+    margin-left: 10px;
+}
+
+.tools-container{
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    padding: 1rem;
+    max-width: 400px;
+    max-height: calc(100vh - 96px);
+    overflow-y: auto;
+}
+
+.tools-container header.icons-container{
+    display: grid;
+    grid-template-columns: 1fr 7fr 1fr;
+}
+
+.tools-container header.icons-container .option-icons-container{
+    display: flex;
+    justify-content: center;
+    gap: .5rem;
+}
+
+.tools-container header.icons-container .option-icons-container .option-icon{
+    display: flex;
+    align-items: center;
+}
+
+.tools-container header.icons-container .option-icons-container .option-icon p{
+    white-space: nowrap;
+    font-size: .9rem;
+    margin-left: .25rem;
+}
+
+.tool-option-container{
+    margin-top: 1rem;
+}
+
+.tool{
+    background-color: #1b1b1b;
+    color: #737373;
+    transition: .5s ease;
+    margin-bottom: 1rem;
+}
+
+
+.tool header{
+    display: flex;
+    font-weight: 700;
+    padding: 1rem;
+    margin-top: 0rem;
+    cursor: pointer;
+}
+
+.tool p{
+    margin-left: 1rem;
+}
+
+.tool header p:nth-of-type(2){
+    margin-left: auto;
+}
+
+.tool .hero{
+    max-height: 50px;
+    overflow-y: hidden;
+    transition: .5s ease;
+}
+
+.tool.tool-selected .hero{
+    max-height: 1000px;
+}
+
+.tool-content{
+    padding: 1rem;
+    padding-top: 0;
+}
+
+.tool-arrow{
+    transition: 1s ease;
+}
+
+.tool.tool-selected .tool-arrow{
+    transform: rotateZ(95deg);
+}
+
+.tool.tool-selected{
+    color: white;
+    box-shadow: 0 0 15px #0c0c0c;
+    margin-top: 22px;
+    margin-bottom: 22px;
+}
+
+.tool-content.color-content{
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    grid-gap: .5rem;
+}
+
+header .color{
+    background: red;
+    height: 20px;
+    width: 20px;
+    border-radius: 100px;
+    margin-left: auto;
+}
+
+.color{
+    background: pink;
+    height: 35px;
+    border-radius: 100px;
+    cursor: pointer;
+}
+
+.color.color-selected{
+    border: 4px solid white;
+}
+
+.extra-tools-container{
+    width: 400px;
+    padding: 1rem;
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    display: none;
+}
+
+.option-text{
+    display: flex;
+    justify-content: space-between;
+}
+
+
+.extra-tools-container header{
+    border-bottom: 10px solid #161616;
+}
+
+.extra-tools-container .tool-content{
+    padding-top: 1rem;
+}
+
+.extra-tools-container .tool .hero{
+    height: 50px;
+}
+
+.extra-tools-container .tool.tool-selected .hero{
+    height: calc(100vh - 180px);
+}
+
+
+@media (min-width: 430px){
+    .options.row-4{
+        grid-template-columns: 1fr 1fr 1fr 1fr;
+    }
+
+    .options.row-5{
+        grid-template-columns: 1fr 1fr 1fr 1fr 1fr;
+    }
+
+    .options .option p, .optins.box{
+        font-size: .65rem;
+        padding: .5rem 0;
+    }
+
+    .options-title{
+        font-size: 1rem;
+    }
+
+    .options{
+        margin-bottom: 1rem;
+    }
+
+    .tools-container header.icons-header{
+        display: none;
+    }
+    
+.tools-container header.icons-container{
+    display: none;
+}
+.color{
+    height: 41px;
+}
+    .extra-tools-container{
+        display: initial;
+    }
+}

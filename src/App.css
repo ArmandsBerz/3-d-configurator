@@ -1,0 +1,22 @@
+.App {
+  text-align: center;
+}
+
+:root{
+  --button-pc: #2997ff;
+  --button-pc-hover: #73BBFF;
+  --button-pc-active: #0083FF;
+  --gray-one: hsl(0, 0%, 12%);
+  --gray-two: #393939;
+  --gray-hover: #727272;
+  --gray-active: #222222;
+  --bg: #161616;
+  --nav-color: #454545;
+
+  --bp: 900px;
+}
+
+body{
+  background: var(--bg);
+  color: white;
+}

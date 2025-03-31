@@ -1,0 +1,50 @@
+@media (min-width:920px){
+
+  .filters-desktop{
+    padding-top: 20px;
+    padding-bottom: 14px;
+    background: var(--bg) !important;
+  }
+  .filters-desktop *{
+    height: 30px;
+    font-size: 20px;
+    font-weight: bold;
+  }
+
+  .filterBtn {
+    margin-right: 20px;
+  }
+}
+.filters{
+  &-mobile {
+    width: 100%;
+    background-color: black !important;
+    color: white;
+    font-weight: 900;
+    font-size: .9rem;
+    border: none;
+    padding: .5rem;
+    margin-bottom: .25rem;
+    box-shadow: 5px 5px 0 var(--bg);
+    display: block;
+    z-index: 90000000000 !important;
+    margin-top: 20px;
+    @media (min-width: 768px) {
+      display: none;
+    } 
+  }
+  &-desktop {
+    display: none;
+    .filter {
+      color: #fff;
+      opacity: 0.2;
+      &.active {
+        opacity: 1;
+      }
+    }
+    @media (min-width: 768px) {
+      background-color: black;
+      display: block;
+    }
+  }
+}

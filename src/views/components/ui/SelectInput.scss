@@ -1,0 +1,15 @@
+.select-input-container {
+  input {
+    background-color: #0f0f0f;
+    padding: 0.3rem 0.625rem;
+    width: 100%;
+    color: #fff;
+    opacity: 0.3;
+    transition: opacity 0.2s ease-in;
+    &:focus {
+      outline: none;
+      background-color: #0F0F0F;
+      opacity: 1;
+    }
+  }
+}

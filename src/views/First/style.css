@@ -1,0 +1,162 @@
+
+.element{
+  display: grid;
+  grid-template-columns: 1fr 1.5fr;
+  grid-template-rows: 256px;
+  padding: .5rem;
+  background-color: var(--gray-one);
+  margin-bottom: .5rem;
+}
+
+.page-header .image{
+  background-color: #ddd;
+  grid-column: 2/-1;
+  display: none;
+}
+
+.page-header{
+  display: none;
+}
+
+
+
+
+.half.image{
+  grid-row: 1;
+  grid-column: 2/3;
+  background-color: white;
+}
+
+.half.title{
+  grid-row: 1;
+  grid-column: 1/2;
+}
+
+/* .secondary{
+  grid-column: 1/-1;
+  grid-row: 1/2;
+  margin-top: auto;
+  background-color: var(--gray-two)
+} */
+
+
+/* .tag{
+  font-family: sans-serif;
+  font-size: .6rem;
+  padding: .2rem;
+  display: inline;
+  font-weight: 900;
+  background-color: var(--gray-two);
+  margin-bottom: .25rem;
+  margin-top: 0;
+  display: inline-block;
+}
+.tag-title{
+  background: white;
+  color: var(--gray-two);
+} */
+
+div.text{display: none}
+
+.shadow{
+  position: absolute;
+  left:0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  background-color: red;
+  display: none;
+}
+
+.es .element{
+  filter: blur(.2rem);
+}
+
+
+
+.selected.to-focus{
+  z-index: 10;
+  padding: 0;
+  position: fixed;
+  left: 0;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  filter: none;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: none;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  backdrop-filter: blur(5px);
+  height: 100vh;
+}
+
+
+.inner-selected{
+  padding: 0.5rem;
+  max-width: 400px;
+  width: 100%;
+  background-color: var(--gray-one);
+}
+
+.selected .image{
+  height: 256px;
+  width: 256px;
+  margin: 0 auto;
+  margin-top: .4rem;
+}
+
+.selected .text{
+  display: block;
+  font-size: 0.8rem;
+  margin: .4rem 0;
+}
+@media (max-width: 920px) {
+  .elements{
+    /* margin-top: 4rem; */
+    /* position: absolute; */
+    /* top: 409px; */
+  }
+}
+@media (min-width: 900px){
+
+  .page-header{
+    display: initial;
+  }
+  /* .elements-container{
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      grid-gap: 1rem;
+  } */
+
+  .element{
+    display: flex;
+    flex-direction: column;
+    margin-top: 4rem;
+  }
+
+  .element .image{
+    height: 256px;
+    width: 256px;
+    margin: 0 auto;
+  }
+
+  
+
+  .to-hide{
+    display: none;
+  }
+
+  .half.image{
+    display: block;
+  }
+}
+
+
+.to-focus{
+  display: none;
+}

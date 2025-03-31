@@ -1,0 +1,170 @@
+@media (min-width: 920px) {
+  .windowCenter{
+    display: none;
+  }
+  .option-accordion {
+    width: 400px !important;
+    &.open {
+      margin: 1.8rem 0;
+      // box-shadow: 0px 8px 26px 0px #000000cc;
+    }
+  }
+}
+
+.accordionBuild {
+  position: sticky;
+  top: 142px;
+  z-Index: 9;
+}
+
+.option-accordion {
+  color: #999999;
+  // width: 900px;
+  // background-color: aqua !important;
+  font-weight: 900;
+  font-size: 1.3rem;
+
+  background-color: #222222;
+  margin: 0 0 0.625rem;
+  margin-right: 0.8rem;
+  box-shadow: 0 0 0 0 rgba(0, 0, 0, 0);
+  transition: margin 0.2s ease-in;
+  transition: box-shadow 0.2s ease-in;
+
+  .accordion-header {
+    // z-index: 1000000000 !important;
+    z-index: -8;
+    .arrow {
+      transform: rotate(0deg);
+      transition: transform 0.2s ease-in;
+      &.active {
+        transform: rotate(-90deg);
+      }
+      // &.Noac{
+      //   background-color: aqua;
+      // }
+    }
+  }
+  .accordion-body {
+    overflow: hidden;
+    max-height: 0vh;
+    .accordion-body-content{
+      // width: 100vw;
+    }
+    transition: max-height 0.3s ease-in;
+    &.active {
+      max-height: 105vh;
+      
+    }
+    &.colorno {
+      background-color: yellow;
+    }
+  }
+}
+
+@media (max-width: 920px) {
+
+  .accordionBuild {
+    position: relative;
+    top: 0;
+  }
+ 
+  .option-accordion{
+    margin-right: 0;
+    .accordion-body {
+      width: 100%;
+      .accordion-body-content{
+        // width: 100vw;
+        width: 100%;
+        .ininlineButtonPrimary {
+          // margin: 0 !important;
+          width: calc(100vw - 2.5rem) !important;
+        }
+      }}
+  }
+  // .mobileAccordion{
+  //   position: absolute;
+  //   left: 0;
+  // }
+  
+  .hideMixedAcc{
+    display: none;
+  }
+  .option-accordion-small {
+  }
+  .mixedoptions{
+    
+  }
+  .openMixed {
+    max-height: 52vh;
+    width: 100%;
+    margin-right: 30px;
+    overflow-y: auto;
+    position: fixed;
+    bottom: 5rem;
+    // z-index: -999999999999999 !important;
+    // background-color: aqua !important;
+
+    left: 0;
+    margin-left: 1.25rem;
+    width: calc(100% - 2.5rem);
+    overflow-x: hidden;
+  }
+
+  .option-accordion {
+    // width: 100vw;
+    transform: scale(1);
+    transition: all 0.1s ease;
+    &.open {
+      // background-color: aqua;
+      // max-height: 40vh;
+      // width: 100%;
+      // margin-right: 30px;
+      // overflow-y: auto;
+      // position: fixed;
+      // z-index: 9000000000000770 !important;
+      // bottom: 0px;
+      // background-color: #161616;
+      // // padding-top: 200px;
+      // ----------------------------
+      // width: 100vw;
+      // min-height: 20rem;
+      position: fixed !important;
+
+      bottom: 0 !important;
+      // top: 5px !important;
+      overflow-y: scroll;
+      left: 1rem;
+      // left: 0 !important;
+      // width: 92% !important;
+      align-self: center;
+      // margin-left: 1px;
+      // min-height: 50% !important;
+      // background: rgba(0, 0, 0, 0.5) !important;
+      z-index: 999999999999999 !important;
+      display: flex !important;
+      flex-direction: column !important;
+      justify-content: center !important;
+      align-items: center !important;
+      backdrop-filter: blur(50px) !important;
+
+      left: 1.25rem;
+      width: calc(100vw - 2.5rem);
+      top: inherit;
+      overflow-x: hidden
+    }
+    &.FirstClosed{
+      display: none;
+    }
+    .option-accordion {
+      &.openMixed {
+        // background-color: aqua !important;
+      }
+    }
+  }
+  .primaryAndSecondary {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+  }
+}
