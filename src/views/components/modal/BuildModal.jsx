@@ -1,19 +1,80 @@
-import React, { useContext, useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import './BuildModal.scss';
 import './Modal.scss';
 import '../../../views/components/stage1/Hero.scss';
 import '../../../views/components/stage1/Card.scss';
+import '../../../views/components/ui/Filters.scss';
 import SelectImage from '../ui/SelectImage';
 import SelectBuild from '../ui/SelectBuild';
-import Filters from '../ui/Filters';
 import { configBuild, playerPosition } from '../../../helpers/config';
 import { useAppDispatch, useAppSelector, buildSlice } from '../../../store/rootReducer';
+
+// Filters Component
+function Filters(props) {
+  const [selected, setSelected] = useState(props.filters[0]);
+  const [scroll, setScroll] = useState();
+
+  const handleSelection = (option) => {
+    setSelected(option);
+  };
+
+  useEffect(() => {
+    window.addEventListener('scroll', () => {
+      setScroll(window.scrollY);
+    });
+  }, []);
+
+  // The following code is commented out as in the original file.
+  // document.addEventListener('scroll', function () {
+  //   const el = document.getElementById('Navigation');
+  //   if (scroll >= 280) {
+  //     el.classList.add('fixed_navbar');
+  //   } else {
+  //     el.classList.remove('fixed_navbar');
+  //   }
+  // });
+
+  return (
+    <div className="filters-container">
+      <div className="filters-desktop flex pt-2">
+        {props.filters.map((filter, index) => {
+          return (
+            <button
+              key={index}
+              value={filter}
+              className={`filter${filter === selected ? ' active' : ''} mr-2 text-xl filterBtn`}
+              onClick={() => handleSelection(filter)}
+            >
+              {filter}
+            </button>
+          );
+        })}
+      </div>
+      <select
+        style={{ backgroundColor: 'black !important', fontSize: '20px' }}
+        className="filters-mobile"
+        onChange={(e) => handleSelection(e.target.value)}
+      >
+        {props.filters.map((filter, index) => {
+          return (
+            <option
+              style={{ backgroundColor: 'black' }}
+              key={index}
+              value={filter}
+            >
+              {filter}
+            </option>
+          );
+        })}
+      </select>
+    </div>
+  );
+}
 
 // BuildModal Component
 function BuildModal(props) {
   const [positionName, setPositionName] = useState(configBuild.Position[0]);
-
   const { pallette, size, stiffness, position, handSize, hand } = useAppSelector(
     (state) => state.buildReducer
   );
@@ -385,4 +446,4 @@ function Card(props) {
   );
 }
 
-export { BuildModal, Modal, Hero, Card };
+export { BuildModal, Modal, Hero, Card, Filters };
