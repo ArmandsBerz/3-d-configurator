@@ -12,8 +12,7 @@ import SceneBabylon, { fonts, colorMap, additionalColors, Messenger, ZONES_WEB, 
 
 import { playerPosition, configBuild } from '../helpers/config';
 import { useAppSelector } from '../store/rootReducer';
-import { Select } from '../views/components/ui/Select';
-import { SelectColor, SelectColor2, SelectImage, SelectInput } from '../views/components/ui/SelectColor';
+import { Select, SelectColor, SelectColor2, SelectImage, SelectInput } from '../views/components/ui/Select';
 import { ColorCircle, ColorCircle2 } from '../views/components/ui/ColorCircle';
 import { BuildModal, Modal, Hero, Card } from '../views/components/modal/BuildModal';
 import { TextOptions, ColorOption, WebOption, NameOptions } from '../views/components/customizer/TextOptions';
