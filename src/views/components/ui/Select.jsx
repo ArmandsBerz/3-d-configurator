@@ -1,11 +1,18 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import _ from 'lodash';
+import { CgArrowRight } from 'react-icons/cg';
+import { OptionAccordion } from '../../../context/isopenContext';
+import { ColorCircle } from '../ui/ColorCircle';
+import SceneBabylon, { colorMap } from '../../../containers/scene/SceneBabylon';
 import './Select.scss';
 import '../../../views/components/ui/SelectBuild.scss';
 import './SelectColor.scss';
 import './SelectImage.scss';
 import './SelectInput.scss';
-/* eslint-disable max-len */
+
+// ========================
+// UI Select Components
+// ========================
 
 function Select(props) {
   const [selected, setSelected] = useState(null);
@@ -63,7 +70,8 @@ function Select(props) {
             key={option.value}
             style={{ flex: '1', width: '100%' }}
             ref={(element) => {
-              if (element && props.full) element.style.setProperty('width', '100%', 'important');
+              if (element && props.full)
+                element.style.setProperty('width', '100%', 'important');
             }}
           >
             {props.full && (
@@ -233,7 +241,14 @@ class SelectGroup extends React.Component {
     });
 
     messenger.onLoaded.add((data) => {
-      if (!messenger.hasData(this.props.gloveId, this.props.itemId, this.props.section, this.props.dataId)) {
+      if (
+        !messenger.hasData(
+          this.props.gloveId,
+          this.props.itemId,
+          this.props.section,
+          this.props.dataId
+        )
+      ) {
         this.selectFirstButton();
       }
     });
@@ -344,7 +359,10 @@ function SelectBuild(props) {
           {props.subtitle}
         </h3>
       ) : null}
-      <div className="modalSelect-build" style={{ flexWrap: props.stage === 'two' ? 'wrap' : null }}>
+      <div
+        className="modalSelect-build"
+        style={{ flexWrap: props.stage === 'two' ? 'wrap' : null }}
+      >
         {props.options.map((option, index) => (
           <div
             className="select-block"
@@ -520,6 +538,220 @@ function SelectInput(props) {
   );
 }
 
+// ========================
+// Options Components (using UI Select components)
+// ========================
+
+const TextOptions = ({
+  title,
+  windowWidth,
+  defState,
+  names,
+  selected,
+  both,
+  setOptions,
+  id,
+  colors,
+}) => {
+  // Use the provided color if available, otherwise default to colors.white.
+  const [color, setColor] = useState(!defState?.color ? colors.white : defState?.color);
+
+  // Map the provided names into the format expected by the Select component.
+  const arr = names.map((item, index) => ({ index, text: item, value: item }));
+
+  const getColors = () => {
+    // Create an array of color objects from the colors provided.
+    return Object.values(colors).map((item) => ({ value: item }));
+  };
+
+  const onClick = (name, option) => {
+    const value = {};
+    value[name] = option;
+    setOptions(id, value);
+  };
+
+  return (
+    <OptionAccordion title={title} type="TextInput">
+      <SelectInput
+        subtitle="Text"
+        value={defState?.text}
+        onSelection={(option) => onClick('text', option)}
+      />
+      <Select
+        subtitle="Font"
+        full
+        options={arr}
+        selected={selected}
+        onSelection={(option) => onClick('font', option.value)}
+      />
+      <SelectColor
+        subtitle="Color"
+        colors={getColors()}
+        selected={defState?.color}
+        onSelection={(option) => onClick('color', option.value)}
+      />
+      {windowWidth && (
+        <>
+          <div
+            className="buttonLine"
+            style={{
+              width: '120%',
+              marginLeft: '-28px',
+              height: '10px',
+              backgroundColor: '#161616',
+            }}
+          ></div>
+          <button className="inlineButton ininlineButtonPrimary">
+            <div>Primary</div>
+            <div className="iconButt">
+              <CgArrowRight />
+            </div>
+          </button>
+        </>
+      )}
+    </OptionAccordion>
+  );
+};
+
+const ColorOption = ({ title, windowWidth, both, setOptions, handleButton, colors }) => {
+  const [state, setState] = useState(false);
+  // Use the provided color from "both" if available, otherwise default to colors.white.
+  const [color, setColor] = useState(!both ? colors.white : both);
+
+  const getColors = () => {
+    return Object.values(colors).map((item) => ({ value: item }));
+  };
+
+  return (
+    <OptionAccordion
+      type="colorOption"
+      title={title}
+      selectedOption={<ColorCircle color={!both ? color : both} />}
+    >
+      <SelectColor
+        colors={getColors()}
+        selected={color}
+        onSelection={(option) => setOptions(title, option)}
+      />
+      <div
+        className="buttonLine"
+        style={{
+          width: '100vw',
+          marginLeft: '-28px',
+          height: '10px',
+          backgroundColor: '#161616',
+        }}
+      ></div>
+      <div className="buttonAndIcon">
+        <button className="inlineButton" onClick={handleButton}>
+          <div>Secondary</div>
+          <div className="iconButtSecondary">
+            <CgArrowRight />
+          </div>
+        </button>
+        {windowWidth && (
+          <button className="inlineButton primaryButton">
+            <div>Primary</div>
+            <div className="iconButt">
+              <CgArrowRight />
+            </div>
+          </button>
+        )}
+      </div>
+    </OptionAccordion>
+  );
+};
+
+const WebOption = ({
+  title,
+  windowWidth,
+  defState,
+  setOptionsColor,
+  names,
+  onSelection,
+  selected,
+  colors,
+  webs,
+}) => {
+  // Mapping the webs array to the format needed by SelectImage
+  const arrWeb = webs.map((item, index) => ({
+    title: item,
+    text: 'Option Text',
+    value: item,
+    src: 'https://via.placeholder.com/100',
+    id: index,
+  }));
+
+  const getColors = () => {
+    return Object.values(colors).map((item) => ({ value: item }));
+  };
+
+  return (
+    <OptionAccordion
+      title={title}
+      type="options"
+      selectedOption={defState.activeGlove && defState.activeGlove.text}
+    >
+      <SelectImage
+        subtitle="Type"
+        options={arrWeb}
+        onSelection={(option) => onSelection(option)}
+      />
+      <SelectColor
+        subtitle="Color"
+        colors={getColors()}
+        selected={defState?.color}
+        onSelection={(option) => setOptionsColor('web', option)}
+      />
+      {windowWidth && (
+        <div
+          className="buttonLine"
+          style={{
+            width: '120%',
+            marginLeft: '-28px',
+            height: '10px',
+            backgroundColor: '#161616',
+          }}
+        />
+      )}
+    </OptionAccordion>
+  );
+};
+
+const NameOptions = ({ title, windowWidth, defState, names, onSelection, selected }) => {
+  const arr = names.map((item, id) => ({ id, text: item, value: item }));
+
+  return (
+    <OptionAccordion
+      title={title}
+      type="options"
+      selectedOption={defState.activeGlove && defState.activeGlove.text}
+    >
+      <Select
+        full
+        options={arr}
+        selected={selected}
+        onSelection={async (option) => onSelection(option)}
+      />
+      {windowWidth && (
+        <div
+          className="buttonLine"
+          style={{
+            width: '120%',
+            marginLeft: '-28px',
+            height: '10px',
+            backgroundColor: '#161616',
+          }}
+        />
+      )}
+    </OptionAccordion>
+  );
+};
+
+// ========================
+// Exports
+// ========================
+
 export {
   Select,
   SelectGroup,
@@ -528,4 +760,8 @@ export {
   SelectColor2,
   SelectImage,
   SelectInput,
+  TextOptions,
+  ColorOption,
+  WebOption,
+  NameOptions,
 };
