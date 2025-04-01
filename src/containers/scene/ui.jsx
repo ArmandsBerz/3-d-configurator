@@ -2,25 +2,23 @@ import React, { useState, useEffect } from 'react';
 import _ from 'lodash';
 import { CgArrowRight } from 'react-icons/cg';
 import { NavLink } from 'react-router-dom';
-import { OptionAccordion } from '../../../context/isopenContext';
-import SceneBabylon, { colorMap } from '../../../containers/scene/SceneBabylon';
-import { configBuild, playerPosition } from '../../../helpers/config';
-import { useAppDispatch, useAppSelector, buildSlice } from '../../../store/rootReducer';
+import { OptionAccordion } from '../../context/isopenContext';
+import SceneBabylon, { colorOptions, colorMap } from './SceneBabylon';
+import { configBuild, playerPosition } from '../../helpers/config';
+import { useAppDispatch, useAppSelector, buildSlice } from '../../store/rootReducer';
 
-import './Select.scss';
-import '../../../views/components/ui/SelectBuild.scss';
-import './SelectColor.scss';
-import './SelectImage.scss';
-import './SelectInput.scss';
-import '../modal/BuildModal.scss';
-import '../modal/Modal.scss';
-import '../../../views/components/stage1/Hero.scss';
-import '../../../views/components/stage1/Card.scss';
-import '../../../views/components/ui/Filters.scss';
+import '../../views/components/ui/Select.scss';
+import '../../views/components/ui/SelectBuild.scss';
+import '../../views/components/ui/SelectColor.scss';
+import '../../views/components/ui/SelectImage.scss';
+import '../../views/components/ui/SelectInput.scss';
+import '../../views/components/modal/BuildModal.scss';
+import '../../views/components/modal/Modal.scss';
+import '../../views/components/stage1/Hero.scss';
+import '../../views/components/stage1/Card.scss';
+import '../../views/components/ui/Filters.scss';
 
-// ========================
-// Utility Components for Colors
-// ========================
+/* ---------------- Utility Components ---------------- */
 function ColorCircle(props) {
   return (
     <div
@@ -39,9 +37,7 @@ function ColorCircle2(props) {
   );
 }
 
-// ========================
-// UI Select Components
-// ========================
+/* ---------------- UI Select Components ---------------- */
 function Select(props) {
   const [selected, setSelected] = useState(null);
   const [windowWidth, setWindowWidth] = useState();
@@ -451,13 +447,6 @@ function SelectColor2(props) {
     props.onSelection(color);
   };
 
-  // Uncomment the useEffect below if you want to auto-select the first color when none is selected.
-  // useEffect(() => {
-  //   if (selected === null && props.colors.length > 0) {
-  //     handleSelection(props.colors[0]);
-  //   }
-  // }, [selected, props.colors]);
-
   const isSelected = (option) => selected && selected.value === option.value;
 
   return (
@@ -482,7 +471,6 @@ function SelectImage(props) {
 
   const handleSelection = (option) => {
     console.log('option ::', option);
-    // setSelected(option);
     props.onSelection(option);
   };
 
@@ -548,9 +536,7 @@ function SelectInput(props) {
   );
 }
 
-// ========================
-// Options Components (using UI Select components)
-// ========================
+/* ---------------- Additional Options Components ---------------- */
 const TextOptions = ({
   title,
   windowWidth,
@@ -751,11 +737,56 @@ const NameOptions = ({ title, windowWidth, defState, names, onSelection, selecte
   );
 };
 
-// ========================
-// Additional Components (from second file)
-// ========================
+/* ---------------- UI Component (from first file) ---------------- */
+const UI = (props) => {
+  const isLoaded = false;
 
-// Filters Component
+  // componentDidMount() {
+  //     this.isLoaded = true;
+  //     this.props.onLoaded();
+  // }
+
+  const renderGlove = () => (
+    <div>
+      <div>{props.glove.id}</div>
+      {renderGloveObject(props.glove.id, props.glove.gloveObject)}
+    </div>
+  );
+
+  const renderGloveObject = (gloveId, gloveObject) => (
+    <div>
+      <div>{gloveObject.id}</div>
+      {renderSection(gloveId, 'zones', gloveObject)}
+    </div>
+  );
+
+  function renderSection(gloveId, section, gloveObject) {
+    const gloveZones = gloveObject.zones.zones;
+
+    return (
+      <div>
+        <div>{section}</div>
+        <br />
+        {gloveZones.map((element) => (
+          <SelectGroup
+            gloveId={gloveId}
+            itemId={gloveObject.id}
+            section={section}
+            messenger={props.messenger}
+            key={element}
+            subtitle={element}
+            dataId={element}
+            options={colorOptions}
+          />
+        ))}
+      </div>
+    );
+  }
+
+  return <>{renderGlove()}</>;
+};
+
+/* ---------------- Other Components ---------------- */
 function Filters(props) {
   const [selected, setSelected] = useState(props.filters[0]);
   const [scroll, setScroll] = useState();
@@ -799,7 +830,6 @@ function Filters(props) {
   );
 }
 
-// BuildModal Component
 function BuildModal(props) {
   const [positionName, setPositionName] = useState(configBuild.Position[0]);
   const { pallette, size, stiffness, position, handSize, hand } = useAppSelector(
@@ -909,7 +939,6 @@ function BuildModal(props) {
   );
 }
 
-// Modal Component
 function Modal(props) {
   return (
     <div className={`modal ${props.show ? 'overrideModal' : ' display-none'}`}>
@@ -948,7 +977,6 @@ function Modal(props) {
   );
 }
 
-// Hero Component
 function Hero(props) {
   const [scroll, setScroll] = useState();
   const [windowWidth, setWindowWidth] = useState();
@@ -1089,7 +1117,6 @@ function Hero(props) {
   );
 }
 
-// Card Component
 function Card(props) {
   return (
     <div className="card-container" onClick={props.handleOpen}>
@@ -1150,9 +1177,7 @@ function Card(props) {
   );
 }
 
-// ========================
-// Exports
-// ========================
+/* ---------------- Exports ---------------- */
 export {
   Select,
   SelectGroup,
@@ -1171,5 +1196,6 @@ export {
   Modal,
   Hero,
   Card,
-  Filters
+  Filters,
+  UI
 };
