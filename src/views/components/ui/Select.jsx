@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import _ from 'lodash';
 import { CgArrowRight } from 'react-icons/cg';
 import { OptionAccordion } from '../../../context/isopenContext';
-import { ColorCircle } from '../ui/ColorCircle';
 import SceneBabylon, { colorMap } from '../../../containers/scene/SceneBabylon';
 import './Select.scss';
 import '../../../views/components/ui/SelectBuild.scss';
@@ -11,9 +10,29 @@ import './SelectImage.scss';
 import './SelectInput.scss';
 
 // ========================
+// Utility Components for Colors
+// ========================
+function ColorCircle(props) {
+  return (
+    <div
+      className="ml-2.5 h-5 w-5 rounded-full"
+      style={{ backgroundColor: props.color }}
+    />
+  );
+}
+
+function ColorCircle2(props) {
+  return (
+    <div
+      className="ml-2.5 h-5 w-5 rounded-full"
+      style={{ backgroundColor: props.color }}
+    />
+  );
+}
+
+// ========================
 // UI Select Components
 // ========================
-
 function Select(props) {
   const [selected, setSelected] = useState(null);
   const [windowWidth, setWindowWidth] = useState();
@@ -541,7 +560,6 @@ function SelectInput(props) {
 // ========================
 // Options Components (using UI Select components)
 // ========================
-
 const TextOptions = ({
   title,
   windowWidth,
@@ -751,7 +769,6 @@ const NameOptions = ({ title, windowWidth, defState, names, onSelection, selecte
 // ========================
 // Exports
 // ========================
-
 export {
   Select,
   SelectGroup,
@@ -764,4 +781,6 @@ export {
   ColorOption,
   WebOption,
   NameOptions,
+  ColorCircle,
+  ColorCircle2
 };
