@@ -15,7 +15,6 @@ import { Select, SelectColor, SelectColor2, SelectImage, SelectInput, TextOption
 
 import '../views/components/nav/Nav.css';
 import '../views/components/ui/MainContainer.scss';
-import '../views/components/ui/MiddleContainer.scss';
 import '../views/First/style.css';
 import '../views/First/style.scss';
 import '../views/components/ui/OptionAccordion.scss';
