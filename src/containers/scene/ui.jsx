@@ -12,7 +12,6 @@ import '../../views/components/ui/SelectColor.scss';
 import '../../views/components/ui/SelectImage.scss';
 import '../../views/components/ui/SelectInput.scss';
 import '../../views/components/modal/Modal.scss';
-import '../../views/components/stage1/Hero.scss';
 import '../../views/components/stage1/Card.scss';
 import '../../views/components/ui/Filters.scss';
 

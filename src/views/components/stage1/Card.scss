@@ -1,3 +1,4 @@
+/* Base Styles */
 .card-container {
   padding: 1.25rem;
   background-color: #1f1f1f;
@@ -30,12 +31,10 @@
       }
     }
   }
-
   .cta-card-arrow {
     font-size: 36px;
     line-height: 16px;
   }
-
   .img-container {
     display: flex;
     flex-direction: row;
@@ -95,7 +94,6 @@
         padding-left: 1rem;
       }
     }
-
     &.regular-tags {
       flex-direction: column;
       align-items: flex-start;
@@ -113,6 +111,79 @@
     }
   }
 }
+
+/* Media Queries for min-width: 920px */
+@media (min-width: 920px) {
+  .hero-container {
+    max-width: 1100px;
+    margin: 0 auto;
+    left: 0;
+    right: 0;
+    position: fixed;
+    top: 145px;
+    z-index: 5;
+    .hero-container-inner {
+      background-color: var(--bg);
+      min-height: 340px;
+      display: flex;
+      flex-direction: column;
+      transition: 0.2s;
+      &.scrolled {
+        min-height: 158px;
+      }
+      .scrollpara {
+        // max-width: 340px;
+      }
+      .notscrolled {
+        max-width: 340px !important;
+      }
+    }
+  }
+  .gradients {
+    height: 63px;
+    position: relative;
+    margin-top: -1px;
+    background: linear-gradient(180deg, #161616 0%, rgba(199, 66, 66, 0) 100%);
+  }
+  .page-header {
+    display: flex;
+  }
+  .cta-hero {
+    margin-right: 20px !important;
+  }
+  .half {
+    // margin-top: 4rem;
+    p {
+      // width: 70%;
+    }
+    h2 {
+      font-size: 34px !important;
+      line-height: 36px;
+      padding-top: 20px;
+    }
+  }
+  .button-container {
+    display: flex;
+    align-items: flex-end;
+    background-color: #D9D9D9;
+    justify-content: flex-end;
+    .cta {
+      width: 320px;
+      margin-bottom: 1rem;
+    }
+    span {
+      font-size: 40px;
+      line-height: 16px;
+    }
+  }
+  .cta-container {
+    // margin: 0;
+    width: auto;
+    background-color: #D9D9D9;
+  }
+}
+
+/* Media Queries for max-width: 920px */
 @media (max-width: 920px) {
   .card-container {
     display: flex;
@@ -120,21 +191,12 @@
     justify-content: space-between;
     max-height: 238px;
     width: 388px;
-  }
-  .firstButton {
-    position: absolute;
-    bottom: 10px;
-    left: 0;
-    width: 97.8%;
-  }
-  .card-container {
     .cta-card-arrow {
       font-size: 36px;
       line-height: 4px;
       display: flex;
       align-items: baseline;
     }
-
     .img-container {
       width: 200px;
       height: 200px;
@@ -143,13 +205,89 @@
       top: 10px;
     }
   }
+  .firstButton {
+    position: absolute;
+    bottom: 10px;
+    left: 0;
+    width: 97.8%;
+  }
   .info-button {
     position: absolute !important;
     right: 20px;
     top: 20px;
     z-index: 2;
   }
-  .tagandtitle{
+  .tagandtitle {
     // height: min-content;
+  }
+  .gradientsTop {
+    position: absolute;
+    top: 66px;
+    // bottom: 0px;
+    left: 0;
+    z-index: -90 !important;
+    width: 100%;
+    height: 3rem;
+    // background-color: aqua;
+    background: linear-gradient(180deg, rgba(0, 0, 0, 80) 0%, rgba(0, 0, 0, 0) 100%);
+  }
+  .elements {
+    width: 100%;
+    padding: 0px 20px 0px 20px;
+  }
+  .hero-container {
+    z-index: 900 !important;
+    padding: 0px 20px;
+    height: 100px !important;
+    width: 100%;
+    margin-bottom: 250px;
+    .gradient {
+      z-index: 599999 !important;
+      height: 9rem;
+      background: linear-gradient(180deg, #161616 0%, rgba(22, 22, 22, 0) 100%);
+    }
+    p {
+      font-size: 20px;
+    }
+    h2 {
+      font-size: 35px;
+      margin-top: 20px;
+    }
+    .page-header {
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+  }
+  .page-header {
+    margin-top: 93px !important;
+    background-color: #D9D9D9 !important;
+  }
+  .button-container {
+    span {
+      font-size: 36px;
+      line-height: 4px;
+      display: flex;
+      align-items: baseline;
+    }
+  }
+  .fixed_navbar {
+    z-index: 90000;
+    background-color: #D9D9D9;
+    width: 94.2% !important;
+    position: fixed !important;
+    top: 93px !important;
+    left: 100 !important;
+    right: 100 !important;
+  }
+  .fixed_navbar {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    text-align: center !important;
+  }
+  .stickyMenu {
+    // commented out styles
   }
 }
