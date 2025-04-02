@@ -194,12 +194,8 @@ export class AssetsLoader {
 }
 
 // -------------------------------------------------------------------
-// REMAINDER OF ORIGINAL FILE
+// URLProcessor and URL parameter functions
 // -------------------------------------------------------------------
-
-//
-// URLProcessor
-//
 export class URLProcessor {
   paramKey: string = 'setup';
 
@@ -221,19 +217,19 @@ export class URLProcessor {
   }
 }
 
-function getParameter(key) {
+function getParameter(key: string) {
   const searchParams = new URLSearchParams(window.location.search);
   return searchParams.get(key);
 }
 
-function setParameter(key, value) {
+function setParameter(key: string, value: string) {
   const searchParams = new URLSearchParams(window.location.search);
   searchParams.set(key, value);
   // window.location.search = searchParams;
   window.location.search = searchParams.toString();
 }
 
-function insertUrlParam(key, value) {
+function insertUrlParam(key: string, value: string) {
   if (history.pushState) {
     const searchParams = new URLSearchParams(window.location.search);
     searchParams.set(key, value);
@@ -248,7 +244,7 @@ function insertUrlParam(key, value) {
   }
 }
 
-function removeUrlParameter(paramKey) {
+function removeUrlParameter(paramKey: string) {
   const url = window.location.href;
   const r = new URL(url);
   r.searchParams.delete(paramKey);
@@ -256,9 +252,9 @@ function removeUrlParameter(paramKey) {
   window.history.pushState({ path: newUrl }, '', newUrl);
 }
 
-//
+// -------------------------------------------------------------------
 // Messenger and MessengerData
-//
+// -------------------------------------------------------------------
 export interface MessengerData {
   gloveId: string; // current glove id
   itemId: string; // glove item (object, web, padhood) id
@@ -355,11 +351,9 @@ export class Messenger {
   }
 }
 
-//
+// -------------------------------------------------------------------
 // SVGProcessor
-//
-export const name = 'svgProcessor';
-
+// -------------------------------------------------------------------
 export class SVGProcessor {
   svg: Document;
   serializer: XMLSerializer;
@@ -397,7 +391,9 @@ export class SVGProcessor {
   }
 }
 
-// Constants and Zones
+// -------------------------------------------------------------------
+// CONSTANTS and ZONES
+// -------------------------------------------------------------------
 export const fonts = ['Oswald', 'BrushScript'];
 
 export const colorMap = [
@@ -543,6 +539,70 @@ export const WEBS_GLOVE = {
   catchers: ['twoPieceCM'],
 };
 
+// -------------------------------------------------------------------
+// NEW CONSTANTS from second file
+// -------------------------------------------------------------------
+export const playerPosition = {
+  infield: {
+    glove: ['openBack'],
+    web: [
+      'modTrap',
+      'i',
+      'h',
+      'onePiece',
+      'framedModTrap',
+      'basket',
+      'singlePostLace',
+      'singlePost',
+    ],
+    size: ['11"', '11.25"', '11.5"', '11.75"', '12"', '12.25"'],
+  },
+  outfield: {
+    glove: ['openBack', 'closeBack'],
+    web: ['modTrap', 'h', 'framedModTrap', 'lacedH', 'trap'],
+    size: ['12"', '12.25"', '12.5"', '12.75"', '13"'],
+  },
+  pitcher: {
+    glove: ['openBack', 'closeBack'],
+    web: [
+      'modTrap',
+      'onePiece',
+      'twoPiece',
+      'dualHinge',
+      'framedModTrap',
+      'closedV',
+      'basket',
+      'basketLace',
+      'sealing',
+      'laceSealing',
+    ],
+    size: ['11.25"', '11.5"', '11.75"', '12"', '12.25"', '12.5"'],
+  },
+  'first base': {
+    glove: ['firstBase'],
+    web: ['twoPieceFB', 'postFB'],
+    size: ['12"', '12.25"', '12.5"', '12.75"', '13"'],
+  },
+  catcher: {
+    glove: ['catchers'],
+    web: ['twoPieceCM'],
+    size: ['32"', '32.5"', '33"', '33.5"', '34"'],
+  },
+};
+
+export const configBuild = {
+  'Glove Leather': ['Japanese Kip', 'US Steerhide'],
+  Position: ['infield', 'outfield', 'pitcher', 'catcher', 'first base'],
+  // Size: ['11"', '11.25"', '11.5"', '11.75"', '12"'],
+  Size: playerPosition.infield.size,
+  'Hand Opening Size': ['adult', 'youth'],
+  Stiffness: ['stiff', 'standard', 'soft'],
+  'Throwing Hand': ['right hand', 'left hand'],
+};
+
+// -------------------------------------------------------------------
+// CLASSES for Glove objects and related entities
+// -------------------------------------------------------------------
 class Zones {
   zones: string[];
 
@@ -575,9 +635,9 @@ class GloveObject {
 class Web extends GloveObject {}
 class PadHood extends GloveObject {}
 
-//
+// -------------------------------------------------------------------
 // The WebGlove class
-//
+// -------------------------------------------------------------------
 export class WebGlove {
   id: string;
   glbFile: string;
@@ -669,9 +729,9 @@ export class WebGlove {
   }
 }
 
-//
+// -------------------------------------------------------------------
 // The main Glove class
-//
+// -------------------------------------------------------------------
 export class Glove {
   id: string;
   glbFile: string;
@@ -896,9 +956,9 @@ export class Glove {
   }
 }
 
-//
+// -------------------------------------------------------------------
 // The SceneBabylon class
-//
+// -------------------------------------------------------------------
 export default class SceneBabylon {
   scene: Scene;
   engine: Engine;
@@ -1039,7 +1099,7 @@ export default class SceneBabylon {
   }
 
   createDebugTool(): void {
-    // DEBUGING CONF
+    // DEBUGGING CONFIG
     if (process.env.NODE_ENV === 'development') {
       // hide/show the Inspector via Shift+Ctrl+Alt+I
       window.addEventListener('keydown', (ev) => {

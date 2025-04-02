@@ -3,8 +3,7 @@ import _ from 'lodash';
 import { CgArrowRight } from 'react-icons/cg';
 import { NavLink } from 'react-router-dom';
 import { OptionAccordion } from '../../context/isopenContext';
-import SceneBabylon, { colorOptions, colorMap } from './SceneBabylon';
-import { configBuild, playerPosition } from '../../helpers/config';
+import SceneBabylon, { colorOptions, colorMap, configBuild, playerPosition } from './SceneBabylon';
 import { useAppDispatch, useAppSelector, buildSlice } from '../../store/rootReducer';
 
 import '../../views/components/ui/Select.scss';

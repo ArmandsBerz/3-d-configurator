@@ -8,9 +8,8 @@ import { TbArrowsMaximize } from 'react-icons/tb';
 import { CgArrowRight, CgList } from 'react-icons/cg';
 
 // Merge SceneBabylon imports (adding colorOptions from the second file)
-import SceneBabylon, { fonts, colorMap, additionalColors, Messenger, ZONES_WEB, colorOptions } from '../containers/scene/SceneBabylon';
+import SceneBabylon, { fonts, colorMap, additionalColors, Messenger, ZONES_WEB, colorOptions, playerPosition, configBuild } from '../containers/scene/SceneBabylon';
 
-import { playerPosition, configBuild } from '../helpers/config';
 import { useAppSelector } from '../store/rootReducer';
 import { Select, SelectColor, SelectColor2, SelectImage, SelectInput, TextOptions, ColorOption, WebOption, NameOptions, ColorCircle, ColorCircle2, BuildModal, Modal, Hero, Card, SelectGroup } from '../containers/scene/ui';
 
