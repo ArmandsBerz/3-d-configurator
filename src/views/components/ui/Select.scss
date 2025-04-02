@@ -1,4 +1,6 @@
 /* Base Styles */
+
+/* First Block Base Styles */
 .select-container {
   .option {
     font-size: 1rem;
@@ -77,6 +79,60 @@
     }
     &.colorno {
       background-color: yellow;
+    }
+  }
+}
+
+/* Second Block Base Styles */
+.up-accordion {
+  color: #999999;
+  // z-index: 3333;
+  font-weight: 900;
+  font-size: 1.3rem;
+  margin: 0 0 0.625rem 0;
+  box-shadow: 0 0 0 0 rgba(0, 0, 0, 0);
+  // height: 80vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  
+  .accordion-button {
+    // z-index: 233333;
+    background-color: #222222;
+    color: #ffffff;
+    margin: 0.625rem 0;
+    height: 56px;
+    width: 100% !important;
+    display: flex;
+    flex-direction: row-reverse;
+    gap: 1rem;
+    // margin-top: 402px !important;
+    
+    .arrow {
+      transform: rotate(-90deg);
+      transition: transform 0.2s ease-in;
+      &.active {
+        transform: rotate(90deg);
+      }
+    }
+  }
+  .openAccordion {
+    color: aqua;
+    background-color: aqua !important;
+    h3 {
+      color: red !important;
+    }
+  }
+  .accordion-body {
+    background-color: #222222;
+    overflow-y: scroll;
+    height: 0;
+    transition: height 0.3s ease-in;
+    &.active {
+      height: calc(100vh - 335px);
+    }
+    .accordion-body-content {
+      font-size: 1rem;
     }
   }
 }
@@ -182,5 +238,86 @@
     display: flex;
     justify-content: space-between;
     width: 100%;
+  }
+  
+  /* Second Block Media Queries for max-width:920px */
+  .uparrows {
+    display: none;
+  }
+  .acccccord {
+    color: #999999;
+    // z-index: 3333;
+    position: absolute;
+    bottom: 90px;
+    width: inherit;
+    // left: 0;
+    font-weight: 900;
+    font-size: 1.3rem;
+    margin: 0 0 0.625rem 0;
+    box-shadow: 0 0 0 0 rgba(0, 0, 0, 0);
+    // height: 80vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    .accordion-button {
+      // z-index: 233333;
+      background-color: #222222;
+      margin: 0.625rem 0;
+      height: 56px;
+      width: 100% !important;
+      // margin-top: 402px !important;
+      .arrow {
+        transform: rotate(-90deg);
+        transition: transform 0.2s ease-in;
+        &.active {
+          transform: rotate(90deg);
+        }
+      }
+    }
+    .openAccordion {
+      color: aqua;
+      background-color: aqua !important;
+      h3 {
+        color: red !important;
+      }
+    }
+    .accordion-body {
+      background-color: #222222;
+      overflow-y: scroll;
+      height: 100%;
+      width: 100vw;
+      transition: height 0.3s ease-in;
+      &.active {
+        width: 100%;
+      }
+      .accordion-body-content {
+        font-size: 1rem;
+      }
+    }
+  }
+  .up-accordion {
+    // background-color: aqua ;
+    height: 80.8vh;
+    // width: 9rem;
+  }
+  .thirdMobileAccordion {
+    height: 40.8vh;
+    width: 42.5%;
+    .accordion-button {
+      margin-bottom: 1.25rem;
+      .arrow {
+        span {
+          font-size: 26px;
+          line-height: 16px;
+        }
+      }
+    }
+  }
+  .openAccordion {
+    width: calc(100% - 2.5rem);
+    left: 0;
+  }
+  .showExtenstion {
+    display: none;
   }
 }

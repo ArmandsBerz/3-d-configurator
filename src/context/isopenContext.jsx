@@ -18,7 +18,6 @@ import '../views/components/ui/MainContainer.scss';
 import '../views/First/style.css';
 import '../views/First/style.scss';
 import '../views/components/ui/Select.scss';
-import '../views/components/ui/UpAccordion.scss';
 
 // CSS and font imports from the second file
 import '../../src/index.css';
