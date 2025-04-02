@@ -13,7 +13,6 @@ import '../../views/components/ui/SelectImage.scss';
 import '../../views/components/ui/SelectInput.scss';
 import '../../views/components/modal/Modal.scss';
 import '../../views/components/stage1/Card.scss';
-import '../../views/components/ui/Filters.scss';
 
 /* ---------------- Utility Components ---------------- */
 function ColorCircle(props) {
