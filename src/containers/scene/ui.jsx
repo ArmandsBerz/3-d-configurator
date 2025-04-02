@@ -11,7 +11,6 @@ import '../../views/components/ui/SelectBuild.scss';
 import '../../views/components/ui/SelectColor.scss';
 import '../../views/components/ui/SelectImage.scss';
 import '../../views/components/ui/SelectInput.scss';
-import '../../views/components/modal/BuildModal.scss';
 import '../../views/components/modal/Modal.scss';
 import '../../views/components/stage1/Hero.scss';
 import '../../views/components/stage1/Card.scss';
