@@ -14,7 +14,6 @@ import { useAppSelector } from '../store/rootReducer';
 import { Select, SelectColor, SelectColor2, SelectImage, SelectInput, TextOptions, ColorOption, WebOption, NameOptions, ColorCircle, ColorCircle2, BuildModal, Modal, Hero, Card, SelectGroup } from '../containers/scene/ui';
 
 import '../views/components/nav/Nav.css';
-import '../views/components/ui/MainContainer.scss';
 import '../views/First/style.css';
 
 // CSS and font imports from the second file

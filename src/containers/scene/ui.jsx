@@ -6,7 +6,7 @@ import { OptionAccordion } from '../../context/isopenContext';
 import SceneBabylon, { colorOptions, colorMap, configBuild, playerPosition } from './SceneBabylon';
 import { useAppDispatch, useAppSelector, buildSlice } from '../../store/rootReducer';
 
-import '../../views/components/ui/MainContainer.scss'; 
+import '../../../src/main.scss';
 
 /* ---------------- Utility Components ---------------- */
 function ColorCircle(props) {
