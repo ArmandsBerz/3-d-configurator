@@ -14,14 +14,15 @@
   }
 }
 
-/* ---------- Base Styles (First File) ---------- */
+/* ---------- Base Styles ---------- */
+
+/* Card Container & Children */
 .card-container {
   padding: 1.25rem;
   background-color: #1f1f1f;
   display: flex;
   flex-direction: column;
   position: relative;
-  // width: 360px;
   height: 400px;
   
   .card-header {
@@ -75,6 +76,7 @@
   }
 }
 
+/* Tags Container */
 .tags-container {
   position: absolute;
   top: 4rem;
@@ -98,7 +100,6 @@
       
       &.tag-title {
         padding: 0.25rem 0 0.25rem 0.375rem;
-        // background: linear-gradient(100deg, white 49.75%, black 50%, black calc(50% + 3px), green calc(50% + 4px));
         color: #1f1f1f;
         background-color: #ffffff;
         position: relative;
@@ -140,7 +141,7 @@
   }
 }
 
-/* ---------- Base Styles for Filters ---------- */
+/* Filters */
 .filters {
   &-mobile {
     width: 100%;
@@ -179,7 +180,7 @@
   }
 }
 
-/* ---------- Media Queries for min-width: 920px (First File) ---------- */
+/* ---------- Media Queries for min-width: 920px ---------- */
 @media (min-width: 920px) {
   .hero-container {
     max-width: 1100px;
@@ -227,12 +228,9 @@
   }
   
   .half {
-    // margin-top: 4rem;
-    
     p {
       // width: 70%;
     }
-    
     h2 {
       font-size: 34px !important;
       line-height: 36px;
@@ -258,7 +256,6 @@
   }
   
   .cta-container {
-    // margin: 0;
     width: auto;
     background-color: #D9D9D9;
   }
@@ -281,7 +278,7 @@
   }
 }
 
-/* ---------- Media Queries for max-width: 920px (First File) ---------- */
+/* ---------- Media Queries for max-width: 920px ---------- */
 @media (max-width: 920px) {
   .card-container {
     display: flex;
@@ -327,18 +324,16 @@
   .gradientsTop {
     position: absolute;
     top: 66px;
-    // bottom: 0px;
     left: 0;
     z-index: -90 !important;
     width: 100%;
     height: 3rem;
-    // background-color: aqua;
     background: linear-gradient(180deg, rgba(0, 0, 0, 80) 0%, rgba(0, 0, 0, 0) 100%);
   }
   
   .elements {
     width: 100%;
-    padding: 0px 20px 0px 20px;
+    padding: 0px 20px;
   }
   
   .hero-container {
@@ -404,7 +399,7 @@
   }
 }
 
-/* ---------- Modal Styles (First File) ---------- */
+/* ---------- Modal Styles ---------- */
 .modal {
   position: fixed;
   top: 0;
@@ -438,7 +433,6 @@
     z-index: 900000000000000000;
 
     &.animate-bottom {
-      // position: relative;
       animation: animatebottom 0.4s;
     }
 
@@ -509,7 +503,6 @@
 
 .build-modal {
   position: absolute;
-  // position: fixed;
   top: 0;
   left: 0;
   width: 100%;
@@ -539,7 +532,6 @@
     align-items: center;
 
     &.animate-bottom {
-      // position: relative;
       animation: animatebottom 0.4s;
     }
 
@@ -592,13 +584,12 @@
 
     @media screen and (max-width: 768px) {
       max-width: 100%;
-      // max-height: 100%;
       height: 100%;
     }
   }
 }
 
-/* ---------- Additional Styles from the First File (Second File Part) ---------- */
+/* ---------- Additional Global Styles ---------- */
 .disableScroll {
   overflow: hidden !important;
   position: fixed;
@@ -606,32 +597,29 @@
   width: 100%;
   margin-left: auto;
   margin-right: auto;
-  // left: 410px;
 }
 
 .center-panel {
   // background-color: #fff;
 }
 
-/* Consolidated .main-container rules */
 .main-container {
   width: auto;
   
   .left-panel,
   .right-panel {
-    -ms-overflow-style: none; /* IE and Edge */
-    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none;
+    scrollbar-width: none;
     &::-webkit-scrollbar {
       display: none;
     }
   }
 }
 
-/* Media Queries for Second File */
+/* Layout Media Queries */
 @media (min-width: 920px) {
   .center-panel {
     flex: 7.3;
-    // padding: 0 1.5rem;
     z-index: 9000000;
     align-self: flex-end;
     display: flex;
@@ -646,17 +634,13 @@
   }
   .center-panel2 {
     flex: 5 !important;
-    // padding: 0 1.5rem;
     z-index: 9000000;
     align-self: flex-end;
   }
   .left-panel2 {
-    // flex: 3 !important;
     flex: 4 !important;
     max-height: 100vh;
-    // max-height: 95vh;
     padding-left: 40px !important;
-    // overflow: initial !important;
     overflow-y: auto !important;
   }
   .right-panel2 {
@@ -731,9 +715,7 @@
   }
 }
 
-/* =====================================
-   Combined SCSS File – File 1: Base Styles
-   ===================================== */
+/* ---------- Combined SCSS File – File 1: Base Styles ---------- */
 .select-container {
   .option {
     font-size: 1rem;
@@ -767,6 +749,7 @@
   }
 }
 
+/* ---------- Accordion Styles ---------- */
 .accordionBuild {
   position: sticky;
   top: 142px;
@@ -775,19 +758,15 @@
 
 .option-accordion {
   color: #999999;
-  // width: 900px;
-  // background-color: aqua !important;
   font-weight: 900;
   font-size: 1.3rem;
   background-color: #222222;
   margin: 0 0 0.625rem;
   margin-right: 0.8rem;
   box-shadow: 0 0 0 0 rgba(0, 0, 0, 0);
-  /* Combine duplicate transitions into one property */
   transition: margin 0.2s ease-in, box-shadow 0.2s ease-in;
 
   .accordion-header {
-    // z-index: 1000000000 !important;
     z-index: -8;
     .arrow {
       transform: rotate(0deg);
@@ -795,18 +774,15 @@
       &.active {
         transform: rotate(-90deg);
       }
-      // &.Noac{
-      //   background-color: aqua;
-      // }
     }
   }
   .accordion-body {
     overflow: hidden;
     max-height: 0vh;
-    .accordion-body-content {
-      // width: 100vw;
-    }
     transition: max-height 0.3s ease-in;
+    .accordion-body-content {
+      // additional content styles
+    }
     &.active {
       max-height: 105vh;
     }
@@ -816,23 +792,18 @@
   }
 }
 
-/* =====================================
-   Combined SCSS File – File 1: Second Block Base Styles
-   ===================================== */
+/* ---------- Combined SCSS File – File 1: Second Block Base Styles ---------- */
 .up-accordion {
   color: #999999;
-  // z-index: 3333;
   font-weight: 900;
   font-size: 1.3rem;
   margin: 0 0 0.625rem 0;
   box-shadow: 0 0 0 0 rgba(0, 0, 0, 0);
-  // height: 80vh;
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
   
   .accordion-button {
-    // z-index: 233333;
     background-color: #222222;
     color: #ffffff;
     margin: 0.625rem 0;
@@ -841,7 +812,6 @@
     display: flex;
     flex-direction: row-reverse;
     gap: 1rem;
-    // margin-top: 402px !important;
     
     .arrow {
       transform: rotate(-90deg);
@@ -872,9 +842,7 @@
   }
 }
 
-/* =====================================
-   Combined SCSS File – Responsive Overrides (min-width: 920px)
-   ===================================== */
+/* ---------- Responsive Overrides for File 1 (min-width: 920px) ---------- */
 @media (min-width: 920px) {
   .select-container {
     padding-bottom: 0.7rem !important;
@@ -892,14 +860,11 @@
     width: 400px !important;
     &.open {
       margin: 1.8rem 0;
-      // box-shadow: 0px 8px 26px 0px #000000cc;
     }
   }
 }
 
-/* =====================================
-   Combined SCSS File – Responsive Overrides (max-width: 920px)
-   ===================================== */
+/* ---------- Responsive Overrides for File 1 (max-width: 920px) ---------- */
 @media (max-width: 920px) {
   .select-container {
     padding-bottom: 0.4rem !important;
@@ -931,7 +896,6 @@
       position: fixed !important;
       bottom: 0 !important;
       overflow-y: scroll;
-      /* Removed redundant left declaration */
       left: 1.25rem;
       align-self: center;
       z-index: 999999999999999 !important;
@@ -946,11 +910,6 @@
     }
     &.FirstClosed {
       display: none;
-    }
-    .option-accordion {
-      &.openMixed {
-        // background-color: aqua !important;
-      }
     }
   }
   .hideMixedAcc {
@@ -979,33 +938,26 @@
     justify-content: space-between;
     width: 100%;
   }
-  
-  /* Second Block Media Queries for max-width:920px */
   .uparrows {
     display: none;
   }
   .acccccord {
     color: #999999;
-    // z-index: 3333;
     position: absolute;
     bottom: 90px;
     width: inherit;
-    // left: 0;
     font-weight: 900;
     font-size: 1.3rem;
     margin: 0 0 0.625rem 0;
     box-shadow: 0 0 0 0 rgba(0, 0, 0, 0);
-    // height: 80vh;
     display: flex;
     flex-direction: column;
     justify-content: flex-end;
     .accordion-button {
-      // z-index: 233333;
       background-color: #222222;
       margin: 0.625rem 0;
       height: 56px;
       width: 100% !important;
-      // margin-top: 402px !important;
       .arrow {
         transform: rotate(-90deg);
         transition: transform 0.2s ease-in;
@@ -1036,9 +988,7 @@
     }
   }
   .up-accordion {
-    // background-color: aqua ;
     height: 80.8vh;
-    // width: 9rem;
   }
   .thirdMobileAccordion {
     height: 40.8vh;
@@ -1062,24 +1012,7 @@
   }
 }
 
-/* =====================================
-   Combined SCSS File – File 2: Additional Styles
-   ===================================== */
-
-/* Commented main block */
-// main{
-//   width: 100%;
-//   padding: .5rem;
-//   max-width: 1200px;
-//   margin: 0 auto;
-//   // header.page-header {
-//   //   position: fixed;
-//   //   top: 0;
-//   //   width: 100%;
-//   //   transition: 0.2s;
-//   // }
-// }
-
+/* ---------- Combined SCSS File – File 2: Additional Styles ---------- */
 .element {
   display: grid;
   grid-template-columns: 1fr 1.5fr;
@@ -1090,7 +1023,6 @@
 }
 
 h2 {
-  // margin: 0.5rem 0;
   font-weight: 900;
   font-family: 'Oswald';
 }
@@ -1099,11 +1031,8 @@ h6 {
   font-family: 'BrushScript';
 }
 
-/* Merge duplicate .page-header blocks into one */
+/* Merged .page-header blocks */
 .page-header {
-  /* From File 2 – Additional Styles:
-     - .image: background-color, grid-column (kept below)
-     (Note: the original “display: none;” is overridden) */
   background-color: white;
   color: black;
   display: grid;
@@ -1114,7 +1043,6 @@ h6 {
   .image {
     background-color: #ddd;
     grid-column: 2/-1;
-    /* Remove redundant display: block; – only display: flex is needed */
     display: flex;
     align-items: flex-end;
     .cta-container {
@@ -1132,7 +1060,7 @@ h6 {
   }
 }
 
-/* Global .half styles (outside of .page-header) */
+/* Global .half styles */
 .half {
   &.image {
     grid-row: 1;
@@ -1160,7 +1088,6 @@ h6 {
   display: grid;
   grid-template-columns: 1fr 1fr 1fr;
   grid-gap: 1rem;
-  // margin: 1rem 0;
   @media screen and (max-width: 600px) {
     display: flex;
     flex-wrap: wrap;
@@ -1176,4 +1103,195 @@ h6 {
   height: 3rem;
   left: 0;
   background: linear-gradient(360deg, #161616 0%, rgba(22, 22, 22, 0) 100%);
+}
+
+/* ---------- Second File: Additional Select Styles ---------- */
+
+/* Base styles for select-build-container */
+.select-build-container {
+  .option {
+    font-size: 1rem;
+    text-align: center;
+    background-color: #383838;
+    color: #fff;
+    &.selected {
+      background-color: #fff;
+      color: #222;
+    }
+  }
+  .grid-cols {
+    &-2 {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    &-3 {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+    &-4 {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      @media screen and (max-width: 768px) {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+    &-5 {
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      @media screen and (max-width: 768px) {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+    }
+  }
+}
+
+/* Merged Base styles for select-container */
+.select-container {
+  .option {
+    font-size: 1rem;
+    text-align: center;
+    background-color: #383838;
+    color: #fff;
+    &.selected {
+      background-color: #fff;
+      color: #222;
+    }
+  }
+  .grid-cols {
+    &-2 {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    &-3 {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+    &-4 {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      @media screen and (max-width: 768px) {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+    &-5 {
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      @media screen and (max-width: 768px) {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+    }
+  }
+  .color {
+    width: 2.5rem;
+    height: 2.5rem;
+    background-color: #383838;
+    &.selected {
+      outline: 4px solid #FFFFFF;
+    }
+    &:hover {
+      outline: 4px solid rgba(255, 255, 255, 0.5);
+    }
+    &:active {
+      outline: 4px solid rgba(255, 255, 255, 0.2);
+    }
+  }
+  .grid-cols-7 {
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+  }
+}
+
+/* Base styles for select-image-container */
+.select-image-container {
+  .option {
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    overflow: hidden;
+    text-align: center;
+    background-color: #383838;
+    color: #fff;
+    min-height: 136px;
+    background-position: center;
+    background-size: cover;
+    position: relative;
+    & > .checked {
+      position: absolute;
+      top: 0;
+      right: 0;
+      background-color: #fff;
+      width: 1.25rem;
+      height: 1.25rem;
+      display: none;
+      align-items: center;
+      justify-content: center;
+    }
+    &.selected {
+      border: 4px solid #FFFFFF;
+      & > .checked {
+        display: flex;
+      }
+    }
+    &:hover {
+      border: 4px solid rgba(255, 255, 255, 0.8);
+    }
+    &:active {
+      border: 4px solid rgba(255, 255, 255, 0.5);
+    }
+  }
+  .grid-cols-2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .grid-cols-3 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+/* Base styles for select-input-container */
+.select-input-container {
+  input {
+    background-color: #0f0f0f;
+    padding: 0.3rem 0.625rem;
+    width: 100%;
+    color: #fff;
+    opacity: 0.3;
+    transition: opacity 0.2s ease-in;
+    &:focus {
+      outline: none;
+      background-color: #0F0F0F;
+      opacity: 1;
+    }
+  }
+}
+
+/* Responsive Overrides for Select Sections */
+@media (min-width: 920px) {
+  .select-block {
+    flex: 1 1 auto !important;
+  }
+  .select-build-container {
+    padding-bottom: 0.7rem !important;
+  }
+  .modalSelect-build {
+    display: flex;
+    color: white;
+    gap: 10px;
+  }
+}
+
+@media (max-width: 920px) {
+  .select-build-container {
+    padding-bottom: 0.4rem !important;
+  }
+  .modalSelect-build {
+    display: flex;
+    color: white;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+  .select-image-container {
+    .option {
+      display: flex;
+      align-items: center;
+      text-align: center;
+      background-color: #383838;
+      color: #fff;
+      min-height: 3.25rem;
+      max-height: 3.25rem;
+      background-position: center;
+      background-size: cover;
+      position: relative;
+    }
+  }
 }
