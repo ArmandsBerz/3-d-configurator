@@ -6,7 +6,6 @@ import { OptionAccordion } from '../../context/isopenContext';
 import SceneBabylon, { colorOptions, colorMap, configBuild, playerPosition } from './SceneBabylon';
 import { useAppDispatch, useAppSelector, buildSlice } from '../../store/rootReducer';
 
-import '../../views/components/ui/Select.scss';
 import '../../views/components/ui/SelectBuild.scss';
 import '../../views/components/ui/SelectImage.scss';
 import '../../views/components/ui/MainContainer.scss'; 

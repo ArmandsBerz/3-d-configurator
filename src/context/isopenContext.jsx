@@ -16,7 +16,6 @@ import { Select, SelectColor, SelectColor2, SelectImage, SelectInput, TextOption
 import '../views/components/nav/Nav.css';
 import '../views/components/ui/MainContainer.scss';
 import '../views/First/style.css';
-import '../views/components/ui/Select.scss';
 
 // CSS and font imports from the second file
 import '../../src/index.css';
