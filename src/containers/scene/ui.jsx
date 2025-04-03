@@ -9,7 +9,7 @@ import { useAppDispatch, useAppSelector, buildSlice } from '../../store/rootRedu
 import '../../views/components/ui/Select.scss';
 import '../../views/components/ui/SelectBuild.scss';
 import '../../views/components/ui/SelectImage.scss';
-import '../../views/components/stage1/Card.scss';
+import '../../views/components/ui/MainContainer.scss'; 
 
 /* ---------------- Utility Components ---------------- */
 function ColorCircle(props) {
