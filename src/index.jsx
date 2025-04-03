@@ -4,7 +4,7 @@ import ReactDOM from 'react-dom';
 import { Provider } from 'react-redux';
 
 import './index.css';
-import './main.scss';
+import '../src/main.scss';
 import './assets/fonts/BrushScript-Regular.ttf';
 import App from './App';
 import { IsopenContextProvider } from '../src/context/isopenContext';
