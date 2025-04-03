@@ -6,7 +6,7 @@
       display: flex ;
     }
   } */
-main.working-space-container {
+/* main.working-space-container {
   height: calc(100vh - 78px);
   max-width: 1600px;
   position: relative;
@@ -14,10 +14,10 @@ main.working-space-container {
 
 .title-container {
   display: none;
-}
+} */
 
 /* display title */
-.title-container-active {
+/* .title-container-active {
   display: block;
 }
 
@@ -320,9 +320,9 @@ header .color {
 
 .secondaryCta {
   display: flex;
-  height: 56px;
+  height: 56px; */
   /* justify-content: space-between; */
-  align-items: center;
+  /* align-items: center;
   flex: 1;
   justify-content: flex-start;
   gap: 1rem;
@@ -337,9 +337,9 @@ header .color {
   display: flex;
   margin: 0.625rem 0;
   align-items: center;
-  justify-content: space-around;
+  justify-content: space-around; */
   /* justify-content: space-between; */
-  background-color: var(--button-pc);
+  /* background-color: var(--button-pc);
   flex: 1;
   width: 400px;
   height: 56px;
@@ -352,16 +352,16 @@ header .color {
   margin: 0;
   padding: 0;
   position: relative;
-  top: -3px;
+  top: -3px; */
   /* width: 3rem !important; */
   /* height: 14px; */
-}
+/* }
 .vectorArrowRight {
   font-size: 39px;
   color: #fff;
   position: relative;
   top: -5px;
-  padding: 0;
+  padding: 0; */
   /* width: 32.5px;
     height: 14px; */
-}
+/* } */

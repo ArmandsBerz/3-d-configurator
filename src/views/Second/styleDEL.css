@@ -1,4 +1,4 @@
-main.working-space-container{
+/* main.working-space-container{
     height: calc(100vh - 78px);
     max-width: 1600px;
     position: relative;
@@ -6,10 +6,10 @@ main.working-space-container{
 
 .title-container{
     display: none;
-}
+} */
 
 /* display title */
-.title-container-active{
+/* .title-container-active{
     display: block;
 }
 
@@ -269,4 +269,4 @@ header .color{
     .extra-tools-container{
         display: initial;
     }
-}
+}  */
