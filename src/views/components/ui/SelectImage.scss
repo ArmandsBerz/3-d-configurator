@@ -45,6 +45,23 @@
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
+
+.select-input-container {
+  input {
+    background-color: #0f0f0f;
+    padding: 0.3rem 0.625rem;
+    width: 100%;
+    color: #fff;
+    opacity: 0.3;
+    transition: opacity 0.2s ease-in;
+    &:focus {
+      outline: none;
+      background-color: #0F0F0F;
+      opacity: 1;
+    }
+  }
+}
+
 @media (max-width: 920px) {
   .select-image-container {
     .option {
@@ -57,5 +74,7 @@
       max-height: 3.25rem;
       background-position: center;
       background-size: cover;
-      position: relative;}}
+      position: relative;
+    }
+  }
 }

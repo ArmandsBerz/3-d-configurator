@@ -9,7 +9,6 @@ import { useAppDispatch, useAppSelector, buildSlice } from '../../store/rootRedu
 import '../../views/components/ui/Select.scss';
 import '../../views/components/ui/SelectBuild.scss';
 import '../../views/components/ui/SelectImage.scss';
-import '../../views/components/ui/SelectInput.scss';
 import '../../views/components/modal/Modal.scss';
 import '../../views/components/stage1/Card.scss';
 
