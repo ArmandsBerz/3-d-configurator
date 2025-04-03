@@ -1,4 +1,8 @@
-/* Base Styles */
+/* Combined SCSS File */
+
+/* ===================================================
+   File 1 – Base Styles
+   =================================================== */
 
 /* First Block Base Styles */
 .select-container {
@@ -37,7 +41,7 @@
 .accordionBuild {
   position: sticky;
   top: 142px;
-  z-Index: 9;
+  z-index: 9;
 }
 
 .option-accordion {
@@ -50,8 +54,8 @@
   margin: 0 0 0.625rem;
   margin-right: 0.8rem;
   box-shadow: 0 0 0 0 rgba(0, 0, 0, 0);
-  transition: margin 0.2s ease-in;
-  transition: box-shadow 0.2s ease-in;
+  /* Combine duplicate transitions into one property */
+  transition: margin 0.2s ease-in, box-shadow 0.2s ease-in;
 
   .accordion-header {
     // z-index: 1000000000 !important;
@@ -191,7 +195,8 @@
       position: fixed !important;
       bottom: 0 !important;
       overflow-y: scroll;
-      left: 1rem;
+      /* Removed redundant left declaration */
+      left: 1.25rem;
       align-self: center;
       z-index: 999999999999999 !important;
       display: flex !important;
@@ -199,7 +204,6 @@
       justify-content: center !important;
       align-items: center !important;
       backdrop-filter: blur(50px) !important;
-      left: 1.25rem;
       width: calc(100vw - 2.5rem);
       top: inherit;
       overflow-x: hidden;
@@ -320,4 +324,122 @@
   .showExtenstion {
     display: none;
   }
+}
+
+
+/* ===================================================
+   File 2 – Additional Styles
+   =================================================== */
+
+/* Commented main block */
+//
+// main{
+//   width: 100%;
+//   padding: .5rem;
+//   max-width: 1200px;
+//   margin: 0 auto;
+//   // header.page-header {
+//   //   position: fixed;
+//   //   top: 0;
+//   //   width: 100%;
+//   //   transition: 0.2s;
+//   // }
+// }
+
+.element {
+  display: grid;
+  grid-template-columns: 1fr 1.5fr;
+  grid-template-rows: 256px;
+  padding: 0.5rem;
+  background-color: var(--gray-one);
+  margin-bottom: 0.5rem;
+}
+
+h2 {
+  // margin: 0.5rem 0;
+  font-weight: 900;
+  font-family: 'Oswald';
+}
+
+h6 {
+  font-family: 'BrushScript';
+}
+
+/* Merge duplicate .page-header blocks into one */
+.page-header {
+  /* From first .page-header block in File 2:
+     - .image: background-color, grid-column (kept below)
+     (Note: the original “display: none;” is overridden) */
+  background-color: white;
+  color: black;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  height: 100%;
+  flex: 1;
+
+  .image {
+    background-color: #ddd;
+    grid-column: 2/-1;
+    /* Remove redundant display: block; – only display: flex is needed */
+    display: flex;
+    align-items: flex-end;
+    .cta-container {
+      height: fit-content;
+      margin: 0;
+      width: 60%;
+      margin-left: auto;
+      background-color: initial;
+    }
+  }
+
+  .half {
+    padding: 0px 20px;
+    background-color: #E3E3E3;
+  }
+}
+
+/* Global .half styles (outside of .page-header) */
+.half {
+  &.image {
+    grid-row: 1;
+    grid-column: 2/3;
+    background-color: white;
+  }
+  &.title {
+    grid-row: 1;
+    grid-column: 1/2;
+    .tags {
+      display: flex;
+      flex-wrap: wrap;
+      z-index: 9;
+      &.tag {
+        flex-grow: 1;
+      }
+      .regular-tag {
+        flex-grow: 2;
+      }
+    }
+  }
+}
+
+.elements-container {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  grid-gap: 1rem;
+  // margin: 1rem 0;
+  @media screen and (max-width: 600px) {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+}
+
+.gradientsBottom {
+  position: fixed;
+  bottom: 0px;
+  z-index: 5911111 !important;
+  width: 100vw;
+  height: 3rem;
+  left: 0;
+  background: linear-gradient(360deg, #161616 0%, rgba(22, 22, 22, 0) 100%);
 }
