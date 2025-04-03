@@ -7,7 +7,6 @@ import SceneBabylon, { colorOptions, colorMap, configBuild, playerPosition } fro
 import { useAppDispatch, useAppSelector, buildSlice } from '../../store/rootReducer';
 
 import '../../views/components/ui/SelectBuild.scss';
-import '../../views/components/ui/SelectImage.scss';
 import '../../views/components/ui/MainContainer.scss'; 
 
 /* ---------------- Utility Components ---------------- */
