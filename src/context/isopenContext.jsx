@@ -13,8 +13,6 @@ import SceneBabylon, { fonts, colorMap, additionalColors, Messenger, ZONES_WEB, 
 import { useAppSelector } from '../store/rootReducer';
 import { Select, SelectColor, SelectColor2, SelectImage, SelectInput, TextOptions, ColorOption, WebOption, NameOptions, ColorCircle, ColorCircle2, BuildModal, Modal, Hero, Card, SelectGroup } from '../containers/scene/ui';
 
-import '../views/First/style.css';
-
 // CSS and font imports from the second file
 import '../../src/index.css';
 import '../../src/main.scss';

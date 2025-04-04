@@ -7,7 +7,7 @@
    ============================================================ */
 
 /* Base Element Styles */
-.element {
+/* .element {
   display: grid;
   grid-template-columns: 1fr 1.5fr;
   grid-template-rows: 256px;
@@ -35,7 +35,7 @@
 .half.title {
   grid-row: 1;
   grid-column: 1/2;
-}
+} */
 
 /* Unused or experimental rules */
 /*
@@ -64,7 +64,7 @@
 }
 */
 
-div.text {
+/* div.text {
   display: none;
 }
 
@@ -119,10 +119,10 @@ div.text {
   display: block;
   font-size: 0.8rem;
   margin: 0.4rem 0;
-}
+} */
 
 /* Media query from File A for larger screens */
-@media (min-width: 900px) {
+/* @media (min-width: 900px) {
   .page-header {
     display: initial;
   }
@@ -146,13 +146,13 @@ div.text {
   .half.image {
     display: block;
   }
-}
+} */
 
 /* ============================================================
    Files B & C: Workspace, Options, and Tools Styles
    ============================================================ */
 
-main.working-space-container {
+/* main.working-space-container {
   height: calc(100vh - 78px);
   max-width: 1600px;
   position: relative;
@@ -160,10 +160,10 @@ main.working-space-container {
 
 .title-container {
   display: none;
-}
+} */
 
 /* Display title when active */
-.title-container-active {
+/* .title-container-active {
   display: block;
 }
 
@@ -241,11 +241,11 @@ header .color:nth-of-type(2) {
 
 p.second-text ~ .color {
   margin-left: 10px;
-}
+} */
 
 /* Tools Container & Related Elements */
 
-.tools-container {
+/* .tools-container {
   bottom: 0;
   left: 0;
   width: 100%;
@@ -386,14 +386,14 @@ header .color {
 
 .extra-tools-container .tool.tool-selected .hero {
   height: calc(100vh - 180px);
-}
+} */
 
 /* ============================================================
    Responsive Adjustments & Additional CTA Styles (File C)
    ============================================================ */
 
 /* Larger screens adjustments */
-@media (min-width: 430px) {
+/* @media (min-width: 430px) {
   .options.row-4 {
     grid-template-columns: 1fr 1fr 1fr 1fr;
   }
@@ -428,10 +428,10 @@ header .color {
   .extra-tools-container {
     display: initial;
   }
-}
+} */
 
 /* Smaller screens adjustments */
-@media (max-width: 920px) {
+/* @media (max-width: 920px) {
   .mobilesecon {
     display: flex;
     flex-direction: column;
@@ -442,19 +442,19 @@ header .color {
     flex-direction: column;
   }
   
-  .ctaContainer {
+  .ctaContainer { */
     /* On mobile, override the base style to show the CTA container */
-    display: flex !important;
+    /* display: flex !important;
     position: fixed;
     bottom: 0;
     flex-direction: row;
     align-self: flex-end;
     gap: 1.5rem !important;
   }
-}
+} */
 
 /* Base style for .ctaContainer (applies unless overridden) */
-.ctaContainer {
+/* .ctaContainer {
   display: none;
   position: fixed;
   bottom: 0;
@@ -463,10 +463,10 @@ header .color {
   width: 100%;
   justify-content: space-between;
   padding: 1rem;
-}
+} */
 
 /* Additional Call-To-Action Styles */
-.secondaryCta {
+/* .secondaryCta {
   display: flex;
   height: 56px;
   align-items: center;
@@ -509,27 +509,27 @@ header .color {
   position: relative;
   top: -5px;
   padding: 0;
-}
+} */
 
 /* ============================================================
    Navigation Styles
    ============================================================ */
 
-nav {
+/* nav {
   margin: 0 auto;
   display: flex;
   flex-direction: row;
-  align-items: center;
+  align-items: center; */
   /* justify-content: space-between; */
-  justify-content: center;
+  /* justify-content: center;
   position: fixed;
   padding: 40px 40px 51px 40px;
   top: 0;
   background-color: var(--bg);
-  z-index: 90000000 !important;
+  z-index: 90000000 !important; */
   /* z-index: 10; */
   /* height: 4rem; */
-}
+/* }
 
 nav h1 {
   margin: 0;
@@ -556,18 +556,18 @@ nav h1 {
 }
 
 .stages-container a.active {
-  color: white;
+  color: white; */
   /* display: initial; */
-  font-size: 36px !important;
+  /* font-size: 36px !important;
 }
 
 .stages-container .not-active {
   display: none;
 }
 
-.menuContainer {
+.menuContainer { */
   /* display: none; */
-}
+/* }
 
 @media (min-width: 900px) {
   nav {
@@ -605,11 +605,11 @@ nav h1 {
     margin-top: 0px !important;
   }
   .stages-container a.active {
-    color: white;
+    color: white; */
     /* position: relative;
     left: 150px;
     display: initial; */
-    font-size: 36px !important;
+    /* font-size: 36px !important;
     z-index: 900000000000 !important;
   }
   
@@ -628,33 +628,33 @@ nav h1 {
   .menuContainer a:hover {
     background-color: gray;
   }
-  .menuContainer a {
+  .menuContainer a { */
     /* padding: 0px 20px; */
-  }
-  .menuContainer * {
+  /* }
+  .menuContainer * { */
     /* display: flex;
     align-items: center;
     justify-content: center; */
-  }
-  .menuContainer {
+  /* }
+  .menuContainer { */
     /* position: absolute; */
     /* right: 0;
     top: 4rem; */
     /* width: 100%; */
-    display: flex;
+    /* display: flex;
     gap: 4rem;
-    flex-direction: column;
+    flex-direction: column; */
     /* padding: 10px 0px;
     margin-right: 5px; */
-  }
+  /* }
   .navMobile {
     display: flex;
     flex-direction: column;
     align-items: center;
-    background-color: #000;
+    background-color: #000; */
     /* padding: 0px 20px; */
     /* width: 100%; */
-    position: absolute;
+    /* position: absolute;
     left: 0;
     top: 90px;
     width: 100%;
@@ -693,9 +693,9 @@ nav h1 {
     position: relative;
     right: -14px;
   }
-  .logo, a {
+  .logo, a { */
     /* transform: scale(0.8); */
-  }
+  /* }
   a.active {
     transform: scale();
   }
@@ -703,15 +703,15 @@ nav h1 {
   nav {
     max-height: 93px;
     display: flex;
-    position: fixed;
+    position: fixed; */
     /* justify-content: space-between; */
-    width: 100%;
+    /* width: 100%;
     align-items: center;
     padding: 23px 20px 20px 20px;
-    z-index: 9000000000000000000000000000011111111111111111111111111111111111111111111111111111111111111111111 !important;
+    z-index: 9000000000000000000000000000011111111111111111111111111111111111111111111111111111111111111111111 !important; */
     /* position: sticky;
     top: 0px; */
-  }
+  /* }
   .logo {
     width: 48.57px;
     height: 34px;
@@ -720,12 +720,12 @@ nav h1 {
     align-items: center;
     justify-content: center;
     align-self: center;
-    font-family: 'Inter', sans-serif !important;
+    font-family: 'Inter', sans-serif !important; */
     /* font-family: ; */
     /* background-color: aqua; */
     /* display: initial; */
     /* margin-left: 20px !important;
     margin-top: 20px !important;
     margin-bottom: 20px; */
-  }
-}
+  /* }
+} */
