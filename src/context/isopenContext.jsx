@@ -1220,12 +1220,12 @@ function StageFirst() {
     setWindowWidth(window.innerWidth && window.innerWidth <= 600);
   }, []);
 
-  // Keep the window resize behavior as in the original
-  window.onresize = function () {
-    if (!windowWidth) {
-      document.location.reload(true);
-    }
-  };
+  // // Keep the window resize behavior as in the original
+  // window.onresize = function () {
+  //   if (!windowWidth) {
+  //     document.location.reload(true);
+  //   }
+  // };
 
   const showModal = () => {
     setShow(true);
@@ -1342,10 +1342,10 @@ function StageThird() {
     };
   }, []);
 
-  // Keep the original resize behavior
-  window.onresize = function () {
-    document.location.reload(false);
-  };
+  // // Keep the original resize behavior
+  // window.onresize = function () {
+  //   document.location.reload(false);
+  // };
 
   return (
     <>
