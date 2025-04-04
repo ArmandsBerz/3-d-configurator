@@ -1,0 +1,23 @@
+// // .select-container{
+// //   width: auto;
+// // }
+// .select-container {
+//   .color {
+//     width: 2.5rem;
+//     height: 2.5rem;
+//     // margin-right: 30px;
+//     background-color: #383838;
+//     &.selected {
+//       outline: 4px solid #FFFFFF;
+//     }
+//     &:hover {
+//       outline: 4px solid rgba(255, 255, 255, 0.5);
+//     }
+//     &:active {
+//       outline: 4px solid rgba(255, 255, 255, 0.2);
+//     }
+//   }
+//   .grid-cols-7 {
+//     grid-template-columns: repeat(7, minmax(0, 1fr));
+//   }
+// }
