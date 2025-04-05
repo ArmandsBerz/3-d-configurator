@@ -6,7 +6,7 @@ import { StageFirst, StageSecond, StageThird } from '../src/context/isopenContex
 
 function App() {
     return (
-        <BrowserRouter>
+        <BrowserRouter basename="/build">
             <Routes>
                 <Route path="/" element={<StageFirst />} />
                 <Route path="/stage-two" element={<StageSecond />} />
