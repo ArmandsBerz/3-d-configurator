@@ -16,13 +16,6 @@ import { Select, SelectColor, SelectColor2, SelectImage, SelectInput, TextOption
 // CSS and font imports from the second file
 import '../../src/index.css';
 import '../../src/main.scss';
-import '../assets/fonts/Oswald-ExtraLight.ttf';
-import '../assets/fonts/Oswald-Light.ttf';
-import '../assets/fonts/Oswald-Medium.ttf';
-import '../assets/fonts/Oswald-Regular.ttf';
-import '../assets/fonts/Oswald-SemiBold.ttf';
-import '../assets/fonts/Oswald-Bold.ttf';
-
 import App from '../App';
 
 /* ------------------------
