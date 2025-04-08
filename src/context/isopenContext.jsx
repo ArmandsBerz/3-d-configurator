@@ -8,10 +8,36 @@ import { TbArrowsMaximize } from 'react-icons/tb';
 import { CgArrowRight, CgList } from 'react-icons/cg';
 
 // Merge SceneBabylon imports (adding colorOptions from the second file)
-import SceneBabylon, { fonts, colorMap, additionalColors, Messenger, ZONES_WEB, colorOptions, playerPosition, configBuild } from '../containers/scene/SceneBabylon';
+import SceneBabylon, {
+  fonts,
+  colorMap,
+  additionalColors,
+  Messenger,
+  ZONES_WEB,
+  colorOptions,
+  playerPosition,
+  configBuild
+} from '../containers/scene/SceneBabylon';
 
 import { useAppSelector } from '../store/rootReducer';
-import { Select, SelectColor, SelectColor2, SelectImage, SelectInput, TextOptions, ColorOption, WebOption, NameOptions, ColorCircle, ColorCircle2, BuildModal, Modal, Hero, Card, SelectGroup } from '../containers/scene/ui';
+import {
+  Select,
+  SelectColor,
+  SelectColor2,
+  SelectImage,
+  SelectInput,
+  TextOptions,
+  ColorOption,
+  WebOption,
+  NameOptions,
+  ColorCircle,
+  ColorCircle2,
+  BuildModal,
+  Modal,
+  Hero,
+  Card,
+  SelectGroup
+} from '../containers/scene/ui';
 
 // CSS and font imports from the second file
 import '../../src/index.css';
@@ -187,18 +213,10 @@ function MiddleContainer(props) {
   return (
     <div
       onClick={(e) => e.stopPropagation()}
-      className={`${
-        !windowWidth ? 'centerStageTwo' : ''
-      } ${accordionOpen ? 'CenterClosedContext' : ''} middle-container flex flex-col flex-1 ${
-        allMaximize ? 'iconsMinimize' : ''
-      }`}
+      className={`${!windowWidth ? 'centerStageTwo' : ''} ${accordionOpen ? 'CenterClosedContext' : ''} middle-container flex flex-col flex-1 ${allMaximize ? 'iconsMinimize' : ''}`}
     >
       <div className="middle-container-content flex-1 w-full"></div>
-      <div
-        className={`${
-          props.stage === 'two' ? 'stageTwoCenter' : ''
-        } ${props.stage === 3 ? 'stageThreeCenter' : ''} middle-container-menu flex flex-col justify-center items-center`}
-      >
+      <div className={`${props.stage === 'two' ? 'stageTwoCenter' : ''} ${props.stage === 3 ? 'stageThreeCenter' : ''} middle-container-menu flex flex-col justify-center items-center`}>
         <div className="navigation-dots flex my-2">
           {scene
             ? scene.glovesDesign.map((item, index) => (
@@ -213,37 +231,20 @@ function MiddleContainer(props) {
                   viewBox="0 0 32 32"
                   key={index}
                 >
-                  <circle
-                    cx="16"
-                    cy="16"
-                    r="8"
-                    fill={activeIndex === index ? '#fff' : '#ffffff66'}
-                  />
+                  <circle cx="16" cy="16" r="8" fill={activeIndex === index ? '#fff' : '#ffffff66'} />
                 </svg>
               ))
             : null}
         </div>
         <div className="navigation-instructions flex">
           {windowWidth && (
-            <div
-              style={{ color: 'white', fontSize: '28px', cursor: 'pointer' }}
-              onClick={() => {
-                dispatch({ type: 'ALLMAXIMIZE' });
-              }}
-              className="mr-4"
-            >
+            <div style={{ color: 'white', fontSize: '28px', cursor: 'pointer' }} onClick={() => dispatch({ type: 'ALLMAXIMIZE' })} className="mr-4">
               <TbArrowsMaximize />
             </div>
           )}
           <div className="mr-4">
             {windowWidth ? (
-              <svg
-                width="28"
-                height="28"
-                viewBox="0 0 28 28"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-              >
+              <svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path
                   fillRule="evenodd"
                   clipRule="evenodd"
@@ -368,16 +369,8 @@ const OptionAccordion = (props) => {
           )}
         </div>
       ) : (
-        <div
-          className={`option-accordion${open ? ' open' : ''} ${isMizedOpen && ' FirstClosed'} ${
-            props.title === 'Build' ? 'accordionBuild' : ''
-          }`}
-        >
-          <button
-            style={{ marginBottom: '0px' }}
-            className="w-full"
-            onClick={props.title === 'Build' ? handleBuild : openButton}
-          >
+        <div className={`option-accordion${open ? ' open' : ''} ${isMizedOpen && ' FirstClosed'} ${props.title === 'Build' ? 'accordionBuild' : ''}`}>
+          <button style={{ marginBottom: '0px' }} className="w-full" onClick={props.title === 'Build' ? handleBuild : openButton}>
             {(isMizedOpen && windowWidth) && <MiddleContainer />}
             <div onClick={handleClick} className="accordion-header h-14 py-3.5 px-6 flex items-center">
               <div className={`arrow${open ? ' active' : ' '} flex items-center mr-2 grow-0`}>
@@ -539,11 +532,7 @@ function UpAccordion(props) {
         </div>
       ) : (
         <div className={` ${open ? ' openAccordion' : ''} up-accordion ${props.stage === 2 ? ' thirdMobileAccordion' : ''} ${accordionOpen ? ' acccccord' : ''}`}>
-          <button
-            className="w-full"
-            style={{ zIndex: '22222' }}
-            onClick={() => setOpen(!open)}
-          >
+          <button className="w-full" style={{ zIndex: '22222' }} onClick={() => setOpen(!open)}>
             <div
               style={{ zIndex: '2222299999999999' }}
               onClick={() => {
@@ -579,19 +568,15 @@ function UpAccordion(props) {
       )}
     </>
   );
-}
+};
 
 /* ------------------------
    NAV COMPONENT
 ------------------------ */
 function Nav() {
   const [open, setOpen] = useState(false);
-  const { allMaximize, dispatch, isMizedOpen, firstStage, secondStage, thirdStage } =
-    useContext(IsopenContext);
+  const { allMaximize, dispatch, isMizedOpen, secondStage, thirdStage } = useContext(IsopenContext);
 
-  const handleFirst = () => {
-    dispatch({ type: 'FIRSTSTAGE' });
-  };
   const handleSecond = () => {
     dispatch({ type: 'SECONDSTAGE' });
   };
@@ -605,39 +590,18 @@ function Nav() {
         LOGO
       </h1>
       <div className="stages-container">
-        <NavLink to="/" className="not-active">
-          {' Stage 1 '}
-        </NavLink>
         <NavLink style={{ margin: '0px 20px' }} to="/stage-two">
           {' Stage 2 '}
         </NavLink>
         <NavLink to="/stage-three">{' Stage 3 '}</NavLink>
       </div>
       <div className={`menuContainer ${!open ? 'menuOpened' : ''}`}>
-        <div
-          onClick={() => setOpen(!open)}
-          className={`mainDrop ${open ? 'openedArr' : 'closedArr'} flex items-center mr-2 grow-0`}
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            aria-hidden="true"
-            role="img"
-            width="34"
-            height="34"
-            preserveAspectRatio="xMidYMid meet"
-            viewBox="0 0 24 24"
-          >
+        <div onClick={() => setOpen(!open)} className={`mainDrop ${open ? 'openedArr' : 'closedArr'} flex items-center mr-2 grow-0`}>
+          <svg xmlns="http://www.w3.org/2000/svg" aria-hidden="true" role="img" width="34" height="34" preserveAspectRatio="xMidYMid meet" viewBox="0 0 24 24">
             <path fill="#d9d9d9" d="M8.465 20.485L16.95 12L8.465 3.515L7.05 4.929L14.122 12L7.05 19.071l1.415 1.414Z" />
           </svg>
         </div>
         <div className={`navMobile ${!open ? 'hidemenus' : ''}`}>
-          <NavLink
-            to="/"
-            className={({ isActive }) => (isActive ? 'active' : 'not-active')}
-            onClick={handleFirst}
-          >
-            {' Stage! 1 '}
-          </NavLink>
           <NavLink
             to="/stage-two"
             className={({ isActive }) => (isActive ? 'active' : 'not-active')}
@@ -662,8 +626,7 @@ function Nav() {
    LEFT PANEL COMPONENT (STAGE TWO)
 ------------------------ */
 function LeftPanel(props) {
-  const { isLoadGlove, activeModel, activePallet, dispatch, allMaximize, isMizedOpen } =
-    useContext(IsopenContext);
+  const { isLoadGlove, activeModel, activePallet, dispatch, allMaximize, isMizedOpen } = useContext(IsopenContext);
   const { position, pallette } = useAppSelector((state) => state.buildReducer);
 
   const [state, setState] = useState({});
@@ -926,10 +889,7 @@ function LeftPanel(props) {
 
   return (
     <div>
-      <div className={`${allMaximize ? 'hideLeft' : ''} ${
-        isMizedOpen ? 'LeftContainerOpen' : 'leftContainers'
-      }`}
-      >
+      <div className={`${allMaximize ? 'hideLeft' : ''} ${isMizedOpen ? 'LeftContainerOpen' : 'leftContainers'}`}>
         {!isMizedOpen && windowWidth && (
           <div
             className="controls"
@@ -944,7 +904,7 @@ function LeftPanel(props) {
             {scroll ? <div className="gradientsStage2" /> : null}
           </div>
         )}
-        <div className={isMizedOpen ? 'marginCenterNO' : 'marginCenterYES'}>
+        <div className="marginCenterYES">
           <OptionAccordion
             stage="two"
             showBuildModal={showBuildModal}
@@ -1045,9 +1005,7 @@ function LeftPanelSt3(props) {
 
   return (
     <div className={`${windowWidth ? 'stagethrees' : 'stagethreemobile'}`}>
-      {((!allMaximize && !windowWidth) ||
-        (allMaximize && !windowWidth) ||
-        (!allMaximize && windowWidth)) && (
+      {((!allMaximize && !windowWidth) || (allMaximize && !windowWidth) || (!allMaximize && windowWidth)) && (
         <>
           {model ? getTextZones() : null}
           {!windowWidth && (
@@ -1063,10 +1021,7 @@ function LeftPanelSt3(props) {
                   width: '180px'
                 }}
               >
-                <div
-                  style={{ zIndex: '2222299999999999' }}
-                  className="accordion-button h-14 py-3.5 px-6 flex items-center"
-                >
+                <div style={{ zIndex: '2222299999999999' }} className="accordion-button h-14 py-3.5 px-6 flex items-center">
                   <div className="arrow mr-2 grow-0">
                     <span style={{ fontSize: '26px', lineHeight: '16px' }}>&larr;</span>
                   </div>
@@ -1102,9 +1057,7 @@ function RightPanel(props) {
       <div
         className={`${
           props.stage === 3 ? 'stagethreeacc flex-col justify-end' : ''
-        } accordionAndCTA flex flex-col justify-end ${
-          allMaximize ? 'minimizeMenu' : ''
-        } ${isMizedOpen ? 'hideMixed' : ''}`}
+        } accordionAndCTA flex flex-col justify-end ${allMaximize ? 'minimizeMenu' : ''} ${isMizedOpen ? 'hideMixed' : ''}`}
       >
         {windowWidth && props.stage === 3 && <LeftPanel />}
         <UpAccordion stage={2}>
@@ -1147,7 +1100,7 @@ function RightPanel(props) {
 ------------------------ */
 function MainContainer(props) {
   const { modalOpen, accordionOpen } = useContext(IsopenContext);
-  const { isMizedOpen, dispatch } = useContext(IsopenContext);
+  const { isMizedOpen } = useContext(IsopenContext);
   const [windowWidth, setWindowWidth] = useState();
   const [show, setShow] = useState(false);
 
@@ -1159,106 +1112,21 @@ function MainContainer(props) {
     setShow(false);
   };
 
-  useEffect(() => {
-    if (props.stage === 'two') {
-      setShow(true);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
+  // Since Stage 1 is removed, we assume props.stage is either "two" or "three"
   return (
     <div id="main" className="main-container flex">
-      <BuildModal stage="one" title="Build" show={show} handleClose={hideModal} />
-      <div
-        className={`${accordionOpen ? 'hideLeftPanel' : ''} ${
-          props.stage === 'one' ? 'left-panel' : 'left-panel left-panel2'
-        } px-5 overflow-y-auto`}
-      >
+      {/* BuildModal rendering is preserved only for stage "one"; it will not render here */}
+      {props.stage === 'one' && <BuildModal stage="one" title="Build" show={show} handleClose={hideModal} />}
+      <div className={`${accordionOpen ? 'hideLeftPanel' : ''} left-panel left-panel2 px-5 overflow-y-auto`}>
         {props.leftPanel}
       </div>
-      <main
-        className={`${accordionOpen ? 'hideLeftPanel' : ''} ${
-          modalOpen ? 'disableScroll' : ''
-        } ${props.stage === 'two' || props.stage === 'three' ? 'centerSecond' : ''} ${
-          props.stage === 'one' ? 'center-panel' : 'center-panel center-panel2'
-        }`}
-      >
+      <main className={`${accordionOpen ? 'hideLeftPanel' : ''} ${modalOpen ? 'disableScroll' : ''} centerSecond center-panel center-panel2`}>
         {props.children}
       </main>
-      {((!isMizedOpen && !windowWidth) ||
-        (!isMizedOpen && windowWidth) ||
-        (isMizedOpen && !windowWidth)) && (
-        <div
-          className={`${
-            props.stage === 'one' ? 'right-panel' : 'right-panel2'
-          } px-5`}
-        >
-          {props.rightPanel}
-        </div>
-      )}
+      <div className="right-panel2 px-5">
+        {props.rightPanel}
+      </div>
     </div>
-  );
-}
-
-/* ------------------------
-   STAGE FIRST COMPONENT
------------------------- */
-function StageFirst() {
-  const [show, setShow] = useState(false);
-  const [showBuild, setShowBuild] = useState(false);
-  const { dispatch } = useContext(IsopenContext);
-  const [windowWidth, setWindowWidth] = useState();
-
-  useEffect(() => {
-    setWindowWidth(window.innerWidth && window.innerWidth <= 600);
-  }, []);
-
-  // // Keep the window resize behavior as in the original
-  // window.onresize = function () {
-  //   if (!windowWidth) {
-  //     document.location.reload(true);
-  //   }
-  // };
-
-  const showModal = () => {
-    setShow(true);
-    dispatch({ type: 'MODALOPEN' });
-  };
-
-  const hideModal = () => {
-    setShow(false);
-    dispatch({ type: 'MODALOPEN' });
-  };
-
-  const showBuildModal = () => {
-    setShowBuild(true);
-    dispatch({ type: 'MODALOPEN' });
-  };
-
-  const hideBuildModal = () => {
-    setShowBuild(false);
-    dispatch({ type: 'MODALOPEN' });
-  };
-
-  return (
-    <>
-      <Nav />
-      <MainContainer stage="one">
-        <div>
-          <Hero handleOpen={showBuildModal} />
-          <section className="elements">
-            <div className="elements-container">
-              {[0, 1, 2, 3, 4, 5, 7, 8, 9].map((i) => (
-                <Card handleOpen={showModal} handleOpenBuild={showBuildModal} key={i} />
-              ))}
-            </div>
-            <div className="gradientsBottom"></div>
-          </section>
-        </div>
-      </MainContainer>
-      <Modal title="Title" show={show} handleClose={hideModal} />
-      <BuildModal stage="one" title="Title" show={showBuild} handleClose={hideBuildModal} />
-    </>
   );
 }
 
@@ -1305,12 +1173,9 @@ function StageSecond() {
           leftPanel={<LeftPanel stage="two" zones={zones} />}
           rightPanel={(!allMaximize || !windowWidth) && <RightPanel stage={2} />}
         >
-          {((!isMizedOpen && !windowWidth) ||
-            (isMizedOpen && !windowWidth) ||
-            (windowWidth && !isMizedOpen)) && <MiddleContainer stage="two" />}
+          {((!isMizedOpen && !windowWidth) || (isMizedOpen && !windowWidth) || (windowWidth && !isMizedOpen)) && <MiddleContainer stage="two" />}
         </MainContainer>
       ) : null}
-
       {allMaximize && windowWidth && <MiddleContainer />}
     </>
   );
@@ -1334,11 +1199,6 @@ function StageThird() {
       scene.canvas.style.opacity = 0;
     };
   }, []);
-
-  // // Keep the original resize behavior
-  // window.onresize = function () {
-  //   document.location.reload(false);
-  // };
 
   return (
     <>
@@ -1443,10 +1303,8 @@ export {
   LeftPanelSt3,
   MainContainer,
   MiddleContainer,
-  StageFirst,
   StageSecond,
   StageThird,
   OptionAccordion,
   UpAccordion,
 };
-
