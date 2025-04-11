@@ -899,9 +899,7 @@ h2, h3, h4, p {
   .leftContainers {
     margin-top: 5rem;
   }
-  .stagethreeacc {
-    /* (no additional styles) */
-  }
+  /* Removed legacy .stagethreeacc selector */
   .accordionCTA {
     display: flex;
   }
@@ -929,10 +927,7 @@ h2, h3, h4, p {
 }
 
 @media (min-width: 920px) {
-  .stagethreemobile {
-    margin-top: 152px;
-    height: 100vh;
-  }
+  /* Removed legacy .stagethreemobile block */
 }
 
 @media (max-width: 920px) {
@@ -968,18 +963,7 @@ h2, h3, h4, p {
     display: flex;
     justify-content: space-between;
   }
-  .stagethrees {
-    position: fixed !important;
-    width: 100vw;
-    left: 0;
-    margin-left: 1.25rem;
-    width: calc(100% - 2.5rem);
-    .middle-container {
-      position: sticky;
-      top: 0;
-      z-index: 9;
-    }
-  }
+  /* Removed legacy .stagethrees selector */
   .cta {
     align-items: center;
     justify-content: space-between;
@@ -1474,18 +1458,12 @@ h2, h3, h4, p {
       padding-right: 20px;
       background-color: #161616;
     }
-    .stageThreeCenter {
-      width: 100vw !important;
-    }
+    /* Removed legacy .stageThreeCenter reference */
   }
   
   .stageTwoCenter {
     margin-top: 0px !important;
     display: none;
-  }
-  
-  .stageThreeCenter {
-    /* (additional styles if needed) */
   }
   
   .centerSecond {

@@ -55,9 +55,7 @@ const INITIAL_STATE = {
   arrowUp: false,
   accordionOpen: false,
   colorPrimary: '',
-  firstStage: false,
   secondStage: false,
-  thirdStage: false,
   modalOpen: false,
   isLoadGlove: false,
   activeModel: 0,
@@ -102,22 +100,10 @@ const IsopenReducer = (state, action) => {
         accordionOpen: !state.accordionOpen,
       };
     }
-    case 'FIRSTSTAGE': {
-      return {
-        ...state,
-        firstStage: !state.firstStage,
-      };
-    }
     case 'SECONDSTAGE': {
       return {
         ...state,
         secondStage: !state.secondStage,
-      };
-    }
-    case 'THIRDSTAGE': {
-      return {
-        ...state,
-        thirdStage: !state.thirdStage,
       };
     }
     case 'MODALOPEN': {
@@ -163,9 +149,7 @@ export const IsopenContextProvider = ({ children }) => {
         arrowUp: state.arrowUp,
         accordionOpen: state.accordionOpen,
         colorPrimary: state.colorPrimary,
-        firstStage: state.firstStage,
         secondStage: state.secondStage,
-        thirdStage: state.thirdStage,
         modalOpen: state.modalOpen,
         isLoadGlove: state.isLoadGlove,
         activeModel: state.activeModel,
@@ -196,7 +180,7 @@ function MiddleContainer(props) {
       const scenes = SceneBabylon.instance();
       setScene(scenes);
     } else {
-      // even if not loaded, we try to get an instance (since it won't crash)
+      // Even if not loaded, get an instance (it won't crash)
       const fallback = SceneBabylon.instance();
       setScene(fallback);
     }
@@ -309,16 +293,18 @@ const OptionAccordion = (props) => {
   const openButton = () => {
     console.log('openButton');
     setOpen(!open);
-    props.showBuildModal ? props.showBuildModal() : null;
+    if (props.showBuildModal) {
+      props.showBuildModal();
+    }
   };
 
-  // Since we now only support Stage Two, we always render the default branch.
+  // We now support only Stage Two, so always render the default branch.
   return (
     <div className={`option-accordion up-accordion ${open ? ' open' : ''} ${isMizedOpen ? ' FirstClosed' : ''}`}>
       <button style={{ marginBottom: '0px' }} className="w-full" onClick={props.title === 'Build' ? handleBuild : openButton}>
         {(isMizedOpen && windowWidth) && <MiddleContainer />}
         <div onClick={handleClick} className="accordion-header h-14 py-3.5 px-6 flex items-center">
-          <div className={`arrow${open ? ' active' : ' '} flex items-center mr-2 grow-0 uparrows`}>
+          <div className={`arrow${open ? ' active' : ''} flex items-center mr-2 grow-0 uparrows`}>
             <svg
               xmlns="http://www.w3.org/2000/svg"
               aria-hidden="true"
@@ -428,9 +414,7 @@ function UpAccordion(props) {
       <button className="w-full" style={{ zIndex: '22222' }} onClick={() => setOpen(!open)}>
         <div
           style={{ zIndex: '2222299999999999' }}
-          onClick={() => {
-            dispatch({ type: 'ACCORDIONOPEN' });
-          }}
+          onClick={() => dispatch({ type: 'ACCORDIONOPEN' })}
           className="accordion-button h-14 py-3.5 px-6 flex items-center"
         >
           <div className={`arrow${open ? ' active' : ''} flex items-center mr-2 grow-0 uparrows`}>
@@ -468,6 +452,7 @@ function Nav() {
   const [open, setOpen] = useState(false);
   const { allMaximize, dispatch, isMizedOpen } = useContext(IsopenContext);
 
+  // Only Stage Two is used.
   const handleSecond = () => {
     dispatch({ type: 'SECONDSTAGE' });
   };
@@ -477,7 +462,6 @@ function Nav() {
       <h1 style={{ fontFamily: 'Inter', fontWeight: '500' }} className="logo">
         LOGO
       </h1>
-      
     </nav>
   );
 }
@@ -523,7 +507,6 @@ function LeftPanel(props) {
     if (names) {
       setActiveGloveModel();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [names]);
 
   useEffect(() => {
@@ -580,7 +563,6 @@ function LeftPanel(props) {
     if (state.webs) {
       updWebs();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.webs]);
 
   useEffect(() => {
@@ -800,7 +782,7 @@ function RightPanel(props) {
   const navigate = useNavigate();
 
   const routeChange = () => {
-    // Since Stage 3 is removed, only Stage 2 is used.
+    // Only Stage Two is used.
     navigate('/stage-two');
   };
 
@@ -813,7 +795,7 @@ function RightPanel(props) {
       <div
         className={`accordionAndCTA flex flex-col justify-end ${allMaximize ? 'minimizeMenu' : ''} ${isMizedOpen ? 'hideMixed' : ''}`}
       >
-        <UpAccordion stage={2}>
+        <UpAccordion stage="two">
           <div className="mb-2">Glove Foundation</div>
           <div className="overScroll">
             <div className="flex justify-between">
@@ -858,10 +840,9 @@ function MainContainer(props) {
     setShow(false);
   };
 
-  // Since Stage 1 is removed, we assume props.stage is "two"
+  // We assume props.stage is always "two"
   return (
     <div id="main" className="main-container flex">
-      {props.stage === 'one' && <BuildModal stage="one" title="Build" show={show} handleClose={hideModal} />}
       <div className={`${accordionOpen ? 'hideLeftPanel' : ''} left-panel left-panel2 px-5 overflow-y-auto`}>
         {props.leftPanel}
       </div>
