@@ -195,7 +195,6 @@ div.text {
 
 /* --- Media Query (min-width: 900px) adjustments from file 1 --- */
 @media (min-width: 900px) {
-  /* (Note: The .page-header media rule is handled below in file 2.) */
   .element {
     display: flex;
     flex-direction: column;
@@ -900,9 +899,7 @@ h2, h3, h4, p {
   .leftContainers {
     margin-top: 5rem;
   }
-  .stagethreeacc {
-    /* (no additional styles) */
-  }
+  /* Removed legacy .stagethreeacc selector */
   .accordionCTA {
     display: flex;
   }
@@ -930,10 +927,7 @@ h2, h3, h4, p {
 }
 
 @media (min-width: 920px) {
-  .stagethreemobile {
-    margin-top: 152px;
-    height: 100vh;
-  }
+  /* Removed legacy .stagethreemobile block */
 }
 
 @media (max-width: 920px) {
@@ -969,18 +963,7 @@ h2, h3, h4, p {
     display: flex;
     justify-content: space-between;
   }
-  .stagethrees {
-    position: fixed !important;
-    width: 100vw;
-    left: 0;
-    margin-left: 1.25rem;
-    width: calc(100% - 2.5rem);
-    .middle-container {
-      position: sticky;
-      top: 0;
-      z-index: 9;
-    }
-  }
+  /* Removed legacy .stagethrees selector */
   .cta {
     align-items: center;
     justify-content: space-between;
@@ -1073,66 +1056,6 @@ h2, h3, h4, p {
   }
 }
 
-/* --- Card Container & Children --- */
-.card-container {
-  padding: 1.25rem;
-  background-color: #1f1f1f;
-  display: flex;
-  flex-direction: column;
-  position: relative;
-  height: 400px;
-  
-  .card-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    
-    h2 {
-      font-weight: 900;
-      font-size: 2.125rem;
-    }
-    
-    .info-button {
-      & > svg > path {
-        fill: var(--button-pc);
-      }
-      &:hover {
-        & > svg > path {
-          fill: var(--button-pc-hover);
-        }
-      }
-      &:active {
-        & > svg > path {
-          fill: var(--button-pc-active);
-        }
-      }
-    }
-  }
-  
-  .cta-card-arrow {
-    font-size: 36px;
-    line-height: 16px;
-  }
-  
-  .img-container {
-    display: flex;
-    flex-direction: row;
-    justify-content: space-between;
-    align-items: center;
-    background-color: #d9d9d9;
-    height: 256px;
-    width: 256px;
-    align-self: center;
-    margin-left: 15px;
-    
-    .img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-    }
-  }
-}
-
 /* --- Tags Container --- */
 .tags-container {
   position: absolute;
@@ -1198,91 +1121,13 @@ h2, h3, h4, p {
   }
 }
 
-/* --- Filters --- */
-.filters {
-  &-mobile {
-    width: 100%;
-    background-color: black !important;
-    color: white;
-    font-weight: 900;
-    font-size: 0.9rem;
-    border: none;
-    padding: 0.5rem;
-    margin-bottom: 0.25rem;
-    box-shadow: 5px 5px 0 var(--bg);
-    display: block;
-    z-index: 90000000000 !important;
-    margin-top: 20px;
-    
-    @media (min-width: 768px) {
-      display: none;
-    }
-  }
-  &-desktop {
-    display: none;
-    
-    .filter {
-      color: #fff;
-      opacity: 0.2;
-      
-      &.active {
-        opacity: 1;
-      }
-    }
-    
-    @media (min-width: 768px) {
-      background-color: black;
-      display: block;
-    }
-  }
-}
-
 /* --- Media Queries (min-width: 920px) for File 2 --- */
 @media (min-width: 920px) {
-  .hero-container {
-    max-width: 1100px;
-    margin: 0 auto;
-    left: 0;
-    right: 0;
-    position: fixed;
-    top: 145px;
-    z-index: 5;
-    
-    .hero-container-inner {
-      background-color: var(--bg);
-      min-height: 340px;
-      display: flex;
-      flex-direction: column;
-      transition: 0.2s;
-      
-      &.scrolled {
-        min-height: 158px;
-      }
-      
-      .scrollpara {
-        /* additional styles if needed */
-      }
-      
-      .notscrolled {
-        max-width: 340px !important;
-      }
-    }
-  }
-  
-  .gradients {
-    height: 63px;
-    position: relative;
-    margin-top: -1px;
-    background: linear-gradient(180deg, #161616 0%, rgba(199, 66, 66, 0) 100%);
-  }
+  /* HERO component removed here */
   
   .page-header {
     /* Use the more complete page-header from file 2 (see below) */
     display: flex;
-  }
-  
-  .cta-hero {
-    margin-right: 20px !important;
   }
   
   .half {
@@ -1337,28 +1182,7 @@ h2, h3, h4, p {
 
 /* --- Media Queries (max-width: 920px) for File 2 --- */
 @media (max-width: 920px) {
-  .card-container {
-    display: flex;
-    flex-direction: row;
-    justify-content: space-between;
-    max-height: 238px;
-    width: 388px;
-    
-    .cta-card-arrow {
-      font-size: 36px;
-      line-height: 4px;
-      display: flex;
-      align-items: baseline;
-    }
-    
-    .img-container {
-      width: 200px;
-      height: 200px;
-      position: absolute;
-      right: 10px;
-      top: 10px;
-    }
-  }
+  /* The .card-container block has been removed as requested */
   
   .firstButton {
     position: absolute;
@@ -1393,35 +1217,7 @@ h2, h3, h4, p {
     padding: 0px 20px;
   }
   
-  .hero-container {
-    z-index: 900 !important;
-    padding: 0px 20px;
-    height: 100px !important;
-    width: 100%;
-    margin-bottom: 250px;
-    
-    .gradient {
-      z-index: 599999 !important;
-      height: 9rem;
-      background: linear-gradient(180deg, #161616 0%, rgba(22, 22, 22, 0) 100%);
-    }
-    
-    p {
-      font-size: 20px;
-    }
-    
-    h2 {
-      font-size: 35px;
-      margin-top: 20px;
-    }
-    
-    .page-header {
-      height: 100%;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-    }
-  }
+  /* HERO component removed here */
   
   .page-header {
     margin-top: 93px !important;
@@ -1558,93 +1354,7 @@ h2, h3, h4, p {
   }
 }
 
-.build-modal {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.5);
-  z-index: 999900000000 !important;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  backdrop-filter: blur(10px);
-
-  &.display-none {
-    display: none;
-  }
-
-  .build-modal-content {
-    position: relative;
-    background: var(--bg);
-    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.5);
-    width: 100%;
-    max-width: 600px;
-    max-height: 721px;
-    padding: 20px;
-    display: flex;
-    flex-direction: column;
-    justify-content: flex-start;
-    align-items: center;
-
-    &.animate-bottom {
-      animation: animatebottom 0.4s;
-    }
-
-    .build-modal-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 1rem;
-      width: 100%;
-    }
-
-    .close-button {
-      background: none;
-      border: none;
-      cursor: pointer;
-    }
-
-    .build-modal-body {
-      display: flex;
-      flex-direction: column;
-      justify-content: flex-end;
-      height: 100%;
-      width: 100%;
-
-      .build-modal-btn {
-        span {
-          font-size: 40px;
-          line-height: 16px;
-        }
-      }
-
-      .img-container {
-        display: flex;
-        flex-direction: row;
-        justify-content: space-between;
-        align-items: center;
-        background-color: #ffffff;
-        height: 16rem;
-        width: 16rem;
-        align-self: center;
-        margin-top: 1rem;
-
-        .img {
-          width: 100%;
-          height: 100%;
-          object-fit: cover;
-        }
-      }
-    }
-
-    @media screen and (max-width: 768px) {
-      max-width: 100%;
-      height: 100%;
-    }
-  }
-}
+/* --- All build modal–related styles have been removed --- */
 
 /* --- Additional Global Styles --- */
 .disableScroll {
@@ -1748,18 +1458,12 @@ h2, h3, h4, p {
       padding-right: 20px;
       background-color: #161616;
     }
-    .stageThreeCenter {
-      width: 100vw !important;
-    }
+    /* Removed legacy .stageThreeCenter reference */
   }
   
   .stageTwoCenter {
     margin-top: 0px !important;
     display: none;
-  }
-  
-  .stageThreeCenter {
-    /* (additional styles if needed) */
   }
   
   .centerSecond {

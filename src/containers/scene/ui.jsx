@@ -149,76 +149,6 @@ function Select(props) {
                 {option.text}
               </button>
             )}
-            {!windowWidth && props.on5 === 'one' && (
-              <button
-                style={{ flex: '1', width: '100%' }}
-                className={`option${isSelected(option) ? ' selected' : ''} px-4 py-2`}
-                key={option.value}
-                onClick={() => handleSelection(option)}
-              >
-                {option.text}
-              </button>
-            )}
-            {windowWidth && props.on5 === 'one' && (
-              <button
-                style={{
-                  flex: '1',
-                  minWidth: '116px',
-                  maxWidth: '116px',
-                  width: '100%',
-                }}
-                className={`option${isSelected(option) ? ' selected' : ''} px-4 py-2`}
-                key={option.value}
-                onClick={() => handleSelection(option)}
-              >
-                {option.text}
-              </button>
-            )}
-            {!windowWidth && props.on4 === 'one' && (
-              <button
-                style={{ flex: '1', width: '100%' }}
-                className={`option${isSelected(option) ? ' selected' : ''} px-4 py-2`}
-                key={option.value}
-                onClick={() => handleSelection(option)}
-              >
-                {option.text}
-              </button>
-            )}
-            {windowWidth && props.on4 === 'one' && (
-              <button
-                style={{
-                  flex: '1',
-                  minWidth: '178px',
-                  maxWidth: '179px',
-                  width: '100%',
-                }}
-                className={`option${isSelected(option) ? ' selected' : ''} px-4 py-2`}
-                key={option.value}
-                onClick={() => handleSelection(option)}
-              >
-                {option.text}
-              </button>
-            )}
-            {props.on3 === 'one' && (
-              <button
-                style={{ flex: '1', width: '100%' }}
-                className={`option${isSelected(option) ? ' selected' : ''} px-4 py-2`}
-                key={option.value}
-                onClick={() => handleSelection(option)}
-              >
-                {option.text}
-              </button>
-            )}
-            {props.on2 === 'one' && (
-              <button
-                style={{ flex: '1', width: '100%' }}
-                className={`option${isSelected(option) ? ' selected' : ''} px-4 py-2`}
-                key={option.value}
-                onClick={() => handleSelection(option)}
-              >
-                {option.text}
-              </button>
-            )}
           </div>
         ))}
       </div>
@@ -332,26 +262,24 @@ function SelectBuild(props) {
 
   const isSelected = (index) => props.selected === index;
 
+  // Always wrap options; stage checks removed.
   const getStyles = () => {
     let style;
     switch (props.options.length) {
       case 2:
-        style = { flex: '1', width: '100%' };
+        style = { flex: '1', width: '100%', flexWrap: 'wrap' };
         break;
       case 3:
-        style = { flex: '1', width: '100%' };
+        style = { flex: '1', width: '100%', flexWrap: 'wrap' };
         break;
       case 4:
-        style = { flex: '1', width: '100%' };
+        style = { flex: '1', width: '100%', flexWrap: 'wrap' };
         break;
       case 5:
-        style = {
-          flex: '1',
-          width: '100%',
-          flexWrap: props.stage === 'two' ? 'wrap' : null,
-        };
+        style = { flex: '1', width: '100%', flexWrap: 'wrap' };
         break;
       default:
+        style = {};
         break;
     }
     return style;
@@ -364,10 +292,7 @@ function SelectBuild(props) {
           {props.subtitle}
         </h3>
       ) : null}
-      <div
-        className="modalSelect-build"
-        style={{ flexWrap: props.stage === 'two' ? 'wrap' : null }}
-      >
+      <div className="modalSelect-build" style={{ flexWrap: 'wrap' }}>
         {props.options.map((option, index) => (
           <div
             className="select-block"
@@ -731,11 +656,7 @@ const NameOptions = ({ title, windowWidth, defState, names, onSelection, selecte
 const UI = (props) => {
   const isLoaded = false;
 
-  // componentDidMount() {
-  //     this.isLoaded = true;
-  //     this.props.onLoaded();
-  // }
-
+  // Removed legacy comments regarding other stages.
   const renderGlove = () => (
     <div>
       <div>{props.glove.id}</div>
@@ -857,7 +778,6 @@ function BuildModal(props) {
           <SelectImage
             key={Math.random()}
             subtitle={key}
-            stage={props.stage}
             options={[
               {
                 title: 'Option Title',
@@ -882,7 +802,6 @@ function BuildModal(props) {
       return (
         <SelectBuild
           key={Math.random()}
-          stage={props.stage}
           subtitle={key}
           options={arr}
           selected={arrValues[index]}
@@ -893,36 +812,25 @@ function BuildModal(props) {
 
   return (
     <div
-      className={`${props.stage === 'two' ? 'build-modal-two ' : ' build-modal'} ${
-        props.show ? ' BuildModalShow ' : ' display-none'
-      }`}
+      className={`build-modal-two ${props.show ? ' BuildModalShow ' : ' display-none'}`}
     >
       <div className={`build-modal-content${props.show ? ' animate-bottom' : ''}`}>
         <div className="build-modal-header">
-          {props.stage === 'two' && (
-            <h2 style={{ color: 'white', fontSize: '16px' }}>{props.title}</h2>
-          )}
-          {props.stage === 'one' && (
-            <h2 style={{ color: 'white', fontSize: '36px' }}>{props.title}</h2>
-          )}
-          {props.stage !== 'two' && (
-            <button className="close-button" onClick={props.handleClose}>
-              <svg width="22" height="22" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M1 1L21 21M21 1L11 11L1 21" stroke="white" strokeWidth="2" />
-              </svg>
-            </button>
-          )}
+          <h2 style={{ color: 'white', fontSize: '16px' }}>{props.title}</h2>
+          <button className="close-button" onClick={props.handleClose}>
+            <svg width="22" height="22" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M1 1L21 21M21 1L11 11L1 21" stroke="white" strokeWidth="2" />
+            </svg>
+          </button>
         </div>
         <div className="build-modal-body">
           {getBuild()}
-          {(props.stage !== 'two' || props.stage === 'one') && (
-            <div className="build-modal-btn">
-              <button className="cta mt-4" onClick={props.handleClose}>
-                <p>Call To Action</p>
-                <span>&rarr;</span>
-              </button>
-            </div>
-          )}
+          <div className="build-modal-btn">
+            <button className="cta mt-4" onClick={props.handleClose}>
+              <p>Call To Action</p>
+              <span>&rarr;</span>
+            </button>
+          </div>
         </div>
       </div>
     </div>
