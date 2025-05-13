@@ -31,7 +31,6 @@ import {
   NameOptions,
   ColorCircle,
   BuildModal,
-  Modal,
   SelectGroup
 } from '../containers/scene/ui';
 
