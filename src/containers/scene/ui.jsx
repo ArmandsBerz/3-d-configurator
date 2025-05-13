@@ -315,56 +315,50 @@ function SelectBuild(props) {
 }
 
 function SelectColor(props) {
-  const [selected, setSelected] = useState({ value: props.selected });
+  // Initialize state from props.selected if provided, otherwise null.
+  // props.selected is expected to be the value itself (e.g., '#FF0000').
+  // The internal state 'selected' will be an object like { value: '#FF0000' } or null.
+  const [selected, setSelected] = useState(
+    props.selected !== undefined ? { value: props.selected } : null
+  );
 
-  const handleSelection = (color) => {
-    setSelected(color);
-    props.onSelection(color);
-  };
-
+  // Effect to update the internal selected state when props.selected (the value) changes.
   useEffect(() => {
-    setSelected({ value: props.selected });
+    if (props.selected !== undefined) {
+      // If props.selected has a value, update our internal state object
+      // only if it's different from the current internal selected value.
+      if (!selected || selected.value !== props.selected) {
+        setSelected({ value: props.selected });
+      }
+    } else {
+      // If props.selected is undefined, and our internal state is not already null,
+      // set internal state to null.
+      if (selected !== null) {
+        setSelected(null);
+      }
+    }
   }, [props.selected]);
 
-  const isSelected = (option) => selected && selected.value === option.value;
-
-  return (
-    <div className="select-container mb-4">
-      {props.subtitle ? <h3 className="subtitle mb-2">{props.subtitle}</h3> : null}
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-        {props.colors.map((color) => (
-          <button
-            className={`color${isSelected(color) ? ' selected' : ''}`}
-            style={{ backgroundColor: color.value }}
-            key={`${color.value}+${Math.random()}`}
-            onClick={() => handleSelection(color)}
-          />
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function SelectColor2(props) {
-  const [selected, setSelected] = useState(null);
-
-  const handleSelection = (color) => {
-    setSelected(color);
-    props.onSelection(color);
+  const handleSelection = (colorOption) => { // colorOption is an object like { value: 'someCssColor' }
+    setSelected(colorOption); // Update internal state to the selected color object
+    if (props.onSelection) {
+      props.onSelection(colorOption); // Pass the entire color object { value: '...' }
+    }
   };
 
+  // isSelected checks if the given color option object's value matches the value in the internal selected state object.
   const isSelected = (option) => selected && selected.value === option.value;
 
   return (
     <div className="select-container mb-4">
       {props.subtitle ? <h3 className="subtitle mb-2">{props.subtitle}</h3> : null}
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-        {props.colors.map((color) => (
+        {props.colors.map((color) => ( // props.colors is an array of objects, e.g., [{value: '#FF0000'}, {value: '#00FF00'}]
           <button
             className={`color${isSelected(color) ? ' selected' : ''}`}
             style={{ backgroundColor: color.value }}
-            key={color.value}
-            onClick={() => handleSelection(color)}
+            key={color.value} // Standardized key
+            onClick={() => handleSelection(color)} // Pass the color object
           />
         ))}
       </div>
@@ -1072,7 +1066,6 @@ export {
   SelectGroup,
   SelectBuild,
   SelectColor,
-  SelectColor2,
   SelectImage,
   SelectInput,
   TextOptions,

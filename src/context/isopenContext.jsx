@@ -23,7 +23,6 @@ import { useAppSelector } from '../store/rootReducer';
 import {
   Select,
   SelectColor,
-  SelectColor2,
   SelectImage,
   SelectInput,
   TextOptions,
