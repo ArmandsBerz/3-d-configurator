@@ -32,7 +32,6 @@ import {
   ColorCircle,
   BuildModal,
   Modal,
-  Card,
   SelectGroup
 } from '../containers/scene/ui';
 
