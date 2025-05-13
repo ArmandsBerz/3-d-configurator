@@ -31,7 +31,6 @@ import {
   WebOption,
   NameOptions,
   ColorCircle,
-  ColorCircle2,
   BuildModal,
   Modal,
   Hero,

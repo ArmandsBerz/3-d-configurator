@@ -18,15 +18,6 @@ function ColorCircle(props) {
   );
 }
 
-function ColorCircle2(props) {
-  return (
-    <div
-      className="ml-2.5 h-5 w-5 rounded-full"
-      style={{ backgroundColor: props.color }}
-    />
-  );
-}
-
 /* ---------------- UI Select Components ---------------- */
 function Select(props) {
   const [selected, setSelected] = useState(null);
@@ -1089,7 +1080,6 @@ export {
   WebOption,
   NameOptions,
   ColorCircle,
-  ColorCircle2,
   BuildModal,
   Modal,
   Hero,
