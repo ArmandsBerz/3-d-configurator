@@ -181,12 +181,15 @@ function MiddleContainer(props) {
     }
   }, [isLoadGlove]);
 
+  // MODIFIED: setIndex function
   const setIndex = (id) => {
-    setActiveIndex(id);
-    if (scene) {
-      scene.setActiveGlove(id);
-      dispatch({ type: 'SET_ACTIVE_MODEL', id });
-    }
+    setActiveIndex(id); // Only update the visual state of the dot
+    // The following lines are commented out to prevent scene interaction and global state update
+    // if (scene) {
+    //   // scene.setActiveGlove(id); // Or scene.setActiveCamera(id) in the future
+    //   // dispatch({ type: 'SET_ACTIVE_MODEL', id }); // Or a new action type for camera
+    // }
+    console.log(`Navigation dot ${id} clicked. Visual state updated. Scene interaction disabled.`);
   };
 
   return (
@@ -197,7 +200,13 @@ function MiddleContainer(props) {
       <div className="middle-container-content flex-1 w-full"></div>
       <div className="stageTwoCenter middle-container-menu flex flex-col justify-center items-center">
         <div className="navigation-dots flex my-2">
-          {scene
+          {/*
+            NOTE: Currently, scene.glovesDesign is used to determine the number of dots.
+            If these dots are for cameras, you might want to use a different source for the count,
+            e.g., an array of camera names or a fixed number if you know how many camera views you'll eventually have.
+            For now, it will use the number of glove designs to render dots.
+          */}
+          {scene && scene.glovesDesign && scene.glovesDesign.length > 0 // Ensure glovesDesign is available and not empty
             ? scene.glovesDesign.map((item, index) => (
                 <svg
                   onClick={() => setIndex(index)}
@@ -209,11 +218,32 @@ function MiddleContainer(props) {
                   preserveAspectRatio="xMidYMid meet"
                   viewBox="0 0 32 32"
                   key={index}
+                  style={{ cursor: 'pointer' }} // Add pointer cursor to indicate clickability
                 >
                   <circle cx="16" cy="16" r="8" fill={activeIndex === index ? '#fff' : '#ffffff66'} />
                 </svg>
               ))
-            : null}
+            : /*
+                Fallback: If you want a fixed number of dots regardless of scene.glovesDesign,
+                you can replace the above with something like:
+                Array.from({ length: 3 }).map((_, index) => ( // Renders 3 dots for example
+                  <svg
+                    onClick={() => setIndex(index)}
+                    xmlns="http://www.w3.org/2000/svg"
+                    aria-hidden="true"
+                    role="img"
+                    width="16"
+                    height="16"
+                    preserveAspectRatio="xMidYMid meet"
+                    viewBox="0 0 32 32"
+                    key={index}
+                    style={{ cursor: 'pointer' }}
+                  >
+                    <circle cx="16" cy="16" r="8" fill={activeIndex === index ? '#fff' : '#ffffff66'} />
+                  </svg>
+                ))
+              */
+              null}
         </div>
         <div className="navigation-instructions flex">
           {windowWidth && (
@@ -530,14 +560,16 @@ function LeftPanel(props) {
   }, [props.zones]);
 
   useEffect(() => {
-    if (activeModel) {
-      setState({});
-      model.currentGlove.resetStyleText();
-      model.currentGlove.textZones.forEach((item) => {
-        model.currentGlove.updateText(item);
-      });
+    // Check if activeModel is not 0 (initial value) or undefined before proceeding
+    if (activeModel !== undefined && activeModel !== INITIAL_STATE.activeModel && model && model.currentGlove) {
+        setState({});
+        model.currentGlove.resetStyleText();
+        model.currentGlove.textZones.forEach((item) => {
+            model.currentGlove.updateText(item);
+        });
     }
   }, [activeModel, model]);
+
 
   useEffect(() => {
     const elem = document.querySelector('.leftContainers');
@@ -562,22 +594,28 @@ function LeftPanel(props) {
   }, [state.webs]);
 
   useEffect(() => {
-    console.log('[state]', state);
+    // console.log('[state]', state); // Intentionally commented out as per original
   }, [state]);
 
   const setActiveGloveModel = async () => {
     const namePosition = configBuild.Position[position];
     const name = playerPosition[namePosition].glove[0];
-    const id = model.gloves.findIndex((item) => item === name);
-    await model.setActiveGlove(id);
-    dispatch({ type: 'SET_ACTIVE_MODEL', id });
+    if (model && model.gloves) { // Add check for model and model.gloves
+        const id = model.gloves.findIndex((item) => item === name);
+        if (id !== -1) { // Ensure glove is found
+            await model.setActiveGlove(id);
+            dispatch({ type: 'SET_ACTIVE_MODEL', id });
+        }
+    }
   };
 
   const updWebs = async () => {
     for (let i = 0; i < ZONES_WEB.length; i++) {
       const item = ZONES_WEB[i];
       const val = state[item]?.value ? state[item].value : colors.white;
-      await model.currentGlove.dataChangedCallback({ key: item, value: val });
+      if (model && model.currentGlove) { // Add check
+        await model.currentGlove.dataChangedCallback({ key: item, value: val });
+      }
     }
   };
 
@@ -591,23 +629,25 @@ function LeftPanel(props) {
   };
 
   const setOptions = (value, option) => {
-    if (props.zones.includes(value)) {
+    if (props.zones.includes(value) && model && model.currentGlove) { // Add check
       model.currentGlove.dataChangedCallback({ key: value, value: option.value });
     }
     setState({ ...state, [value]: option });
   };
 
   const setOptionsText = (id, option) => {
-    model.currentGlove.changeTextStyle(Object.keys(option)[0], Object.values(option)[0]);
-    const name = model.currentGlove.textZones[id];
-    model.currentGlove.updateText(name);
-    setState({
-      ...state,
-      [name]: {
-        ...state[name],
-        ...option
-      }
-    });
+    if (model && model.currentGlove) { // Add check
+        model.currentGlove.changeTextStyle(Object.keys(option)[0], Object.values(option)[0]);
+        const name = model.currentGlove.textZones[id];
+        model.currentGlove.updateText(name);
+        setState({
+        ...state,
+        [name]: {
+            ...state[name],
+            ...option
+        }
+        });
+    }
   };
 
   const handlebutton = () => {
@@ -664,16 +704,22 @@ function LeftPanel(props) {
       defState={state}
       names={names}
       onSelection={async (option) => {
-        const id = model.gloves.findIndex((item) => item === option.value);
-        await model.setActiveGlove(id);
-        dispatch({ type: 'SET_ACTIVE_MODEL', id });
-        setOptions('activeGlove', option);
-        setOptions('webs', null);
+        if (model && model.gloves) { // Add check
+            const id = model.gloves.findIndex((item) => item === option.value);
+             if (id !== -1) { // Ensure glove is found
+                await model.setActiveGlove(id);
+                dispatch({ type: 'SET_ACTIVE_MODEL', id });
+                setOptions('activeGlove', option);
+                setOptions('webs', null);
+            }
+        }
       }}
     />
   );
 
   const getTextZones = () => {
+    if (!model || !model.currentGlove || !model.currentGlove.textZones) return null; // Add check
+
     const arr = model.currentGlove.textZones.map((item) => {
       const arrChar = item.split('');
       arrChar[0] = arrChar[0].toUpperCase();
@@ -694,13 +740,17 @@ function LeftPanel(props) {
         selected={{ value: state[model.currentGlove.textZones[index]]?.font }}
         setOptions={setOptionsText}
         setOptionsInput={(option) => {
-          model.currentGlove.updateText(option, model.currentGlove.textZones[index]);
+          if (model && model.currentGlove) { // Add check
+            model.currentGlove.updateText(option, model.currentGlove.textZones[index]);
+          }
         }}
       />
     ));
   };
 
   const getWebsNames = () => {
+    if (!model || !model.currentGlove || !model.currentGlove.websGlove) return null; // Add check
+
     const arr = model.currentGlove.websGlove.map((item) =>
       item.split('').slice(0, item.length - 2).join('')
     );
@@ -718,7 +768,9 @@ function LeftPanel(props) {
         setOptionsColor={setOptions}
         onSelection={async (option) => {
           const value = `${option.value}`;
-          model.setActiveWeb(value);
+          if (model) { // Add check
+            model.setActiveWeb(value);
+          }
           setOptions('webs', option);
         }}
       />
@@ -759,9 +811,9 @@ function LeftPanel(props) {
           </OptionAccordion>
           {scroll ? <div className="gradientsStage2" /> : null}
           {names ? getGloveNames() : null}
-          {model ? getWebsNames() : null}
+          {model && model.currentGlove ? getWebsNames() : null}
           {isLoadGlove ? getZones() : null}
-          {model ? getTextZones() : null}
+          {model && model.currentGlove ? getTextZones() : null}
         </div>
         <div className="gradientsStage2Bottom" />
       </div>
@@ -867,23 +919,32 @@ function StageSecond() {
   useEffect(() => {
     if (isLoadGlove) {
       const scenes = SceneBabylon.instance();
-      setZones(scenes.currentGlove.gloveZones.zones);
+      if (scenes && scenes.currentGlove && scenes.currentGlove.gloveZones) { // Add check
+        setZones(scenes.currentGlove.gloveZones.zones);
+      }
     }
-  }, [activeModel]);
+  }, [activeModel, isLoadGlove]); // Added isLoadGlove dependency as per original, though activeModel might be sufficient if isLoadGlove implies scenes.currentGlove exists
 
   useEffect(() => {
     if (isLoadGlove) {
       const scenes = SceneBabylon.instance();
-      setZones(scenes.currentGlove.gloveZones.zones);
+      if (scenes && scenes.currentGlove && scenes.currentGlove.gloveZones) { // Add check
+         setZones(scenes.currentGlove.gloveZones.zones);
+      }
     }
   }, [isLoadGlove]);
 
   useEffect(() => {
     const scene = SceneBabylon.instance(() => dispatch({ type: 'LOAD_GLOVE' }));
-    scene.canvas.style.opacity = 1;
-    return () => {
-      scene.canvas.style.opacity = 0;
-    };
+    if (scene && scene.canvas) { // Add check
+        scene.canvas.style.opacity = 1;
+        return () => {
+        if (scene.canvas) { // Add check for cleanup
+            scene.canvas.style.opacity = 0;
+        }
+        };
+    }
+    return () => {}; // Return empty cleanup if scene or canvas is not available
   }, [dispatch]);
 
   return (
@@ -915,6 +976,7 @@ class UI extends React.Component {
   }
 
   renderGlove() {
+    if (!this.props.glove) return null; // Add check
     return (
       <div>
         <div>{this.props.glove.id}</div>
@@ -924,6 +986,7 @@ class UI extends React.Component {
   }
 
   renderGloveObject(gloveId, gloveObject) {
+    if (!gloveObject) return null; // Add check
     return (
       <div>
         <div>{gloveObject.id}</div>
@@ -933,6 +996,7 @@ class UI extends React.Component {
   }
 
   renderSection(gloveId, section, gloveObject) {
+    if (!gloveObject || !gloveObject.zones || !gloveObject.zones.zones) return null; // Add check
     const gloveZones = gloveObject.zones.zones;
     return (
       <div>
@@ -964,18 +1028,29 @@ class UI extends React.Component {
 ------------------------ */
 export default function initUI(app) {
   const promise = new Promise((resolve) => {
-    const root = ReactDOM.createRoot(document.getElementById('ui-container'));
+    const rootElement = document.getElementById('ui-container');
+    if (rootElement) { // Add check
+        const root = ReactDOM.createRoot(rootElement);
 
-    root.render(
-      <React.StrictMode>
-        <IsopenContextProvider>
-          <App />
-        </IsopenContextProvider>
-      </React.StrictMode>
-    );
+        root.render(
+        <React.StrictMode>
+            <IsopenContextProvider>
+            <App />
+            </IsopenContextProvider>
+        </React.StrictMode>
+        );
 
-    // Alternatively, you can render the UI component:
-    // root.render(<UI glove={app.glove} messenger={app.messenger} onLoaded={resolve} />);
+        // Alternatively, you can render the UI component:
+        // if (app && app.glove && app.messenger) { // Add checks for app properties
+        //   root.render(<UI glove={app.glove} messenger={app.messenger} onLoaded={resolve} />);
+        // } else {
+        //   resolve(); // Resolve promise if app properties are missing to avoid hanging
+        // }
+        resolve(); // Assuming App rendering doesn't need to wait for UI class onLoaded
+    } else {
+        console.error("UI container 'ui-container' not found.");
+        resolve(); // Resolve promise if container not found
+    }
   });
 
   return promise;
