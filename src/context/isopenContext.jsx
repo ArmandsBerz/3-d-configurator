@@ -860,9 +860,9 @@ function RightPanel(props) {
         </UpAccordion>
         <button onClick={routeChange} className="cta rightButtonCTA">
           <p>
-            {props.stage === 2 && windowWidth && !accordionOpen && 'Call To Action'}
-            {props.stage === 2 && windowWidth && accordionOpen && 'Call To Action'}
-            {props.stage === 2 && !windowWidth && !accordionOpen && 'Call To Action'}
+            {props.stage === '2' && windowWidth && !accordionOpen && 'Call To Action'}
+            {props.stage === '2' && windowWidth && accordionOpen && 'Call To Action'}
+            {props.stage === '2' && !windowWidth && !accordionOpen && 'Call To Action'}
           </p>
           <span>&rarr;</span>
         </button>
