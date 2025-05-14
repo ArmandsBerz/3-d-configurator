@@ -294,8 +294,9 @@ const OptionAccordion = (props) => {
   };
 
   // We now support only Stage Two, so always render the default branch.
+  // MODIFIED LINE: Removed 'up-accordion', added conditional 'accordionBuild'
   return (
-    <div className={`option-accordion up-accordion ${open ? ' open' : ''} ${isMizedOpen ? ' FirstClosed' : ''}`}>
+    <div className={`option-accordion ${open ? ' open' : ''} ${isMizedOpen ? ' FirstClosed' : ''} ${props.title === 'Build' ? 'accordionBuild' : ''}`}>
       <button style={{ marginBottom: '0px' }} className="w-full" onClick={props.title === 'Build' ? handleBuild : openButton}>
         {(isMizedOpen && windowWidth) && <MiddleContainer />}
         <div onClick={handleClick} className="accordion-header h-14 py-3.5 px-6 flex items-center">
