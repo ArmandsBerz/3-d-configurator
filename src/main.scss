@@ -363,15 +363,6 @@ p.second-text ~ .color {
   margin-left: auto;
 }
 
-.tool .hero {
-  max-height: 50px;
-  overflow-y: hidden;
-  transition: 0.5s ease;
-}
-
-.tool.tool-selected .hero {
-  max-height: 1000px;
-}
 
 .tool-content {
   padding: 1rem;
@@ -437,14 +428,6 @@ header .color {
 
 .extra-tools-container .tool-content {
   padding-top: 1rem;
-}
-
-.extra-tools-container .tool .hero {
-  height: 50px;
-}
-
-.extra-tools-container .tool.tool-selected .hero {
-  height: calc(100vh - 180px);
 }
 
 /* --- Responsive Adjustments & Additional CTA Styles (file 1) --- */
@@ -1123,7 +1106,6 @@ h2, h3, h4, p {
 
 /* --- Media Queries (min-width: 920px) for File 2 --- */
 @media (min-width: 920px) {
-  /* HERO component removed here */
   
   .page-header {
     /* Use the more complete page-header from file 2 (see below) */
@@ -1216,8 +1198,6 @@ h2, h3, h4, p {
     width: 100%;
     padding: 0px 20px;
   }
-  
-  /* HERO component removed here */
   
   .page-header {
     margin-top: 93px !important;
