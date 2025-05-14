@@ -760,20 +760,9 @@ function BuildModal(props) {
       <div className={`build-modal-content${props.show ? ' animate-bottom' : ''}`}>
         <div className="build-modal-header">
           <h2 style={{ color: 'white', fontSize: '16px' }}>{props.title}</h2>
-          <button className="close-button" onClick={props.handleClose}>
-            <svg width="22" height="22" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M1 1L21 21M21 1L11 11L1 21" stroke="white" strokeWidth="2" />
-            </svg>
-          </button>
         </div>
         <div className="build-modal-body">
           {getBuild()}
-          <div className="build-modal-btn">
-            <button className="cta mt-4" onClick={props.handleClose}>
-              <p>Call To Action</p>
-              <span>&rarr;</span>
-            </button>
-          </div>
         </div>
       </div>
     </div>
