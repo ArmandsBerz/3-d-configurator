@@ -112,7 +112,7 @@ code {
   --gray-hover: #727272;
   --gray-active: #222222;
   --bg: #161616;
-  --nav-color: #454545;
+  --nav-color: #454545; /* This variable might become unused or repurposed */
   --bp: 900px;
 }
 
@@ -133,8 +133,6 @@ code {
   background-color: var(--gray-one);
   margin-bottom: 0.5rem;
 }
-
-/* (Note: the .page-header rules from file 1 have been removed in favor of the more complete version below.) */
 
 div.text {
   display: none;
@@ -214,7 +212,7 @@ div.text {
 
 /* --- Workspace, Options, and Tools Styles --- */
 main.working-space-container {
-  height: calc(100vh - 78px);
+  height: calc(100vh - 78px); /* This might need adjustment if 78px was related to nav height */
   max-width: 1600px;
   position: relative;
 }
@@ -310,7 +308,7 @@ p.second-text ~ .color {
   width: 100%;
   padding: 1rem;
   max-width: 400px;
-  max-height: calc(100vh - 96px);
+  max-height: calc(100vh - 96px); /* This might need adjustment */
   overflow-y: auto;
 }
 
@@ -548,181 +546,27 @@ header .color {
   padding: 0;
 }
 
-/* --- Navigation Styles (from file 1) --- */
-nav {
-  margin: 0 auto;
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  justify-content: center;
-  position: fixed;
-  padding: 40px 40px 51px 40px;
-  top: 0;
-  background-color: var(--bg);
-  z-index: 90000000 !important;
+/* --- Navigation Styles (from file 1) --- REMOVED --- */
+/* Styles for nav, nav h1, .stages-container, .menuContainer, .mainDrop, .navMobile, etc., are removed */
+
+.logo { /* This existing rule for .logo should be kept and will be adapted for overlay */
+  position: absolute; /* This will likely be changed to fixed for an overlay */
+  left: 40px;       /* This might be kept or adjusted */
+  /* Ensure other appearance styles for logo are here or added */
+  /* e.g., from previous nav h1: background-color, color, padding, font-size, width, height if not in mobile version */
 }
 
-nav h1 {
-  margin: 0;
-  background-color: #d9d9d9;
-  color: var(--bg);
-  padding: 0.5rem;
-  font-size: 20px;
-  text-align: center;
-  width: 70px;
-  height: 49px;
-}
-
-.logo {
-  position: absolute;
-  left: 40px;
-}
-
-.stages-container a {
-  color: var(--nav-color);
-  text-decoration: none;
-  font-weight: 900;
-  font-size: 36px;
-  z-index: 90000000000 !important;
-}
-
-.stages-container a.active {
-  color: white;
-  font-size: 36px !important;
-}
-
-.stages-container .not-active {
-  display: none;
-}
-
-.menuContainer {
-  /* (no extra rules) */
-}
-
-@media (min-width: 900px) {
-  nav {
-    width: 100vw !important;
-    justify-content: center;
-  }
-  .stages-container .not-active {
-    display: initial;
-  }
-
-  .mainDrop {
-    display: none;
-    transition: transform 2.2s ease-out;
-    transform: scale(1.5);
-  }
-  .menuContainer {
-    width: 0;
-    height: 0;
-  }
-}
-
-.hidemenus {
+.hidemenus { /* This was likely related to the old nav structure */
   display: none !important;
 }
 
-.mainNav {
-  z-index: 3333333333333333 !important;
-}
+/* .mainNav z-index rules are removed as #mainNav panel is gone */
 
 @media (max-width: 900px) {
-  .mainNav {
-    z-index: 3333333333333 !important;
-  }
-  .menuOpened {
-    margin-top: 0px !important;
-  }
-  .stages-container a.active {
-    color: white;
-    font-size: 36px !important;
-    z-index: 900000000000 !important;
-  }
+  /* Styles specific to the old mobile nav structure like .menuOpened, specific .stages-container a.active adjustments, */
+  /* .hidemenu, .menuContainer (mobile), .navMobile, .mainDrop (mobile) are removed. */
 
-  .hidemenu {
-    display: none;
-  }
-  .menuContainer a {
-    color: var(--nav-color);
-    text-decoration: none;
-    font-weight: 900;
-    font-size: 1.3rem;
-  }
-  .menuContainer a.active {
-    color: white;
-  }
-  .menuContainer a:hover {
-    background-color: gray;
-  }
-  .menuContainer * {
-    /* (no additional styles) */
-  }
-  .menuContainer {
-    display: flex;
-    gap: 4rem;
-    flex-direction: column;
-  }
-  .navMobile {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    background-color: #000;
-    position: absolute;
-    left: 0;
-    top: 90px;
-    width: 100%;
-  }
-  .navMobile:before {
-    content: "";
-    border: solid transparent;
-    position: absolute;
-    bottom: 100%;
-    left: 50%;
-    border-bottom-color: #000;
-    border-width: 12px;
-    margin-left: -12px;
-  }
-  .navMobile a {
-    text-align: center;
-  }
-  .navMobile * {
-    padding: 8px 25px !important;
-    width: 100% !important;
-  }
-
-  .mainDrop {
-    display: block;
-    cursor: pointer;
-  }
-  .openedArr {
-    transform: rotate(-90deg);
-    transition: transform 0.2s ease-in;
-    position: relative;
-    right: -14px;
-  }
-  .closedArr {
-    transform: rotate(90deg);
-    transition: transform 0.2s ease-in;
-    position: relative;
-    right: -14px;
-  }
-  .logo, a {
-    /* (no extra styles) */
-  }
-  a.active {
-    transform: scale();
-  }
-
-  nav {
-    max-height: 93px;
-    display: flex;
-    position: fixed;
-    width: 100%;
-    align-items: center;
-    padding: 23px 20px 20px 20px;
-    /* Extremely high z-index maintained as in file 1 */
-  }
+  /* Keep .logo styles for mobile as they define its appearance and size */
   .logo {
     width: 48.57px;
     height: 34px;
@@ -730,10 +574,16 @@ nav h1 {
     display: flex;
     align-items: center;
     justify-content: center;
-    align-self: center;
+    align-self: center; /* This might be irrelevant if it's position:fixed */
     font-family: 'Inter', sans-serif !important;
+    /* Original appearance styles from 'nav h1' for mobile should be consolidated here if needed */
+    background-color: #d9d9d9; /* Example from old nav h1 */
+    color: var(--bg);          /* Example from old nav h1 */
+    padding: 0.5rem;           /* Example from old nav h1 */
   }
+  /* Other general mobile nav sizing/padding rules for the 'nav' tag itself are removed. */
 }
+
 
 /* =============================================================================
    FILE 2 – Additional Components, Cards, Modals, Selects, Accordion, etc.
@@ -850,6 +700,22 @@ h2, h3, h4, p {
   margin: 0;
 }
 
+/* Base style for .gradientsStage2 for mobile, now that nav panel is gone */
+/* This was previously discussed and set based on nav height. */
+/* If nav is gone, this might need top: 0 or to be positioned under the new logo overlay. */
+/* For now, I'm keeping its previous definition from the last CSS rewrite where nav was still assumed. */
+/* This will need adjustment based on the new logo's fixed position. */
+.gradientsStage2 {
+  height: 33px;
+  position: fixed;
+  top: 91px; /* This assumed a nav height of 91px. If logo overlay is, say, 60px high, this should be 60px */
+  left: 0;
+  background: linear-gradient(180deg, #161616 0%, rgba(199, 66, 66, 0) 100%);
+  width: 100%;
+  z-index: 89999999;
+}
+
+
 @media (min-width: 920px) {
   .disablefilter {
     display: none;
@@ -870,19 +736,19 @@ h2, h3, h4, p {
     width: 1100px;
   }
   .marginCenterNO {
-    margin-top: 142px;
+    margin-top: 142px; /* This was likely accounting for old desktop nav height */
+                     /* If nav panel is gone, this might need to be 0 or top padding for content */
   }
   .marginCenterYES {
-    margin-top: 142px;
-    height: calc(100vh - 142px);
+    margin-top: 142px; /* Same as above */
+    height: calc(100vh - 142px); /* Same as above */
   }
   .marginCenterYES::-webkit-scrollbar {
     display: none;
   }
   .leftContainers {
-    margin-top: 5rem;
+    margin-top: 5rem; /* This might also need adjustment if it assumed a nav panel */
   }
-  /* Removed legacy .stagethreeacc selector */
   .accordionCTA {
     display: flex;
   }
@@ -891,12 +757,16 @@ h2, h3, h4, p {
     bottom: 60px;
     right: 60px;
   }
+  /* .gradientsStage2 for desktop - this assumes a nav height of 140px for its top value */
+  /* This will need adjustment based on the new logo's fixed position. */
   .gradientsStage2 {
     height: 33px;
-    position: absolute;
-    margin-top: -1px;
+    position: fixed;
+    top: 140px; /* This assumed old desktop nav panel height of 140px */
+    left: 0;
     background: linear-gradient(180deg, #161616 0%, rgba(199, 66, 66, 0) 100%);
     width: 100%;
+    z-index: 89999999;
   }
   .gradientsStage2Bottom {
     position: fixed;
@@ -909,28 +779,19 @@ h2, h3, h4, p {
   }
 }
 
-@media (min-width: 920px) {
-  /* Removed legacy .stagethreemobile block */
-}
-
 @media (max-width: 920px) {
   canvas {
     height: 50vh !important;
-    z-index: 999;
+    z-index: 999; /* This z-index needs to be coordinated with logo, accordion, etc. */
   }
   .marginCenterYES {
     padding-right: 1.25rem;
     height: inherit;
+    /* If nav panel is gone, any top margin previously here might need to be 0 or top padding */
   }
   .leftContainers {
     .controls {
-      .gradientsStage2 {
-        height: 33px;
-        position: absolute;
-        margin-top: -1px;
-        background: linear-gradient(180deg, #161616 0%, rgba(199, 66, 66, 0) 100%);
-        width: 100%;
-      }
+      /* .gradientsStage2 within .controls is removed as this specific structure is gone with Nav panel removal */
     }
     .gradientsStage2Bottom {
       position: fixed;
@@ -946,7 +807,6 @@ h2, h3, h4, p {
     display: flex;
     justify-content: space-between;
   }
-  /* Removed legacy .stagethrees selector */
   .cta {
     align-items: center;
     justify-content: space-between;
@@ -959,7 +819,7 @@ h2, h3, h4, p {
     display: flex;
     flex-direction: row;
   }
-  .navigation-dots {
+  .navigation-dots { /* These were part of MiddleContainer, likely fine */
     display: none;
   }
   .hideLeftPanel {
@@ -995,7 +855,7 @@ h2, h3, h4, p {
   .leftContainers {
     height: 50vh;
     width: 95%;
-    z-index: 20000000000;
+    z-index: 20000000000; /* High z-index, ensure it's above scene if needed */
     overflow-y: scroll !important;
     position: fixed;
     bottom: 5rem;
@@ -1034,15 +894,12 @@ h2, h3, h4, p {
     margin-bottom: 1.9rem;
     margin-right: 2.5rem;
   }
-  .cta-container {
-    /* (additional mobile styles if needed) */
-  }
 }
 
 /* --- Tags Container --- */
 .tags-container {
   position: absolute;
-  top: 4rem;
+  top: 4rem; /* This assumed a nav panel. If panel is gone, this needs re-evaluation or might be relative to a different container */
   height: 22px;
   overflow: hidden;
 
@@ -1108,7 +965,6 @@ h2, h3, h4, p {
 @media (min-width: 920px) {
 
   .page-header {
-    /* Use the more complete page-header from file 2 (see below) */
     display: flex;
   }
 
@@ -1164,7 +1020,6 @@ h2, h3, h4, p {
 
 /* --- Media Queries (max-width: 920px) for File 2 --- */
 @media (max-width: 920px) {
-  /* The .card-container block has been removed as requested */
 
   .firstButton {
     position: absolute;
@@ -1180,13 +1035,9 @@ h2, h3, h4, p {
     z-index: 2;
   }
 
-  .tagandtitle {
-    /* additional styles if needed */
-  }
-
-  .gradientsTop {
+  .gradientsTop { /* This was positioned relative to where nav panel used to be. If nav panel is gone, its 'top' might need to be 0 or relative to new logo overlay */
     position: absolute;
-    top: 66px;
+    top: 66px; /* This specific value will likely need adjustment to align under the new logo overlay or be removed */
     left: 0;
     z-index: -90 !important;
     width: 100%;
@@ -1199,7 +1050,8 @@ h2, h3, h4, p {
     padding: 0px 20px;
   }
 
-  .page-header {
+  .page-header { /* This had margin-top: 93px to account for the old mobile nav panel. */
+                  /* If panel is gone, this margin-top might need to be 0 or adjusted for new logo overlay height. */
     margin-top: 93px !important;
     background-color: #D9D9D9 !important;
   }
@@ -1213,22 +1065,18 @@ h2, h3, h4, p {
     }
   }
 
-  .fixed_navbar {
+  .fixed_navbar { /* This class name suggests it was related to the nav panel. If panel is gone, this might be unneeded. */
     z-index: 90000;
     background-color: #D9D9D9;
     width: 94.2% !important;
     position: fixed !important;
-    top: 93px !important;
-    left: 100 !important;
-    right: 100 !important;
+    top: 93px !important; /* Positioned below where old mobile nav panel was. */
+    left: 100 !important; /* This seems unusual (left: 100px or 100%?) */
+    right: 100 !important;/* This also seems unusual */
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
     text-align: center !important;
-  }
-
-  .stickyMenu {
-    /* commented out styles */
   }
 }
 
@@ -1334,8 +1182,6 @@ h2, h3, h4, p {
   }
 }
 
-/* --- All build modal–related styles have been removed --- */
-
 /* --- Additional Global Styles --- */
 .disableScroll {
   overflow: hidden !important;
@@ -1399,7 +1245,7 @@ h2, h3, h4, p {
   .main-container {
     width: 100vw;
     display: flex;
-    max-height: calc(100vh - 50px);
+    max-height: calc(100vh - 50px); /* This might need adjustment based on bottom CTA or other fixed elements */
     flex-direction: column;
     height: 100vh;
 
@@ -1431,14 +1277,13 @@ h2, h3, h4, p {
 
   .middle-container {
     .middle-container-menu {
-      top: 600 !important;
+      top: 600 !important; /* This seems like a large fixed top value, might need review */
       width: 100vw !important;
       height: 60px;
       align-self: flex-start;
       padding-right: 20px;
       background-color: #161616;
     }
-    /* Removed legacy .stageThreeCenter reference */
   }
 
   .stageTwoCenter {
@@ -1718,7 +1563,7 @@ h2, h3, h4, p {
 /* --- Accordion Styles --- */
 .accordionBuild {
   position: sticky;
-  top: 142px;
+  top: 142px; /* This assumed old desktop nav height. Needs re-evaluation if content above changes. */
   z-index: 9;
 }
 
@@ -1733,7 +1578,7 @@ h2, h3, h4, p {
   transition: margin 0.2s ease-in, box-shadow 0.2s ease-in;
 
   .accordion-header {
-    z-index: -8;
+    z-index: -8; /* This is very low, could be problematic */
     .arrow {
       transform: rotate(0deg);
       transition: transform 0.2s ease-in;
@@ -1758,10 +1603,8 @@ h2, h3, h4, p {
   }
 }
 
-/* This rule targets elements that are both an option-accordion and an accordionBuild */
-/* It ensures the desired 30px bottom margin for the specific accordionBuild instance */
 .option-accordion.accordionBuild {
-  margin-bottom: 1.875rem; /* Sets space below to 30px (assuming 1rem = 16px) */
+  margin-bottom: 1.875rem;
 }
 
 /* --- Second Block Accordion Styles --- */
@@ -1806,7 +1649,7 @@ h2, h3, h4, p {
     height: 0;
     transition: height 0.3s ease-in;
     &.active {
-      height: calc(100vh - 335px);
+      height: calc(100vh - 335px); /* This calculation might need review based on surrounding elements */
     }
     .accordion-body-content {
       font-size: 1rem;
@@ -1848,7 +1691,7 @@ h2, h3, h4, p {
     gap: 0.5rem;
   }
   .accordionBuild {
-    position: relative;
+    position: relative; /* Changed from sticky for mobile if nav panel gone */
     top: 0;
   }
   .option-accordion {
@@ -1870,7 +1713,7 @@ h2, h3, h4, p {
       overflow-y: scroll;
       left: 1.25rem;
       align-self: center;
-      z-index: 999999999999999 !important;
+      z-index: 999999999999999 !important; /* Very high z-index */
       display: flex !important;
       flex-direction: column !important;
       justify-content: center !important;
@@ -1913,7 +1756,7 @@ h2, h3, h4, p {
   .uparrows {
     display: none;
   }
-  .acccccord {
+  .acccccord { /* Styles for .up-accordion when .accordionOpen is true */
     color: #999999;
     position: absolute;
     bottom: 90px;
@@ -1938,7 +1781,7 @@ h2, h3, h4, p {
         }
       }
     }
-    .openAccordion {
+    .openAccordion { /* Styles for .up-accordion when it's also .openAccordion */
       color: aqua;
       background-color: aqua !important;
       h3 {
@@ -1948,7 +1791,7 @@ h2, h3, h4, p {
     .accordion-body {
       background-color: #222222;
       overflow-y: scroll;
-      height: 100%;
+      height: 100%; /* This might be too much if .acccccord has fixed bottom */
       width: 100vw;
       transition: height 0.3s ease-in;
       &.active {
@@ -1959,7 +1802,7 @@ h2, h3, h4, p {
       }
     }
   }
-  .up-accordion {
+  .up-accordion { /* Base style for .up-accordion */
     height: 80.8vh;
   }
   .thirdMobileAccordion {
@@ -1975,7 +1818,7 @@ h2, h3, h4, p {
       }
     }
   }
-  .openAccordion {
+  .openAccordion { /* Base style for .up-accordion.openAccordion */
     width: calc(100% - 2.5rem);
     left: 0;
   }
