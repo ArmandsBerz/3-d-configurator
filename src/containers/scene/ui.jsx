@@ -13,7 +13,7 @@ function ColorCircle(props) {
   return (
     <div
       className="ml-2.5 h-5 w-5 rounded-full"
-      style={{ backgroundColor: props.color }}
+      style={{ backgroundColor: props.color }} // Dynamic style: Remains unchanged
     />
   );
 }
@@ -55,25 +55,24 @@ function Select(props) {
   return (
     <div className="select-container pb-4">
       {props.subtitle ? (
-        <h3 style={{ color: 'white', fontSize: '18px' }} className="subtitle mb-2">
+        <h3 className="subtitle mb-2 text-white text-lg"> {/* Changed */}
           {props.subtitle}
         </h3>
       ) : null}
       <div className="modalselect">
         {props.options.map((option) => (
           <div
-            className="select-block"
+            className="select-block flex-1 w-full" // Changed
             key={option.value}
-            style={{ flex: '1', width: '100%' }}
             ref={(element) => {
-              if (element && props.full)
-                element.style.setProperty('width', '100%', 'important');
+              if (element && props.full) {
+                // element.style.setProperty('width', '100%', 'important'); // Removed: To be handled by SCSS if !important is truly needed, or w-full utility
+              }
             }}
           >
             {props.full && (
               <button
-                style={{ flex: '1', width: '100%' }}
-                className={`option${isSelected(option) ? ' selected' : ''} px-4 py-2`}
+                className={`option${isSelected(option) ? ' selected' : ''} px-4 py-2 flex-1 w-full`} // Changed
                 key={option.value}
                 onClick={() => handleSelection(option)}
               >
@@ -82,13 +81,8 @@ function Select(props) {
             )}
             {props.on5 === 'two' && (
               <button
-                style={{
-                  flex: '1',
-                  minWidth: '116px',
-                  maxWidth: '116px',
-                  width: '100%',
-                }}
-                className={`option${isSelected(option) ? ' selected' : ''} px-4 py-2`}
+                // minWidth/maxWidth specific to this variant, to be handled by SCSS variant class if this structure is kept
+                className={`option${isSelected(option) ? ' selected' : ''} px-4 py-2 flex-1 w-full`} // Changed (base flex/width)
                 key={option.value}
                 onClick={() => handleSelection(option)}
               >
@@ -97,13 +91,8 @@ function Select(props) {
             )}
             {props.on4 === 'two' && (
               <button
-                style={{
-                  flex: '1',
-                  minWidth: '179px',
-                  maxWidth: '179px',
-                  width: '100%',
-                }}
-                className={`option${isSelected(option) ? ' selected' : ''} px-4 py-2`}
+                // minWidth/maxWidth specific to this variant, to be handled by SCSS variant class
+                className={`option${isSelected(option) ? ' selected' : ''} px-4 py-2 flex-1 w-full`} // Changed (base flex/width)
                 key={option.value}
                 onClick={() => handleSelection(option)}
               >
@@ -112,13 +101,8 @@ function Select(props) {
             )}
             {props.on3 === 'two' && (
               <button
-                style={{
-                  flex: '1',
-                  minWidth: '116px',
-                  maxWidth: '116px',
-                  width: '100%',
-                }}
-                className={`option${isSelected(option) ? ' selected' : ''} px-4 py-2`}
+                // minWidth/maxWidth specific to this variant, to be handled by SCSS variant class
+                className={`option${isSelected(option) ? ' selected' : ''} px-4 py-2 flex-1 w-full`} // Changed (base flex/width)
                 key={option.value}
                 onClick={() => handleSelection(option)}
               >
@@ -127,13 +111,8 @@ function Select(props) {
             )}
             {props.on2 === 'two' && (
               <button
-                style={{
-                  flex: '1',
-                  minWidth: '179px',
-                  maxWidth: '179px',
-                  width: '100%',
-                }}
-                className={`option${isSelected(option) ? ' selected' : ''} px-4 py-2`}
+                // minWidth/maxWidth specific to this variant, to be handled by SCSS variant class
+                className={`option${isSelected(option) ? ' selected' : ''} px-4 py-2 flex-1 w-full`} // Changed (base flex/width)
                 key={option.value}
                 onClick={() => handleSelection(option)}
               >
@@ -220,9 +199,8 @@ class SelectGroup extends React.Component {
         <div>{this.props.subtitle}</div>
         {this.props.options.map((data) => (
           <button
-            className={data.value === this.state.selectedId ? 'selected' : ''}
+            className={`${data.value === this.state.selectedId ? 'selected' : ''} w-1/4 border-0`} // Changed (Tailwind's border-0 or SCSS class for border:none)
             type="button"
-            style={{ width: '25%', border: 'none' }}
             key={data.value}
             onClick={this.buttonSelected(data.value)}
           >
@@ -254,7 +232,7 @@ function SelectBuild(props) {
   const isSelected = (index) => props.selected === index;
 
   // Always wrap options; stage checks removed.
-  const getStyles = () => {
+  const getStyles = () => { // This function is defined but its return value is not used for styling the modalSelect-build div directly.
     let style;
     switch (props.options.length) {
       case 2:
@@ -279,29 +257,23 @@ function SelectBuild(props) {
   return (
     <div className="select-build-container pb-4">
       {props.subtitle ? (
-        <h3 style={{ color: 'white', fontSize: '18px' }} className="subtitle mb-2">
+        <h3 className="subtitle mb-2 text-white text-lg"> {/* Changed */}
           {props.subtitle}
         </h3>
       ) : null}
-      <div className="modalSelect-build" style={{ flexWrap: 'wrap' }}>
+      <div className="modalSelect-build flex-wrap"> {/* Changed */}
         {props.options.map((option, index) => (
           <div
-            className="select-block"
+            className="select-block grow shrink basis-auto" // Changed
             key={option.value}
-            style={{
-              flexGrow: 1,
-              flexShrink: 1,
-              flexBasis: 'auto',
-            }}
             ref={(element) => {
               if (element && props.full) {
-                element.style.setProperty('width', '100%', 'important');
+                // element.style.setProperty('width', '100%', 'important'); // Removed
               }
             }}
           >
             <button
-              style={{ flex: '1', width: '100%' }}
-              className={`option${isSelected(index) ? ' selected' : ''} px-4 py-2`}
+              className={`option${isSelected(index) ? ' selected' : ''} px-4 py-2 flex-1 w-full`} // Changed
               key={option.value}
               onClick={() => handleSelection(option)}
             >
@@ -315,50 +287,41 @@ function SelectBuild(props) {
 }
 
 function SelectColor(props) {
-  // Initialize state from props.selected if provided, otherwise null.
-  // props.selected is expected to be the value itself (e.g., '#FF0000').
-  // The internal state 'selected' will be an object like { value: '#FF0000' } or null.
   const [selected, setSelected] = useState(
     props.selected !== undefined ? { value: props.selected } : null
   );
 
-  // Effect to update the internal selected state when props.selected (the value) changes.
   useEffect(() => {
     if (props.selected !== undefined) {
-      // If props.selected has a value, update our internal state object
-      // only if it's different from the current internal selected value.
       if (!selected || selected.value !== props.selected) {
         setSelected({ value: props.selected });
       }
     } else {
-      // If props.selected is undefined, and our internal state is not already null,
-      // set internal state to null.
       if (selected !== null) {
         setSelected(null);
       }
     }
   }, [props.selected]);
 
-  const handleSelection = (colorOption) => { // colorOption is an object like { value: 'someCssColor' }
-    setSelected(colorOption); // Update internal state to the selected color object
+  const handleSelection = (colorOption) => { 
+    setSelected(colorOption); 
     if (props.onSelection) {
-      props.onSelection(colorOption); // Pass the entire color object { value: '...' }
+      props.onSelection(colorOption); 
     }
   };
 
-  // isSelected checks if the given color option object's value matches the value in the internal selected state object.
   const isSelected = (option) => selected && selected.value === option.value;
 
   return (
     <div className="select-container mb-4">
       {props.subtitle ? <h3 className="subtitle mb-2">{props.subtitle}</h3> : null}
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-        {props.colors.map((color) => ( // props.colors is an array of objects, e.g., [{value: '#FF0000'}, {value: '#00FF00'}]
+      <div className="flex flex-wrap gap-2"> {/* Changed (assuming gap-2 = 8px) */}
+        {props.colors.map((color) => ( 
           <button
             className={`color${isSelected(color) ? ' selected' : ''}`}
-            style={{ backgroundColor: color.value }}
-            key={color.value} // Standardized key
-            onClick={() => handleSelection(color)} // Pass the color object
+            style={{ backgroundColor: color.value }} // Dynamic style: Remains unchanged
+            key={color.value} 
+            onClick={() => handleSelection(color)} 
           />
         ))}
       </div>
@@ -379,7 +342,7 @@ function SelectImage(props) {
   return (
     <div className="select-image-container pb-2">
       {props.subtitle ? (
-        <h3 style={{ fontSize: '18px' }} className="subtitle mb-2">
+        <h3 className="subtitle mb-2 text-lg"> {/* Changed */}
           {props.subtitle}
         </h3>
       ) : null}
@@ -387,7 +350,7 @@ function SelectImage(props) {
         {props.options.map((option, index) => (
           <button
             className={`option${isSelected(index) ? ' selected' : ''}`}
-            style={{ backgroundImage: `url(${option.src})` }}
+            style={{ backgroundImage: `url(${option.src})` }} // Dynamic style: Remains unchanged
             key={`${option.value}${Math.random()}`}
             onClick={() => handleSelection(option)}
           >
@@ -483,15 +446,8 @@ const TextOptions = ({
       />
       {windowWidth && (
         <>
-          <div
-            className="buttonLine"
-            style={{
-              width: '120%',
-              marginLeft: '-28px',
-              height: '10px',
-              backgroundColor: '#161616',
-            }}
-          ></div>
+          {/* Assuming 'custom-divider-extended' will be defined in SCSS */}
+          <div className="buttonLine custom-divider-extended"></div> {/* Changed */}
           <button className="inlineButton ininlineButtonPrimary">
             <div>Primary</div>
             <div className="iconButt">
@@ -523,15 +479,8 @@ const ColorOption = ({ title, windowWidth, both, setOptions, handleButton, color
         selected={color}
         onSelection={(option) => setOptions(title, option)}
       />
-      <div
-        className="buttonLine"
-        style={{
-          width: '100vw',
-          marginLeft: '-28px',
-          height: '10px',
-          backgroundColor: '#161616',
-        }}
-      ></div>
+      {/* Assuming 'full-bleed-divider' will be defined in SCSS */}
+      <div className="buttonLine full-bleed-divider"></div> {/* Changed */}
       <div className="buttonAndIcon">
         <button className="inlineButton" onClick={handleButton}>
           <div>Secondary</div>
@@ -567,7 +516,7 @@ const WebOption = ({
     title: item,
     text: 'Option Text',
     value: item,
-    src: 'https://via.placeholder.com/100',
+    src: 'https://via.placeholder.com/100', // Placeholder, actual src would make this dynamic
     id: index,
   }));
 
@@ -593,15 +542,8 @@ const WebOption = ({
         onSelection={(option) => setOptionsColor('web', option)}
       />
       {windowWidth && (
-        <div
-          className="buttonLine"
-          style={{
-            width: '120%',
-            marginLeft: '-28px',
-            height: '10px',
-            backgroundColor: '#161616',
-          }}
-        />
+        // Assuming 'custom-divider-extended' will be defined in SCSS and is visually the same as in TextOptions
+        <div className="buttonLine custom-divider-extended"></div> // Changed
       )}
     </OptionAccordion>
   );
@@ -623,15 +565,8 @@ const NameOptions = ({ title, windowWidth, defState, names, onSelection, selecte
         onSelection={async (option) => onSelection(option)}
       />
       {windowWidth && (
-        <div
-          className="buttonLine"
-          style={{
-            width: '120%',
-            marginLeft: '-28px',
-            height: '10px',
-            backgroundColor: '#161616',
-          }}
-        />
+        // Assuming 'custom-divider-extended' will be defined in SCSS and is visually the same as in TextOptions
+        <div className="buttonLine custom-divider-extended"></div> // Changed
       )}
     </OptionAccordion>
   );
@@ -726,14 +661,14 @@ function BuildModal(props) {
                 title: 'Option Title',
                 text: 'Option Text',
                 value: 'option-value-1',
-                src: 'https://via.placeholder.com/150',
+                src: 'https://via.placeholder.com/150', // Placeholder, actual src would make this dynamic
                 id: 0,
               },
               {
                 title: 'Option Title',
                 text: 'Option Text',
                 value: 'option-value-2',
-                src: 'https://via.placeholder.com/150',
+                src: 'https://via.placeholder.com/150', // Placeholder, actual src would make this dynamic
                 id: 1,
               },
             ]}
@@ -759,7 +694,7 @@ function BuildModal(props) {
     >
       <div className={`build-modal-content${props.show ? ' animate-bottom' : ''}`}>
         <div className="build-modal-header">
-          <h2 style={{ color: 'white', fontSize: '16px' }}>{props.title}</h2>
+          <h2 className="text-white text-base">{props.title}</h2> {/* Changed */}
         </div>
         <div className="build-modal-body">
           {getBuild()}

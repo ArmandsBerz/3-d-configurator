@@ -114,6 +114,14 @@ code {
   --bg: #161616;
   --nav-color: #454545; /* This variable might become unused or repurposed */
   --bp: 900px;
+
+  /* Consider a z-index scale if you overhaul z-indices later */
+  /* Example:
+  --z-sticky: 100;
+  --z-modal-backdrop: 900;
+  --z-modal-content: 901;
+  --z-debug: 99999;
+  */
 }
 
 /* =============================================================================
@@ -153,7 +161,7 @@ div.text {
 }
 
 .selected.to-focus {
-  z-index: 10;
+  z-index: 10; // Note: relatively low z-index, check if intended
   padding: 0;
   position: fixed;
   left: 0;
@@ -554,6 +562,9 @@ header .color {
   left: 40px;       /* This might be kept or adjusted */
   /* Ensure other appearance styles for logo are here or added */
   /* e.g., from previous nav h1: background-color, color, padding, font-size, width, height if not in mobile version */
+  /* Added properties from JSX inline style (StageSecond logo) */
+  font-family: 'Inter', sans-serif; /* Overrides global '*' if 'Inter' is desired specifically here */
+  font-weight: 500;
 }
 
 .hidemenus { /* This was likely related to the old nav structure */
@@ -575,11 +586,12 @@ header .color {
     align-items: center;
     justify-content: center;
     align-self: center; /* This might be irrelevant if it's position:fixed */
-    font-family: 'Inter', sans-serif !important;
+    font-family: 'Inter', sans-serif !important; /* Original had !important for Inter */
     /* Original appearance styles from 'nav h1' for mobile should be consolidated here if needed */
     background-color: #d9d9d9; /* Example from old nav h1 */
     color: var(--bg);          /* Example from old nav h1 */
     padding: 0.5rem;           /* Example from old nav h1 */
+    /* font-weight: 500; from base .logo is inherited unless overridden */
   }
   /* Other general mobile nav sizing/padding rules for the 'nav' tag itself are removed. */
 }
@@ -712,7 +724,7 @@ h2, h3, h4, p {
   left: 0;
   background: linear-gradient(180deg, #161616 0%, rgba(199, 66, 66, 0) 100%);
   width: 100%;
-  z-index: 89999999;
+  z-index: 89999999; // High z-index, consider a variable system
 }
 
 
@@ -746,7 +758,7 @@ h2, h3, h4, p {
   .marginCenterYES::-webkit-scrollbar {
     display: none;
   }
-  .leftContainers {
+  .leftContainers { // This is a wrapper, .left-panel-controls is for the sticky header inside
     margin-top: 5rem; /* This might also need adjustment if it assumed a nav panel */
   }
   .accordionCTA {
@@ -759,19 +771,19 @@ h2, h3, h4, p {
   }
   /* .gradientsStage2 for desktop - this assumes a nav height of 140px for its top value */
   /* This will need adjustment based on the new logo's fixed position. */
-  .gradientsStage2 {
+  .gradientsStage2 { // This rule overrides the one above for desktop
     height: 33px;
     position: fixed;
     top: 140px; /* This assumed old desktop nav panel height of 140px */
     left: 0;
     background: linear-gradient(180deg, #161616 0%, rgba(199, 66, 66, 0) 100%);
     width: 100%;
-    z-index: 89999999;
+    z-index: 89999999; // High z-index, consider a variable system
   }
   .gradientsStage2Bottom {
     position: fixed;
     bottom: 0px;
-    z-index: 5911111 !important;
+    z-index: 5911111 !important; // High z-index with !important
     width: 100vw;
     height: 33px;
     left: 0;
@@ -782,7 +794,7 @@ h2, h3, h4, p {
 @media (max-width: 920px) {
   canvas {
     height: 50vh !important;
-    z-index: 999; /* This z-index needs to be coordinated with logo, accordion, etc. */
+    z-index: 999; // High z-index, consider a variable system
   }
   .marginCenterYES {
     padding-right: 1.25rem;
@@ -790,13 +802,13 @@ h2, h3, h4, p {
     /* If nav panel is gone, any top margin previously here might need to be 0 or top padding */
   }
   .leftContainers {
-    .controls {
+    .controls { // This class was from JSX, now .left-panel-controls
       /* .gradientsStage2 within .controls is removed as this specific structure is gone with Nav panel removal */
     }
     .gradientsStage2Bottom {
       position: fixed;
       bottom: 78px;
-      z-index: 5911111 !important;
+      z-index: 5911111 !important; // High z-index with !important
       width: 100vw;
       height: 33px;
       left: 0;
@@ -833,8 +845,8 @@ h2, h3, h4, p {
     align-self: flex-start;
     align-items: center;
   }
-  .buttonLine {
-    /* (no additional styles) */
+  .buttonLine { // Base class, specific styles added via .custom-divider-extended or .full-bleed-divider
+    /* (no additional base styles here unless common to all buttonLine variants) */
   }
   .hideLeft {
     height: 0 !important;
@@ -847,15 +859,15 @@ h2, h3, h4, p {
     position: fixed;
     bottom: 10px;
     left: 10px;
-    z-index: 10000000 !important;
+    z-index: 10000000 !important; // High z-index with !important
   }
   .minimizeMenu {
     /* (placeholder) */
   }
-  .leftContainers {
+  .leftContainers { // This is a wrapper, .left-panel-controls is for the sticky header inside
     height: 50vh;
     width: 95%;
-    z-index: 20000000000; /* High z-index, ensure it's above scene if needed */
+    z-index: 20000000000; /* High z-index, consider a variable system */
     overflow-y: scroll !important;
     position: fixed;
     bottom: 5rem;
@@ -866,7 +878,7 @@ h2, h3, h4, p {
   .leftContaineropen {
     height: 50vh;
     width: 95%;
-    z-index: 20000000000;
+    z-index: 20000000000; // High z-index, consider a variable system
     overflow-y: scroll !important;
     position: fixed;
     bottom: 0;
@@ -887,7 +899,7 @@ h2, h3, h4, p {
   }
   .accordionAndCTA .rightButtonCTA {
     display: flex;
-    z-index: 1 !important;
+    z-index: 1 !important; // Note: z-index: 1 with !important can still be overridden by later higher z-indices.
     height: 56px;
     background-color: #2997ff;
     align-self: flex-end;
@@ -923,11 +935,11 @@ h2, h3, h4, p {
         color: #1f1f1f;
         background-color: #ffffff;
         position: relative;
-        z-index: 2;
+        z-index: 2; // Low z-index
 
         &::after {
           content: '';
-          z-index: -1;
+          z-index: -1; // Lower than parent for effect
           position: absolute;
           top: 0px;
           right: -9px;
@@ -1032,14 +1044,14 @@ h2, h3, h4, p {
     position: absolute !important;
     right: 20px;
     top: 20px;
-    z-index: 2;
+    z-index: 2; // Low z-index
   }
 
   .gradientsTop { /* This was positioned relative to where nav panel used to be. If nav panel is gone, its 'top' might need to be 0 or relative to new logo overlay */
     position: absolute;
     top: 66px; /* This specific value will likely need adjustment to align under the new logo overlay or be removed */
     left: 0;
-    z-index: -90 !important;
+    z-index: -90 !important; // Negative z-index with !important - usually problematic
     width: 100%;
     height: 3rem;
     background: linear-gradient(180deg, rgba(0, 0, 0, 80) 0%, rgba(0, 0, 0, 0) 100%);
@@ -1066,7 +1078,7 @@ h2, h3, h4, p {
   }
 
   .fixed_navbar { /* This class name suggests it was related to the nav panel. If panel is gone, this might be unneeded. */
-    z-index: 90000;
+    z-index: 90000; // High z-index
     background-color: #D9D9D9;
     width: 94.2% !important;
     position: fixed !important;
@@ -1088,7 +1100,7 @@ h2, h3, h4, p {
   width: 100%;
   height: 100%;
   background: rgba(0, 0, 0, 0.5);
-  z-index: 99999999999;
+  z-index: 99999999999; // Extremely high z-index
   display: flex;
   justify-content: center;
   align-items: center;
@@ -1111,7 +1123,7 @@ h2, h3, h4, p {
     flex-direction: column;
     justify-content: flex-start;
     align-items: center;
-    z-index: 900000000000000000;
+    z-index: 900000000000000000; // Even higher z-index
 
     &.animate-bottom {
       animation: animatebottom 0.4s;
@@ -1164,7 +1176,7 @@ h2, h3, h4, p {
 }
 
 .overrideModal {
-  z-index: 999999999999;
+  z-index: 999999999999; // Extremely high z-index
 }
 
 @media (min-width: 920px) {
@@ -1213,33 +1225,48 @@ h2, h3, h4, p {
 @media (min-width: 920px) {
   .center-panel {
     flex: 7.3;
-    z-index: 9000000;
+    z-index: 9000000; // High z-index
     align-self: flex-end;
     display: flex;
     justify-content: center;
   }
-  .left-panel {
+  .left-panel { // Corresponds to LeftPanelSlot -> LeftPanel
     flex: 1;
     max-height: 95vh;
   }
-  .right-panel {
+  .right-panel { // Corresponds to RightPanelSlot -> RightPanel
     flex: 1;
   }
-  .center-panel2 {
+  .center-panel2 { // This is CenterPanelSlot in MainContainer
     flex: 5 !important;
-    z-index: 9000000;
+    z-index: 9000000; // High z-index
     align-self: flex-end;
   }
-  .left-panel2 {
+  .left-panel2 { // This is LeftPanelSlot in MainContainer
     flex: 4 !important;
     max-height: 100vh;
     padding-left: 40px !important;
     overflow-y: auto !important;
   }
-  .right-panel2 {
+  .right-panel2 { // This is RightPanelSlot in MainContainer
     flex: 2 !important;
   }
 }
+
+/* ADDED: Styles for .left-panel-controls (wrapper for sticky MiddleContainer in LeftPanel on mobile) */
+.left-panel-controls {
+  position: sticky;
+  top: 0;
+  /* This z-index needs to be considered in context of .leftContainers and its children.
+     If .leftContainers is 20000000000, this should be higher if it's a true sticky header *within* it.
+     Given the complexity, using a value relative to its potential siblings or direct parent.
+     Many existing z-indexes are extremely high.
+  */
+  z-index: 20000000001; // Higher than .leftContainers if it's a child meant to overlay
+  margin-bottom: 2rem;
+  // background-color: var(--bg); /* Might need a background to not be transparent if content scrolls under */
+}
+
 
 @media (max-width: 920px) {
   .main-container {
@@ -1261,17 +1288,17 @@ h2, h3, h4, p {
   }
 
   .mainDiv {
-    background-color: aqua;
+    background-color: aqua; // Debug color?
     display: flex;
     flex-direction: column;
     overflow: hidden;
   }
 
-  .left-panel {
+  .left-panel { // This is LeftPanelSlot -> LeftPanel in mobile view
     flex: 5 !important;
   }
 
-  .right-panel {
+  .right-panel { // This is RightPanelSlot -> RightPanel in mobile view
     flex: 1 !important;
   }
 
@@ -1297,7 +1324,7 @@ h2, h3, h4, p {
 
   .hideLeftMenu {
     display: none;
-    z-index: -8888888888888888;
+    z-index: -8888888888888888; // Extremely low z-index
   }
 }
 
@@ -1343,7 +1370,7 @@ h2, h3, h4, p {
     .tags {
       display: flex;
       flex-wrap: wrap;
-      z-index: 9;
+      z-index: 9; // Low z-index
       &.tag {
         flex-grow: 1;
       }
@@ -1368,7 +1395,7 @@ h2, h3, h4, p {
 .gradientsBottom {
   position: fixed;
   bottom: 0px;
-  z-index: 5911111 !important;
+  z-index: 5911111 !important; // High z-index with !important
   width: 100vw;
   height: 3rem;
   left: 0;
@@ -1387,6 +1414,16 @@ h2, h3, h4, p {
       color: #222;
     }
   }
+  /* ADDED: Variant classes for Select component buttons */
+  .select-option-button--size-116 {
+    min-width: 116px;
+    max-width: 116px;
+  }
+  .select-option-button--size-179 {
+    min-width: 179px;
+    max-width: 179px;
+  }
+
   .grid-cols {
     &-2 {
       grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1523,6 +1560,10 @@ h2, h3, h4, p {
 @media (min-width: 920px) {
   .select-block {
     flex: 1 1 auto !important;
+    /* This !important was likely the reason for element.style.setProperty('width', '100%', 'important')
+       If w-full is applied via Tailwind, this rule for flex might still cause issues or override width.
+       A deeper look into flexbox behavior here would be needed if width: 100% isn't respected.
+    */
   }
   .select-build-container {
     padding-bottom: 0.7rem !important;
@@ -1564,7 +1605,7 @@ h2, h3, h4, p {
 .accordionBuild {
   position: sticky;
   top: 142px; /* This assumed old desktop nav height. Needs re-evaluation if content above changes. */
-  z-index: 9;
+  z-index: 9; // Low z-index
 }
 
 .option-accordion {
@@ -1578,7 +1619,7 @@ h2, h3, h4, p {
   transition: margin 0.2s ease-in, box-shadow 0.2s ease-in;
 
   .accordion-header {
-    z-index: -8; /* This is very low, could be problematic */
+    z-index: -8; /* This is very low, could be problematic if content inside needs to be above other page elements */
     .arrow {
       transform: rotate(0deg);
       transition: transform 0.2s ease-in;
@@ -1627,6 +1668,7 @@ h2, h3, h4, p {
     display: flex;
     flex-direction: row-reverse;
     gap: 1rem;
+    z-index: 1000; /* ADDED: Managed z-index (example value) */
 
     .arrow {
       transform: rotate(-90deg);
@@ -1636,11 +1678,11 @@ h2, h3, h4, p {
       }
     }
   }
-  .openAccordion {
+  .openAccordion { // This class applies to .up-accordion when open
     color: aqua;
-    background-color: aqua !important;
+    background-color: aqua !important; // !important exists
     h3 {
-      color: red !important;
+      color: red !important; // !important exists
     }
   }
   .accordion-body {
@@ -1713,7 +1755,7 @@ h2, h3, h4, p {
       overflow-y: scroll;
       left: 1.25rem;
       align-self: center;
-      z-index: 999999999999999 !important; /* Very high z-index */
+      z-index: 999999999999999 !important; /* Very high z-index with !important */
       display: flex !important;
       flex-direction: column !important;
       justify-content: center !important;
@@ -1768,24 +1810,13 @@ h2, h3, h4, p {
     display: flex;
     flex-direction: column;
     justify-content: flex-end;
-    .accordion-button {
-      background-color: #222222;
-      margin: 0.625rem 0;
-      height: 56px;
-      width: 100% !important;
-      .arrow {
-        transform: rotate(-90deg);
-        transition: transform 0.2s ease-in;
-        &.active {
-          transform: rotate(90deg);
-        }
-      }
-    }
+    // Note: .accordion-button styles from base .up-accordion are inherited
+    // including the z-index: 1000;
     .openAccordion { /* Styles for .up-accordion when it's also .openAccordion */
       color: aqua;
-      background-color: aqua !important;
+      background-color: aqua !important; // !important exists
       h3 {
-        color: red !important;
+        color: red !important; // !important exists
       }
     }
     .accordion-body {
@@ -1826,6 +1857,26 @@ h2, h3, h4, p {
     display: none;
   }
 }
+
+/* ADDED: Custom Divider Styles */
+.custom-divider-extended {
+  width: 120%; /* Or as per design needs if variable */
+  margin-left: -28px; /* Or as per design needs if variable */
+  height: 10px;
+  background-color: var(--gray-active, #222222); /* Using a variable if available, or a fallback */
+}
+
+.full-bleed-divider {
+  width: 100vw;
+  /* The margin-left might be an attempt to counteract specific parent padding.
+     For true full-bleed if the parent isn't full width, typically:
+     position: relative; left: 50%; transform: translateX(-50%);
+     However, sticking to the pattern from the inline style for now. */
+  margin-left: -28px; 
+  height: 10px;
+  background-color: var(--gray-active, #222222); /* Using a variable */
+}
+
 
 /* =============================================================================
    End Combined File
