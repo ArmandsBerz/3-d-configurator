@@ -664,6 +664,7 @@ header .color {
   background-color: var(--bg);
   width: calc(100vw - 2.5rem);
   margin-left: -1.5rem;
+  margin-top: 1rem; /* ADDED to restore space above Secondary button */
 }
 
 .cta-container {
@@ -1874,7 +1875,7 @@ h2, h3, h4, p {
      However, sticking to the pattern from the inline style for now. */
   margin-left: -28px; 
   height: 10px;
-  background-color: var(--gray-active, #222222); /* Using a variable */
+  background-color: var(--bg); /* CORRECTED to var(--bg) to match original inline #161616 */
 }
 
 
