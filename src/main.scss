@@ -173,12 +173,8 @@ code {
 @media (max-width: 920px) {
 }
 
-
-/* --- Additional Call-To-Action Styles --- */
-
-
 /* --- Navigation Styles (from file 1) --- REMOVED --- */
-/* Styles for nav, nav h1, .stages-container, .menuContainer, .mainDrop, .navMobile, etc., are removed */
+
 
 .logo {
   position: absolute;
@@ -187,14 +183,8 @@ code {
   font-weight: 500;
 }
 
-/* .hidemenus removed */
-
-/* .mainNav z-index rules are removed as #mainNav panel is gone */
 
 @media (max-width: 900px) {
-  /* Styles specific to the old mobile nav structure like .menuOpened, specific .stages-container a.active adjustments, */
-  /* .hidemenu, .menuContainer (mobile), .navMobile, .mainDrop (mobile) are removed. */
-
   .logo {
     width: 48.57px;
     height: 34px;
@@ -451,7 +441,6 @@ h2, h3, h4, p {
     left: 10px;
     z-index: 10000000 !important; 
   }
-  /* .minimizeMenu (placeholder) - removed */
   .leftContainers { 
     height: 50vh;
     width: 95%;
@@ -552,8 +541,6 @@ h2, h3, h4, p {
       width: 100%;
     }
 
-    /* .modal .close-button removed */
-
     .modal-body {
       display: flex;
       flex-direction: column;
@@ -586,8 +573,6 @@ h2, h3, h4, p {
   line-height: 16px;
 }
 
-/* .overrideModal removed */
-
 @media (min-width: 920px) {
   .modal-header { /* This is .modal .modal-header, so it stays as .modal is used */
     margin-bottom: 4rem !important;
@@ -614,7 +599,6 @@ h2, h3, h4, p {
 }
 
 .center-panel {
-  /* (optional background/color) */
 }
 
 .main-container {
@@ -668,7 +652,6 @@ h2, h3, h4, p {
   top: 0;
   z-index: 20000000001; 
   margin-bottom: 2rem;
-  // background-color: var(--bg); 
 }
 
 
@@ -690,8 +673,6 @@ h2, h3, h4, p {
       order: 2;
     }
   }
-
-  /* .mainDiv removed */
 
   .left-panel { 
     flex: 5 !important;
@@ -720,17 +701,7 @@ h2, h3, h4, p {
   .centerSecond {
     display: none !important;
   }
-
-  /* .hideLeftMenu removed */
 }
-
-/* --- Merged .page-header Block (from file 2) --- */
-/* .page-header and its children were on the removal list */
-
-
-/* --- Global .half Styles (merged) --- */
-
-
 .gradientsBottom {
   position: fixed;
   bottom: 0px;
@@ -1044,7 +1015,7 @@ h2, h3, h4, p {
     flex-wrap: wrap;
     gap: 10px;
   }
-  /* .windowCenter removed */
+  
   .option-accordion {
     width: 400px !important;
     &.open {
