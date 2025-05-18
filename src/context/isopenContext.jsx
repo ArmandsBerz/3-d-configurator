@@ -3,7 +3,7 @@
 ------------------------ */
 import React, { createContext, useReducer, useContext, useState, useEffect, useLayoutEffect } from 'react';
 import ReactDOM from 'react-dom/client';
-import { NavLink, useNavigate } from 'react-router-dom';
+import { NavLink, useNavigate } from 'react-router-dom'; // NavLink might be unused now if Nav was its only user
 import { TbArrowsMaximize } from 'react-icons/tb';
 import { CgArrowRight, CgList } from 'react-icons/cg';
 
@@ -23,7 +23,6 @@ import { useAppSelector } from '../store/rootReducer';
 import {
   Select,
   SelectColor,
-  SelectColor2,
   SelectImage,
   SelectInput,
   TextOptions,
@@ -31,11 +30,7 @@ import {
   WebOption,
   NameOptions,
   ColorCircle,
-  ColorCircle2,
   BuildModal,
-  Modal,
-  Hero,
-  Card,
   SelectGroup
 } from '../containers/scene/ui';
 
@@ -186,12 +181,10 @@ function MiddleContainer(props) {
     }
   }, [isLoadGlove]);
 
+  // MODIFIED: setIndex function
   const setIndex = (id) => {
-    setActiveIndex(id);
-    if (scene) {
-      scene.setActiveGlove(id);
-      dispatch({ type: 'SET_ACTIVE_MODEL', id });
-    }
+    setActiveIndex(id); // Only update the visual state of the dot
+    console.log(`Navigation dot ${id} clicked. Visual state updated. Scene interaction disabled.`);
   };
 
   return (
@@ -202,7 +195,7 @@ function MiddleContainer(props) {
       <div className="middle-container-content flex-1 w-full"></div>
       <div className="stageTwoCenter middle-container-menu flex flex-col justify-center items-center">
         <div className="navigation-dots flex my-2">
-          {scene
+          {scene && scene.glovesDesign && scene.glovesDesign.length > 0 
             ? scene.glovesDesign.map((item, index) => (
                 <svg
                   onClick={() => setIndex(index)}
@@ -214,6 +207,7 @@ function MiddleContainer(props) {
                   preserveAspectRatio="xMidYMid meet"
                   viewBox="0 0 32 32"
                   key={index}
+                  className="cursor-pointer" // CHANGED from style prop
                 >
                   <circle cx="16" cy="16" r="8" fill={activeIndex === index ? '#fff' : '#ffffff66'} />
                 </svg>
@@ -222,45 +216,61 @@ function MiddleContainer(props) {
         </div>
         <div className="navigation-instructions flex">
           {windowWidth && (
-            <div style={{ color: 'white', fontSize: '28px', cursor: 'pointer' }} onClick={() => dispatch({ type: 'ALLMAXIMIZE' })} className="mr-4">
+            <div
+              onClick={() => { dispatch({ type: 'ALLMAXIMIZE' }); }}
+              className="mr-4 text-white text-[28px] cursor-pointer" // CHANGED from style prop
+            >
               <TbArrowsMaximize />
             </div>
           )}
           <div className="mr-4">
             {windowWidth ? (
               <svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path
-                  fillRule="evenodd"
-                  clipRule="evenodd"
-                  d="M13.9645 16.8222L11.6787 19.1079C11.3445 19.4429 11.3445 19.9857 11.6787 20.3204L13.9645 22.6062C14.2994 22.9404 14.8423 22.9404 15.177 22.6062C15.5112 22.2712 15.5112 21.7284 15.177 21.3937L13.4968 19.7143L15.177 18.0349C15.5112 17.7 15.5112 17.1572 15.177 16.8225C14.842 16.4883 14.2992 16.4883 13.9645 16.8225V16.8222Z"
-                  fill="grey"
-                />
-                <path
-                  fillRule="evenodd"
-                  clipRule="evenodd"
-                  d="M16.8217 14.0355L19.1074 16.3213C19.4424 16.6555 19.9852 16.6555 20.3199 16.3213L22.6057 14.0355C22.9399 13.7006 22.9399 13.1577 22.6057 12.823C22.2707 12.4888 21.7279 12.4888 21.3932 12.823L19.7138 14.5032L18.0344 12.823C17.6995 12.4888 17.1566 12.4888 16.8219 12.823C16.4877 13.158 16.4877 13.7008 16.8219 14.0355H16.8217Z"
-                  fill="grey"
-                />
+                <path fillRule="evenodd" clipRule="evenodd" d="M13.9645 16.8222L11.6787 19.1079C11.3445 19.4429 11.3445 19.9857 11.6787 20.3204L13.9645 22.6062C14.2994 22.9404 14.8423 22.9404 15.177 22.6062C15.5112 22.2712 15.5112 21.7284 15.177 21.3937L13.4968 19.7143L15.177 18.0349C15.5112 17.7 15.5112 17.1572 15.177 16.8225C14.842 16.4883 14.2992 16.4883 13.9645 16.8225V16.8222Z" fill="grey"/>
+                <path fillRule="evenodd" clipRule="evenodd" d="M16.8217 14.0355L19.1074 16.3213C19.4424 16.6555 19.9852 16.6555 20.3199 16.3213L22.6057 14.0355C22.9399 13.7006 22.9399 13.1577 22.6057 12.823C22.2707 12.4888 21.7279 12.4888 21.3932 12.823L19.7138 14.5032L18.0344 12.823C17.6995 12.4888 17.1566 12.4888 16.8219 12.823C16.4877 13.158 16.4877 13.7008 16.8219 14.0355H16.8217Z" fill="grey"/>
+                <path fillRule="evenodd" clipRule="evenodd" d="M8.91752 18.3994C6.3032 17.9039 4.15009 17.0485 2.85341 15.9501C2.1539 15.3575 1.71386 14.7118 1.71386 14.0003C1.71386 12.9901 2.55339 12.1214 3.83099 11.3638C6.12361 10.0044 9.82882 9.14309 14 9.14309C18.171 9.14309 21.8761 10.0044 24.169 11.3638C25.4468 12.1215 26.2861 12.9901 26.2861 14.0003C26.2861 15.0106 25.4466 15.8792 24.169 16.6369C21.8764 17.9963 18.1712 18.8576 14 18.8576H12.2857C11.8125 18.8576 11.4285 19.2415 11.4285 19.7147C11.4285 20.1879 11.8125 20.5719 12.2857 20.5719H14C18.5338 20.5719 22.5507 19.5895 25.0428 18.1114C26.9561 16.9772 28 15.5136 28 14.0003C28 12.487 26.9561 11.0237 25.0428 9.88929C22.5507 8.41093 18.5335 7.42878 14 7.42878C9.4665 7.42878 5.44931 8.41119 2.95718 9.88929C1.04387 11.0235 0 12.487 0 14.0003C0 15.1644 0.600521 16.2884 1.74567 17.2581C3.21534 18.5027 5.6355 19.5221 8.59902 20.0839C9.06357 20.1719 9.5128 19.8663 9.60083 19.401C9.68885 18.9364 9.38323 18.4872 8.91791 18.3992L8.91752 18.3994Z" fill="grey"/>
+                <path fillRule="evenodd" clipRule="evenodd" d="M18.3988 19.0825C17.9034 21.6968 17.048 23.8499 15.9496 25.1466C15.3569 25.8461 14.7113 26.2861 13.9998 26.2861C12.9896 26.2861 12.1209 25.4466 11.3633 24.169C10.0038 21.8764 9.14257 18.1712 9.14257 14C9.14257 9.82902 10.0038 6.12393 11.3633 3.83099C12.121 2.55319 12.9896 1.71386 13.9998 1.71386C15.01 1.71386 15.8787 2.55339 16.6363 3.83099C17.9958 6.12361 18.857 9.82882 18.857 14V15.7143C18.857 16.1875 19.241 16.5715 19.7142 16.5715C20.1874 16.5715 20.5714 16.1875 20.5714 15.7143V14C20.5714 9.46623 19.5889 5.44931 18.1108 2.95718C16.9766 1.04387 15.5131 0 13.9998 0C12.4865 0 11.0232 1.04387 9.88877 2.95718C8.41041 5.44931 7.42825 9.4665 7.42825 14C7.42825 18.5335 8.41067 22.5507 9.88877 25.0428C11.023 26.9561 12.4865 28 13.9998 28C15.1638 28 16.2878 27.3995 17.2575 26.2543C18.5022 24.7847 19.5216 22.3645 20.0834 19.401C20.1714 18.9364 19.8658 18.4872 19.4005 18.3992C18.9359 18.3112 18.4867 18.6168 18.3986 19.0821L18.3988 19.0825Z" fill="grey"/>
               </svg>
             ) : (
-              <svg
-                width="28"
-                height="28"
-                viewBox="0 0 28 28"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  d="M17.7074 0.622701C13.7678 -0.849719 9.19902 0.35492 6.54529 3.54063C3.34439 7.42228 4.00108 12.4284 6.79166 15.7212C4.60296 17.8895 2.41426 20.0312 0.225712 22.1728C-0.0752372 22.4673 -0.0752372 22.976 0.225712 23.2705L0.745564 23.7791C1.04651 24.0736 1.56636 24.0736 1.8673 23.7791C4.08325 21.6108 6.27195 19.4691 8.48796 17.3007C10.4851 18.7731 13.0568 19.5226 15.902 19.0407C20.6076 18.2375 23.8906 14.1952 24 9.59073C23.8905 5.62857 21.5102 2.06825 17.7076 0.622653L17.7074 0.622701ZM14.1783 17.6219C9.69157 17.6219 5.97086 13.9544 5.97086 9.59078C5.97086 5.20044 9.71888 1.53289 14.1783 1.55966C18.7471 1.55966 22.3037 5.20044 22.3857 9.59078C22.2762 13.9811 18.7471 17.6219 14.1783 17.6219Z"
-                  fill="white"
-                />
-                <path
-                  d="M14.7527 4.2367H13.3848V8.92152H8.81601V10.26H13.3848V14.9449H14.7527V10.26H19.7593V8.92152H14.7527V4.2367Z"
-                  fill="white"
-                />
+              <svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path fillRule="evenodd" clipRule="evenodd" d="M13.9645 16.8222L11.6787 19.1079C11.3445 19.4429 11.3445 19.9857 11.6787 20.3204L13.9645 22.6062C14.2994 22.9404 14.8423 22.9404 15.177 22.6062C15.5112 22.2712 15.5112 21.7284 15.177 21.3937L13.4968 19.7143L15.177 18.0349C15.5112 17.7 15.5112 17.1572 15.177 16.8225C14.842 16.4883 14.2992 16.4883 13.9645 16.8225V16.8222Z" fill="grey"/>
+                <path fillRule="evenodd" clipRule="evenodd" d="M16.8217 14.0355L19.1074 16.3213C19.4424 16.6555 19.9852 16.6555 20.3199 16.3213L22.6057 14.0355C22.9399 13.7006 22.9399 13.1577 22.6057 12.823C22.2707 12.4888 21.7279 12.4888 21.3932 12.823L19.7138 14.5032L18.0344 12.823C17.6995 12.4888 17.1566 12.4888 16.8219 12.823C16.4877 13.158 16.4877 13.7008 16.8219 14.0355H16.8217Z" fill="grey"/>
+                <path fillRule="evenodd" clipRule="evenodd" d="M8.91752 18.3994C6.3032 17.9039 4.15009 17.0485 2.85341 15.9501C2.1539 15.3575 1.71386 14.7118 1.71386 14.0003C1.71386 12.9901 2.55339 12.1214 3.83099 11.3638C6.12361 10.0044 9.82882 9.14309 14 9.14309C18.171 9.14309 21.8761 10.0044 24.169 11.3638C25.4468 12.1215 26.2861 12.9901 26.2861 14.0003C26.2861 15.0106 25.4466 15.8792 24.169 16.6369C21.8764 17.9963 18.1712 18.8576 14 18.8576H12.2857C11.8125 18.8576 11.4285 19.2415 11.4285 19.7147C11.4285 20.1879 11.8125 20.5719 12.2857 20.5719H14C18.5338 20.5719 22.5507 19.5895 25.0428 18.1114C26.9561 16.9772 28 15.5136 28 14.0003C28 12.487 26.9561 11.0237 25.0428 9.88929C22.5507 8.41093 18.5335 7.42878 14 7.42878C9.4665 7.42878 5.44931 8.41119 2.95718 9.88929C1.04387 11.0235 0 12.487 0 14.0003C0 15.1644 0.600521 16.2884 1.74567 17.2581C3.21534 18.5027 5.6355 19.5221 8.59902 20.0839C9.06357 20.1719 9.5128 19.8663 9.60083 19.401C9.68885 18.9364 9.38323 18.4872 8.91791 18.3992L8.91752 18.3994Z" fill="white"/>
+                <path fillRule="evenodd" clipRule="evenodd" d="M18.3988 19.0825C17.9034 21.6968 17.048 23.8499 15.9496 25.1466C15.3569 25.8461 14.7113 26.2861 13.9998 26.2861C12.9896 26.2861 12.1209 25.4466 11.3633 24.169C10.0038 21.8764 9.14257 18.1712 9.14257 14C9.14257 9.82902 10.0038 6.12393 11.3633 3.83099C12.121 2.55319 12.9896 1.71386 13.9998 1.71386C15.01 1.71386 15.8787 2.55339 16.6363 3.83099C17.9958 6.12361 18.857 9.82882 18.857 14V15.7143C18.857 16.1875 19.241 16.5715 19.7142 16.5715C20.1874 16.5715 20.5714 16.1875 20.5714 15.7143V14C20.5714 9.46623 19.5889 5.44931 18.1108 2.95718C16.9766 1.04387 15.5131 0 13.9998 0C12.4865 0 11.0232 1.04387 9.88877 2.95718C8.41041 5.44931 7.42825 9.4665 7.42825 14C7.42825 18.5335 8.41067 22.5507 9.88877 25.0428C11.023 26.9561 12.4865 28 13.9998 28C15.1638 28 16.2878 27.3995 17.2575 26.2543C18.5022 24.7847 19.5216 22.3645 20.0834 19.401C20.1714 18.9364 19.8658 18.4872 19.4005 18.3992C18.9359 18.3112 18.4867 18.6168 18.3986 19.0821L18.3988 19.0825Z" fill="white"/>
               </svg>
             )}
           </div>
+          {windowWidth ? (
+             <div className="mr-8 text-gray-500 text-lg"> {/* CHANGED from style prop */}
+                Drag to Rotate
+            </div>
+          ) : (
+            <div className="text-white text-lg mr-4"> {/* CHANGED from style prop */}
+                Drag to Rotate
+            </div>
+          )}
+          <div className="mr-4">
+            {windowWidth ? (
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M17.7074 0.622701C13.7678 -0.849719 9.19902 0.35492 6.54529 3.54063C3.34439 7.42228 4.00108 12.4284 6.79166 15.7212C4.60296 17.8895 2.41426 20.0312 0.225712 22.1728C-0.0752372 22.4673 -0.0752372 22.976 0.225712 23.2705L0.745564 23.7791C1.04651 24.0736 1.56636 24.0736 1.8673 23.7791C4.08325 21.6108 6.27195 19.4691 8.48796 17.3007C10.4851 18.7731 13.0568 19.5226 15.902 19.0407C20.6076 18.2375 23.8906 14.1952 24 9.59073C23.8905 5.62857 21.5102 2.06825 17.7076 0.622653L17.7074 0.622701ZM14.1783 17.6219C9.69157 17.6219 5.97086 13.9544 5.97086 9.59078C5.97086 5.20044 9.71888 1.53289 14.1783 1.55966C18.7471 1.55966 22.3037 5.20044 22.3857 9.59078C22.2762 13.9811 18.7471 17.6219 14.1783 17.6219Z" fill="grey"/>
+                <path d="M14.7527 4.2367H13.3848V8.92152H8.81601V10.26H13.3848V14.9449H14.7527V10.26H19.7593V8.92152H14.7527V4.2367Z" fill="white"/>
+              </svg>
+            ) : (
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M17.7074 0.622701C13.7678 -0.849719 9.19902 0.35492 6.54529 3.54063C3.34439 7.42228 4.00108 12.4284 6.79166 15.7212C4.60296 17.8895 2.41426 20.0312 0.225712 22.1728C-0.0752372 22.4673 -0.0752372 22.976 0.225712 23.2705L0.745564 23.7791C1.04651 24.0736 1.56636 24.0736 1.8673 23.7791C4.08325 21.6108 6.27195 19.4691 8.48796 17.3007C10.4851 18.7731 13.0568 19.5226 15.902 19.0407C20.6076 18.2375 23.8906 14.1952 24 9.59073C23.8905 5.62857 21.5102 2.06825 17.7076 0.622653L17.7074 0.622701ZM14.1783 17.6219C9.69157 17.6219 5.97086 13.9544 5.97086 9.59078C5.97086 5.20044 9.71888 1.53289 14.1783 1.55966C18.7471 1.55966 22.3037 5.20044 22.3857 9.59078C22.2762 13.9811 18.7471 17.6219 14.1783 17.6219Z" fill="white"/>
+                <path d="M14.7527 4.2367H13.3848V8.92152H8.81601V10.26H13.3848V14.9449H14.7527V10.26H19.7593V8.92152H14.7527V4.2367Z" fill="white"/>
+              </svg>
+            )}
+          </div>
+          {windowWidth ? (
+            <div className="text-gray-500 text-lg tracking-wider"> {/* CHANGED from style prop. tracking-wider is letter-spacing: 0.05em. Adjust if '1px' needed precisely via arbitrary value text-[...] or SCSS */}
+                Scroll to Zoom
+            </div>
+          ) : (
+            <div className="text-white text-lg"> {/* CHANGED from style prop */}
+                Scroll to Zoom
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -274,7 +284,7 @@ const OptionAccordion = (props) => {
   const [open, setOpen] = useState(false);
   const [buildOpen, setBuildOpen] = useState(false);
   const [isOpened, setIsOpened] = useState(false);
-  const { accordionOpen, isMizedOpen, dispatch } = useContext(IsopenContext);
+  const { accordionOpen, isMizedOpen, dispatch } = useContext(IsopenContext); 
   const [windowWidth, setWindowWidth] = useState();
 
   useEffect(() => {
@@ -298,10 +308,9 @@ const OptionAccordion = (props) => {
     }
   };
 
-  // We now support only Stage Two, so always render the default branch.
   return (
-    <div className={`option-accordion up-accordion ${open ? ' open' : ''} ${isMizedOpen ? ' FirstClosed' : ''}`}>
-      <button style={{ marginBottom: '0px' }} className="w-full" onClick={props.title === 'Build' ? handleBuild : openButton}>
+    <div className={`option-accordion ${open ? ' open' : ''} ${isMizedOpen ? ' FirstClosed' : ''} ${props.title === 'Build' ? 'accordionBuild' : ''}`}>
+      <button className="w-full mb-0" onClick={props.title === 'Build' ? handleBuild : openButton}> {/* CHANGED from style prop */}
         {(isMizedOpen && windowWidth) && <MiddleContainer />}
         <div onClick={handleClick} className="accordion-header h-14 py-3.5 px-6 flex items-center">
           <div className={`arrow${open ? ' active' : ''} flex items-center mr-2 grow-0 uparrows`}>
@@ -323,72 +332,18 @@ const OptionAccordion = (props) => {
           </div>
         </div>
       </button>
-      {props.title === 'Build' && (
-        <div className={`accordion-body ${open ? ' active ' : (isOpened ? ' colorno ' : '')}`}>
-          <div className="accordion-body-content py-3.5 px-4">
-            {props.children}
-          </div>
-        </div>
-      )}
-      {props.title === 'Color Option1' && (
-        <div className={`accordion-body ${open ? ' active' : (isOpened ? ' colorno' : '')}`}>
-          <div className="accordion-body-content pt-3.5 px-6">
-            {props.children}
-          </div>
-        </div>
-      )}
-      {props.title === 'Color Option2' && (
-        <div className={`accordion-body${open ? ' active' : ''}`}>
-          <div className="accordion-body-content pt-3.5 px-6">
-            {props.children}
-          </div>
-        </div>
-      )}
-      {props.title === 'Title' && (
-        <div className={`accordion-body${open ? ' active' : ''}`}>
-          <div className="accordion-body-content pt-3.5 px-6">
-            {props.children}
-          </div>
-        </div>
-      )}
-      {props.title === '2 Options' && (
-        <div className={`accordion-body${open ? ' active' : ''}`}>
-          <div className="accordion-body-content pt-3.5 px-6">
-            {props.children}
-          </div>
-        </div>
-      )}
-      {props.type === 'TextInput' && (
-        <div className={`accordion-body${open ? ' active' : ''}`}>
-          <div className="accordion-body-content pt-3.5 px-6">
-            {props.children}
-          </div>
-        </div>
-      )}
-      {props.title === 'TextInput' && (
-        <div className={`accordion-body${open ? ' active' : ''}`}>
-          <div className="accordion-body-content pt-3.5 px-6">
-            {props.children}
-          </div>
-        </div>
-      )}
-      {props.title === 'Dual Color' && (
-        <div className={`accordion-body${open ? ' active' : ''}`}>
-          <div className="accordion-body-content pt-3.5 px-6">
-            {props.children}
-          </div>
-        </div>
-      )}
-      {props.type === 'colorOption' && (
-        <div className={`accordion-body${open ? ' active' : ''}`}>
-          <div className="accordion-body-content pt-3.5 px-6">
-            {props.children}
-          </div>
-        </div>
-      )}
-      {props.type === 'options' && (
-        <div className={`accordion-body${open ? ' active' : ''}`}>
-          <div className="accordion-body-content pt-3.5 px-6">
+      {(props.title === 'Build' || 
+        props.title === 'Color Option1' || 
+        props.title === 'Color Option2' || 
+        props.title === 'Title' || 
+        props.title === '2 Options' || 
+        props.type === 'TextInput' || 
+        props.title === 'TextInput' ||
+        props.title === 'Dual Color' ||
+        props.type === 'colorOption' ||
+        props.type === 'options') && (
+        <div className={`accordion-body ${open ? ' active' : ''} ${ (props.title === 'Build' && isOpened) ? ' colorno ' : ''} ${ (props.title === 'Color Option1' && isOpened) ? ' colorno' : ''}`}>
+          <div className={`accordion-body-content ${props.title === 'Build' ? 'py-3.5 px-4' : 'pt-3.5 px-6'}`}>
             {props.children}
           </div>
         </div>
@@ -396,6 +351,7 @@ const OptionAccordion = (props) => {
     </div>
   );
 };
+
 
 /* ------------------------
    UP ACCORDION COMPONENT
@@ -411,9 +367,10 @@ function UpAccordion(props) {
 
   return (
     <div className={`up-accordion ${open ? ' openAccordion' : ''} ${accordionOpen ? ' acccccord' : ''}`}>
-      <button className="w-full" style={{ zIndex: '22222' }} onClick={() => setOpen(!open)}>
+      {/* Removed style prop, zIndex to be handled by SCSS */}
+      <button className="w-full" onClick={() => setOpen(!open)}> 
+        {/* Removed style prop, zIndex to be handled by SCSS */}
         <div
-          style={{ zIndex: '2222299999999999' }}
           onClick={() => dispatch({ type: 'ACCORDIONOPEN' })}
           className="accordion-button h-14 py-3.5 px-6 flex items-center"
         >
@@ -446,27 +403,6 @@ function UpAccordion(props) {
 }
 
 /* ------------------------
-   NAV COMPONENT
------------------------- */
-function Nav() {
-  const [open, setOpen] = useState(false);
-  const { allMaximize, dispatch, isMizedOpen } = useContext(IsopenContext);
-
-  // Only Stage Two is used.
-  const handleSecond = () => {
-    dispatch({ type: 'SECONDSTAGE' });
-  };
-
-  return (
-    <nav id="mainNav">
-      <h1 style={{ fontFamily: 'Inter', fontWeight: '500' }} className="logo">
-        LOGO
-      </h1>
-    </nav>
-  );
-}
-
-/* ------------------------
    LEFT PANEL COMPONENT (STAGE TWO)
 ------------------------ */
 function LeftPanel(props) {
@@ -475,7 +411,7 @@ function LeftPanel(props) {
 
   const [state, setState] = useState({});
   const [showBuild, setShowBuild] = useState(false);
-  const [scroll, setScroll] = useState();
+  const [scroll, setScroll] = useState(); 
   const [positionName, setPositionName] = useState(configBuild.Position[0]);
   const [model, setModel] = useState();
   const [names, setNames] = useState(null);
@@ -510,38 +446,33 @@ function LeftPanel(props) {
   }, [names]);
 
   useEffect(() => {
-    if (props?.zones?.length > 0) {
+    if (props?.zones?.length > 0 && model && model.currentGlove && model.currentGlove.websGlove && model.currentGlove.textZones) { 
       const obj = {};
-      // Set default webs
       const val = model.currentGlove.websGlove[0];
       const value = val.split('').slice(0, val.length - 2).join('');
       model.setActiveWeb(value);
       obj.webs = { id: 0, text: value, value };
-
-      // Set default for each zone
       props.zones.forEach((item) => {
         obj[item] = { value: colors.white };
         model.currentGlove.dataChangedCallback({ key: item, value: colors.white });
       });
-
-      // Set default text zones
       model.currentGlove.textZones.forEach((item) => {
         obj[item] = { color: colors.white, text: '', font: fonts[0] };
       });
-
       setState(obj);
     }
-  }, [props.zones]);
+  }, [props.zones, model, colors]); 
 
   useEffect(() => {
-    if (activeModel) {
-      setState({});
-      model.currentGlove.resetStyleText();
-      model.currentGlove.textZones.forEach((item) => {
-        model.currentGlove.updateText(item);
-      });
+    if (activeModel !== undefined && activeModel !== INITIAL_STATE.activeModel && model && model.currentGlove) {
+        setState({});
+        model.currentGlove.resetStyleText();
+        model.currentGlove.textZones.forEach((item) => {
+            model.currentGlove.updateText(item);
+        });
     }
   }, [activeModel, model]);
+
 
   useEffect(() => {
     const elem = document.querySelector('.leftContainers');
@@ -551,6 +482,14 @@ function LeftPanel(props) {
     const elemPanel = document.querySelector('.left-panel2');
     if (elemPanel) {
       elemPanel.addEventListener('scroll', () => setScroll(elemPanel.scrollTop));
+    }
+    return () => {
+        if (elem) {
+            elem.removeEventListener('scroll', () => setScroll(elem.scrollTop));
+        }
+        if (elemPanel) {
+            elemPanel.removeEventListener('scroll', () => setScroll(elemPanel.scrollTop));
+        }
     }
   }, []);
 
@@ -563,25 +502,30 @@ function LeftPanel(props) {
     if (state.webs) {
       updWebs();
     }
-  }, [state.webs]);
+  }, [state.webs]); 
 
   useEffect(() => {
-    console.log('[state]', state);
   }, [state]);
 
   const setActiveGloveModel = async () => {
     const namePosition = configBuild.Position[position];
     const name = playerPosition[namePosition].glove[0];
-    const id = model.gloves.findIndex((item) => item === name);
-    await model.setActiveGlove(id);
-    dispatch({ type: 'SET_ACTIVE_MODEL', id });
+    if (model && model.gloves) { 
+        const id = model.gloves.findIndex((item) => item === name);
+        if (id !== -1) { 
+            await model.setActiveGlove(id);
+            dispatch({ type: 'SET_ACTIVE_MODEL', id });
+        }
+    }
   };
 
   const updWebs = async () => {
     for (let i = 0; i < ZONES_WEB.length; i++) {
       const item = ZONES_WEB[i];
-      const val = state[item]?.value ? state[item].value : colors.white;
-      await model.currentGlove.dataChangedCallback({ key: item, value: val });
+      const val = state[item]?.value ? state[item].value : (colors && colors.white); 
+      if (model && model.currentGlove) { 
+        await model.currentGlove.dataChangedCallback({ key: item, value: val });
+      }
     }
   };
 
@@ -595,23 +539,25 @@ function LeftPanel(props) {
   };
 
   const setOptions = (value, option) => {
-    if (props.zones.includes(value)) {
+    if (props.zones && props.zones.includes(value) && model && model.currentGlove) { 
       model.currentGlove.dataChangedCallback({ key: value, value: option.value });
     }
     setState({ ...state, [value]: option });
   };
 
   const setOptionsText = (id, option) => {
-    model.currentGlove.changeTextStyle(Object.keys(option)[0], Object.values(option)[0]);
-    const name = model.currentGlove.textZones[id];
-    model.currentGlove.updateText(name);
-    setState({
-      ...state,
-      [name]: {
-        ...state[name],
-        ...option
-      }
-    });
+    if (model && model.currentGlove) { 
+        model.currentGlove.changeTextStyle(Object.keys(option)[0], Object.values(option)[0]);
+        const name = model.currentGlove.textZones[id];
+        model.currentGlove.updateText(name);
+        setState({
+        ...state,
+        [name]: {
+            ...state[name],
+            ...option
+        }
+        });
+    }
   };
 
   const handlebutton = () => {
@@ -635,7 +581,7 @@ function LeftPanel(props) {
   };
 
   const getColors = (name) => {
-    const objColors = { ...colors };
+    const objColors = { ...(colors || {}) }; 
     Object.entries(additionalColors).forEach(([key, value]) => {
       if (value.zones.includes(name)) objColors[key] = value.value;
     });
@@ -643,7 +589,7 @@ function LeftPanel(props) {
   };
 
   const getZones = () =>
-    props.zones.map((item, index) => {
+    props.zones && props.zones.map((item, index) => { 
       const arrColor = getColors(item);
       if (item !== 'web') {
         return (
@@ -662,22 +608,28 @@ function LeftPanel(props) {
     });
 
   const getGloveNames = () => (
-    <NameOptions
+    names && <NameOptions 
       title="Gloves"
       windowWidth={windowWidth}
       defState={state}
       names={names}
       onSelection={async (option) => {
-        const id = model.gloves.findIndex((item) => item === option.value);
-        await model.setActiveGlove(id);
-        dispatch({ type: 'SET_ACTIVE_MODEL', id });
-        setOptions('activeGlove', option);
-        setOptions('webs', null);
+        if (model && model.gloves) { 
+            const id = model.gloves.findIndex((item) => item === option.value);
+             if (id !== -1) { 
+                await model.setActiveGlove(id);
+                dispatch({ type: 'SET_ACTIVE_MODEL', id });
+                setOptions('activeGlove', option);
+                setOptions('webs', null);
+            }
+        }
       }}
     />
   );
 
   const getTextZones = () => {
+    if (!model || !model.currentGlove || !model.currentGlove.textZones) return null; 
+
     const arr = model.currentGlove.textZones.map((item) => {
       const arrChar = item.split('');
       arrChar[0] = arrChar[0].toUpperCase();
@@ -698,18 +650,22 @@ function LeftPanel(props) {
         selected={{ value: state[model.currentGlove.textZones[index]]?.font }}
         setOptions={setOptionsText}
         setOptionsInput={(option) => {
-          model.currentGlove.updateText(option, model.currentGlove.textZones[index]);
+          if (model && model.currentGlove) { 
+            model.currentGlove.updateText(option, model.currentGlove.textZones[index]);
+          }
         }}
       />
     ));
   };
 
   const getWebsNames = () => {
+    if (!model || !model.currentGlove || !model.currentGlove.websGlove || !playerPosition[positionName]) return null; 
+
     const arr = model.currentGlove.websGlove.map((item) =>
       item.split('').slice(0, item.length - 2).join('')
     );
     const arrPlayerWeb = playerPosition[positionName].web;
-    const arrWeb = arrPlayerWeb.filter((item) => arr.includes(item));
+    const arrWeb = arrPlayerWeb ? arrPlayerWeb.filter((item) => arr.includes(item)) : []; 
 
     return (
       <WebOption
@@ -722,7 +678,9 @@ function LeftPanel(props) {
         setOptionsColor={setOptions}
         onSelection={async (option) => {
           const value = `${option.value}`;
-          model.setActiveWeb(value);
+          if (model) { 
+            model.setActiveWeb(value);
+          }
           setOptions('webs', option);
         }}
       />
@@ -733,17 +691,10 @@ function LeftPanel(props) {
     <div>
       <div className={`${allMaximize ? 'hideLeft' : ''} ${isMizedOpen ? 'LeftContainerOpen' : 'leftContainers'}`}>
         {!isMizedOpen && windowWidth && (
-          <div
-            className="controls"
-            style={{
-              position: 'sticky',
-              top: 0,
-              zIndex: '11111111111',
-              marginBottom: '2rem !important'
-            }}
-          >
+          // CHANGED: Removed inline style, added class "left-panel-controls"
+          // SCSS class ".left-panel-controls" will handle: position, top, zIndex, marginBottom
+          <div className="controls left-panel-controls"> 
             <MiddleContainer stage="two" />
-            {scroll ? <div className="gradientsStage2" /> : null}
           </div>
         )}
         <div className="marginCenterYES">
@@ -761,11 +712,10 @@ function LeftPanel(props) {
               handleClose={hideBuildModal}
             />
           </OptionAccordion>
-          {scroll ? <div className="gradientsStage2" /> : null}
-          {names ? getGloveNames() : null}
-          {model ? getWebsNames() : null}
-          {isLoadGlove ? getZones() : null}
-          {model ? getTextZones() : null}
+          {getGloveNames()}
+          {model && model.currentGlove && getWebsNames()}
+          {isLoadGlove && getZones()}
+          {model && model.currentGlove && getTextZones()}
         </div>
         <div className="gradientsStage2Bottom" />
       </div>
@@ -782,7 +732,6 @@ function RightPanel(props) {
   const navigate = useNavigate();
 
   const routeChange = () => {
-    // Only Stage Two is used.
     navigate('/stage-two');
   };
 
@@ -812,9 +761,9 @@ function RightPanel(props) {
         </UpAccordion>
         <button onClick={routeChange} className="cta rightButtonCTA">
           <p>
-            {props.stage === 2 && windowWidth && !accordionOpen && 'Call To Action'}
-            {props.stage === 2 && windowWidth && accordionOpen && 'Call To Action'}
-            {props.stage === 2 && !windowWidth && !accordionOpen && 'Call To Action'}
+            {props.stage === '2' && windowWidth && !accordionOpen && 'Call To Action'}
+            {props.stage === '2' && windowWidth && accordionOpen && 'Call To Action'}
+            {props.stage === '2' && !windowWidth && !accordionOpen && 'Call To Action'}
           </p>
           <span>&rarr;</span>
         </button>
@@ -840,7 +789,6 @@ function MainContainer(props) {
     setShow(false);
   };
 
-  // We assume props.stage is always "two"
   return (
     <div id="main" className="main-container flex">
       <div className={`${accordionOpen ? 'hideLeftPanel' : ''} left-panel left-panel2 px-5 overflow-y-auto`}>
@@ -871,28 +819,40 @@ function StageSecond() {
   useEffect(() => {
     if (isLoadGlove) {
       const scenes = SceneBabylon.instance();
-      setZones(scenes.currentGlove.gloveZones.zones);
+      if (scenes && scenes.currentGlove && scenes.currentGlove.gloveZones) { 
+        setZones(scenes.currentGlove.gloveZones.zones);
+      }
     }
-  }, [activeModel]);
+  }, [activeModel, isLoadGlove]); 
 
   useEffect(() => {
     if (isLoadGlove) {
       const scenes = SceneBabylon.instance();
-      setZones(scenes.currentGlove.gloveZones.zones);
+      if (scenes && scenes.currentGlove && scenes.currentGlove.gloveZones) { 
+         setZones(scenes.currentGlove.gloveZones.zones);
+      }
     }
   }, [isLoadGlove]);
 
   useEffect(() => {
     const scene = SceneBabylon.instance(() => dispatch({ type: 'LOAD_GLOVE' }));
-    scene.canvas.style.opacity = 1;
-    return () => {
-      scene.canvas.style.opacity = 0;
-    };
+    if (scene && scene.canvas) { 
+        scene.canvas.style.opacity = 1; // Dynamic style: Remains unchanged
+        return () => {
+        if (scene.canvas) { 
+            scene.canvas.style.opacity = 0; // Dynamic style: Remains unchanged
+        }
+        };
+    }
+    return () => {}; 
   }, [dispatch]);
 
   return (
     <>
-      <Nav />
+      {/* CHANGED: Removed style prop. fontFamily & fontWeight to be handled by .logo SCSS class */}
+      <h1 className="logo">
+        LOGO
+      </h1>
       {isLoadGlove ? (
         <MainContainer
           stage="two"
@@ -915,19 +875,21 @@ class UI extends React.Component {
 
   componentDidMount() {
     this.isLoaded = true;
-    this.props.onLoaded();
+    if (this.props.onLoaded) this.props.onLoaded(); 
   }
 
   renderGlove() {
+    if (!this.props.glove) return null; 
     return (
       <div>
         <div>{this.props.glove.id}</div>
-        {this.renderGloveObject(this.props.glove.id, this.props.glove.gloveObject)}
+        {this.props.glove.gloveObject && this.renderGloveObject(this.props.glove.id, this.props.glove.gloveObject)}
       </div>
     );
   }
 
   renderGloveObject(gloveId, gloveObject) {
+    if (!gloveObject) return null; 
     return (
       <div>
         <div>{gloveObject.id}</div>
@@ -937,7 +899,9 @@ class UI extends React.Component {
   }
 
   renderSection(gloveId, section, gloveObject) {
+    if (!gloveObject || !gloveObject.zones || !gloveObject.zones.zones) return null; 
     const gloveZones = gloveObject.zones.zones;
+
     return (
       <div>
         <div>{section}</div>
@@ -951,7 +915,7 @@ class UI extends React.Component {
             key={element}
             subtitle={element}
             dataId={element}
-            options={colorOptions}
+            options={colorOptions} 
           />
         ))}
       </div>
@@ -968,18 +932,22 @@ class UI extends React.Component {
 ------------------------ */
 export default function initUI(app) {
   const promise = new Promise((resolve) => {
-    const root = ReactDOM.createRoot(document.getElementById('ui-container'));
+    const rootElement = document.getElementById('ui-container');
+    if (rootElement) { 
+        const root = ReactDOM.createRoot(rootElement);
 
-    root.render(
-      <React.StrictMode>
-        <IsopenContextProvider>
-          <App />
-        </IsopenContextProvider>
-      </React.StrictMode>
-    );
-
-    // Alternatively, you can render the UI component:
-    // root.render(<UI glove={app.glove} messenger={app.messenger} onLoaded={resolve} />);
+        root.render(
+        <React.StrictMode>
+            <IsopenContextProvider>
+            <App /> 
+            </IsopenContextProvider>
+        </React.StrictMode>
+        );
+        resolve(); 
+    } else {
+        console.error("UI container 'ui-container' not found.");
+        resolve(); 
+    }
   });
 
   return promise;
@@ -989,7 +957,6 @@ export default function initUI(app) {
    EXPORTS
 ------------------------ */
 export {
-  Nav,
   LeftPanel,
   RightPanel,
   MainContainer,
