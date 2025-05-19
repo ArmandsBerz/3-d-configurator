@@ -97,18 +97,21 @@ const UI = () => {
       {/* 4. Bottom Bar/Footer Area */}
       <footer className="p-4 bg-gray-800 border-t border-gray-700 flex justify-between items-center space-x-4"> {/* Added space-x-4 for spacing */}
 
-        {/* Accordion Toggle Button - Kept text, basic button styling */}
-        <button 
-          type="button" 
-          className="flex-shrink-0 py-2 px-4 bg-gray-700 hover:bg-gray-600 rounded text-sm"
-          aria-label="Accordion Toggle Options"
+        {/* Accordion Toggle Button - Updated to include icon and "Accordion" text, with styling to match Figma */}
+        <button
+          type="button"
+          className="flex items-center space-x-2 flex-shrink-0 py-3 px-4 bg-gray-700 hover:bg-gray-600 rounded text-base font-semibold text-white"
+          aria-label="Toggle accordion panel"
         >
-          Accordion Toggle
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="w-6 h-6"> {/* Icon size updated to w-6 h-6 */}
+            <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 6.75h7.5M8.25 12h7.5m-7.5 5.25h7.5M3.75 6.75h.007v.008H3.75V6.75Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0ZM3.75 12h.007v.008H3.75V12Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm-.375 5.25h.007v.008H3.75v-.008Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z" />
+          </svg>
+          <span>Accordion</span>
         </button>
 
         {/* Call To Action Button - Styled to be more prominent and take available space */}
-        <button 
-          type="button" 
+        <button
+          type="button"
           className="flex-grow py-3 px-4 sm:px-6 bg-blue-600 hover:bg-blue-500 active:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-opacity-50 rounded text-base font-semibold flex items-center justify-center" // Added flex-grow, justify-center, adjusted padding, hover/active/focus states
         >
           Call To Action
