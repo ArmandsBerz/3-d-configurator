@@ -5,13 +5,21 @@ const UI = () => {
     // Main container for the mobile view, full height, dark theme
     <div className="flex flex-col min-h-screen bg-gray-900 text-white">
 
-      {/* 1. Header Area */}
+      {/* 1. Header Area - This <header> element will be removed as LOGO moves into <main> */}
+      {/*
       <header className="p-4 bg-gray-800 shadow-md">
         <p>LOGO</p>
       </header>
+      */}
 
         {/* 2. Visualization Area (Flex-grow to take available space) */}
-      <main className="flex-grow p-4 flex flex-col items-center justify-center relative bg-black">
+      <main className="flex-grow p-4 flex flex-col items-center justify-center relative bg-black"> {/* Ensured relative positioning is still here */}
+        
+        {/* LOGO - Now positioned absolutely within the main visualization area */}
+        {/* Mockups show it top-left of the visualization area */}
+        <div className="absolute top-4 left-4 p-2 bg-gray-700 bg-opacity-75 rounded z-10"> {/* Added z-10 just in case, example styling */}
+          <p className="font-bold">LOGO</p>
+        </div>
         
         {/* Placeholder for the actual visualization content */}
         <div className="w-full h-full flex items-center justify-center border border-dashed border-gray-700">
@@ -19,7 +27,7 @@ const UI = () => {
         </div>
 
         {/* Interaction Hints & Expand Icon - Positioned at the bottom center (or bottom-left) of the main area */}
-        <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center space-x-4 p-2 bg-gray-700 bg-opacity-50 rounded text-xs">
+        <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center space-x-4 p-2 bg-gray-700 bg-opacity-50 rounded text-xs z-10"> {/* Added z-10 just in case */}
           {/* Expand Icon Placeholder - Now at the start of this group */}
           <div className="p-1 hover:bg-gray-600 rounded cursor-pointer"> {/* Wrapper for icon if it needs its own hover/padding */}
             <span className="text-lg leading-none">⛶</span> {/* Unicode for square with four corners / "fullscreen" symbol */}
@@ -87,17 +95,17 @@ const UI = () => {
       </section>
 
       {/* 4. Bottom Bar/Footer Area */}
-      <footer className="p-4 bg-gray-800 border-t border-gray-700 flex justify-between items-center"> {/* Removed shadow-up-md, added border-t */}
+      <footer className="p-4 bg-gray-800 border-t border-gray-700 flex justify-between items-center"> 
 
         {/* Accordion Toggle Button - Styled as a less prominent button */}
         <button type="button" className="py-2 px-4 bg-gray-700 hover:bg-gray-600 rounded text-sm">
           Accordion Toggle
         </button>
 
-        {/* Call To Action Button - Styled as a prominent button */}
+        {/* Call To Action Button - Styled to be more prominent */}
         <button type="button" className="py-2 px-6 bg-blue-600 hover:bg-blue-500 rounded text-sm font-semibold flex items-center">
           Call To Action
-          <span className="ml-2">---&gt;</span> {/* Simple arrow, can be replaced with an icon later */}
+          <span className="ml-2">---&gt;</span> 
         </button>
 
       </footer>
