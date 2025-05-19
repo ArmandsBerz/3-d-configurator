@@ -64,10 +64,10 @@ const UI = () => {
       </main>
 
       {/* 3. Options/Controls Area */}
-      <section className="p-4 bg-neutral-800"> {/* Updated background */}
+      <section className="p-4 bg-neutral-800 h-80 overflow-y-auto"> {/* Updated height and overflow */}
         {/* Static option rows based on the mockup image_e59280.jpg (leftmost panel) */}
 
-        <div className="flex justify-between items-center py-3 border-b border-gray-700">
+        <div className="flex justify-between items-center py-5 border-b border-gray-700"> {/* Updated padding */}
           <div className="flex items-center">
             <svg viewBox="0 0 10 16" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-4 w-auto mr-3">
               <path opacity={0.2} d="M1 1L8 8L1.10769 15" stroke="white" strokeWidth={2}/>
@@ -77,7 +77,7 @@ const UI = () => {
           {/* No explicit value shown on the right in the mockup for "Build" */}
         </div>
 
-        <div className="flex justify-between items-center py-3 border-b border-gray-700">
+        <div className="flex justify-between items-center py-5 border-b border-gray-700"> {/* Updated padding */}
           <div className="flex items-center">
             <svg viewBox="0 0 10 16" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-4 w-auto mr-3">
               <path opacity={0.2} d="M1 1L8 8L1.10769 15" stroke="white" strokeWidth={2}/>
@@ -87,7 +87,7 @@ const UI = () => {
           <span className="text-gray-400">Option</span>
         </div>
 
-        <div className="flex justify-between items-center py-3 border-b border-gray-700">
+        <div className="flex justify-between items-center py-5 border-b border-gray-700"> {/* Updated padding */}
           <div className="flex items-center">
             <svg viewBox="0 0 10 16" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-4 w-auto mr-3">
               <path opacity={0.2} d="M1 1L8 8L1.10769 15" stroke="white" strokeWidth={2}/>
@@ -97,7 +97,7 @@ const UI = () => {
           <span className="w-4 h-4 bg-yellow-400 rounded-full"></span> {/* Single color dot */}
         </div>
 
-        <div className="flex justify-between items-center py-3 border-b border-gray-700">
+        <div className="flex justify-between items-center py-5 border-b border-gray-700"> {/* Updated padding */}
           <div className="flex items-center">
             <svg viewBox="0 0 10 16" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-4 w-auto mr-3">
               <path opacity={0.2} d="M1 1L8 8L1.10769 15" stroke="white" strokeWidth={2}/>
@@ -107,7 +107,7 @@ const UI = () => {
           <span className="text-gray-400">Text</span>
         </div>
 
-        <div className="flex justify-between items-center py-3 border-b border-gray-700">
+        <div className="flex justify-between items-center py-5 border-b border-gray-700"> {/* Updated padding */}
           <div className="flex items-center">
             <svg viewBox="0 0 10 16" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-4 w-auto mr-3">
               <path opacity={0.2} d="M1 1L8 8L1.10769 15" stroke="white" strokeWidth={2}/>
@@ -120,7 +120,7 @@ const UI = () => {
           </div>
         </div>
 
-        <div className="flex justify-between items-center py-3 border-b border-gray-700">
+        <div className="flex justify-between items-center py-5 border-b border-gray-700"> {/* Updated padding */}
           <div className="flex items-center">
             <svg viewBox="0 0 10 16" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-4 w-auto mr-3">
               <path opacity={0.2} d="M1 1L8 8L1.10769 15" stroke="white" strokeWidth={2}/>
@@ -133,7 +133,7 @@ const UI = () => {
           </div>
         </div>
 
-        <div className="flex justify-between items-center py-3"> {/* No bottom border for the last item */}
+        <div className="flex justify-between items-center py-5"> {/* Updated padding, No bottom border for the last item */}
           <div className="flex items-center">
             <svg viewBox="0 0 10 16" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-4 w-auto mr-3">
               <path opacity={0.2} d="M1 1L8 8L1.10769 15" stroke="white" strokeWidth={2}/>
