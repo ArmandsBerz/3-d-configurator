@@ -13,7 +13,7 @@ const UI = () => {
       */}
 
         {/* 2. Visualization Area (Flex-grow to take available space) */}
-      <main className="flex-grow p-4 flex flex-col items-center justify-center relative bg-black"> {/* Ensured relative positioning is still here */}
+      <main className="flex-grow p-4 flex flex-col items-center justify-center relative bg-neutral-900"> {/* Updated background */}
         
         {/* LOGO - Updated for size and background/text color */}
         <div className="absolute top-4 left-4 p-4 bg-gray-300 bg-opacity-75 rounded z-10"> {/* Increased padding, lighter bg */}
@@ -44,7 +44,7 @@ const UI = () => {
       </main>
 
       {/* 3. Options/Controls Area */}
-      <section className="p-4 bg-gray-800">
+      <section className="p-4 bg-neutral-800"> {/* Updated background */}
         {/* Static option rows based on the mockup image_e59280.jpg (leftmost panel) */}
 
         <div className="flex justify-between items-center py-3 border-b border-gray-700">
@@ -94,7 +94,7 @@ const UI = () => {
       </section>
 
       {/* 4. Bottom Bar/Footer Area */}
-      <footer className="p-4 bg-gray-800 border-t border-gray-700 flex justify-between items-center space-x-4"> {/* Added space-x-4 for spacing */}
+      <footer className="p-4 bg-neutral-800 border-t border-gray-700 flex justify-between items-center space-x-4"> {/* Updated background */}
 
         {/* Accordion Toggle Button - Updated to include icon and "Accordion" text, with styling to match Figma */}
         <button
