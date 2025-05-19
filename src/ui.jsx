@@ -64,27 +64,52 @@ const UI = () => {
         {/* Static option rows based on the mockup image_e59280.jpg (leftmost panel) */}
 
         <div className="flex justify-between items-center py-3 border-b border-gray-700">
-          <span className="text-lg">&gt; Build</span>
+          <div className="flex items-center">
+            <svg viewBox="0 0 10 16" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-4 w-auto mr-3">
+              <path opacity={0.2} d="M1 1L8 8L1.10769 15" stroke="white" strokeWidth={2}/>
+            </svg>
+            <span className="text-lg">Build</span>
+          </div>
           {/* No explicit value shown on the right in the mockup for "Build" */}
         </div>
 
         <div className="flex justify-between items-center py-3 border-b border-gray-700">
-          <span className="text-lg">&gt; Select Option</span>
+          <div className="flex items-center">
+            <svg viewBox="0 0 10 16" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-4 w-auto mr-3">
+              <path opacity={0.2} d="M1 1L8 8L1.10769 15" stroke="white" strokeWidth={2}/>
+            </svg>
+            <span className="text-lg">Select Option</span>
+          </div>
           <span className="text-gray-400">Option</span>
         </div>
 
         <div className="flex justify-between items-center py-3 border-b border-gray-700">
-          <span className="text-lg">&gt; Color Option</span>
+          <div className="flex items-center">
+            <svg viewBox="0 0 10 16" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-4 w-auto mr-3">
+              <path opacity={0.2} d="M1 1L8 8L1.10769 15" stroke="white" strokeWidth={2}/>
+            </svg>
+            <span className="text-lg">Color Option</span>
+          </div>
           <span className="w-4 h-4 bg-yellow-400 rounded-full"></span> {/* Single color dot */}
         </div>
 
         <div className="flex justify-between items-center py-3 border-b border-gray-700">
-          <span className="text-lg">&gt; Input Option</span>
+          <div className="flex items-center">
+            <svg viewBox="0 0 10 16" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-4 w-auto mr-3">
+              <path opacity={0.2} d="M1 1L8 8L1.10769 15" stroke="white" strokeWidth={2}/>
+            </svg>
+            <span className="text-lg">Input Option</span>
+          </div>
           <span className="text-gray-400">Text</span>
         </div>
 
         <div className="flex justify-between items-center py-3 border-b border-gray-700">
-          <span className="text-lg">&gt; Select & Color Option</span>
+          <div className="flex items-center">
+            <svg viewBox="0 0 10 16" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-4 w-auto mr-3">
+              <path opacity={0.2} d="M1 1L8 8L1.10769 15" stroke="white" strokeWidth={2}/>
+            </svg>
+            <span className="text-lg">Select & Color Option</span>
+          </div>
           <div className="flex items-center space-x-2"> {/* Wrapper for multiple items on the right */}
             <span className="text-gray-400">Option</span>
             <span className="w-4 h-4 bg-yellow-400 rounded-full"></span>
@@ -92,7 +117,12 @@ const UI = () => {
         </div>
 
         <div className="flex justify-between items-center py-3 border-b border-gray-700">
-          <span className="text-lg">&gt; Input & Color Option</span>
+          <div className="flex items-center">
+            <svg viewBox="0 0 10 16" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-4 w-auto mr-3">
+              <path opacity={0.2} d="M1 1L8 8L1.10769 15" stroke="white" strokeWidth={2}/>
+            </svg>
+            <span className="text-lg">Input & Color Option</span>
+          </div>
           <div className="flex items-center space-x-2"> {/* Wrapper for multiple items on the right */}
             <span className="text-gray-400">Text</span>
             <span className="w-4 h-4 bg-yellow-400 rounded-full"></span>
@@ -100,7 +130,12 @@ const UI = () => {
         </div>
 
         <div className="flex justify-between items-center py-3"> {/* No bottom border for the last item */}
-          <span className="text-lg">&gt; Dual Color Option</span>
+          <div className="flex items-center">
+            <svg viewBox="0 0 10 16" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-4 w-auto mr-3">
+              <path opacity={0.2} d="M1 1L8 8L1.10769 15" stroke="white" strokeWidth={2}/>
+            </svg>
+            <span className="text-lg">Dual Color Option</span>
+          </div>
           <div className="flex items-center space-x-1"> {/* Wrapper for multiple items on the right, tighter spacing for two dots */}
             <span className="w-4 h-4 bg-yellow-400 rounded-full"></span>
             <span className="w-4 h-4 bg-yellow-400 rounded-full"></span>
