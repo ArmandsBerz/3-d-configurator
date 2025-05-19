@@ -15,10 +15,9 @@ const UI = () => {
         {/* 2. Visualization Area (Flex-grow to take available space) */}
       <main className="flex-grow p-4 flex flex-col items-center justify-center relative bg-black"> {/* Ensured relative positioning is still here */}
         
-        {/* LOGO - Now positioned absolutely within the main visualization area */}
-        {/* Mockups show it top-left of the visualization area */}
-        <div className="absolute top-4 left-4 p-2 bg-gray-700 bg-opacity-75 rounded z-10"> {/* Added z-10 just in case, example styling */}
-          <p className="font-bold">LOGO</p>
+        {/* LOGO - Updated for size and background/text color */}
+        <div className="absolute top-4 left-4 p-4 bg-gray-300 bg-opacity-75 rounded z-10"> {/* Increased padding, lighter bg */}
+          <p className="font-bold text-xl text-gray-900">LOGO</p> {/* Larger text, dark text color */}
         </div>
         
         {/* Placeholder for the actual visualization content */}
