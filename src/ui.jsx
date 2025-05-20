@@ -15,9 +15,9 @@ const UI = () => {
         {/* 2. Visualization Area (Flex-grow to take available space) */}
       <main className="flex-grow p-4 flex flex-col items-center justify-center relative bg-neutral-900"> {/* Updated background */}
         
-        {/* LOGO - Updated for size and background/text color */}
-        <div className="absolute top-4 left-4 p-4 bg-gray-300 bg-opacity-75 rounded z-10"> {/* Increased padding, lighter bg */}
-          <p className="font-bold text-xl text-gray-900">LOGO</p> {/* Larger text, dark text color */}
+        {/* LOGO - Updated for exact size and positioning */}
+        <div className="absolute top-[20px] left-[20px] w-[70px] h-[49px] bg-gray-300 bg-opacity-75 rounded z-10 flex items-center justify-center">
+          <p className="font-bold text-xl text-gray-900">LOGO</p>
         </div>
         
         {/* Placeholder for the actual visualization content */}
@@ -149,8 +149,7 @@ const UI = () => {
       </section>
 
       {/* 4. Bottom Bar/Footer Area */}
-      {/* ATTENTION: The user's request is to modify THIS footer section. The classes below are from the *immediately preceding* step. */}
-      {/* I will provide the same code for the footer as this already implements the requested JIT values. */}
+      {/* Footer with specified button sizes and spacing */}
       <footer className="bg-neutral-800 border-t border-gray-700 flex items-center justify-start pt-4 pb-[20px] px-[14px]">
 
         {/* Accordion Toggle Button */}
@@ -159,7 +158,7 @@ const UI = () => {
           className="flex items-center justify-center space-x-2 px-4 bg-gray-700 hover:bg-gray-600 rounded text-base font-semibold text-white w-[146px] h-[56px]"
           aria-label="Toggle accordion panel"
         >
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="w-6 h-6">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="w-6 h-6"> 
             <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 6.75h7.5M8.25 12h7.5m-7.5 5.25h7.5M3.75 6.75h.007v.008H3.75V6.75Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0ZM3.75 12h.007v.008H3.75V12Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm-.375 5.25h.007v.008H3.75v-.008Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z" />
           </svg>
           <span>Accordion</span>
