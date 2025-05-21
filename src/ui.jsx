@@ -3,7 +3,7 @@ import React from 'react';
 const UI = () => {
 return (
 // Main container for the mobile view, full height, dark theme
-<div className="flex flex-col min-h-screen bg-gray-900 text-white">
+<div className="flex flex-col min-h-screen bg-[#161616] text-white">
 
 {/* 1. Header Area - This <header> element will be removed as LOGO moves into <main> */}
 {/*
@@ -13,7 +13,7 @@ return (
 */}
 
 {/* 2. Visualization Area (Flex-grow to take available space) */}
-<main className="flex-grow p-4 flex flex-col items-center justify-center relative bg-neutral-900"> {/* Updated background */}
+<main className="flex-grow p-4 flex flex-col items-center justify-center relative bg-[#161616]"> {/* Kept p-4 */}
 {/* LOGO - Updated for exact size and positioning */}
 <div className="absolute top-[20px] left-[20px] w-[70px] h-[49px] bg-gray-300 bg-opacity-75 rounded z-10 flex items-center justify-center">
 <p className="font-bold text-xl text-gray-900">LOGO</p>
@@ -61,10 +61,10 @@ return (
 </main>
 
 {/* 3. Options/Controls Area */}
-<section className="p-4 bg-neutral-800 h-80 overflow-y-auto"> {/* Updated height and overflow */}
+<section className="px-4 bg-[#161616] h-80 overflow-y-auto"> {/* Changed p-4 to px-4 */}
 {/* Static option rows based on the mockup image_e59280.jpg (leftmost panel) */}
 
-<div className="w-full h-[56px] bg-stone-900 flex items-center justify-between px-4 mb-[10px]">
+<div className="w-full h-[56px] bg-[#222222] flex items-center justify-between px-4 mb-[10px]">
 <div className="flex items-center">
 <svg viewBox="0 0 10 16" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-4 w-auto mr-3">
 <path opacity={0.2} d="M1 1L8 8L1.10769 15" stroke="white" strokeWidth={2}/>
@@ -74,7 +74,7 @@ return (
 <span className="w-4 h-4 bg-yellow-400 rounded-full"></span>
 </div>
 
-<div className="w-full h-[56px] bg-stone-900 flex items-center justify-between px-4 mb-[10px]">
+<div className="w-full h-[56px] bg-[#1C1C1C] flex items-center justify-between px-4 mb-[10px]">
 <div className="flex items-center">
 <svg viewBox="0 0 10 16" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-4 w-auto mr-3">
 <path opacity={0.2} d="M1 1L8 8L1.10769 15" stroke="white" strokeWidth={2}/>
@@ -84,7 +84,7 @@ return (
 <span className="w-4 h-4 bg-yellow-400 rounded-full"></span>
 </div>
 
-<div className="w-full h-[56px] bg-stone-900 flex items-center justify-between px-4 mb-[10px]">
+<div className="w-full h-[56px] bg-[#1C1C1C] flex items-center justify-between px-4 mb-[10px]">
 <div className="flex items-center">
 <svg viewBox="0 0 10 16" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-4 w-auto mr-3">
 <path opacity={0.2} d="M1 1L8 8L1.10769 15" stroke="white" strokeWidth={2}/>
@@ -94,7 +94,7 @@ return (
 <span className="w-4 h-4 bg-yellow-400 rounded-full"></span>
 </div>
 
-<div className="w-full h-[56px] bg-stone-900 flex items-center justify-between px-4 mb-[10px]">
+<div className="w-full h-[56px] bg-[#1C1C1C] flex items-center justify-between px-4 mb-[10px]">
 <div className="flex items-center">
 <svg viewBox="0 0 10 16" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-4 w-auto mr-3">
 <path opacity={0.2} d="M1 1L8 8L1.10769 15" stroke="white" strokeWidth={2}/>
@@ -104,7 +104,7 @@ return (
 <span className="w-4 h-4 bg-yellow-400 rounded-full"></span>
 </div>
 
-<div className="w-full h-[56px] bg-stone-900 flex items-center justify-between px-4 mb-[10px]">
+<div className="w-full h-[56px] bg-[#1C1C1C] flex items-center justify-between px-4 mb-[10px]">
 <div className="flex items-center">
 <svg viewBox="0 0 10 16" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-4 w-auto mr-3">
 <path opacity={0.2} d="M1 1L8 8L1.10769 15" stroke="white" strokeWidth={2}/>
@@ -114,7 +114,7 @@ return (
 <span className="w-4 h-4 bg-yellow-400 rounded-full"></span>
 </div>
 
-<div className="w-full h-[56px] bg-stone-900 flex items-center justify-between px-4 mb-[10px]">
+<div className="w-full h-[56px] bg-[#1C1C1C] flex items-center justify-between px-4 mb-[10px]">
 <div className="flex items-center">
 <svg viewBox="0 0 10 16" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-4 w-auto mr-3">
 <path opacity={0.2} d="M1 1L8 8L1.10769 15" stroke="white" strokeWidth={2}/>
@@ -124,7 +124,7 @@ return (
 <span className="w-4 h-4 bg-yellow-400 rounded-full"></span>
 </div>
 
-<div className="w-full h-[56px] bg-stone-900 flex items-center justify-between px-4"> {/* Last item doesn't need mb-[10px] or can have it if consistent spacing to bottom of container is desired */}
+<div className="w-full h-[56px] bg-[#1C1C1C] flex items-center justify-between px-4"> {/* Last item doesn't need mb-[10px] or can have it if consistent spacing to bottom of container is desired */}
 <div className="flex items-center">
 <svg viewBox="0 0 10 16" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-4 w-auto mr-3">
 <path opacity={0.2} d="M1 1L8 8L1.10769 15" stroke="white" strokeWidth={2}/>
@@ -138,7 +138,7 @@ return (
 
 {/* 4. Bottom Bar/Footer Area */}
 {/* Footer with specified button sizes and spacing */}
-<footer className="bg-neutral-800 border-t border-gray-700 flex items-center justify-start pt-4 pb-[20px] px-[14px]">
+<footer className="bg-[#161616] border-t border-gray-700 flex items-center justify-start mt-[10px] pb-[20px] px-[14px]"> {/* Removed pt-4, Added mt-[10px] */}
 
 {/* Accordion Toggle Button */}
 <button
