@@ -2,13 +2,15 @@ import React, { useState } from 'react';
 
 const UI = () => {
   const [isSummaryPanelVisible, setIsSummaryPanelVisible] = useState(false);
+  const [isVisualizationExpanded, setIsVisualizationExpanded] = useState(false);
 
   return (
     // Main container for the mobile view, full height, dark theme
     <div className="flex flex-col min-h-screen bg-[#161616] text-white">
 
       {/* 2. Visualization Area (Flex-grow to take available space) */}
-      <main className="flex-grow p-4 flex flex-col items-center justify-center relative bg-[#161616]"> {/* Kept p-4 */}
+      {/* Apply 'h-full' when expanded to ensure it tries to take all available vertical space if footer/options are gone */}
+      <main className={`flex-grow p-4 flex flex-col items-center justify-center relative bg-[#161616] ${isVisualizationExpanded ? 'h-full' : ''}`}>
         {/* LOGO - Updated for exact size and positioning */}
         <div className="absolute top-[20px] left-[20px] w-[70px] h-[49px] bg-gray-300 bg-opacity-75 rounded z-10 flex items-center justify-center">
           <p className="font-bold text-xl text-gray-900">LOGO</p>
@@ -20,14 +22,29 @@ const UI = () => {
 
         {/* Interaction Hints & Expand Icon - Updated Styling and Layout */}
         <div className="absolute bottom-4 inset-x-0 flex items-center justify-between text-xs z-10"> {/* Updated bottom, removed px-6 */}
-          {/* Expand Icon (Left) */}
-          <div className="p-1 hover:bg-gray-800 hover:bg-opacity-50 rounded-md cursor-pointer ml-[14px]"> {/* Added ml-[14px] */}
-            <svg viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-7 h-7">
-              <path d="M28 1.24271C28 0.556382 27.4436 0 26.7572 0H21.1692C20.8195 0 20.4843 0.138953 20.2371 0.386114C19.9899 0.633274 19.851 0.968417 19.851 1.31792C19.851 1.66763 19.9899 2.0028 20.2371 2.24994C20.4843 2.4971 20.8195 2.63605 21.1692 2.63605H23.4991L16.8345 9.30049C16.5891 9.54805 16.4518 9.88279 16.4524 10.2313C16.4532 10.58 16.592 10.914 16.8385 11.1605C17.0851 11.4068 17.4191 11.5456 17.7678 11.5464C18.1163 11.5472 18.4509 11.4099 18.6985 11.1645L25.3636 4.49957V6.83184C25.3636 7.18135 25.5024 7.51672 25.7498 7.76386C25.9969 8.01102 26.3321 8.14997 26.6819 8.14997C27.0314 8.14997 27.3666 8.01102 27.6138 7.76386C27.861 7.5167 27.9999 7.18135 27.9999 6.83184L28 1.24271Z" fill="white"/>
-              <path d="M11.1656 16.8327C10.9184 16.5856 10.5831 16.4468 10.2335 16.4468C9.88397 16.4468 9.54857 16.5856 9.30141 16.8327L2.63631 23.4992V21.167C2.63631 20.8175 2.49735 20.4821 2.25016 20.235C2.00298 19.9878 1.6678 19.8488 1.31805 19.8488C0.968513 19.8488 0.633316 19.9878 0.386152 20.235C0.138967 20.4821 0 20.8175 0 21.167V26.7565C0 27.4428 0.556426 27.9992 1.24281 27.9992H6.82977C7.17931 27.9992 7.51471 27.8602 7.76187 27.6133C8.00906 27.3661 8.14803 27.0307 8.14803 26.6812C8.14803 26.3315 8.00906 25.9964 7.76187 25.7492C7.51469 25.5021 7.17931 25.3631 6.82977 25.3631H4.49929L11.1654 18.6966C11.4126 18.4492 11.5514 18.1141 11.5514 17.7646C11.5514 17.4151 11.4126 17.0797 11.1654 16.8326L11.1656 16.8327Z" fill="white"/>
-              <path d="M19.8508 26.6821C19.8508 27.0316 19.9898 27.3667 20.237 27.6141C20.4841 27.861 20.8193 28 21.1691 28H26.756C27.4424 28 27.9988 27.4436 27.9988 26.7573V21.1673C27.9988 20.8178 27.8599 20.4824 27.6127 20.2353C27.3657 19.9881 27.0303 19.8492 26.6808 19.8492C26.331 19.8492 25.9958 19.8881 25.7487 20.2353C25.5015 20.4824 25.3625 20.8178 25.3625 21.1673V23.4987L18.6979 16.8327C18.4503 16.5874 18.1158 16.4501 17.7672 16.4509C17.4185 16.4515 17.0845 16.5904 16.838 16.8368C16.5914 17.0833 16.4526 17.4173 16.4518 17.7659C16.4512 18.1144 16.5886 18.4492 16.8339 18.6968L23.5001 25.3638H21.1687C20.819 25.3638 20.4838 25.5027 20.2366 25.7499C19.9895 25.9971 19.8505 26.3322 19.8505 26.6819L19.8508 26.6821Z" fill="white"/>
-              <path d="M11.1656 9.30049L4.50001 2.63605H6.82987C7.17941 2.63605 7.51481 2.4971 7.76198 2.24994C8.00916 2.00278 8.14813 1.66764 8.14813 1.31792C8.14813 0.968417 8.00916 0.633253 7.76198 0.386114C7.51479 0.138953 7.17941 0 6.82987 0H1.24292C0.55653 0 0.000103511 0.55637 0.000103511 1.24269V6.8322C0.000103511 7.1817 0.139071 7.51707 0.386255 7.76421C0.63344 8.01137 0.968616 8.15033 1.31816 8.15033C1.6679 8.15033 2.0031 8.01137 2.25027 7.76421C2.49745 7.51705 2.63642 7.1817 2.63642 6.8322V4.49993L9.30151 11.1649C9.5491 11.4102 9.88387 11.5476 10.2324 11.5467C10.5812 11.5459 10.9151 11.4072 11.1617 11.1608C11.4081 10.9143 11.5468 10.5803 11.5476 10.2317C11.5484 9.88317 11.4111 9.54845 11.1657 9.30084L11.1656 9.30049Z" fill="white"/>
-            </svg>
+          {/* Expand/Collapse Icon (Left) */}
+          <div
+            className="p-1 hover:bg-gray-800 hover:bg-opacity-50 rounded-md cursor-pointer ml-[14px]"
+            onClick={() => setIsVisualizationExpanded(!isVisualizationExpanded)}
+            aria-label={isVisualizationExpanded ? "Collapse visualization" : "Expand visualization"}
+          >
+            {isVisualizationExpanded ? (
+              // Collapse Icon SVG (User Provided)
+              <svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-7 h-7">
+                <path d="M17.3176 3.39899C16.9681 3.39899 16.633 3.53795 16.3856 3.78514C16.1386 4.03232 15.9997 4.3675 15.9997 4.71725V10.3042C15.9997 10.9906 16.5561 11.547 17.2424 11.547L22.8324 11.547C23.1819 11.547 23.5173 11.408 23.7644 11.1609C24.0116 10.9139 24.1505 10.5785 24.1505 10.229C24.1505 9.87922 24.0116 9.54402 23.7644 9.29685C23.5173 9.04967 23.1819 8.9107 22.8324 8.9107H20.501L27.167 2.24612C27.4123 1.99854 27.5496 1.66397 27.5488 1.31541C27.5482 0.966682 27.4093 0.632697 27.1629 0.386154C26.9164 0.139575 26.5824 0.000809714 26.2337 1.87161e-06C25.8852 -0.000604998 25.5505 0.136743 25.3029 0.382111L18.6359 7.04824V4.71693C18.6359 4.36719 18.4969 4.03199 18.2498 3.78482C18.0026 3.53764 17.6673 3.39899 17.3176 3.39899Z" fill="white"/>
+                <path d="M24.1489 17.3166C24.1489 16.9671 24.0099 16.632 23.7627 16.3846C23.5155 16.1377 23.1804 15.9987 22.8306 15.9987H17.2437C16.5573 15.9987 16.0008 16.5551 16.0008 17.2414V22.8314C16.0008 23.1809 16.1398 23.5163 16.387 23.7634C16.634 24.0106 16.9694 24.1496 17.3189 24.1496C17.6686 24.1496 18.0038 24.0106 18.251 23.7634C18.4982 23.5163 18.6372 23.1809 18.6372 22.8314V20.5L25.3017 27.166C25.5493 27.4113 25.8839 27.5487 26.2324 27.5478C26.5812 27.5472 26.9152 27.4083 27.1617 27.1619C27.4083 26.9154 27.547 26.5814 27.5478 26.2328C27.5485 25.8843 27.4111 25.5495 27.1657 25.3019L20.4996 18.6349H22.8309C23.1807 18.6349 23.5159 18.496 23.763 18.2488C24.0102 18.0016 24.1489 17.6664 24.1489 17.3166Z" fill="white"/>
+                <path d="M10.2312 24.1479C10.5807 24.1479 10.9159 24.0089 11.1632 23.7617C11.4102 23.5146 11.5491 23.1794 11.5491 22.8296V17.2427C11.5491 16.5563 10.9928 15.9999 10.3064 15.9999H4.71642C4.36691 15.9999 4.03154 16.1388 3.7844 16.386C3.53724 16.633 3.39829 16.9684 3.39829 17.3179C3.39829 17.6677 3.53724 18.0029 3.7844 18.25C4.03156 18.4972 4.36691 18.6362 4.71642 18.6362H7.04786L0.381872 25.3008C0.136529 25.5483 -0.0008042 25.8829 3.54305e-06 26.2315C0.000610281 26.5802 0.139565 26.9142 0.385917 27.1607C0.632472 27.4073 0.966407 27.5461 1.31508 27.5469C1.66358 27.5475 1.9983 27.4101 2.24591 27.1648L8.91293 20.4986V22.8299C8.91293 23.1797 9.05189 23.5149 9.29905 23.7621C9.54621 24.0092 9.88149 24.1479 10.2312 24.1479Z" fill="white"/>
+                <path d="M3.39996 10.2302C3.39996 10.5797 3.53893 10.9149 3.78612 11.1622C4.0333 11.4092 4.36848 11.5482 4.71822 11.5482L10.3052 11.5482C10.9916 11.5482 11.548 10.9918 11.548 10.3055L11.548 4.71544C11.548 4.36594 11.409 4.03057 11.1618 3.78343C10.9149 3.53627 10.5795 3.39731 10.2299 3.39731C9.88019 3.39731 9.54499 3.53627 9.29783 3.78343C9.05064 4.03059 8.91168 4.36594 8.91168 4.71544V7.04688L2.2471 0.380895C1.99951 0.135552 1.66495 -0.00178075 1.31639 -0.00097302C0.967659 -0.000366296 0.633674 0.138588 0.387132 0.384941C0.140553 0.631495 0.00178728 0.96543 0.00097943 1.31411C0.000372556 1.6626 0.137721 1.99733 0.383088 2.24493L7.04922 8.91195H4.71791C4.36817 8.91195 4.03296 9.05091 3.7858 9.29807C3.53861 9.54523 3.39996 9.88052 3.39996 10.2302Z" fill="white"/>
+              </svg>
+            ) : (
+              // Original Expand Icon SVG
+              <svg viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-7 h-7">
+                <path d="M28 1.24271C28 0.556382 27.4436 0 26.7572 0H21.1692C20.8195 0 20.4843 0.138953 20.2371 0.386114C19.9899 0.633274 19.851 0.968417 19.851 1.31792C19.851 1.66763 19.9899 2.0028 20.2371 2.24994C20.4843 2.4971 20.8195 2.63605 21.1692 2.63605H23.4991L16.8345 9.30049C16.5891 9.54805 16.4518 9.88279 16.4524 10.2313C16.4532 10.58 16.592 10.914 16.8385 11.1605C17.0851 11.4068 17.4191 11.5456 17.7678 11.5464C18.1163 11.5472 18.4509 11.4099 18.6985 11.1645L25.3636 4.49957V6.83184C25.3636 7.18135 25.5024 7.51672 25.7498 7.76386C25.9969 8.01102 26.3321 8.14997 26.6819 8.14997C27.0314 8.14997 27.3666 8.01102 27.6138 7.76386C27.861 7.5167 27.9999 7.18135 27.9999 6.83184L28 1.24271Z" fill="white"/>
+                <path d="M11.1656 16.8327C10.9184 16.5856 10.5831 16.4468 10.2335 16.4468C9.88397 16.4468 9.54857 16.5856 9.30141 16.8327L2.63631 23.4992V21.167C2.63631 20.8175 2.49735 20.4821 2.25016 20.235C2.00298 19.9878 1.6678 19.8488 1.31805 19.8488C0.968513 19.8488 0.633316 19.9878 0.386152 20.235C0.138967 20.4821 0 20.8175 0 21.167V26.7565C0 27.4428 0.556426 27.9992 1.24281 27.9992H6.82977C7.17931 27.9992 7.51471 27.8602 7.76187 27.6133C8.00906 27.3661 8.14803 27.0307 8.14803 26.6812C8.14803 26.3315 8.00906 25.9964 7.76187 25.7492C7.51469 25.5021 7.17931 25.3631 6.82977 25.3631H4.49929L11.1654 18.6966C11.4126 18.4492 11.5514 18.1141 11.5514 17.7646C11.5514 17.4151 11.4126 17.0797 11.1654 16.8326L11.1656 16.8327Z" fill="white"/>
+                <path d="M19.8508 26.6821C19.8508 27.0316 19.9898 27.3667 20.237 27.6141C20.4841 27.861 20.8193 28 21.1691 28H26.756C27.4424 28 27.9988 27.4436 27.9988 26.7573V21.1673C27.9988 20.8178 27.8599 20.4824 27.6127 20.2353C27.3657 19.9881 27.0303 19.8492 26.6808 19.8492C26.331 19.8492 25.9958 19.8881 25.7487 20.2353C25.5015 20.4824 25.3625 20.8178 25.3625 21.1673V23.4987L18.6979 16.8327C18.4503 16.5874 18.1158 16.4501 17.7672 16.4509C17.4185 16.4515 17.0845 16.5904 16.838 16.8368C16.5914 17.0833 16.4526 17.4173 16.4518 17.7659C16.4512 18.1144 16.5886 18.4492 16.8339 18.6968L23.5001 25.3638H21.1687C20.819 25.3638 20.4838 25.5027 20.2366 25.7499C19.9895 25.9971 19.8505 26.3322 19.8505 26.6819L19.8508 26.6821Z" fill="white"/>
+                <path d="M11.1656 9.30049L4.50001 2.63605H6.82987C7.17941 2.63605 7.51481 2.4971 7.76198 2.24994C8.00916 2.00278 8.14813 1.66764 8.14813 1.31792C8.14813 0.968417 8.00916 0.633253 7.76198 0.386114C7.51479 0.138953 7.17941 0 6.82987 0H1.24292C0.55653 0 0.000103511 0.55637 0.000103511 1.24269V6.8322C0.000103511 7.1817 0.139071 7.51707 0.386255 7.76421C0.63344 8.01137 0.968616 8.15033 1.31816 8.15033C1.6679 8.15033 2.0031 8.01137 2.25027 7.76421C2.49745 7.51705 2.63642 7.1817 2.63642 6.8322V4.49993L9.30151 11.1649C9.5491 11.4102 9.88387 11.5476 10.2324 11.5467C10.5812 11.5459 10.9151 11.4072 11.1617 11.1608C11.4081 10.9143 11.5468 10.5803 11.5476 10.2317C11.5484 9.88317 11.4111 9.54845 11.1657 9.30084L11.1656 9.30049Z" fill="white"/>
+              </svg>
+            )}
           </div>
           {/* Centered Group for Rotate and Zoom */}
           <div className="flex items-center space-x-4">
@@ -55,188 +72,180 @@ const UI = () => {
         </div>
       </main>
 
-      {/* Wrapper for Options/Controls Area and Summary Panel Overlay */}
-      <div className="relative"> {/* This wrapper allows absolute positioning of the overlay */}
-        
-        {/* 3. Options/Controls Area (Configurator List) */}
-        {/* This section will be overlaid when isSummaryPanelVisible is true */}
-        <section className={`px-4 bg-[#161616] h-80 overflow-y-auto ${isSummaryPanelVisible ? 'opacity-50 pointer-events-none' : ''}`}> {/* Optionally dim or disable interaction */}
-          {/* Static option rows based on the mockup image_e59280.jpg (leftmost panel) */}
-          <div className="w-full h-[56px] bg-[#222222] flex items-center justify-between px-4 mb-[10px]">
-            <div className="flex items-center">
-              <svg viewBox="0 0 10 16" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-4 w-auto mr-3">
-                <path opacity={0.2} d="M1 1L8 8L1.10769 15" stroke="white" strokeWidth={2}/>
-              </svg>
-              <span className="text-lg">Build</span>
-            </div>
-            <span className="w-4 h-4 bg-yellow-400 rounded-full"></span>
-          </div>
-
-          <div className="w-full h-[56px] bg-[#1C1C1C] flex items-center justify-between px-4 mb-[10px]">
-            <div className="flex items-center">
-              <svg viewBox="0 0 10 16" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-4 w-auto mr-3">
-                <path opacity={0.2} d="M1 1L8 8L1.10769 15" stroke="white" strokeWidth={2}/>
-              </svg>
-              <span className="text-lg">Select Option</span>
-            </div>
-            <span className="w-4 h-4 bg-yellow-400 rounded-full"></span>
-          </div>
-
-          <div className="w-full h-[56px] bg-[#1C1C1C] flex items-center justify-between px-4 mb-[10px]">
-            <div className="flex items-center">
-              <svg viewBox="0 0 10 16" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-4 w-auto mr-3">
-                <path opacity={0.2} d="M1 1L8 8L1.10769 15" stroke="white" strokeWidth={2}/>
-              </svg>
-              <span className="text-lg">Color Option</span>
-            </div>
-            <span className="w-4 h-4 bg-yellow-400 rounded-full"></span>
-          </div>
-
-          <div className="w-full h-[56px] bg-[#1C1C1C] flex items-center justify-between px-4 mb-[10px]">
-            <div className="flex items-center">
-              <svg viewBox="0 0 10 16" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-4 w-auto mr-3">
-                <path opacity={0.2} d="M1 1L8 8L1.10769 15" stroke="white" strokeWidth={2}/>
-              </svg>
-              <span className="text-lg">Input Option</span>
-            </div>
-            <span className="w-4 h-4 bg-yellow-400 rounded-full"></span>
-          </div>
-
-          <div className="w-full h-[56px] bg-[#1C1C1C] flex items-center justify-between px-4 mb-[10px]">
-            <div className="flex items-center">
-              <svg viewBox="0 0 10 16" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-4 w-auto mr-3">
-                <path opacity={0.2} d="M1 1L8 8L1.10769 15" stroke="white" strokeWidth={2}/>
-              </svg>
-              <span className="text-lg">Select & Color Option</span>
-            </div>
-            <span className="w-4 h-4 bg-yellow-400 rounded-full"></span>
-          </div>
-
-          <div className="w-full h-[56px] bg-[#1C1C1C] flex items-center justify-between px-4 mb-[10px]">
-            <div className="flex items-center">
-              <svg viewBox="0 0 10 16" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-4 w-auto mr-3">
-                <path opacity={0.2} d="M1 1L8 8L1.10769 15" stroke="white" strokeWidth={2}/>
-              </svg>
-              <span className="text-lg">Input & Color Option</span>
-            </div>
-            <span className="w-4 h-4 bg-yellow-400 rounded-full"></span>
-          </div>
-
-          <div className="w-full h-[56px] bg-[#1C1C1C] flex items-center justify-between px-4"> {/* Last item doesn't need mb-[10px] or can have it if consistent spacing to bottom of container is desired */}
-            <div className="flex items-center">
-              <svg viewBox="0 0 10 16" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-4 w-auto mr-3">
-                <path opacity={0.2} d="M1 1L8 8L1.10769 15" stroke="white" strokeWidth={2}/>
-              </svg>
-              <span className="text-lg">Dual Color Option</span>
-            </div>
-            <span className="w-4 h-4 bg-yellow-400 rounded-full"></span>
-          </div>
-        </section>
-
-        {/* Summary Panel Overlay */}
-        {isSummaryPanelVisible && (
-          <div className="absolute inset-0 bg-[#161616] z-20 flex flex-col h-80"> {/* Covers the section area */}
-            {/* Summary Panel Header */}
-            <div
-              className="flex items-center justify-between text-white py-3 px-4 bg-[#1C1C1C] cursor-pointer h-[56px]" // Matched height & padding of option rows
-              onClick={() => setIsSummaryPanelVisible(false)}
-            >
-              <div className="flex items-center">
-                {/* Placeholder Icon for Summary Panel Header (reusing one from footer) */}
-                <svg width="22" height="22" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg" className="mr-3">
-                  <g opacity="0.7"> {/* Opacity adjusted for visibility */}
-                    <path d="M17.1875 0H4.8125C3.53619 0 2.31204 0.507022 1.40953 1.40953C0.507021 2.31204 0 3.53619 0 4.8125V17.1875C0 18.4638 0.507021 19.688 1.40953 20.5905C2.31204 21.493 3.53619 22 4.8125 22H17.1875C18.4638 22 19.688 21.493 20.5905 20.5905C21.493 19.688 22 18.4638 22 17.1875V4.8125C22 3.53619 21.493 2.31204 20.5905 1.40953C19.688 0.507022 18.4638 0 17.1875 0ZM20.625 17.1875C20.625 18.0992 20.2628 18.9735 19.6181 19.6181C18.9735 20.2628 18.0992 20.625 17.1875 20.625H4.8125C3.9008 20.625 3.02653 20.2628 2.38185 19.6181C1.73717 18.9735 1.375 18.0992 1.375 17.1875V4.8125C1.375 3.9008 1.73717 3.02653 2.38185 2.38185C3.02654 1.73718 3.9008 1.375 4.8125 1.375H17.1875C18.0992 1.375 18.9735 1.73717 19.6181 2.38185C20.2628 3.02654 20.625 3.9008 20.625 4.8125V17.1875Z" fill="white"/>
-                    <path d="M8.9375 5.5H17.1875V6.875H8.9375V5.5Z" fill="white"/>
-                    <path d="M8.9375 10.3125H17.1875V11.6875H8.9375V10.3125Z" fill="white"/>
-                    <path d="M8.9375 15.125H17.1875V16.5H8.9375V15.125Z" fill="white"/>
-                    <path d="M7.5625 6.1875C7.5625 6.94681 6.94681 7.5625 6.1875 7.5625C5.42819 7.5625 4.8125 6.94681 4.8125 6.1875C4.8125 5.42819 5.42819 4.8125 6.1875 4.8125C6.94681 4.8125 7.5625 5.42819 7.5625 6.1875Z" fill="white"/>
-                    <path d="M7.5625 11C7.5625 11.7593 6.94681 12.375 6.1875 12.375C5.42819 12.375 4.8125 11.7593 4.8125 11C4.8125 10.2407 5.42819 9.625 6.1875 9.625C6.94681 9.625 7.5625 10.2407 7.5625 11Z" fill="white"/>
-                    <path d="M7.5625 15.8125C7.5625 16.5718 6.94681 17.1875 6.1875 17.1875C5.42819 17.1875 4.8125 16.5718 4.8125 15.8125C4.8125 15.0532 5.42819 14.4375 6.1875 14.4375C6.94681 14.4375 7.5625 15.0532 7.5625 15.8125Z" fill="white"/>
-                  </g>
-                </svg>
-                <span className="text-lg">Accordion Up</span> {/* As per image */}
+      {/* Conditional Rendering for Options/Summary and Footer sections */}
+      {!isVisualizationExpanded && (
+        <>
+          {/* Wrapper for Options/Controls Area and Summary Panel Overlay */}
+          <div className="relative"> {/* This wrapper allows absolute positioning of the overlay */}
+            
+            {/* 3. Options/Controls Area (Configurator List) */}
+            <section className={`px-4 bg-[#161616] h-80 overflow-y-auto ${isSummaryPanelVisible ? 'opacity-50 pointer-events-none' : ''}`}>
+              {/* Static option rows... */}
+              <div className="w-full h-[56px] bg-[#222222] flex items-center justify-between px-4 mb-[10px]">
+                <div className="flex items-center">
+                  <svg viewBox="0 0 10 16" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-4 w-auto mr-3">
+                    <path opacity={0.2} d="M1 1L8 8L1.10769 15" stroke="white" strokeWidth={2}/>
+                  </svg>
+                  <span className="text-lg">Build</span>
+                </div>
+                <span className="w-4 h-4 bg-yellow-400 rounded-full"></span>
               </div>
-              {/* Chevron Down Icon */}
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
-            </div>
-            {/* Summary Panel Body */}
-            <div className="flex-grow bg-[#161616] p-4 overflow-y-auto"> {/* Matching main bg for content area */}
-              <p className="text-lg font-semibold mb-3 text-white">Glove Foundation</p>
-              {['Option', 'Option', 'Option', 'Option', 'Option', 'Option', 'Option','Option','Option','Option'].map((item, index) => (
-                <p key={index} className="text-base mb-2 text-gray-300">{item}</p> // Lighter text for options
-              ))}
-            </div>
+              {/* ... other option rows ... */}
+              <div className="w-full h-[56px] bg-[#1C1C1C] flex items-center justify-between px-4 mb-[10px]">
+                <div className="flex items-center">
+                  <svg viewBox="0 0 10 16" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-4 w-auto mr-3">
+                    <path opacity={0.2} d="M1 1L8 8L1.10769 15" stroke="white" strokeWidth={2}/>
+                  </svg>
+                  <span className="text-lg">Select Option</span>
+                </div>
+                <span className="w-4 h-4 bg-yellow-400 rounded-full"></span>
+              </div>
+              <div className="w-full h-[56px] bg-[#1C1C1C] flex items-center justify-between px-4 mb-[10px]">
+                <div className="flex items-center">
+                  <svg viewBox="0 0 10 16" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-4 w-auto mr-3">
+                    <path opacity={0.2} d="M1 1L8 8L1.10769 15" stroke="white" strokeWidth={2}/>
+                  </svg>
+                  <span className="text-lg">Color Option</span>
+                </div>
+                <span className="w-4 h-4 bg-yellow-400 rounded-full"></span>
+              </div>
+              <div className="w-full h-[56px] bg-[#1C1C1C] flex items-center justify-between px-4 mb-[10px]">
+                <div className="flex items-center">
+                  <svg viewBox="0 0 10 16" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-4 w-auto mr-3">
+                    <path opacity={0.2} d="M1 1L8 8L1.10769 15" stroke="white" strokeWidth={2}/>
+                  </svg>
+                  <span className="text-lg">Input Option</span>
+                </div>
+                <span className="w-4 h-4 bg-yellow-400 rounded-full"></span>
+              </div>
+              <div className="w-full h-[56px] bg-[#1C1C1C] flex items-center justify-between px-4 mb-[10px]">
+                <div className="flex items-center">
+                  <svg viewBox="0 0 10 16" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-4 w-auto mr-3">
+                    <path opacity={0.2} d="M1 1L8 8L1.10769 15" stroke="white" strokeWidth={2}/>
+                  </svg>
+                  <span className="text-lg">Select & Color Option</span>
+                </div>
+                <span className="w-4 h-4 bg-yellow-400 rounded-full"></span>
+              </div>
+              <div className="w-full h-[56px] bg-[#1C1C1C] flex items-center justify-between px-4 mb-[10px]">
+                <div className="flex items-center">
+                  <svg viewBox="0 0 10 16" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-4 w-auto mr-3">
+                    <path opacity={0.2} d="M1 1L8 8L1.10769 15" stroke="white" strokeWidth={2}/>
+                  </svg>
+                  <span className="text-lg">Input & Color Option</span>
+                </div>
+                <span className="w-4 h-4 bg-yellow-400 rounded-full"></span>
+              </div>
+              <div className="w-full h-[56px] bg-[#1C1C1C] flex items-center justify-between px-4"> {/* Last item doesn't need mb-[10px] or can have it if consistent spacing to bottom of container is desired */}
+                <div className="flex items-center">
+                  <svg viewBox="0 0 10 16" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-4 w-auto mr-3">
+                    <path opacity={0.2} d="M1 1L8 8L1.10769 15" stroke="white" strokeWidth={2}/>
+                  </svg>
+                  <span className="text-lg">Dual Color Option</span>
+                </div>
+                <span className="w-4 h-4 bg-yellow-400 rounded-full"></span>
+              </div>
+            </section>
+
+            {/* Summary Panel Overlay */}
+            {isSummaryPanelVisible && (
+              <div className="absolute inset-0 bg-[#161616] z-20 flex flex-col h-80"> {/* Covers the section area */}
+                {/* Summary Panel Header */}
+                <div
+                  className="flex items-center justify-between text-white py-3 px-4 bg-[#1C1C1C] cursor-pointer h-[56px]" // Matched height & padding of option rows
+                  onClick={() => setIsSummaryPanelVisible(false)}
+                >
+                  <div className="flex items-center">
+                    <svg width="22" height="22" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg" className="mr-3"> {/* Placeholder Icon */}
+                      <g opacity="0.7">
+                        <path d="M17.1875 0H4.8125C3.53619 0 2.31204 0.507022 1.40953 1.40953C0.507021 2.31204 0 3.53619 0 4.8125V17.1875C0 18.4638 0.507021 19.688 1.40953 20.5905C2.31204 21.493 3.53619 22 4.8125 22H17.1875C18.4638 22 19.688 21.493 20.5905 20.5905C21.493 19.688 22 18.4638 22 17.1875V4.8125C22 3.53619 21.493 2.31204 20.5905 1.40953C19.688 0.507022 18.4638 0 17.1875 0ZM20.625 17.1875C20.625 18.0992 20.2628 18.9735 19.6181 19.6181C18.9735 20.2628 18.0992 20.625 17.1875 20.625H4.8125C3.9008 20.625 3.02653 20.2628 2.38185 19.6181C1.73717 18.9735 1.375 18.0992 1.375 17.1875V4.8125C1.375 3.9008 1.73717 3.02653 2.38185 2.38185C3.02654 1.73718 3.9008 1.375 4.8125 1.375H17.1875C18.0992 1.375 18.9735 1.73717 19.6181 2.38185C20.2628 3.02654 20.625 3.9008 20.625 4.8125V17.1875Z" fill="white"/>
+                        <path d="M8.9375 5.5H17.1875V6.875H8.9375V5.5Z" fill="white"/>
+                        <path d="M8.9375 10.3125H17.1875V11.6875H8.9375V10.3125Z" fill="white"/>
+                        <path d="M8.9375 15.125H17.1875V16.5H8.9375V15.125Z" fill="white"/>
+                        <path d="M7.5625 6.1875C7.5625 6.94681 6.94681 7.5625 6.1875 7.5625C5.42819 7.5625 4.8125 6.94681 4.8125 6.1875C4.8125 5.42819 5.42819 4.8125 6.1875 4.8125C6.94681 4.8125 7.5625 5.42819 7.5625 6.1875Z" fill="white"/>
+                        <path d="M7.5625 11C7.5625 11.7593 6.94681 12.375 6.1875 12.375C5.42819 12.375 4.8125 11.7593 4.8125 11C4.8125 10.2407 5.42819 9.625 6.1875 9.625C6.94681 9.625 7.5625 10.2407 7.5625 11Z" fill="white"/>
+                        <path d="M7.5625 15.8125C7.5625 16.5718 6.94681 17.1875 6.1875 17.1875C5.42819 17.1875 4.8125 16.5718 4.8125 15.8125C4.8125 15.0532 5.42819 14.4375 6.1875 14.4375C6.94681 14.4375 7.5625 15.0532 7.5625 15.8125Z" fill="white"/>
+                      </g>
+                    </svg>
+                    <span className="text-lg">Accordion Up</span>
+                  </div>
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
+                </div>
+                <div className="flex-grow bg-[#161616] p-4 overflow-y-auto">
+                  <p className="text-lg font-semibold mb-3 text-white">Glove Foundation</p>
+                  {['Option', 'Option', 'Option', 'Option', 'Option', 'Option', 'Option','Option','Option','Option'].map((item, index) => (
+                    <p key={index} className="text-base mb-2 text-gray-300">{item}</p>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
-        )}
-      </div>
 
-
-      {/* 4. Bottom Bar/Footer Area */}
-      {/* Footer with specified button sizes and spacing */}
-      <footer className="bg-[#161616] flex items-center justify-start mt-[10px] pb-[20px] px-[14px]">
-        {isSummaryPanelVisible ? (
-          <>
-            {/* Secondary Button */}
-            <button
-              type="button"
-              onClick={() => setIsSummaryPanelVisible(false)}
-              className="flex items-center justify-center px-4 bg-[#3A3A3A] hover:bg-[#4A4A4A] active:bg-[#2A2A2A] rounded text-base font-semibold text-white w-[146px] h-[56px]"
-              aria-label="Close summary panel"
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="mr-2">
-                <path d="M15 19L8 12L15 5" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-              <span>Secondary</span>
-            </button>
-
-            {/* Primary Button */}
-            <button
-              type="button"
-              className="flex items-center justify-between px-4 ml-[10px] bg-[#2997FF] hover:bg-[#73BBFF] active:bg-[#0083FF] focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-opacity-50 rounded text-base font-semibold text-white w-[244px] h-[56px]"
-              aria-label="Primary action"
-            >
-              <span className="ml-[5px]">Primary</span>
-              <svg width="34" height="14" viewBox="0 0 34 16" fill="none" xmlns="http://www.w3.org/2000/svg" className="mr-[5px]">
-                <path d="M0 8H32.5M32.5 8L25.5 1M32.5 8H0.5M32.5 8L25.6077 15" stroke="white" strokeWidth="2" strokeLinecap="round"/>
-              </svg>
-            </button>
-          </>
-        ) : (
-          <>
-            {/* Original Accordion Toggle Button */}
-            <button
-              type="button"
-              onClick={() => setIsSummaryPanelVisible(true)}
-              className="flex items-center justify-center space-x-2 px-4 bg-[#1A1A1A] hover:bg-[#222222] active:bg-[#1F1F1F] rounded text-base font-semibold text-white w-[146px] h-[56px]"
-              aria-label="Open summary panel"
-            >
-              <svg width="22" height="22" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <g opacity="0.3">
-                  <path d="M17.1875 0H4.8125C3.53619 0 2.31204 0.507022 1.40953 1.40953C0.507021 2.31204 0 3.53619 0 4.8125V17.1875C0 18.4638 0.507021 19.688 1.40953 20.5905C2.31204 21.493 3.53619 22 4.8125 22H17.1875C18.4638 22 19.688 21.493 20.5905 20.5905C21.493 19.688 22 18.4638 22 17.1875V4.8125C22 3.53619 21.493 2.31204 20.5905 1.40953C19.688 0.507022 18.4638 0 17.1875 0ZM20.625 17.1875C20.625 18.0992 20.2628 18.9735 19.6181 19.6181C18.9735 20.2628 18.0992 20.625 17.1875 20.625H4.8125C3.9008 20.625 3.02653 20.2628 2.38185 19.6181C1.73717 18.9735 1.375 18.0992 1.375 17.1875V4.8125C1.375 3.9008 1.73717 3.02653 2.38185 2.38185C3.02654 1.73718 3.9008 1.375 4.8125 1.375H17.1875C18.0992 1.375 18.9735 1.73717 19.6181 2.38185C20.2628 3.02654 20.625 3.9008 20.625 4.8125V17.1875Z" fill="white"/>
-                  <path d="M8.9375 5.5H17.1875V6.875H8.9375V5.5Z" fill="white"/>
-                  <path d="M8.9375 10.3125H17.1875V11.6875H8.9375V10.3125Z" fill="white"/>
-                  <path d="M8.9375 15.125H17.1875V16.5H8.9375V15.125Z" fill="white"/>
-                  <path d="M7.5625 6.1875C7.5625 6.94681 6.94681 7.5625 6.1875 7.5625C5.42819 7.5625 4.8125 6.94681 4.8125 6.1875C4.8125 5.42819 5.42819 4.8125 6.1875 4.8125C6.94681 4.8125 7.5625 5.42819 7.5625 6.1875Z" fill="white"/>
-                  <path d="M7.5625 11C7.5625 11.7593 6.94681 12.375 6.1875 12.375C5.42819 12.375 4.8125 11.7593 4.8125 11C4.8125 10.2407 5.42819 9.625 6.1875 9.625C6.94681 9.625 7.5625 10.2407 7.5625 11Z" fill="white"/>
-                  <path d="M7.5625 15.8125C7.5625 16.5718 6.94681 17.1875 6.1875 17.1875C5.42819 17.1875 4.8125 16.5718 4.8125 15.8125C4.8125 15.0532 5.42819 14.4375 6.1875 14.4375C6.94681 14.4375 7.5625 15.0532 7.5625 15.8125Z" fill="white"/>
-                </g>
-              </svg>
-              <span>Accordion</span>
-            </button>
-
-            {/* Original Call To Action Button */}
-            <button
-              type="button"
-              className="flex items-center justify-between px-4 ml-[10px] bg-[#2997FF] hover:bg-[#73BBFF] active:bg-[#0083FF] focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-opacity-50 rounded text-base font-semibold text-white w-[244px] h-[56px]"
-            >
-              <span className="ml-[5px]">Call To Action</span>
-              <svg width="34" height="14" viewBox="0 0 34 16" fill="none" xmlns="http://www.w3.org/2000/svg" className="mr-[5px]">
-                <path d="M0 8H32.5M32.5 8L25.5 1M32.5 8H0.5M32.5 8L25.6077 15" stroke="white" strokeWidth="2" strokeLinecap="round"/>
-              </svg>
-            </button>
-          </>
-        )}
-      </footer>
+          {/* 4. Bottom Bar/Footer Area */}
+          <footer className="bg-[#161616] flex items-center justify-start mt-[10px] pb-[20px] px-[14px]">
+            {isSummaryPanelVisible ? (
+              <>
+                {/* Secondary Button */}
+                <button
+                  type="button"
+                  onClick={() => setIsSummaryPanelVisible(false)}
+                  className="flex items-center justify-center px-4 bg-[#3A3A3A] hover:bg-[#4A4A4A] active:bg-[#2A2A2A] rounded text-base font-semibold text-white w-[146px] h-[56px]"
+                  aria-label="Close summary panel"
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="mr-2">
+                    <path d="M15 19L8 12L15 5" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                  <span>Secondary</span>
+                </button>
+                {/* Primary Button */}
+                <button
+                  type="button"
+                  className="flex items-center justify-between px-4 ml-[10px] bg-[#2997FF] hover:bg-[#73BBFF] active:bg-[#0083FF] focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-opacity-50 rounded text-base font-semibold text-white w-[244px] h-[56px]"
+                  aria-label="Primary action"
+                >
+                  <span className="ml-[5px]">Primary</span>
+                  <svg width="34" height="14" viewBox="0 0 34 16" fill="none" xmlns="http://www.w3.org/2000/svg" className="mr-[5px]">
+                    <path d="M0 8H32.5M32.5 8L25.5 1M32.5 8H0.5M32.5 8L25.6077 15" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+                  </svg>
+                </button>
+              </>
+            ) : (
+              <>
+                {/* Original Accordion Toggle Button */}
+                <button
+                  type="button"
+                  onClick={() => setIsSummaryPanelVisible(true)}
+                  className="flex items-center justify-center space-x-2 px-4 bg-[#1A1A1A] hover:bg-[#222222] active:bg-[#1F1F1F] rounded text-base font-semibold text-white w-[146px] h-[56px]"
+                  aria-label="Open summary panel"
+                >
+                  <svg width="22" height="22" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg"> {/* Original Icon */}
+                    <g opacity="0.3">
+                      <path d="M17.1875 0H4.8125C3.53619 0 2.31204 0.507022 1.40953 1.40953C0.507021 2.31204 0 3.53619 0 4.8125V17.1875C0 18.4638 0.507021 19.688 1.40953 20.5905C2.31204 21.493 3.53619 22 4.8125 22H17.1875C18.4638 22 19.688 21.493 20.5905 20.5905C21.493 19.688 22 18.4638 22 17.1875V4.8125C22 3.53619 21.493 2.31204 20.5905 1.40953C19.688 0.507022 18.4638 0 17.1875 0ZM20.625 17.1875C20.625 18.0992 20.2628 18.9735 19.6181 19.6181C18.9735 20.2628 18.0992 20.625 17.1875 20.625H4.8125C3.9008 20.625 3.02653 20.2628 2.38185 19.6181C1.73717 18.9735 1.375 18.0992 1.375 17.1875V4.8125C1.375 3.9008 1.73717 3.02653 2.38185 2.38185C3.02654 1.73718 3.9008 1.375 4.8125 1.375H17.1875C18.0992 1.375 18.9735 1.73717 19.6181 2.38185C20.2628 3.02654 20.625 3.9008 20.625 4.8125V17.1875Z" fill="white"/>
+                      <path d="M8.9375 5.5H17.1875V6.875H8.9375V5.5Z" fill="white"/>
+                      <path d="M8.9375 10.3125H17.1875V11.6875H8.9375V10.3125Z" fill="white"/>
+                      <path d="M8.9375 15.125H17.1875V16.5H8.9375V15.125Z" fill="white"/>
+                      <path d="M7.5625 6.1875C7.5625 6.94681 6.94681 7.5625 6.1875 7.5625C5.42819 7.5625 4.8125 6.94681 4.8125 6.1875C4.8125 5.42819 5.42819 4.8125 6.1875 4.8125C6.94681 4.8125 7.5625 5.42819 7.5625 6.1875Z" fill="white"/>
+                      <path d="M7.5625 11C7.5625 11.7593 6.94681 12.375 6.1875 12.375C5.42819 12.375 4.8125 11.7593 4.8125 11C4.8125 10.2407 5.42819 9.625 6.1875 9.625C6.94681 9.625 7.5625 10.2407 7.5625 11Z" fill="white"/>
+                      <path d="M7.5625 15.8125C7.5625 16.5718 6.94681 17.1875 6.1875 17.1875C5.42819 17.1875 4.8125 16.5718 4.8125 15.8125C4.8125 15.0532 5.42819 14.4375 6.1875 14.4375C6.94681 14.4375 7.5625 15.0532 7.5625 15.8125Z" fill="white"/>
+                    </g>
+                  </svg>
+                  <span>Accordion</span>
+                </button>
+                {/* Original Call To Action Button */}
+                <button
+                  type="button"
+                  className="flex items-center justify-between px-4 ml-[10px] bg-[#2997FF] hover:bg-[#73BBFF] active:bg-[#0083FF] focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-opacity-50 rounded text-base font-semibold text-white w-[244px] h-[56px]"
+                >
+                  <span className="ml-[5px]">Call To Action</span>
+                  <svg width="34" height="14" viewBox="0 0 34 16" fill="none" xmlns="http://www.w3.org/2000/svg" className="mr-[5px]">
+                    <path d="M0 8H32.5M32.5 8L25.5 1M32.5 8H0.5M32.5 8L25.6077 15" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+                  </svg>
+                </button>
+              </>
+            )}
+          </footer>
+        </>
+      )}
 
     </div>
   );
