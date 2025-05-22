@@ -138,16 +138,24 @@ return (
 
 {/* 4. Bottom Bar/Footer Area */}
 {/* Footer with specified button sizes and spacing */}
-<footer className="bg-[#161616] border-t border-gray-700 flex items-center justify-start mt-[10px] pb-[20px] px-[14px]"> {/* Removed pt-4, Added mt-[10px] */}
+<footer className="bg-[#161616] flex items-center justify-start mt-[10px] pb-[20px] px-[14px]"> {/* Removed pt-4, Added mt-[10px] */}
 
 {/* Accordion Toggle Button */}
 <button
 type="button"
-className="flex items-center justify-center space-x-2 px-4 bg-gray-700 hover:bg-gray-600 rounded text-base font-semibold text-white w-[146px] h-[56px]"
+className="flex items-center justify-center space-x-2 px-4 bg-[#1A1A1A] hover:bg-[#222222] active:bg-[#1F1F1F] rounded text-base font-semibold text-white w-[146px] h-[56px]"
 aria-label="Toggle accordion panel"
 >
-<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="w-6 h-6">
-<path strokeLinecap="round" strokeLinejoin="round" d="M8.25 6.75h7.5M8.25 12h7.5m-7.5 5.25h7.5M3.75 6.75h.007v.008H3.75V6.75Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0ZM3.75 12h.007v.008H3.75V12Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm-.375 5.25h.007v.008H3.75v-.008Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z" />
+<svg width="22" height="22" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g opacity="0.3">
+<path d="M17.1875 0H4.8125C3.53619 0 2.31204 0.507022 1.40953 1.40953C0.507021 2.31204 0 3.53619 0 4.8125V17.1875C0 18.4638 0.507021 19.688 1.40953 20.5905C2.31204 21.493 3.53619 22 4.8125 22H17.1875C18.4638 22 19.688 21.493 20.5905 20.5905C21.493 19.688 22 18.4638 22 17.1875V4.8125C22 3.53619 21.493 2.31204 20.5905 1.40953C19.688 0.507022 18.4638 0 17.1875 0ZM20.625 17.1875C20.625 18.0992 20.2628 18.9735 19.6181 19.6181C18.9735 20.2628 18.0992 20.625 17.1875 20.625H4.8125C3.9008 20.625 3.02653 20.2628 2.38185 19.6181C1.73717 18.9735 1.375 18.0992 1.375 17.1875V4.8125C1.375 3.9008 1.73717 3.02653 2.38185 2.38185C3.02654 1.73718 3.9008 1.375 4.8125 1.375H17.1875C18.0992 1.375 18.9735 1.73717 19.6181 2.38185C20.2628 3.02654 20.625 3.9008 20.625 4.8125V17.1875Z" fill="white"/>
+<path d="M8.9375 5.5H17.1875V6.875H8.9375V5.5Z" fill="white"/>
+<path d="M8.9375 10.3125H17.1875V11.6875H8.9375V10.3125Z" fill="white"/>
+<path d="M8.9375 15.125H17.1875V16.5H8.9375V15.125Z" fill="white"/>
+<path d="M7.5625 6.1875C7.5625 6.94681 6.94681 7.5625 6.1875 7.5625C5.42819 7.5625 4.8125 6.94681 4.8125 6.1875C4.8125 5.42819 5.42819 4.8125 6.1875 4.8125C6.94681 4.8125 7.5625 5.42819 7.5625 6.1875Z" fill="white"/>
+<path d="M7.5625 11C7.5625 11.7593 6.94681 12.375 6.1875 12.375C5.42819 12.375 4.8125 11.7593 4.8125 11C4.8125 10.2407 5.42819 9.625 6.1875 9.625C6.94681 9.625 7.5625 10.2407 7.5625 11Z" fill="white"/>
+<path d="M7.5625 15.8125C7.5625 16.5718 6.94681 17.1875 6.1875 17.1875C5.42819 17.1875 4.8125 16.5718 4.8125 15.8125C4.8125 15.0532 5.42819 14.4375 6.1875 14.4375C6.94681 14.4375 7.5625 15.0532 7.5625 15.8125Z" fill="white"/>
+</g>
 </svg>
 <span>Accordion</span>
 </button>
@@ -155,10 +163,12 @@ aria-label="Toggle accordion panel"
 {/* Call To Action Button */}
 <button
 type="button"
-className="flex items-center justify-center px-4 ml-[10px] bg-blue-600 hover:bg-blue-500 active:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-opacity-50 rounded text-base font-semibold text-white w-[244px] h-[56px]"
+className="flex items-center justify-between px-4 ml-[10px] bg-[#2997FF] hover:bg-[#73BBFF] active:bg-[#0083FF] focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-opacity-50 rounded text-base font-semibold text-white w-[244px] h-[56px]"
 >
-Call To Action
-<span className="ml-2 text-lg">→</span>
+<span className="ml-[5px]">Call To Action</span>
+<svg width="34" height="14" viewBox="0 0 34 16" fill="none" xmlns="http://www.w3.org/2000/svg" className="mr-[5px]">
+<path d="M0 8H32.5M32.5 8L25.5 1M32.5 8H0.5M32.5 8L25.6077 15" stroke="white" strokeWidth="2" stroke-linecap="round"/>
+</svg>
 </button>
 
 </footer>
