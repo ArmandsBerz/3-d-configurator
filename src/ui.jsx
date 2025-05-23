@@ -29,7 +29,7 @@ const ColorPickerPanel = ({
 }) => {
   if (!editingColorContext) return null;
   return (
-    <div className="bg-[#161616] h-full flex flex-col px-4">
+    <div className="bg-[#161616] h-full flex flex-col px-[23px]"> {/* Changed px-4 to px-[23px] */}
       <div
         className="flex items-center justify-between text-white py-3 cursor-pointer h-[56px] border-b border-gray-700 mb-3"
         onClick={handleCloseColorPicker}
@@ -42,7 +42,13 @@ const ColorPickerPanel = ({
       </div>
       <div className="grid grid-cols-6 gap-3 overflow-y-auto flex-grow pb-4">
         {colorSwatches.map((color) => (
-          <button key={color} className={`w-10 h-10 rounded-full border-2 ${selectedColorInPicker === color ? 'border-white ring-2 ring-offset-2 ring-offset-[#161616] ring-white' : 'border-transparent'}`} style={{ backgroundColor: color }} onClick={() => setSelectedColorInPicker(color)} aria-label={`Select color ${color}`}/>
+          <button 
+            key={color} 
+            className={`w-[42px] h-[42px] rounded-full border-2 ${selectedColorInPicker === color ? 'border-transparent ring-4 ring-white' : 'border-transparent'}`} // Changed size and selected style
+            style={{ backgroundColor: color }} 
+            onClick={() => setSelectedColorInPicker(color)} 
+            aria-label={`Select color ${color}`}
+          />
         ))}
       </div>
     </div>
@@ -133,10 +139,11 @@ const UI = () => {
   const [inputValueInPanel, setInputValueInPanel] = useState('');
 
 
-  const colorSwatches = [
-    '#FF0000', '#00FF00', '#0000FF', '#FFFF00', '#FF00FF', '#00FFFF',
-    '#800000', '#008000', '#000080', '#808000', '#800080', '#008080',
-    '#C0C0C0', '#808080', '#FA8072', '#E0B0FF', '#FADADD', '#FFD700',
+  const colorSwatches = [ // Changed color swatches
+    '#C62828', '#AD1457', '#6A1B9A', '#4527A0', '#283593',
+    '#1565C0', '#0277BD', '#00838F', '#00695C', '#2E7D32',
+    '#558B2F', '#9E9D24', '#F9A825', '#FF8F00', '#EF6C00',
+    '#D84315', '#4E342E', '#424242', '#BDBDBD', '#37474F',
   ];
 
   const handleOpenColorPicker = (optionId, optionTitle, initialColor) => {
