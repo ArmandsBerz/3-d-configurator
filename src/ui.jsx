@@ -1,4 +1,120 @@
-import React, { useState } from 'react';
+import React, { useState } from 'react'; // Removed unused useCallback
+
+// --- Helper Components for BuildPanel ---
+const ImageOptionCard = ({ id, title, description, price, icon, isSelected, onSelect }) => (
+  <div className={`p-3 rounded-md cursor-pointer flex flex-col justify-between ${isSelected ? 'bg-[#3a3a3a] ring-2 ring-blue-500' : 'bg-[#2a2a2a] hover:bg-[#333333]'}`} onClick={onSelect}>
+    <div>
+      <div className="flex items-center justify-between mb-1">
+        <div className="flex items-center text-xs text-gray-400">
+          {icon || <svg className="w-4 h-4 text-gray-400 mr-1" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M17.707 9.293a1 1 0 010 1.414l-7 7a1 1 0 01-1.414 0l-7-7A1.007 1.007 0 012 10V5a1 1 0 011-1h5a1 1 0 01.707.293l7 7zM5 6a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd"></path></svg>}
+          <span>{price}</span>
+        </div>
+        {isSelected && (<svg className="w-5 h-5 text-blue-400" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"></path></svg>)}
+      </div>
+      <h4 className="text-base font-semibold text-white mb-1">{title}</h4>
+      <p className="text-xs text-gray-400 leading-tight">{description}</p>
+    </div>
+  </div>
+);
+
+const ChoiceButton = ({ label }) => (<button className="bg-[#2a2a2a] hover:bg-[#333333] text-white text-sm py-2 px-3 rounded-md h-[36px] flex items-center justify-center">{label}</button>);
+
+// --- Color Picker Panel Component ---
+const ColorPickerPanel = ({
+  editingColorContext,
+  handleCloseColorPicker,
+  selectedColorInPicker,
+  setSelectedColorInPicker,
+  colorSwatches
+}) => {
+  if (!editingColorContext) return null;
+  return (
+    <div className="bg-[#161616] h-full flex flex-col px-4">
+      <div
+        className="flex items-center justify-between text-white py-3 cursor-pointer h-[56px] border-b border-gray-700 mb-3"
+        onClick={handleCloseColorPicker}
+      >
+        <div className="flex items-center">
+          <svg className="w-5 h-5 mr-2 transform rotate-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 15l7-7 7 7"></path></svg>
+          <span className="text-lg">{editingColorContext.title || 'Color Picker'}</span>
+        </div>
+        <span className="text-sm text-gray-400">{selectedColorInPicker || editingColorContext.currentColor}</span>
+      </div>
+      <div className="grid grid-cols-6 gap-3 overflow-y-auto flex-grow pb-4">
+        {colorSwatches.map((color) => (
+          <button key={color} className={`w-10 h-10 rounded-full border-2 ${selectedColorInPicker === color ? 'border-white ring-2 ring-offset-2 ring-offset-[#161616] ring-white' : 'border-transparent'}`} style={{ backgroundColor: color }} onClick={() => setSelectedColorInPicker(color)} aria-label={`Select color ${color}`}/>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+// --- Build Panel Component ---
+const BuildPanel = ({
+  editingBuildContext,
+  handleCloseBuildPanel,
+  selectedImageOption,
+  setSelectedImageOption
+}) => {
+  if (!editingBuildContext) return null;
+  return (
+    <div className="bg-[#161616] h-full flex flex-col">
+      <div className="flex items-center text-white py-3 px-4 cursor-pointer h-[56px] border-b border-gray-700" onClick={handleCloseBuildPanel}>
+        <svg className="w-5 h-5 mr-2 transform rotate-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 15l7-7 7 7"></path></svg>
+        <span className="text-lg">{editingBuildContext.title || 'Build Options'}</span>
+      </div>
+      <div className="flex-grow overflow-y-auto px-4 pt-3 pb-4 space-y-5">
+        <div>
+          <h3 className="text-sm text-gray-400 mb-2">Option With Image</h3>
+          <div className="grid grid-cols-2 gap-3">
+            <ImageOptionCard id="imgOpt1" title="Option Title 1" description="Lorem ipsum dolor sit amet, consectetur" price="$000 - $000" isSelected={selectedImageOption === 'imgOpt1'} onSelect={() => setSelectedImageOption('imgOpt1')}/>
+            <ImageOptionCard id="imgOpt2" title="Option Title 2" description="Lorem ipsum dolor sit amet, consectetur" price="$000 - $000" isSelected={selectedImageOption === 'imgOpt2'} onSelect={() => setSelectedImageOption('imgOpt2')}/>
+          </div>
+        </div>
+        <div><h3 className="text-sm text-gray-400 mb-2">Option with 2 Choices</h3><div className="grid grid-cols-2 gap-3"><ChoiceButton label="OPTION"/><ChoiceButton label="OPTION"/></div></div>
+        <div><h3 className="text-sm text-gray-400 mb-2">Option with 3 Choices</h3><div className="grid grid-cols-3 gap-3"><ChoiceButton label="OPTION"/><ChoiceButton label="OPTION"/><ChoiceButton label="OPTION"/></div></div>
+        <div><h3 className="text-sm text-gray-400 mb-2">Option with 4 Choices</h3><div className="grid grid-cols-2 gap-3"><ChoiceButton label="OPTION"/><ChoiceButton label="OPTION"/><ChoiceButton label="OPTION"/><ChoiceButton label="OPTION"/></div></div>
+        <div><h3 className="text-sm text-gray-400 mb-2">Option with 5 Choices</h3><div className="flex flex-wrap gap-3">{[...Array(5)].map((_, i) => <ChoiceButton key={i} label="OPTION"/>)}</div></div>
+      </div>
+    </div>
+  );
+};
+
+// --- Input Panel Component ---
+const InputPanel = ({
+  editingInputContext,
+  handleCloseInputPanel,
+  inputValueInPanel,
+  setInputValueInPanel
+}) => {
+  if (!editingInputContext) return null;
+  return (
+    <div className="bg-[#161616] h-full flex flex-col px-4">
+      <div
+        className="flex items-center justify-between text-white py-3 cursor-pointer h-[56px] border-b border-gray-700"
+        onClick={handleCloseInputPanel}
+      >
+        <div className="flex items-center">
+          <svg className="w-5 h-5 mr-2 transform rotate-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 15l7-7 7 7"></path></svg>
+          <span className="text-lg">{editingInputContext.title || 'Input Option'}</span>
+        </div>
+        <span className="text-sm text-gray-400 truncate max-w-[100px]">{inputValueInPanel}</span>
+      </div>
+      {editingInputContext.subtitle && (
+        <h3 className="text-lg font-semibold text-white mt-4 mb-2 px-0">{editingInputContext.subtitle}</h3>
+      )}
+      <div className="mt-2 flex-grow">
+        <input
+          type="text"
+          className="w-full p-3 bg-[#2A2A2A] text-white rounded-md placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+          value={inputValueInPanel}
+          onChange={(e) => setInputValueInPanel(e.target.value)}
+          placeholder={editingInputContext.placeholder || "Text Placeholder..."}
+        />
+      </div>
+    </div>
+  );
+};
 
 const UI = () => {
   const [isSummaryPanelVisible, setIsSummaryPanelVisible] = useState(false);
@@ -88,103 +204,6 @@ const UI = () => {
     handleCloseInputPanel();
   };
 
-  // --- Color Picker Panel Component ---
-  const ColorPickerPanel = () => {
-    if (!editingColorContext) return null;
-    return (
-      <div className="bg-[#161616] h-full flex flex-col px-4">
-        <div
-          className="flex items-center justify-between text-white py-3 cursor-pointer h-[56px] border-b border-gray-700 mb-3"
-          onClick={handleCloseColorPicker}
-        >
-          <div className="flex items-center">
-            <svg className="w-5 h-5 mr-2 transform rotate-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 15l7-7 7 7"></path></svg>
-            <span className="text-lg">{editingColorContext.title || 'Color Picker'}</span>
-          </div>
-          <span className="text-sm text-gray-400">{selectedColorInPicker || editingColorContext.currentColor}</span>
-        </div>
-        <div className="grid grid-cols-6 gap-3 overflow-y-auto flex-grow pb-4">
-          {colorSwatches.map((color) => (
-            <button key={color} className={`w-10 h-10 rounded-full border-2 ${selectedColorInPicker === color ? 'border-white ring-2 ring-offset-2 ring-offset-[#161616] ring-white' : 'border-transparent'}`} style={{ backgroundColor: color }} onClick={() => setSelectedColorInPicker(color)} aria-label={`Select color ${color}`}/>
-          ))}
-        </div>
-      </div>
-    );
-  };
-
-  // --- Build Panel Component ---
-  const BuildPanel = () => {
-    if (!editingBuildContext) return null;
-    const ImageOptionCard = ({ id, title, description, price, icon, isSelected, onSelect }) => (
-      <div className={`p-3 rounded-md cursor-pointer flex flex-col justify-between ${isSelected ? 'bg-[#3a3a3a] ring-2 ring-blue-500' : 'bg-[#2a2a2a] hover:bg-[#333333]'}`} onClick={onSelect}>
-        <div>
-          <div className="flex items-center justify-between mb-1">
-            <div className="flex items-center text-xs text-gray-400">
-              {icon || <svg className="w-4 h-4 text-gray-400 mr-1" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M17.707 9.293a1 1 0 010 1.414l-7 7a1 1 0 01-1.414 0l-7-7A1.007 1.007 0 012 10V5a1 1 0 011-1h5a1 1 0 01.707.293l7 7zM5 6a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd"></path></svg>}
-              <span>{price}</span>
-            </div>
-            {isSelected && (<svg className="w-5 h-5 text-blue-400" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"></path></svg>)}
-          </div>
-          <h4 className="text-base font-semibold text-white mb-1">{title}</h4>
-          <p className="text-xs text-gray-400 leading-tight">{description}</p>
-        </div>
-      </div>
-    );
-    const ChoiceButton = ({ label }) => (<button className="bg-[#2a2a2a] hover:bg-[#333333] text-white text-sm py-2 px-3 rounded-md h-[36px] flex items-center justify-center">{label}</button>);
-    return (
-      <div className="bg-[#161616] h-full flex flex-col">
-        <div className="flex items-center text-white py-3 px-4 cursor-pointer h-[56px] border-b border-gray-700" onClick={handleCloseBuildPanel}>
-          <svg className="w-5 h-5 mr-2 transform rotate-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 15l7-7 7 7"></path></svg>
-          <span className="text-lg">{editingBuildContext.title || 'Build Options'}</span>
-        </div>
-        <div className="flex-grow overflow-y-auto px-4 pt-3 pb-4 space-y-5">
-          <div>
-            <h3 className="text-sm text-gray-400 mb-2">Option With Image</h3>
-            <div className="grid grid-cols-2 gap-3">
-              <ImageOptionCard id="imgOpt1" title="Option Title 1" description="Lorem ipsum dolor sit amet, consectetur" price="$000 - $000" isSelected={selectedImageOption === 'imgOpt1'} onSelect={() => setSelectedImageOption('imgOpt1')}/>
-              <ImageOptionCard id="imgOpt2" title="Option Title 2" description="Lorem ipsum dolor sit amet, consectetur" price="$000 - $000" isSelected={selectedImageOption === 'imgOpt2'} onSelect={() => setSelectedImageOption('imgOpt2')}/>
-            </div>
-          </div>
-          <div><h3 className="text-sm text-gray-400 mb-2">Option with 2 Choices</h3><div className="grid grid-cols-2 gap-3"><ChoiceButton label="OPTION"/><ChoiceButton label="OPTION"/></div></div>
-          <div><h3 className="text-sm text-gray-400 mb-2">Option with 3 Choices</h3><div className="grid grid-cols-3 gap-3"><ChoiceButton label="OPTION"/><ChoiceButton label="OPTION"/><ChoiceButton label="OPTION"/></div></div>
-          <div><h3 className="text-sm text-gray-400 mb-2">Option with 4 Choices</h3><div className="grid grid-cols-2 gap-3"><ChoiceButton label="OPTION"/><ChoiceButton label="OPTION"/><ChoiceButton label="OPTION"/><ChoiceButton label="OPTION"/></div></div>
-          <div><h3 className="text-sm text-gray-400 mb-2">Option with 5 Choices</h3><div className="flex flex-wrap gap-3">{[...Array(5)].map((_, i) => <ChoiceButton key={i} label="OPTION"/>)}</div></div>
-        </div>
-      </div>
-    );
-  };
-  
-  // --- Input Panel Component ---
-  const InputPanel = () => {
-    if (!editingInputContext) return null;
-    return (
-      <div className="bg-[#161616] h-full flex flex-col px-4">
-        <div
-          className="flex items-center justify-between text-white py-3 cursor-pointer h-[56px] border-b border-gray-700"
-          onClick={handleCloseInputPanel}
-        >
-          <div className="flex items-center">
-            <svg className="w-5 h-5 mr-2 transform rotate-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 15l7-7 7 7"></path></svg>
-            <span className="text-lg">{editingInputContext.title || 'Input Option'}</span>
-          </div>
-          <span className="text-sm text-gray-400 truncate max-w-[100px]">{inputValueInPanel}</span>
-        </div>
-        {editingInputContext.subtitle && (
-          <h3 className="text-lg font-semibold text-white mt-4 mb-2 px-0">{editingInputContext.subtitle}</h3>
-        )}
-        <div className="mt-2 flex-grow">
-          <input
-            type="text"
-            className="w-full p-3 bg-[#2A2A2A] text-white rounded-md placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:outline-none"
-            value={inputValueInPanel}
-            onChange={(e) => setInputValueInPanel(e.target.value)}
-            placeholder={editingInputContext.placeholder || "Text Placeholder..."}
-          />
-        </div>
-      </div>
-    );
-  };
-
   return (
     <div className="flex flex-col min-h-screen bg-[#161616] text-white">
       <main className={`flex-grow p-4 flex flex-col items-center justify-center relative bg-[#161616] ${isVisualizationExpanded ? 'h-full' : ''}`}>
@@ -246,10 +265,31 @@ const UI = () => {
                 {isSummaryPanelVisible && ( <div className="absolute inset-0 bg-[#161616] z-20 flex flex-col h-full"> <div className="flex items-center justify-between text-white py-3 px-4 bg-[#1C1C1C] cursor-pointer h-[56px]" onClick={() => setIsSummaryPanelVisible(false)}> <div className="flex items-center"> <svg width="22" height="22" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg" className="mr-3"><g opacity="0.7"><path d="M17.1875 0H4.8125C3.53619 0 2.31204 0.507022 1.40953 1.40953C0.507021 2.31204 0 3.53619 0 4.8125V17.1875C0 18.4638 0.507021 19.688 1.40953 20.5905C2.31204 21.493 3.53619 22 4.8125 22H17.1875C18.4638 22 19.688 21.493 20.5905 20.5905C21.493 19.688 22 18.4638 22 17.1875V4.8125C22 3.53619 21.493 2.31204 20.5905 1.40953C19.688 0.507022 18.4638 0 17.1875 0ZM20.625 17.1875C20.625 18.0992 20.2628 18.9735 19.6181 19.6181C18.9735 20.2628 18.0992 20.625 17.1875 20.625H4.8125C3.9008 20.625 3.02653 20.2628 2.38185 19.6181C1.73717 18.9735 1.375 18.0992 1.375 17.1875V4.8125C1.375 3.9008 1.73717 3.02653 2.38185 2.38185C3.02654 1.73718 3.9008 1.375 4.8125 1.375H17.1875C18.0992 1.375 18.9735 1.73717 19.6181 2.38185C20.2628 3.02654 20.625 3.9008 20.625 4.8125V17.1875Z" fill="white"/><path d="M8.9375 5.5H17.1875V6.875H8.9375V5.5Z" fill="white"/><path d="M8.9375 10.3125H17.1875V11.6875H8.9375V10.3125Z" fill="white"/><path d="M8.9375 15.125H17.1875V16.5H8.9375V15.125Z" fill="white"/><path d="M7.5625 6.1875C7.5625 6.94681 6.94681 7.5625 6.1875 7.5625C5.42819 7.5625 4.8125 6.94681 4.8125 6.1875C4.8125 5.42819 5.42819 4.8125 6.1875 4.8125C6.94681 4.8125 7.5625 5.42819 7.5625 6.1875Z" fill="white"/><path d="M7.5625 11C7.5625 11.7593 6.94681 12.375 6.1875 12.375C5.42819 12.375 4.8125 11.7593 4.8125 11C4.8125 10.2407 5.42819 9.625 6.1875 9.625C6.94681 9.625 7.5625 10.2407 7.5625 11Z" fill="white"/><path d="M7.5625 15.8125C7.5625 16.5718 6.94681 17.1875 6.1875 17.1875C5.42819 17.1875 4.8125 16.5718 4.8125 15.8125C4.8125 15.0532 5.42819 14.4375 6.1875 14.4375C6.94681 14.4375 7.5625 15.0532 7.5625 15.8125Z" fill="white"/></g></svg> <span className="text-lg">Accordion Up</span></div> <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg></div> <div className="flex-grow bg-[#161616] p-4 overflow-y-auto"><p className="text-lg font-semibold mb-3 text-white">Glove Foundation</p> {['Option', 'Option', 'Option', 'Option', 'Option', 'Option', 'Option','Option','Option','Option'].map((item, index) => (<p key={index} className="text-base mb-2 text-gray-300">{item}</p>))}</div></div>)}
               </>
             )}
-            {activeView === 'colorPickerPanel' && <ColorPickerPanel />}
-            {activeView === 'buildPanel' && <BuildPanel />}
-            {activeView === 'inputPanel' && <InputPanel />}
-
+            {activeView === 'colorPickerPanel' && (
+              <ColorPickerPanel
+                editingColorContext={editingColorContext}
+                handleCloseColorPicker={handleCloseColorPicker}
+                selectedColorInPicker={selectedColorInPicker}
+                setSelectedColorInPicker={setSelectedColorInPicker}
+                colorSwatches={colorSwatches}
+              />
+            )}
+            {activeView === 'buildPanel' && (
+              <BuildPanel
+                editingBuildContext={editingBuildContext}
+                handleCloseBuildPanel={handleCloseBuildPanel}
+                selectedImageOption={selectedImageOption}
+                setSelectedImageOption={setSelectedImageOption}
+              />
+            )}
+            {activeView === 'inputPanel' && (
+              <InputPanel
+                editingInputContext={editingInputContext}
+                handleCloseInputPanel={handleCloseInputPanel}
+                inputValueInPanel={inputValueInPanel}
+                setInputValueInPanel={setInputValueInPanel}
+              />
+            )}
           </div>
 
           <footer className="bg-[#161616] flex items-center justify-start mt-[10px] pb-[20px] px-[14px]">
