@@ -206,16 +206,24 @@ const UI = () => {
   const handleInputCallToAction = () => {
     if (editingInputContext) {
       // Ensure no unnecessary escapes in this alert string
-      alert(`Input for "<span class="math-inline">{editingColorContext.title}" confirmed with value: "</span>{inputValueInPanel}". Returning to list.`);
+      alert(`Input for "${editingInputContext.title}" confirmed with value: "${inputValueInPanel}". Returning to list.`);
     }
     handleCloseInputPanel();
   };
 
   return (
     <div className="flex flex-col min-h-screen bg-[#161616] text-white">
+      {/* Main content area: Changed p-4 to p-6 to create 24px padding */}
       <main className={`flex-grow p-4 flex flex-col items-center justify-center relative bg-[#161616] ${isVisualizationExpanded ? 'h-full' : ''}`}>
         <div className="absolute top-[20px] left-[20px] w-[70px] h-[49px] bg-gray-300 bg-opacity-75 rounded z-10 flex items-center justify-center"><p className="font-bold text-xl text-gray-900">LOGO</p></div>
-        <div className="w-full h-full flex items-center justify-center border border-dashed border-gray-700"><p className="text-gray-500">Actual Visualization Would Be Here</p></div>
+        
+        {/* Image: Removed absolute positioning, changed to object-contain, and uses max-w/h-full */}
+        <img
+          src={`${process.env.PUBLIC_URL}/gloves.png`} 
+          alt="Glove Visualization"
+          className="object-contain max-w-full max-h-full z-10" 
+        />
+        
         <div className="absolute bottom-4 inset-x-0 flex items-center justify-between text-xs z-10">
           <div className="p-1 hover:bg-gray-800 hover:bg-opacity-50 rounded-md cursor-pointer ml-[14px]" onClick={() => setIsVisualizationExpanded(!isVisualizationExpanded)} aria-label={isVisualizationExpanded ? "Collapse visualization" : "Expand visualization"}>
             {isVisualizationExpanded ? (
