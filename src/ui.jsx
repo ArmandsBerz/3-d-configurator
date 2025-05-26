@@ -1,6 +1,6 @@
-import React, { useState } from 'react'; // Removed unused useCallback
+import React, { useState } from 'react';
 
-// --- Helper Components for BuildPanel ---
+// --- Helper Components for BuildPanel --- (These remain unchanged)
 const ImageOptionCard = ({ id, title, description, price, icon, isSelected, onSelect }) => (
   <div className={`p-3 rounded-md cursor-pointer flex flex-col justify-between ${isSelected ? 'bg-[#3a3a3a] ring-2 ring-blue-500' : 'bg-[#2a2a2a] hover:bg-[#333333]'}`} onClick={onSelect}>
     <div>
@@ -19,7 +19,7 @@ const ImageOptionCard = ({ id, title, description, price, icon, isSelected, onSe
 
 const ChoiceButton = ({ label }) => (<button className="bg-[#2a2a2a] hover:bg-[#333333] text-white text-sm py-2 px-3 rounded-md h-[36px] flex items-center justify-center">{label}</button>);
 
-// --- Color Picker Panel Component ---
+// --- Color Picker Panel Component --- (Remains unchanged)
 const ColorPickerPanel = ({
   editingColorContext,
   handleCloseColorPicker,
@@ -29,7 +29,7 @@ const ColorPickerPanel = ({
 }) => {
   if (!editingColorContext) return null;
   return (
-    <div className="bg-[#161616] h-full flex flex-col px-[23px]"> {/* Changed px-4 to px-[23px] */}
+    <div className="bg-[#161616] h-full flex flex-col px-[23px]">
       <div
         className="flex items-center justify-between text-white py-3 cursor-pointer h-[56px] border-b border-gray-700 mb-3"
         onClick={handleCloseColorPicker}
@@ -40,11 +40,11 @@ const ColorPickerPanel = ({
         </div>
         <span className="text-sm text-gray-400">{selectedColorInPicker || editingColorContext.currentColor}</span>
       </div>
-      <div className="grid grid-cols-6 gap-[10px] overflow-y-auto flex-grow pb-4"> {/* Changed gap-3 to gap-[10px] */}
+      <div className="grid grid-cols-6 gap-[10px] overflow-y-auto flex-grow pb-4">
         {colorSwatches.map((color) => (
           <button
             key={color}
-            className={`w-[42px] h-[42px] rounded-full border-2 ${selectedColorInPicker === color ? 'border-transparent ring-4 ring-white' : 'border-transparent'}`} // Changed size and selected style
+            className={`w-[42px] h-[42px] rounded-full border-2 ${selectedColorInPicker === color ? 'border-transparent ring-4 ring-white' : 'border-transparent'}`}
             style={{ backgroundColor: color }}
             onClick={() => setSelectedColorInPicker(color)}
             aria-label={`Select color ${color}`}
@@ -55,7 +55,7 @@ const ColorPickerPanel = ({
   );
 };
 
-// --- Build Panel Component ---
+// --- Build Panel Component --- (Remains unchanged)
 const BuildPanel = ({
   editingBuildContext,
   handleCloseBuildPanel,
@@ -86,7 +86,7 @@ const BuildPanel = ({
   );
 };
 
-// --- Input Panel Component ---
+// --- Input Panel Component --- (Remains unchanged)
 const InputPanel = ({
   editingInputContext,
   handleCloseInputPanel,
@@ -126,20 +126,15 @@ const UI = () => {
   const [isSummaryPanelVisible, setIsSummaryPanelVisible] = useState(false);
   const [isVisualizationExpanded, setIsVisualizationExpanded] = useState(false);
 
-  // States for different views and their contexts
-  const [activeView, setActiveView] = useState('configuratorList'); // 'configuratorList', 'colorPickerPanel', 'buildPanel', 'inputPanel'
-
+  const [activeView, setActiveView] = useState('configuratorList');
   const [editingColorContext, setEditingColorContext] = useState(null);
   const [selectedColorInPicker, setSelectedColorInPicker] = useState('');
-
   const [editingBuildContext, setEditingBuildContext] = useState(null);
   const [selectedImageOption, setSelectedImageOption] = useState('option1');
-
   const [editingInputContext, setEditingInputContext] = useState(null);
   const [inputValueInPanel, setInputValueInPanel] = useState('');
 
-
-  const colorSwatches = [ // Changed color swatches
+  const colorSwatches = [
     '#C62828', '#AD1457', '#6A1B9A', '#4527A0', '#283593',
     '#1565C0', '#0277BD', '#00838F', '#00695C', '#2E7D32',
     '#558B2F', '#9E9D24', '#F9A825', '#FF8F00', '#EF6C00',
@@ -160,14 +155,12 @@ const UI = () => {
 
   const handlePaintAll = () => {
     if (editingColorContext) {
-      // Ensure no unnecessary escapes in this alert string
       alert(`Paint ALL object with color: ${selectedColorInPicker} (from ${editingColorContext.title})`);
     }
   };
 
   const handlePaintSectionAndReturn = () => {
     if (editingColorContext) {
-      // Ensure no unnecessary escapes in this alert string
       alert(`Paint section for "${editingColorContext.title}" with color: ${selectedColorInPicker}. Returning to list.`);
       handleCloseColorPicker();
     }
@@ -175,7 +168,6 @@ const UI = () => {
 
   const handleOpenBuildPanel = (optionId, optionTitle) => {
     setEditingBuildContext({ id: optionId, title: optionTitle });
-    setSelectedImageOption('option1');
     setActiveView('buildPanel');
     setIsSummaryPanelVisible(false);
   };
@@ -186,7 +178,6 @@ const UI = () => {
   };
 
   const handleBuildCallToAction = () => {
-    // Ensure no unnecessary escapes in this alert string (this might be your line 84)
     alert(`Build Call To Action! Selected Image Option: ${selectedImageOption}. Other choices... Returning to list.`);
     handleCloseBuildPanel();
   };
@@ -205,25 +196,31 @@ const UI = () => {
 
   const handleInputCallToAction = () => {
     if (editingInputContext) {
-      // Ensure no unnecessary escapes in this alert string
       alert(`Input for "${editingInputContext.title}" confirmed with value: "${inputValueInPanel}". Returning to list.`);
     }
     handleCloseInputPanel();
   };
 
+  const GOLDEN_RATIO_CONSTANT = 1.61803398875;
+  const VIZ_PROPORTION = 1 / GOLDEN_RATIO_CONSTANT; 
+  const CONTROLS_PROPORTION = 1 - VIZ_PROPORTION;
+
   return (
-    <div className="flex flex-col min-h-screen bg-[#161616] text-white">
-      {/* Main content area: Changed p-4 to p-6 to create 24px padding */}
-      <main className={`flex-grow p-4 flex flex-col items-center justify-center relative bg-[#161616] ${isVisualizationExpanded ? 'h-full' : ''}`}>
+    // Root container: Uses h-[100dvh] for dynamic viewport height
+    <div className="flex flex-col h-[100dvh] bg-[#161616] text-white"> {/* MODIFIED HERE */}
+      {/* Main content area (Visualization) */}
+      <main
+        className={`p-4 flex flex-col items-center justify-center relative bg-[#161616] overflow-auto ${
+          isVisualizationExpanded ? 'flex-grow h-full' : ''
+        }`}
+        style={!isVisualizationExpanded ? { flexBasis: `${VIZ_PROPORTION * 100}%` } : {}}
+      >
         <div className="absolute top-[20px] left-[20px] w-[70px] h-[49px] bg-gray-300 bg-opacity-75 rounded z-10 flex items-center justify-center"><p className="font-bold text-xl text-gray-900">LOGO</p></div>
-        
-        {/* Image: Removed absolute positioning, changed to object-contain, and uses max-w/h-full */}
         <img
-          src={`${process.env.PUBLIC_URL}/gloves.png`} 
+          src={`${process.env.PUBLIC_URL}/gloves.png`}
           alt="Glove Visualization"
-          className="object-contain max-w-full max-h-full z-10" 
+          className="object-contain max-w-full max-h-full z-10"
         />
-        
         <div className="absolute bottom-4 inset-x-0 flex items-center justify-between text-xs z-10">
           <div className="p-1 hover:bg-gray-800 hover:bg-opacity-50 rounded-md cursor-pointer ml-[14px]" onClick={() => setIsVisualizationExpanded(!isVisualizationExpanded)} aria-label={isVisualizationExpanded ? "Collapse visualization" : "Expand visualization"}>
             {isVisualizationExpanded ? (
@@ -241,9 +238,13 @@ const UI = () => {
         </div>
       </main>
 
+      {/* Controls Area (Sections + Footer) */}
       {!isVisualizationExpanded && (
-        <>
-          <div className="relative h-80"> {/* Container for options/editor panels */}
+        <div 
+          className="flex flex-col overflow-hidden bg-[#161616]"
+          style={{ flexBasis: `${CONTROLS_PROPORTION * 100}%` }}
+        >
+          <div className="relative flex-grow overflow-hidden"> 
             {activeView === 'configuratorList' && (
               <>
                 <section className={`px-4 bg-[#161616] h-full overflow-y-auto ${isSummaryPanelVisible ? 'opacity-50 pointer-events-none' : ''}`}>
@@ -305,9 +306,9 @@ const UI = () => {
                 setInputValueInPanel={setInputValueInPanel}
               />
             )}
-          </div>
+          </div> 
 
-          <footer className="bg-[#161616] flex items-center justify-start mt-[10px] pb-[20px] px-[14px]">
+          <footer className="flex-shrink-0 bg-[#161616] flex items-center justify-start mt-[10px] pb-[20px] px-[14px]">
             {activeView === 'colorPickerPanel' ? ( <> <button type="button" onClick={handlePaintAll} className="flex items-center justify-center px-4 bg-[#3A3A3A] hover:bg-[#4A4A4A] active:bg-[#2A2A2A] rounded text-base font-semibold text-white w-[146px] h-[56px]" aria-label="Paint all with selected color"><span>Secondary</span><svg className="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg></button> <button type="button" onClick={handlePaintSectionAndReturn} className="flex items-center justify-between px-4 ml-[10px] bg-[#2997FF] hover:bg-[#73BBFF] active:bg-[#0083FF] rounded text-base font-semibold text-white w-[244px] h-[56px]" aria-label="Apply color to section and return"><span className="ml-[5px]">Primary</span><svg className="w-5 h-5 mr-[5px]" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg></button></>)
             : activeView === 'buildPanel' ? ( <> <button type="button" onClick={handleBuildCallToAction} className="flex items-center justify-center px-4 ml-auto bg-white hover:bg-gray-200 active:bg-gray-300 rounded text-base font-semibold text-[#161616] w-[244px] h-[56px]" aria-label="Confirm build options"><span>Call To Action</span><svg className="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg></button></>)
             : activeView === 'inputPanel' ? ( <> <button type="button" onClick={handleInputCallToAction} className="flex items-center justify-center px-4 ml-auto bg-white hover:bg-gray-200 active:bg-gray-300 rounded text-base font-semibold text-[#161616] w-[244px] h-[56px]" aria-label="Confirm input"><span>Call To Action</span><svg className="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg></button></>)
@@ -323,7 +324,7 @@ const UI = () => {
               )
             ) : null }
           </footer>
-        </>
+        </div> 
       )}
     </div>
   );
