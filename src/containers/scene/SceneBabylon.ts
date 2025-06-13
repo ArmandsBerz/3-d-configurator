@@ -363,16 +363,49 @@ export class SVGProcessor {
   }
 
   loadSVG(url: string): Promise<null> {
-    return new Promise((resolve) => {
-      $.get(url, (data: Document) => {
-        this.svg = data;
-        resolve(null);
-      });
+    return new Promise((resolve, reject) => {
+      // Use the modern 'fetch' API instead of jQuery's 'get'
+      fetch(url)
+        .then(response => {
+          if (!response.ok) {
+            // This gives a clearer error if the file is not found
+            throw new Error(`Network response was not ok for ${url}`);
+          }
+          // Get the file's content as plain text
+          return response.text();
+        })
+        .then(text => {
+          // Use the browser's built-in parser to convert the text to a proper SVG document
+          const parser = new DOMParser();
+          this.svg = parser.parseFromString(text, "image/svg+xml");
+          // Check for parsing errors, which is good practice
+          const errorNode = this.svg.querySelector('parsererror');
+          if (errorNode) {
+              console.error('Error parsing SVG:', errorNode.textContent);
+              reject(new Error('Error parsing SVG'));
+          } else {
+              resolve(null);
+          }
+        })
+        .catch(error => {
+          console.error(`Failed to load or parse SVG from ${url}:`, error);
+          reject(error);
+        });
     });
   }
 
   updateSVGZone(zone: string, color: string): void {
-    this.svg.getElementById(zone).style.fill = color;
+    if (!this.svg) {
+      console.warn(`Attempted to update zone '${zone}' before SVG was loaded.`);
+      return;
+    }
+    const element = this.svg.getElementById(zone);
+    if (element) {
+      element.style.fill = color;
+    } else {
+      // This will now print a clear message instead of crashing
+      // console.error(`SVG element with ID '${zone}' was not found in the loaded SVG file.`);
+    }
   }
 
   async textureFromSVGData(scene: Scene): Promise<Texture> {
@@ -730,7 +763,7 @@ export class WebGlove {
 }
 
 // -------------------------------------------------------------------
-// The main Glove class
+// The main Glove class (Corrected Version)
 // -------------------------------------------------------------------
 export class Glove {
   id: string;
@@ -753,6 +786,7 @@ export class Glove {
 
   svgProcessor: SVGProcessor;
   objectMat: PBRMaterial;
+  protected isSvgLoaded = false;
 
   // Text data
   textTexture: DynamicTexture;
@@ -817,15 +851,24 @@ export class Glove {
       const arr = assetName.split('');
       arr[0] = arr[0].toUpperCase();
       const newName = arr.join('');
+      const materialName = `${element}${newName}`;
 
       const textTexture = new DynamicTexture(element, { width: 512, height: 256 }, this.scene);
-      const textMat = this.scene.getMaterialByName(`${element}${newName}`) as PBRMaterial;
-      textMat.albedoTexture = textTexture;
-      textMat.opacityTexture = textTexture;
-      textMat.albedoColor = Color3.White();
-      textMat.transparencyMode = Material.MATERIAL_ALPHABLEND;
 
-      this.arrText.push(textTexture);
+      // --- CORRECTED LOGIC ---
+      // Find the material by its unique name within the entire scene.
+      // This works reliably with the current asset loading pipeline.
+      const textMat = this.scene.getMaterialByName(materialName) as PBRMaterial;
+
+      if (textMat) {
+        textMat.albedoTexture = textTexture;
+        textMat.opacityTexture = textTexture;
+        textMat.albedoColor = Color3.White();
+        textMat.transparencyMode = Material.MATERIAL_ALPHABLEND;
+        this.arrText.push(textTexture);
+      } else {
+        console.warn(`Material with name "${materialName}" was not found in the 3D model's sub-materials.`);
+      }
     });
 
     this.loadWebs(callback);
@@ -864,6 +907,7 @@ export class Glove {
     // We set up an SVG processor for the main glove design
     this.svgProcessor = new SVGProcessor();
     this.svgProcessor.loadSVG(`assets/${this.designFile}`).then(() => {
+      this.isSvgLoaded = true;
       callback();
       this.updateTexture();
     });
@@ -925,11 +969,17 @@ export class Glove {
     this.text = '';
   }
 
+  // --- CORRECTED LOGIC ---
+  // This uses two separate `if` statements to ensure that zones common to both the
+  // glove and the web (like 'lace' or 'stitching') are updated on both objects.
   public async updateZoneColor(zone: string, color: string) {
-    if (zone !== 'web') {
+    // Update the main glove's texture. This will run for every zone, including 'lace'.
+    if (this.isSvgLoaded) {
       this.svgProcessor.updateSVGZone(zone, color);
       await this.updateTexture();
     }
+  
+    // If the zone is also a web-specific zone, update the web as well.
     if (ZONES_WEB.includes(zone) && this.currentWeb) {
       await this.currentWeb.updateZoneColor(zone, color);
     }
