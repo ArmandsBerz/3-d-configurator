@@ -1114,6 +1114,9 @@ export default class SceneBabylon {
     camera.wheelPrecision = 150;
     camera.attachControl(this.canvas, true);
 
+    // This setting universally disables panning for mouse, touch, and pen.
+    camera.panningSensibility = 0;
+
     new HemisphericLight('light1', new Vector3(1, 1, 0), scene);
 
     this.engine = engine;
