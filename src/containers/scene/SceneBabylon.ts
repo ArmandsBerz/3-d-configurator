@@ -194,162 +194,85 @@ export class AssetsLoader {
 }
 
 // -------------------------------------------------------------------
-// URLProcessor and URL parameter functions
+// NEW GLOVE MANAGER AND ENGINE API CLASSES
 // -------------------------------------------------------------------
-export class URLProcessor {
-  paramKey: string = 'setup';
 
-  constructor(paramKey: string) {
-    this.paramKey = paramKey;
-  }
+/**
+ * Manages the logic for updating glove and web appearances.
+ * It is the single point of contact for making visual changes.
+ */
+export class GloveManager {
+    private scene: Scene;
+    private currentGlove: Glove | null = null;
 
-  getSetupObject() {
-    const str = getParameter(this.paramKey);
-    return JSON.parse(str);
-  }
-
-  getSetupParam(key: string) {
-    return this.getSetupObject()[key];
-  }
-
-  setSetupParams(value) {
-    insertUrlParam(this.paramKey, value);
-  }
-}
-
-function getParameter(key: string) {
-  const searchParams = new URLSearchParams(window.location.search);
-  return searchParams.get(key);
-}
-
-function setParameter(key: string, value: string) {
-  const searchParams = new URLSearchParams(window.location.search);
-  searchParams.set(key, value);
-  // window.location.search = searchParams;
-  window.location.search = searchParams.toString();
-}
-
-function insertUrlParam(key: string, value: string) {
-  if (history.pushState) {
-    const searchParams = new URLSearchParams(window.location.search);
-    searchParams.set(key, value);
-    const newurl =
-      window.location.protocol +
-      '//' +
-      window.location.host +
-      window.location.pathname +
-      '?' +
-      searchParams.toString();
-    window.history.pushState({ path: newurl }, '', newurl);
-  }
-}
-
-function removeUrlParameter(paramKey: string) {
-  const url = window.location.href;
-  const r = new URL(url);
-  r.searchParams.delete(paramKey);
-  const newUrl = r.href;
-  window.history.pushState({ path: newUrl }, '', newUrl);
-}
-
-// -------------------------------------------------------------------
-// Messenger and MessengerData
-// -------------------------------------------------------------------
-export interface MessengerData {
-  gloveId: string; // current glove id
-  itemId: string; // glove item (object, web, padhood) id
-  section: string; // section -> zones, logo, etc
-  key: string;
-  value: string;
-  data: {};
-}
-
-export class Messenger {
-  data: {};
-  onDataChanged: Observable<MessengerData>;
-  onLoaded: Observable<{}>;
-  urlProcessor: URLProcessor;
-
-  protected static _instance: Messenger;
-
-  constructor() {
-    this.data = {};
-    this.onDataChanged = new Observable();
-    this.onLoaded = new Observable();
-
-    this.urlProcessor = new URLProcessor('setup');
-
-    // By default, original code left the param updates commented:
-    this.onDataChanged.add((obj: MessengerData) => {
-      // console.log("setting params " + JSON.stringify(obj.data));
-      // this.urlProcessor.setSetupParams(JSON.stringify(obj.data));
-    });
-  }
-
-  public static instance(): Messenger {
-    if (!Messenger._instance) {
-      Messenger._instance = new Messenger();
+    constructor(scene: Scene) {
+        this.scene = scene;
     }
-    return Messenger._instance;
-  }
 
-  loadInitialData() {
-    this.data = this.urlProcessor.getSetupObject() ?? {};
-    console.log('this.data ::', this.data);
+    // Method to inform the manager which glove is currently active
+    public setActiveGlove(glove: Glove): void {
+        this.currentGlove = glove;
+    }
 
-    Object.keys(this.data).forEach((gloveId) => {
-      Object.keys(this.getGloveObject(gloveId)).forEach((itemId) => {
-        Object.keys(this.getItemObject(gloveId, itemId)).forEach((section) => {
-          Object.keys(this.getSectionObject(gloveId, itemId, section)).forEach((key) => {
-            this.updateData(
-              gloveId,
-              itemId,
-              section,
-              key,
-              this.data[gloveId][itemId][section][key]
-            );
-          });
-        });
-      });
-    });
+    /**
+     * This is the core logic, moved from the old Glove class.
+     * It updates the color on the correct part of the model.
+     */
+    public async updateColor(zone: string, color: string): Promise<void> {
+        if (!this.currentGlove) return;
 
-    this.onLoaded.notifyObservers({});
-  }
+        // Update the main glove's texture
+        if (this.currentGlove.isSvgLoaded) {
+            this.currentGlove.svgProcessor.updateSVGZone(zone, color);
+            await this.currentGlove.updateTexture();
+        }
 
-  updateData(gloveId: string, itemId: string, section: string, key: string, value: string): void {
-    const gloveData = (this.data[gloveId] = this.data[gloveId] ?? {});
-    const itemData = (gloveData[itemId] = gloveData[itemId] ?? {});
-    const sectionData = (itemData[section] = itemData[section] ?? {});
-    sectionData[key] = value;
+        // If the zone is also a web-specific zone, update the active web
+        if (ZONES_WEB.includes(zone) && this.currentGlove.currentWeb) {
+            await this.currentGlove.currentWeb.updateZoneColor(zone, color);
+        }
+    }
 
-    this.onDataChanged.notifyObservers({
-      gloveId,
-      itemId,
-      section,
-      key,
-      value,
-      data: this.data,
-    });
-  }
-
-  hasData(gloveId: string, itemId: string, section: string, key: string): boolean {
-    return key in this.getSectionObject(gloveId, itemId, section);
-  }
-
-  getGloveObject(gloveId: string): {} {
-    return this.data[gloveId] ?? {};
-  }
-
-  getItemObject(gloveId: string, itemId: string): {} {
-    const data = this.getGloveObject(gloveId) ?? {};
-    return data[itemId] ?? {};
-  }
-
-  getSectionObject(gloveId: string, itemId: string, section: string): {} {
-    const data = this.getItemObject(gloveId, itemId) ?? {};
-    return data[section] ?? {};
-  }
+    // You can add more methods here to handle text, etc.
+    public updateText(zone: string, text: string, font: string, color: string) {
+        if (!this.currentGlove) return;
+        
+        this.currentGlove.changeTextStyle('text', text);
+        this.currentGlove.changeTextStyle('font', font);
+        this.currentGlove.changeTextStyle('color', color);
+        this.currentGlove.updateText(zone);
+    }
 }
+
+/**
+ * The formal, public-facing API for the entire Babylon.js engine.
+ * The React UI will interact ONLY with this object.
+ */
+export class EngineAPI {
+    private gloveManager: GloveManager;
+    private sceneBabylon: SceneBabylon;
+
+    constructor(gloveManager: GloveManager, sceneBabylon: SceneBabylon) {
+        this.gloveManager = gloveManager;
+        this.sceneBabylon = sceneBabylon;
+    }
+
+    // Clean function for the UI to call via the useEngine() hook
+    public updateColor(zone: string, color: string): void {
+        this.gloveManager.updateColor(zone, color);
+    }
+    
+    // Example of another clean API function
+    public setActiveGlove(index: number): void {
+        this.sceneBabylon.setActiveGlove(index);
+    }
+
+    // The new "bridge" function, explicitly added for the UI to use.
+    public setActiveWeb(webTypeValue: string): void {
+        this.sceneBabylon.setActiveWeb(webTypeValue);
+    }
+}
+
 
 // -------------------------------------------------------------------
 // SVGProcessor
@@ -676,7 +599,6 @@ export class WebGlove {
   glbFile: string;
   designFile: string;
   textSelectorFont = 'bold 100px monospace';
-  messenger: Messenger;
 
   webZones: Zones = new Zones(ZONES_WEB);
   padHoodZones: Zones = new Zones(ZONES_PAD_HOOD);
@@ -696,7 +618,6 @@ export class WebGlove {
     designName: string,
     scene: Scene,
     engine: Engine,
-    messenger: Messenger,
     callback: () => void
   ) {
     this.id = assetName;
@@ -704,7 +625,6 @@ export class WebGlove {
     this.designFile = `${designName}.svg`;
 
     this.scene = scene;
-    this.messenger = messenger;
 
     this.textTexture = new DynamicTexture('dynamic texture', { width: 512, height: 256 }, scene);
 
@@ -724,13 +644,6 @@ export class WebGlove {
     engine.runRenderLoop(() => {
       scene.render();
     });
-
-    // Listen for data changes to update the web coloring
-    this.messenger.onDataChanged.add((data) => this.dataChangedCallback(data));
-  }
-
-  dataChangedCallback(data: MessengerData): void {
-    this.updateZoneColor(data.key, data.value);
   }
 
   updateText(text: string) {
@@ -779,14 +692,13 @@ export class Glove {
 
   protected scene: Scene;
   protected engine: Engine;
-  protected messenger: Messenger;
 
   gloveObject: GloveObject;
   padHoodObjects: PadHood[];
 
   svgProcessor: SVGProcessor;
   objectMat: PBRMaterial;
-  protected isSvgLoaded = false;
+  public isSvgLoaded = false;
 
   // Text data
   textTexture: DynamicTexture;
@@ -819,7 +731,6 @@ export class Glove {
     designName: string,
     scene: Scene,
     engine: Engine,
-    messenger: Messenger,
     callback: () => void
   ) {
     this.id = assetName;
@@ -830,7 +741,6 @@ export class Glove {
     this.loader = AssetsLoader.getInstance(scene);
     this.scene = scene;
     this.engine = engine;
-    this.messenger = messenger;
 
     this.glbFile = `${assetName}.glb`;
     this.designFile = `${designName}.svg`;
@@ -895,7 +805,7 @@ export class Glove {
 
     // Create a WebGlove instance for each possible web
     this.websGlove.forEach((element) => {
-      const web = new WebGlove(element, element, this.scene, this.engine, this.messenger, () => {});
+      const web = new WebGlove(element, element, this.scene, this.engine, () => {});
       this.webObjects.push(web);
     });
 
@@ -916,13 +826,6 @@ export class Glove {
     this.engine.runRenderLoop(() => {
       this.scene.render();
     });
-
-    // Listen for color/data changes
-    this.messenger.onDataChanged.add((data) => this.dataChangedCallback(data));
-  }
-
-  async dataChangedCallback(data: MessengerData): Promise<void> {
-    await this.updateZoneColor(data.key, data.value);
   }
 
   public changeTextStyle(name: string, value: string) {
@@ -969,22 +872,6 @@ export class Glove {
     this.text = '';
   }
 
-  // --- CORRECTED LOGIC ---
-  // This uses two separate `if` statements to ensure that zones common to both the
-  // glove and the web (like 'lace' or 'stitching') are updated on both objects.
-  public async updateZoneColor(zone: string, color: string) {
-    // Update the main glove's texture. This will run for every zone, including 'lace'.
-    if (this.isSvgLoaded) {
-      this.svgProcessor.updateSVGZone(zone, color);
-      await this.updateTexture();
-    }
-  
-    // If the zone is also a web-specific zone, update the web as well.
-    if (ZONES_WEB.includes(zone) && this.currentWeb) {
-      await this.currentWeb.updateZoneColor(zone, color);
-    }
-  }
-
   public async updateTexture() {
     const texture = await this.svgProcessor.textureFromSVGData(this.scene);
     const oldTexture = this.objectMat.albedoTexture;
@@ -995,8 +882,7 @@ export class Glove {
 
   public setActiveWeb(name: string) {
     this.webObjects.forEach((item) => {
-      const webName = item.id.split('').slice(0, item.id.length - 2).join('');
-      if (name === webName) {
+      if (name === item.id) {
         item.webObject.model.setEnabled(true);
         this.currentWeb = item;
       } else {
@@ -1013,7 +899,8 @@ export default class SceneBabylon {
   scene: Scene;
   engine: Engine;
   glove: Glove;
-  messenger: Messenger;
+  gloveManager: GloveManager;
+  public static engineAPI: EngineAPI;
 
   protected loader: AssetsLoader;
   protected arrGloves: Glove[] = [];
@@ -1033,8 +920,10 @@ export default class SceneBabylon {
 
     this.createScene();
     this.createDebugTool();
-    this.messenger = Messenger.instance();
     this.loader = AssetsLoader.getInstance(this.scene);
+
+    this.gloveManager = new GloveManager(this.scene);
+    SceneBabylon.engineAPI = new EngineAPI(this.gloveManager, this);
 
     this.gloves = ['openBack', 'firstBase', 'closeBack', 'catchers'];
 
@@ -1054,13 +943,12 @@ export default class SceneBabylon {
       this.glovesDesign[id],
       this.scene,
       this.engine,
-      this.messenger,
       () => {
         console.log('glove ready', glove);
         glove.glove.setEnabled(true);
-        this.messenger.loadInitialData();
         this.currentGlove = glove;
         this.arrGloves[id] = glove;
+        this.gloveManager.setActiveGlove(glove);
         if (callback) callback();
       }
     );
@@ -1132,6 +1020,7 @@ export default class SceneBabylon {
       if (id === index) {
         this.arrGloves[id].glove.setEnabled(true);
         this.currentGlove = this.arrGloves[id];
+        this.gloveManager.setActiveGlove(this.currentGlove);
       } else {
         this.arrGloves[id].glove.setEnabled(false);
         this.arrGloves[id].setActiveWeb(undefined);

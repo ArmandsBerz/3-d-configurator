@@ -501,53 +501,49 @@ const ColorOption = ({ title, windowWidth, both, setOptions, handleButton, color
   );
 };
 
+// --- REFACTORED WebOption COMPONENT ---
 const WebOption = ({
   title,
-  windowWidth,
-  defState,
-  setOptionsColor,
-  names,
-  onSelection,
-  selected,
-  colors,
   webs,
+  colors,
+  selectedWebType,
+  selectedWebColor,
+  onWebTypeChange,
+  onWebColorChange,
 }) => {
-  const arrWeb = webs.map((item, index) => ({
-    title: item,
-    text: 'Option Text',
-    value: item,
-    src: 'https://via.placeholder.com/100', // Placeholder, actual src would make this dynamic
-    id: index,
-  }));
+  // Find the full text of the selected web to display in the accordion header.
+  const selectedWebObject = webs.find(web => web.value === selectedWebType);
+  const selectedOptionText = selectedWebObject ? selectedWebObject.text : '';
 
-  const getColors = () => {
-    return Object.values(colors).map((item) => ({ value: item }));
-  };
+  // Find the index of the selected web for the SelectImage component, as it expects an index.
+  const selectedWebIndex = webs.findIndex(web => web.value === selectedWebType);
 
   return (
     <OptionAccordion
       title={title}
       type="options"
-      selectedOption={defState.activeGlove && defState.activeGlove.text}
+      selectedOption={selectedOptionText}
     >
       <SelectImage
         subtitle="Type"
-        options={arrWeb}
-        onSelection={(option) => onSelection(option)}
+        // Adapt the `webs` prop for SelectImage: it expects `src` for the image URL.
+        options={webs.map(web => ({ ...web, src: web.image }))}
+        // Adapt the callback to pass only the `value` to the parent handler.
+        onSelection={(option) => onWebTypeChange(option.value)}
+        // Pass the calculated index as the `selected` prop.
+        selected={selectedWebIndex > -1 ? selectedWebIndex : 0}
       />
       <SelectColor
         subtitle="Color"
-        colors={getColors()}
-        selected={defState?.color}
-        onSelection={(option) => setOptionsColor('web', option)}
+        colors={colors}
+        // Adapt the callback to pass only the `value` to the parent handler.
+        onSelection={(option) => onWebColorChange(option.value)}
+        selected={selectedWebColor}
       />
-      {windowWidth && (
-        // Assuming 'custom-divider-extended' will be defined in SCSS and is visually the same as in TextOptions
-        <div className="buttonLine custom-divider-extended"></div> // Changed
-      )}
     </OptionAccordion>
   );
 };
+// --- END REFACTORED WebOption COMPONENT ---
 
 const NameOptions = ({ title, windowWidth, defState, names, onSelection, selected }) => {
   const arr = names.map((item, id) => ({ id, text: item, value: item }));
