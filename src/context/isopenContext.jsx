@@ -304,14 +304,19 @@ function LeftPanel(props) {
     setUiState(prevState => ({ ...prevState, webType: newWebType }));
   };
   
-  // Connects UI action to the engine API for web color change
-  const handleWebColorChange = (newColor) => {
+ // --- NEW HANDLERS FOR THE "SMART" COMPONENT ---
+
+// ... (handleWebTypeChange remains the same)
+
+// Connects UI action to the engine API for web color change
+const handleWebColorChange = (newColor) => {
     if (engine) {
       engine.updateColor('web', newColor);
-      engine.updateColor('lace', newColor); // Design requires lace to match
+      // The line below has been removed.
+      // engine.updateColor('lace', newColor); 
     }
     setUiState(prevState => ({ ...prevState, webColor: newColor }));
-  };
+};
   
   // --- END NEW HANDLERS ---
 
@@ -323,10 +328,10 @@ function LeftPanel(props) {
     return objColors;
   };
   
-  // REFACTORED: This function now correctly filters out all web-related zones.
-  const getZones = () =>
+ // REFACTORED: This function now filters out ONLY the web zone itself.
+const getZones = () =>
     props.zones && props.zones.map((item, index) => {
-      if (!ZONES_WEB.includes(item)) { // <- Critical filter update
+      if (item !== 'web') { // <- CRITICAL CHANGE
         const arrColor = getColors(item);
         return (
           <ColorOption
