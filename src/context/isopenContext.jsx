@@ -5,7 +5,8 @@
 // Core React/UI imports
 import React, { useState, useEffect } from 'react';
 import ReactDOM from 'react-dom/client';
-import { NavLink, useNavigate } from 'react-router-dom';
+// MODIFICATION: Import useSearchParams to manage URL query parameters
+import { NavLink, useNavigate, useSearchParams } from 'react-router-dom';
 import { TbArrowsMaximize } from 'react-icons/tb';
 import { CgArrowRight, CgList } from 'react-icons/cg';
 
@@ -223,22 +224,18 @@ function UpAccordion(props) {
 
 /* ------------------------
    LEFT PANEL COMPONENT (STAGE TWO)
-   *** HEAVILY REFACTORED PER TASK REQUIREMENTS ***
+   *** MODIFIED FOR URL SYNC ***
 ------------------------ */
 function LeftPanel(props) {
-  // State from Redux and the new hook
+  // --- HOOKS AND STATE ---
   const isEngineReady = useAppSelector((state) => state.buildReducer.isEngineReady);
   const { position, pallette } = useAppSelector((state) => state.buildReducer);
-  const engine = useEngine(); // Our new bridge to Babylon
+  const engine = useEngine();
 
-  // MODIFIED: Centralized UI state for this component.
-  // It now includes web selections and other zone colors.
-  const [uiState, setUiState] = useState({
-    webType: 'iOB',       // Default before engine is ready
-    webColor: '#E5E7E8',  // Default before engine is ready
-  });
+  // MODIFICATION: Initialize useSearchParams hook to read and write URL params
+  const [searchParams, setSearchParams] = useSearchParams();
 
-  // Local UI state
+  const [uiState, setUiState] = useState(null); // Start with null state
   const [showBuild, setShowBuild] = useState(false);
   const [positionName, setPositionName] = useState(configBuild.Position[0]);
   const [gloveModelsForPosition, setGloveModelsForPosition] = useState(null);
@@ -246,50 +243,103 @@ function LeftPanel(props) {
   const colors = colorMap[pallette];
 
   useEffect(() => {
-    // Update position name when Redux state changes
     const newPositionName = configBuild.Position[position];
     setPositionName(newPositionName);
     setGloveModelsForPosition(playerPosition[newPositionName].glove);
   }, [position]);
 
 
-  // REFACTORED: This effect now initializes ALL states when the engine is ready.
+  // --- EFFECT 1: Initialize state from URL or defaults (URL -> Selection) ---
   useEffect(() => {
     if (isEngineReady && engine && props.zones?.length > 0) {
       const scenes = SceneBabylon.instance();
-      const initialWebType = scenes?.currentGlove?.websGlove[0] || 'iOB';
       const initialColor = colors.white;
       const initialFont = fonts[0];
-      
-      const initialZoneStates = {};
       const textZones = scenes?.currentGlove?.textZones || [];
 
+      // --- URL PARSING LOGIC ---
+      // Get initial values from the URL search params, or fall back to defaults.
+      const initialWebType = searchParams.get('webType') || scenes?.currentGlove?.websGlove[0] || 'iOB';
+      const initialWebColor = searchParams.get('webColor') || initialColor;
+
+      const initialZoneStates = {};
+
       props.zones.forEach((item) => {
-        // Exclude zones that will be handled by the dedicated WebOption component
         if (!ZONES_WEB.includes(item)) {
-          initialZoneStates[item] = { value: initialColor };
-          engine.updateColor(item, initialColor); // Command engine for other zones
+          // Check URL for a color, otherwise use default
+          const colorValue = searchParams.get(item) || initialColor;
+          initialZoneStates[item] = { value: colorValue };
+          engine.updateColor(item, colorValue); // Command engine
         }
       });
       
       textZones.forEach((zone) => {
-        initialZoneStates[zone] = { text: '', font: initialFont, color: initialColor };
-        engine.updateText(zone, '', initialFont, initialColor);
+          try {
+            // Text options are stored as a stringified JSON object in the URL
+            const textParam = searchParams.get(zone);
+            if (textParam) {
+                const parsedState = JSON.parse(textParam);
+                initialZoneStates[zone] = parsedState;
+                engine.updateText(zone, parsedState.text, parsedState.font, parsedState.color);
+            } else {
+                throw new Error("No param found");
+            }
+          } catch (e) {
+            // If parsing fails or param doesn't exist, use defaults
+            const defaultTextState = { text: '', font: initialFont, color: initialColor };
+            initialZoneStates[zone] = defaultTextState;
+            engine.updateText(zone, defaultTextState.text, defaultTextState.font, defaultTextState.color);
+          }
       });
       
-      // Command the engine for the initial web and lace state
+      // Command the engine for the web and lace state from URL or defaults
       engine.setActiveWeb(initialWebType);
-      engine.updateColor('web', initialColor);
-      engine.updateColor('lace', initialColor);
+      engine.updateColor('web', initialWebColor);
+      // Lace is now separate. Initialize it from URL or default.
+      const initialLaceColor = searchParams.get('lace') || initialColor;
+      engine.updateColor('lace', initialLaceColor);
+      // We also need to add lace to initialZoneStates for the color swatch to be correct
+      initialZoneStates['lace'] = { value: initialLaceColor };
+
 
       // Set the complete initial state for the entire panel
       setUiState({
         ...initialZoneStates,
         webType: initialWebType,
-        webColor: initialColor
+        webColor: initialWebColor,
       });
     }
+    // We run this only once on init. The searchParams object is stable.
   }, [isEngineReady, engine, props.zones, colors]);
+
+
+  // --- EFFECT 2: Update URL when state changes (Selection -> URL) ---
+  useEffect(() => {
+    // Don't update the URL until the initial state has been loaded
+    if (!uiState) {
+        return;
+    }
+    
+    const newParams = new URLSearchParams();
+
+    // Add all relevant state to the new params object
+    Object.entries(uiState).forEach(([key, value]) => {
+        if (key === 'webType' || key === 'webColor') {
+            newParams.set(key, value);
+        } else if (value && typeof value === 'object' && value.hasOwnProperty('value')) {
+            // This is a simple color zone like { value: '#ffffff' }
+            newParams.set(key, value.value);
+        } else if (value && typeof value === 'object' && value.hasOwnProperty('text')) {
+            // This is a text zone, store it as a JSON string
+            newParams.set(key, JSON.stringify(value));
+        }
+    });
+
+    // Update the URL. `replace: true` prevents bloating the browser history.
+    setSearchParams(newParams, { replace: true });
+
+  }, [uiState, setSearchParams]);
+
 
   const showBuildModal = () => setShowBuild(true);
   const hideBuildModal = () => setShowBuild(false);
@@ -301,8 +351,6 @@ function LeftPanel(props) {
     }
     setUiState({ ...uiState, [zone]: option });
   };
-
-  // --- NEW HANDLERS FOR THE "SMART" COMPONENT ---
   
   // Connects UI action to the engine API for web type change
   const handleWebTypeChange = (newWebType) => {
@@ -312,41 +360,33 @@ function LeftPanel(props) {
     setUiState(prevState => ({ ...prevState, webType: newWebType }));
   };
   
- // --- NEW HANDLERS FOR THE "SMART" COMPONENT ---
+    // Connects UI action to the engine API for web color change
+    const handleWebColorChange = (newColor) => {
+        if (engine) {
+          engine.updateColor('web', newColor);
+        }
+        setUiState(prevState => ({ ...prevState, webColor: newColor }));
+    };
 
-// ... (handleWebTypeChange remains the same)
+    const handleTextChange = (zone, newProperty) => {
+        const currentTextState = uiState[zone];
+        const updatedTextState = { ...currentTextState, ...newProperty };
 
-// Connects UI action to the engine API for web color change
-const handleWebColorChange = (newColor) => {
-    if (engine) {
-      engine.updateColor('web', newColor);
-      // The line below has been removed.
-      // engine.updateColor('lace', newColor); 
-    }
-    setUiState(prevState => ({ ...prevState, webColor: newColor }));
-};
+        setUiState(prevState => ({
+            ...prevState,
+            [zone]: updatedTextState,
+        }));
 
-const handleTextChange = (zone, newProperty) => {
-    const currentTextState = uiState[zone];
-    const updatedTextState = { ...currentTextState, ...newProperty };
-
-    setUiState(prevState => ({
-        ...prevState,
-        [zone]: updatedTextState,
-    }));
-
-    if (engine) {
-        engine.updateText(
-            zone,
-            updatedTextState.text,
-            updatedTextState.font,
-            updatedTextState.color
-        );
-    }
-};
+        if (engine) {
+            engine.updateText(
+                zone,
+                updatedTextState.text,
+                updatedTextState.font,
+                updatedTextState.color
+            );
+        }
+    };
   
-  // --- END NEW HANDLERS ---
-
   const getColors = (name) => {
     const objColors = { ...(colors || {}) };
     Object.entries(additionalColors).forEach(([key, value]) => {
@@ -360,6 +400,8 @@ const getZones = () =>
     props.zones && props.zones.map((item, index) => {
       if (item !== 'web') { // <- CRITICAL CHANGE
         const arrColor = getColors(item);
+        // Ensure uiState is loaded before rendering
+        if (!uiState) return null;
         return (
           <ColorOption
             key={index}
@@ -426,13 +468,13 @@ const getZones = () =>
           <OptionAccordion
             showBuildModal={showBuildModal}
             title="Build"
-            selectedOption={uiState.imageOption && uiState.imageOption.value}
+            selectedOption={uiState && uiState.imageOption ? uiState.imageOption.value : ''}
           >
             <BuildModal show={showBuild} handleClose={hideBuildModal} />
           </OptionAccordion>
           
           {/* NEW: Rendering the dumb WebOption component with the correct props */}
-          {isEngineReady && (
+          {isEngineReady && uiState && (
             <WebOption
               title="Webs"
               webs={getWebsForGlove()}
@@ -445,9 +487,9 @@ const getZones = () =>
           )}
 
           {/* Render the rest of the color zones */}
-          {isEngineReady && getZones()}
+          {isEngineReady && uiState && getZones()}
 
-          {isEngineReady && renderTextOptions()}
+          {isEngineReady && uiState && renderTextOptions()}
 
         </div>
         <div className="gradientsStage2Bottom" />
