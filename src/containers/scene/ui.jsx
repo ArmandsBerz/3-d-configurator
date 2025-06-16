@@ -303,10 +303,10 @@ function SelectColor(props) {
     }
   }, [props.selected]);
 
-  const handleSelection = (colorOption) => { 
-    setSelected(colorOption); 
+  const handleSelection = (colorOption) => {
+    setSelected(colorOption);
     if (props.onSelection) {
-      props.onSelection(colorOption); 
+      props.onSelection(colorOption);
     }
   };
 
@@ -316,12 +316,12 @@ function SelectColor(props) {
     <div className="select-container mb-4">
       {props.subtitle ? <h3 className="subtitle mb-2">{props.subtitle}</h3> : null}
       <div className="flex flex-wrap gap-2"> {/* Changed (assuming gap-2 = 8px) */}
-        {props.colors.map((color) => ( 
+        {props.colors.map((color) => (
           <button
             className={`color${isSelected(color) ? ' selected' : ''}`}
             style={{ backgroundColor: color.value }} // Dynamic style: Remains unchanged
-            key={color.value} 
-            onClick={() => handleSelection(color)} 
+            key={color.value}
+            onClick={() => handleSelection(color)}
           />
         ))}
       </div>
@@ -464,8 +464,13 @@ const ColorOption = ({ title, windowWidth, both, setOptions, handleButton, color
   const [state, setState] = useState(false);
   const [color, setColor] = useState(!both ? colors.white : both);
 
+  // THIS IS THE ONLY FUNCTION THAT IS CHANGED IN THIS ENTIRE FILE
   const getColors = () => {
-    return Object.values(colors).map((item) => ({ value: item }));
+    // This now uses Object.entries to create an object with both the name and the value
+    return Object.entries(colors).map(([name, value]) => ({
+      name: name.replace(/_/g, ' '), // This makes names like "dark_brown" look like "dark brown"
+      value: value
+    }));
   };
 
   return (
