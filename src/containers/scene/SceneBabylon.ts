@@ -271,6 +271,10 @@ export class EngineAPI {
     public setActiveWeb(webTypeValue: string): void {
         this.sceneBabylon.setActiveWeb(webTypeValue);
     }
+
+    public updateText(zone: string, text: string, font: string, color: string): void {
+        this.gloveManager.updateText(zone, text, font, color);
+    }
 }
 
 
@@ -650,6 +654,8 @@ export class WebGlove {
     console.log(`custom text: ${text}`);
     const ctx = this.textTexture.getContext();
     ctx.clearRect(0, 0, this.textTexture.getSize().width, this.textTexture.getSize().height);
+    
+    // Explicitly disable the internal update mechanism of drawText
     this.textTexture.drawText(
       text,
       undefined,
@@ -657,8 +663,12 @@ export class WebGlove {
       this.textSelectorFont,
       'white',
       'transparent',
-      false
+      false, // invertY: false (so it's right-side up)
+      false  // update: false (we will handle the update call)
     );
+    
+    // Explicitly call update(false) to apply the drawing without flipping
+    this.textTexture.update(false);
   }
 
   async updateZoneColor(zone: string, color: string) {
@@ -678,6 +688,9 @@ export class WebGlove {
 // -------------------------------------------------------------------
 // The main Glove class (Corrected Version)
 // -------------------------------------------------------------------
+// IN: SceneBabylon.ts
+// REPLACE THE ENTIRE GLOVE CLASS WITH THIS FINAL VERSION
+
 export class Glove {
   id: string;
   glbFile: string;
@@ -749,33 +762,45 @@ export class Glove {
     this.textColor = 'white';
     this.text = '';
 
-    // Create the main glove object + mesh
     this.gloveObject = new GloveObject(scene, assetName, this.gloveZones);
     this.glove = this.gloveObject.model as Mesh;
 
-    // Grab a specific sub-material named 'glove' (or fallback)
     this.objectMat = this.getMaterial('glove');
 
-    // Create DynamicTextures for each text zone
     this.textZones.forEach((element) => {
       const arr = assetName.split('');
       arr[0] = arr[0].toUpperCase();
       const newName = arr.join('');
       const materialName = `${element}${newName}`;
-
+      
       const textTexture = new DynamicTexture(element, { width: 512, height: 256 }, this.scene);
-
-      // --- CORRECTED LOGIC ---
-      // Find the material by its unique name within the entire scene.
-      // This works reliably with the current asset loading pipeline.
+      textTexture.hasAlpha = true; // ADD THIS LINE
       const textMat = this.scene.getMaterialByName(materialName) as PBRMaterial;
 
       if (textMat) {
+        // --- DEFINITIVE DECAL MATERIAL SETUP ---
+
+        // 1. Tell the PBR material to use the alpha channel from our texture for transparency.
+        //    This is a critical and necessary step.
+        textMat.useAlphaFromAlbedoTexture = true;
+        
+        // 2. Set the texture that contains both color (albedo) and transparency (alpha).
         textMat.albedoTexture = textTexture;
-        textMat.opacityTexture = textTexture;
-        textMat.albedoColor = Color3.White();
+
+        // 3. Set the material's transparency mode to allow blending.
         textMat.transparencyMode = Material.MATERIAL_ALPHABLEND;
+
+        // 4. IMPORTANT: Do NOT set a separate albedoColor. The color information
+        //    will come exclusively from what we draw on the texture. Removing this
+        //    prevents the solid white rectangle from appearing.
+        // textMat.albedoColor = Color3.White(); // THIS LINE IS REMOVED.
+
         this.arrText.push(textTexture);
+
+        // Initially, clear the texture so it's fully transparent and invisible.
+        const ctx = textTexture.getContext();
+        ctx.clearRect(0, 0, 512, 256);
+        textTexture.update(false);
       } else {
         console.warn(`Material with name "${materialName}" was not found in the 3D model's sub-materials.`);
       }
@@ -797,13 +822,11 @@ export class Glove {
   }
 
   protected async loadWebs(callback: () => void) {
-    // Load each web mesh
     const arrPromise = this.websGlove.map(async (item) => {
       await this.loader.loadMesh('assets/', `${item}.glb`, item);
     });
     await Promise.all(arrPromise);
 
-    // Create a WebGlove instance for each possible web
     this.websGlove.forEach((element) => {
       const web = new WebGlove(element, element, this.scene, this.engine, () => {});
       this.webObjects.push(web);
@@ -814,7 +837,6 @@ export class Glove {
 
   protected finishCreateGlove(callback: () => void) {
     console.log('finish');
-    // We set up an SVG processor for the main glove design
     this.svgProcessor = new SVGProcessor();
     this.svgProcessor.loadSVG(`assets/${this.designFile}`).then(() => {
       this.isSvgLoaded = true;
@@ -822,7 +844,6 @@ export class Glove {
       this.updateTexture();
     });
 
-    // Start rendering
     this.engine.runRenderLoop(() => {
       this.scene.render();
     });
@@ -830,39 +851,44 @@ export class Glove {
 
   public changeTextStyle(name: string, value: string) {
     switch (name) {
-      case 'color':
-        this.textColor = value;
-        break;
-      case 'font':
-        this.textFont = value;
-        break;
-      case 'text':
-        this.text = value;
-        break;
-      default:
-        break;
+      case 'color': this.textColor = value; break;
+      case 'font': this.textFont = value; break;
+      case 'text': this.text = value; break;
+      default: break;
     }
   }
 
   protected getFontSize(material: DynamicTexture): number {
     const ctx = material.getContext();
-    ctx.font = `${this.size}px ${this.textFont}`;
+    // Add quotes around the font family for robustness
+    ctx.font = `${this.size}px "${this.textFont}"`; 
     const textWidth = ctx.measureText(this.text).width;
+
+    if (textWidth === 0) return this.defSize; // Prevent division by zero
+
     const ratio = textWidth / this.size;
     const calcSize = Math.floor(this.DTWidth / (ratio * 1));
-    const fontSize = calcSize > 310 ? 310 : calcSize;
-    return fontSize;
+    return calcSize > 310 ? 310 : calcSize;
   }
 
   public updateText(zone: string) {
-    this.arrText.forEach((item) => {
-      if (item.name === zone) {
-        const fontSize = this.getFontSize(item);
-        const font = `${this.defSize}px ${this.textFont}`;
-        const ctx = item.getContext();
-        ctx.clearRect(0, 0, item.getSize().width, item.getSize().height);
-        item.drawText(this.text, undefined, undefined, font, this.textColor, 'transparent', false);
-      }
+    this.arrText.forEach((dynamicTexture) => {
+        if (dynamicTexture.name === zone) {
+            const fontSize = this.text ? this.getFontSize(dynamicTexture) : 90;
+            const fontString = `${fontSize}px "${this.textFont}"`;
+
+            const ctx = dynamicTexture.getContext();
+            ctx.clearRect(0, 0, dynamicTexture.getSize().width, dynamicTexture.getSize().height);
+
+            if (this.text) {
+                dynamicTexture.drawText(
+                    this.text, null, null, fontString,
+                    this.textColor, 'transparent', false, false
+                );
+            }
+
+            dynamicTexture.update(false);
+        }
     });
   }
 

@@ -259,14 +259,22 @@ function LeftPanel(props) {
       const scenes = SceneBabylon.instance();
       const initialWebType = scenes?.currentGlove?.websGlove[0] || 'iOB';
       const initialColor = colors.white;
-
+      const initialFont = fonts[0];
+      
       const initialZoneStates = {};
+      const textZones = scenes?.currentGlove?.textZones || [];
+
       props.zones.forEach((item) => {
         // Exclude zones that will be handled by the dedicated WebOption component
         if (!ZONES_WEB.includes(item)) {
           initialZoneStates[item] = { value: initialColor };
           engine.updateColor(item, initialColor); // Command engine for other zones
         }
+      });
+      
+      textZones.forEach((zone) => {
+        initialZoneStates[zone] = { text: '', font: initialFont, color: initialColor };
+        engine.updateText(zone, '', initialFont, initialColor);
       });
       
       // Command the engine for the initial web and lace state
@@ -316,6 +324,25 @@ const handleWebColorChange = (newColor) => {
       // engine.updateColor('lace', newColor); 
     }
     setUiState(prevState => ({ ...prevState, webColor: newColor }));
+};
+
+const handleTextChange = (zone, newProperty) => {
+    const currentTextState = uiState[zone];
+    const updatedTextState = { ...currentTextState, ...newProperty };
+
+    setUiState(prevState => ({
+        ...prevState,
+        [zone]: updatedTextState,
+    }));
+
+    if (engine) {
+        engine.updateText(
+            zone,
+            updatedTextState.text,
+            updatedTextState.font,
+            updatedTextState.color
+        );
+    }
 };
   
   // --- END NEW HANDLERS ---
@@ -368,6 +395,28 @@ const getZones = () =>
     }));
   };
   
+  const renderTextOptions = () => {
+    const scenes = SceneBabylon.instance();
+    const textZones = scenes?.currentGlove?.textZones;
+
+    if (!textZones || !uiState) return null;
+
+    return textZones.map((zone) => {
+      const title = zone.replace(/([A-Z])/g, ' $1').replace(/^./, (str) => str.toUpperCase());
+      
+      return (
+        <TextOptions
+            key={zone}
+            title={title}
+            colors={colors}
+            defState={uiState[zone]} 
+            names={fonts}
+            selected={{ value: uiState[zone]?.font }}
+            setOptions={(id, option) => handleTextChange(zone, option)} 
+        />
+      );
+    });
+  };
   // --- END NEW HELPER FUNCTIONS ---
 
   return (
@@ -397,6 +446,8 @@ const getZones = () =>
 
           {/* Render the rest of the color zones */}
           {isEngineReady && getZones()}
+
+          {isEngineReady && renderTextOptions()}
 
         </div>
         <div className="gradientsStage2Bottom" />
