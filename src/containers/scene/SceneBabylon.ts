@@ -29,6 +29,7 @@ import {
   Skeleton,
   ISceneLoaderAsyncResult,
   ImageAssetTask,
+  AssetContainer,
 } from '@babylonjs/core';
 
 // Other libs
@@ -55,35 +56,46 @@ export class AssetsLoader {
     this.assetsManager = new AssetsManager(this.sceneRoot);
   }
 
-  public startLoadResource(pack: any) {
-    return this.loadResource(pack);
-  }
-
-  public async loadResource(resourcePack: any): Promise<Promise<ImageAssetTask>[]> {
-    const promises = [];
+  /**
+   * FIX: This method now queues all image tasks without starting the load.
+   * Call `loadQueuedAssets()` afterwards to begin downloading.
+   */
+  public queueImageResources(resourcePack: any): void {
     for (const key in resourcePack) {
       if (Object.prototype.hasOwnProperty.call(resourcePack, key)) {
-        const element = resourcePack[key];
-        promises.push(this.loadResourceImg(key, element));
+        const path = resourcePack[key];
+        const imageTask = this.assetsManager.addImageTask(`${key}`, `${path}`);
+        imageTask.onSuccess = (task) => {
+          this.taskArr.push(task);
+        };
       }
     }
-    this.isLoad = true;
-    const prom = await Promise.all(promises);
-    return prom;
   }
 
-  protected async loadResourceImg(name: string, path: string): Promise<ImageAssetTask> {
-    return new Promise((resolve) => {
-      const imageTask = this.assetsManager.addImageTask(`${name}`, `${path}`);
-      imageTask.onSuccess = (task) => {
-        this.taskArr.push(task);
-        resolve(task);
+  /**
+   * FIX: This new method executes the loading of all queued assets.
+   * It returns a promise that resolves when all assets are finished.
+   */
+  public loadQueuedAssets(): Promise<void> {
+    return new Promise((resolve, reject) => {
+      // The observable for handling errors on any task
+      const errorObserver = this.assetsManager.onTaskErrorObservable.add((task) => {
+        console.error(`Error loading asset ${task.name}:`, task.errorObject.message, task.errorObject.exception);
+        reject(new Error(`Failed to load ${task.name}`));
+      });
+
+      // The callback for when all tasks are finished successfully
+      this.assetsManager.onFinish = (tasks) => {
+        // Remove the error observer to prevent memory leaks
+        this.assetsManager.onTaskErrorObservable.remove(errorObserver);
+        this.isLoad = true;
+        resolve();
       };
+      
       this.assetsManager.load();
     });
   }
 
-  // FIXED: Compare textureName with element.name and create a Babylon Texture
   public getResourceTexture(textureName: string): Texture {
     let texture: Texture | null = null;
     for (let i = 0; i < this.taskArr.length; i++) {
@@ -93,13 +105,15 @@ export class AssetsLoader {
         break;
       }
     }
-    // If we never found a matching one, return an empty texture
     if (!texture) {
       texture = new Texture('', this.sceneRoot);
     }
     return texture;
   }
 
+  /**
+   * This method correctly uses SceneLoader for a single mesh and remains unchanged.
+   */
   public async loadMesh(url: string, type: string, name?: any): Promise<void> {
     let meshName = null;
     if (name) meshName = name;
@@ -114,41 +128,32 @@ export class AssetsLoader {
     this.forSkeleton.push({ name: env.name, skeletons });
   }
 
-  public async loadAssetsContainer(url: string, file: string, scene: Scene) {
-    return new Promise((res) => {
-      const meshTask = this.assetsManager.addMeshTask('task', '', url, file);
-      meshTask.onSuccess = async (task) => {
-        const arr: Mesh[] = [];
-        task.loadedMeshes.forEach((item) => {
-          arr.push(item as Mesh);
-        });
+  /**
+   * FIX: Refactored to use SceneLoader.LoadAssetContainerAsync.
+   * This is cleaner for loading a single awaited asset and avoids the AssetsManager issue.
+   */
+  public async loadAssetsContainer(url: string, file: string, scene: Scene): Promise<AssetContainer> {
+    const container = await SceneLoader.LoadAssetContainerAsync(url, file, scene);
 
-        // The first item is often the root transform, remove it
-        arr.splice(0, 1);
-
-        const merged = Mesh.MergeMeshes(arr, true, false, null, false, true);
-        if (merged) {
-          merged.name = file.replace('.glb', '');
-          this.meshArr.push(merged);
-        }
-
-        res(task);
-      };
-      this.assetsManager.load();
-    });
-  }
-
-  public async loadResourceMeshes(resourcePack: any[]): Promise<Promise<ImageAssetTask>[]> {
-    const promises = [];
-    for (const key in resourcePack) {
-      if (Object.prototype.hasOwnProperty.call(resourcePack, key)) {
-        const element = resourcePack[key];
-        promises.push(this.loadMesh(key, element));
+    // This will add all loaded assets, including meshes AND materials, to the scene.
+    container.addAllToScene();
+    
+    const arr: Mesh[] = [];
+    
+    // The first mesh is the __root__ node, which we can ignore for merging.
+    container.meshes.forEach((item) => {
+      if (item.id !== '__root__') {
+        arr.push(item as Mesh);
       }
+    });
+
+    const merged = Mesh.MergeMeshes(arr, true, false, null, false, true);
+    if (merged) {
+      merged.name = file.replace('.glb', '');
+      this.meshArr.push(merged);
     }
-    this.isLoad = true;
-    const prom = await Promise.all(promises);
-    return prom;
+    
+    return container;
   }
 
   public getMesh(meshName: string): AbstractMesh {
@@ -644,10 +649,7 @@ export class WebGlove {
       this.updateTexture();
     });
 
-    // Render loop so we can see changes
-    engine.runRenderLoop(() => {
-      scene.render();
-    });
+    // FIX: Removed redundant render loop.
   }
 
   updateText(text: string) {
@@ -844,9 +846,7 @@ export class Glove {
       this.updateTexture();
     });
 
-    this.engine.runRenderLoop(() => {
-      this.scene.render();
-    });
+    // FIX: Removed redundant render loop.
   }
 
   public changeTextStyle(name: string, value: string) {
@@ -1035,6 +1035,11 @@ export default class SceneBabylon {
 
     this.engine = engine;
     this.scene = scene;
+
+    // FIX: Start the one and only render loop for the scene.
+    this.engine.runRenderLoop(() => {
+      this.scene.render();
+    });
   }
 
   public async setActiveGlove(index: number) {
