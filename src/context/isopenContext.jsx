@@ -3,7 +3,8 @@
 /* eslint-disable no-multi-assign */
 
 // Core React/UI imports
-import React, { useState, useEffect } from 'react';
+// MODIFICATION: Import useRef to manage debounce timer
+import React, { useState, useEffect, useRef } from 'react';
 import ReactDOM from 'react-dom/client';
 // MODIFICATION: Import useSearchParams to manage URL query parameters
 import { NavLink, useNavigate, useSearchParams } from 'react-router-dom';
@@ -279,6 +280,9 @@ function LeftPanel(props) {
   const dispatch = useAppDispatch();
   const engine = useEngine();
 
+  // FIX #1: Add a ref to hold the timer for debouncing text input
+  const textUpdateDebounce = useRef(null);
+
   const [searchParams, setSearchParams] = useSearchParams();
 
   const [showBuild, setShowBuild] = useState(false);
@@ -308,7 +312,7 @@ function LeftPanel(props) {
         if (entry) {
           return { name: entry[0].replace(/_/g, ' '), value: colorValue };
         }
-        return { value: colorValue };
+        return { name: colorValue, value: colorValue }; // Fallback for custom colors
       };
 
       props.zones.forEach((item) => {
@@ -319,23 +323,30 @@ function LeftPanel(props) {
         }
       });
       
+      // FIX #2: Refactored logic to normalize text state on initialization
       textZones.forEach((zone) => {
+          let textState;
           try {
             const textParam = searchParams.get(zone);
-            if (textParam) {
-                const parsedState = JSON.parse(textParam);
-                initialZoneStates[zone] = parsedState;
-                // Before dispatching, ensure the color value is passed to the engine correctly
-                const colorValueForEngine = (parsedState.color && typeof parsedState.color === 'object') 
-                    ? parsedState.color.value 
-                    : parsedState.color;
-                engine.updateText(zone, parsedState.text, parsedState.font, colorValueForEngine);
-            } else { throw new Error("No param found"); }
+            if (!textParam) throw new Error("No URL parameter for text zone");
+            textState = JSON.parse(textParam);
           } catch (e) {
-            const defaultTextState = { text: '', font: initialFont, color: initialColor };
-            initialZoneStates[zone] = defaultTextState;
-            engine.updateText(zone, defaultTextState.text, defaultTextState.font, defaultTextState.color);
+            // If parsing fails or param is missing, create a default state.
+            // The key change is wrapping 'initialColor' with 'findColorObject'.
+            textState = { text: '', font: initialFont, color: initialColor };
           }
+          
+          // --- STATE NORMALIZATION ---
+          // Always ensure the 'color' property is an object before it goes to Redux.
+          // This fixes inconsistent states from old URLs or defaults.
+          if (typeof textState.color === 'string') {
+            textState.color = findColorObject(textState.color);
+          }
+
+          initialZoneStates[zone] = textState;
+          
+          // Update the engine with the now-normalized state
+          engine.updateText(zone, textState.text, textState.font, textState.color.value);
       });
       
       const initialWebType = searchParams.get('webType') || scenes?.currentGlove?.websGlove[0] || 'iOB';
@@ -406,28 +417,34 @@ function LeftPanel(props) {
     dispatch(updateSelection({ key: 'webColor', value: newColorOption }));
   };
 
+  // FIX #1: This function now debounces the expensive call to the 3D engine.
   const handleTextChange = (zone, newProperty) => {
     const currentTextState = uiState[zone] || {}; 
     const updatedTextState = { ...currentTextState, ...newProperty };
 
+    // Update Redux state immediately so the UI input field is responsive.
     dispatch(updateSelection({ key: zone, value: updatedTextState }));
 
-    if (engine) {
-      // --- THIS IS THE FIX ---
-      // The engine expects a simple string for the color.
-      // We check if the color is an object and, if so, extract its '.value'.
-      // Otherwise, we use the value as is (for defaults).
-      const textColorForEngine = (updatedTextState.color && typeof updatedTextState.color === 'object')
-        ? updatedTextState.color.value
-        : updatedTextState.color;
-
-      engine.updateText(
-        zone,
-        updatedTextState.text,
-        updatedTextState.font,
-        textColorForEngine // Use the extracted string value
-      );
+    // Clear any existing timer.
+    if (textUpdateDebounce.current) {
+        clearTimeout(textUpdateDebounce.current);
     }
+
+    // Set a new timer to update the 3D scene after a short delay.
+    textUpdateDebounce.current = setTimeout(() => {
+        if (engine) {
+            const textColorForEngine = (updatedTextState.color && typeof updatedTextState.color === 'object')
+                ? updatedTextState.color.value
+                : updatedTextState.color;
+
+            engine.updateText(
+                zone,
+                updatedTextState.text,
+                updatedTextState.font,
+                textColorForEngine
+            );
+        }
+    }, 300); // 300ms delay prevents updates on every keystroke
   };
   
   const getColors = (name) => {
