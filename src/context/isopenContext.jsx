@@ -214,7 +214,15 @@ function UpAccordion(props) {
               // This correctly displays the name now.
               displayValue = val.name || val.value;
             } else if (val && typeof val === 'object' && 'text' in val) {
-              displayValue = `"${val.text}" (${val.font}, ${val.color})`; // for text
+              
+              // Check if the color property is an object; if so, use its name.
+              // Otherwise, fall back to displaying the color value directly.
+              const colorDisplay = (val.color && typeof val.color === 'object')
+                ? val.color.name
+                : val.color;
+
+              displayValue = `"${val.text}" (${val.font}, ${colorDisplay})`;
+
             }
 
             return <li key={key}><span className="capitalize">{key.replace(/([A-Z])/g, ' $1')}:</span> {displayValue}</li>;
@@ -267,16 +275,12 @@ function LeftPanel(props) {
   // --- HOOKS AND STATE ---
   const isEngineReady = useAppSelector((state) => state.buildReducer.isEngineReady);
   const { position, pallette } = useAppSelector((state) => state.buildReducer);
-  // NEW: Get the selection state from Redux
   const uiState = useAppSelector((state) => state.buildReducer.selections);
-  // NEW: Get the dispatch function to send updates to Redux
   const dispatch = useAppDispatch();
   const engine = useEngine();
 
   const [searchParams, setSearchParams] = useSearchParams();
 
-  // REMOVED: The local state for UI is now in Redux.
-  // const [uiState, setUiState] = useState(null); 
   const [showBuild, setShowBuild] = useState(false);
   const [positionName, setPositionName] = useState(configBuild.Position[0]);
   const [gloveModelsForPosition, setGloveModelsForPosition] = useState(null);
@@ -292,45 +296,28 @@ function LeftPanel(props) {
 
   // --- EFFECT 1: Initialize state from URL or defaults (URL -> REDUX) ---
   useEffect(() => {
-    // This effect now dispatches the initial state to Redux instead of setting it locally.
     if (isEngineReady && engine && props.zones?.length > 0) {
       const scenes = SceneBabylon.instance();
       const initialColor = colors.white;
       const initialFont = fonts[0];
       const textZones = scenes?.currentGlove?.textZones || [];
-
-      // --- URL PARSING LOGIC ---
-      const initialWebType = searchParams.get('webType') || scenes?.currentGlove?.websGlove[0] || 'iOB';
-      const initialWebColor = searchParams.get('webColor') || initialColor;
       const initialZoneStates = {};
 
-      // ====================================================================
-      // THIS ENTIRE BLOCK IS THE FIX TO PREVENT THE FLICKER
-      // ====================================================================
+      const findColorObject = (colorValue) => {
+        const entry = Object.entries(colors).find(([_, hex]) => hex === colorValue);
+        if (entry) {
+          return { name: entry[0].replace(/_/g, ' '), value: colorValue };
+        }
+        return { value: colorValue };
+      };
+
       props.zones.forEach((item) => {
         if (!ZONES_WEB.includes(item)) {
           const colorValue = searchParams.get(item) || initialColor;
-          
-          // --- NEW "SMART" LOGIC ---
-          // Perform a reverse lookup to find the name associated with the color code.
-          const colorEntry = Object.entries(colors).find(([name, hex]) => hex === colorValue);
-
-          if (colorEntry) {
-            // If we found a match, create the full object with name and value.
-            initialZoneStates[item] = {
-              name: colorEntry[0].replace(/_/g, ' '),
-              value: colorValue
-            };
-          } else {
-            // If no match was found (e.g., default color), just store the value.
-            initialZoneStates[item] = { value: colorValue };
-          }
-          // --- END NEW "SMART" LOGIC ---
-
+          initialZoneStates[item] = findColorObject(colorValue);
           engine.updateColor(item, colorValue);
         }
       });
-      // ====================================================================
       
       textZones.forEach((zone) => {
           try {
@@ -338,7 +325,11 @@ function LeftPanel(props) {
             if (textParam) {
                 const parsedState = JSON.parse(textParam);
                 initialZoneStates[zone] = parsedState;
-                engine.updateText(zone, parsedState.text, parsedState.font, parsedState.color);
+                // Before dispatching, ensure the color value is passed to the engine correctly
+                const colorValueForEngine = (parsedState.color && typeof parsedState.color === 'object') 
+                    ? parsedState.color.value 
+                    : parsedState.color;
+                engine.updateText(zone, parsedState.text, parsedState.font, colorValueForEngine);
             } else { throw new Error("No param found"); }
           } catch (e) {
             const defaultTextState = { text: '', font: initialFont, color: initialColor };
@@ -347,29 +338,29 @@ function LeftPanel(props) {
           }
       });
       
+      const initialWebType = searchParams.get('webType') || scenes?.currentGlove?.websGlove[0] || 'iOB';
       engine.setActiveWeb(initialWebType);
-      engine.updateColor('web', initialWebColor);
-      const initialLaceColor = searchParams.get('lace') || initialColor;
-      engine.updateColor('lace', initialLaceColor);
-      initialZoneStates['lace'] = { value: initialLaceColor };
+      
+      const initialWebColorValue = searchParams.get('webColor') || initialColor;
+      engine.updateColor('web', initialWebColorValue);
 
-      // The final object to be set in Redux
+      const initialLaceColorValue = searchParams.get('lace') || initialColor;
+      engine.updateColor('lace', initialLaceColorValue);
+
       const fullInitialState = {
         ...initialZoneStates,
         webType: initialWebType,
-        webColor: initialWebColor,
+        webColor: findColorObject(initialWebColorValue),
+        lace: findColorObject(initialLaceColorValue),
       };
       
-      // NEW: Dispatch the entire initial state to the Redux store
       dispatch(initializeSelections(fullInitialState));
     }
-    // We run this only once on init.
   }, [isEngineReady, engine, props.zones, colors, dispatch, searchParams]);
 
 
   // --- EFFECT 2: Update URL when Redux state changes (Redux -> URL) ---
   useEffect(() => {
-    // This effect now listens to the Redux uiState. No other change needed.
     if (!uiState || Object.keys(uiState).length === 0) {
         return;
     }
@@ -377,10 +368,9 @@ function LeftPanel(props) {
     const newParams = new URLSearchParams();
 
     Object.entries(uiState).forEach(([key, value]) => {
-        if (key === 'webType' || key === 'webColor') {
+        if (key === 'webType') {
             newParams.set(key, value);
         } else if (value && typeof value === 'object' && 'value' in value) {
-            // This correctly puts the machine-readable hex code in the URL
             newParams.set(key, value.value);
         } else if (value && typeof value === 'object' && 'text' in value) {
             newParams.set(key, JSON.stringify(value));
@@ -395,7 +385,6 @@ function LeftPanel(props) {
   const showBuildModal = () => setShowBuild(true);
   const hideBuildModal = () => setShowBuild(false);
 
-  // MODIFIED: All handlers now dispatch actions to Redux instead of setting local state.
   const setOptions = (zone, option) => {
     if (engine && props.zones.includes(zone)) {
       engine.updateColor(zone, option.value);
@@ -410,11 +399,11 @@ function LeftPanel(props) {
     dispatch(updateSelection({ key: 'webType', value: newWebType }));
   };
   
-  const handleWebColorChange = (newColor) => {
+  const handleWebColorChange = (newColorOption) => {
     if (engine) {
-      engine.updateColor('web', newColor);
+      engine.updateColor('web', newColorOption.value);
     }
-    dispatch(updateSelection({ key: 'webColor', value: newColor }));
+    dispatch(updateSelection({ key: 'webColor', value: newColorOption }));
   };
 
   const handleTextChange = (zone, newProperty) => {
@@ -424,11 +413,19 @@ function LeftPanel(props) {
     dispatch(updateSelection({ key: zone, value: updatedTextState }));
 
     if (engine) {
+      // --- THIS IS THE FIX ---
+      // The engine expects a simple string for the color.
+      // We check if the color is an object and, if so, extract its '.value'.
+      // Otherwise, we use the value as is (for defaults).
+      const textColorForEngine = (updatedTextState.color && typeof updatedTextState.color === 'object')
+        ? updatedTextState.color.value
+        : updatedTextState.color;
+
       engine.updateText(
         zone,
         updatedTextState.text,
         updatedTextState.font,
-        updatedTextState.color
+        textColorForEngine // Use the extracted string value
       );
     }
   };
@@ -443,7 +440,7 @@ function LeftPanel(props) {
   
   const getZones = () =>
     props.zones && props.zones.map((item, index) => {
-      if (item !== 'web') {
+      if (item !== 'web' && item !== 'lace') {
         const arrColor = getColors(item);
         if (!uiState) return null;
         const currentOption = uiState[item];
@@ -521,9 +518,18 @@ function LeftPanel(props) {
               webs={getWebsForGlove()}
               colors={getSelectableColors()}
               selectedWebType={uiState.webType}
-              selectedWebColor={uiState.webColor}
+              selectedWebColor={uiState.webColor?.value}
               onWebTypeChange={handleWebTypeChange}
               onWebColorChange={handleWebColorChange}
+            />
+          )}
+
+          {isEngineReady && uiState && props.zones.includes('lace') && (
+            <ColorOption
+              colors={getColors('lace')}
+              title="lace"
+              both={uiState.lace ? uiState.lace.value : colors.white}
+              setOptions={setOptions}
             />
           )}
 

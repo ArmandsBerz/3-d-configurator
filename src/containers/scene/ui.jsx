@@ -414,8 +414,13 @@ const TextOptions = ({
   const [color, setColor] = useState(!defState?.color ? colors.white : defState?.color);
   const arr = names.map((item, index) => ({ index, text: item, value: item }));
 
+  // --- FIX #1: This function now gets the color's name and value ---
   const getColors = () => {
-    return Object.values(colors).map((item) => ({ value: item }));
+    // This now returns an array of { name: 'red', value: '#A9131B' } objects
+    return Object.entries(colors).map(([name, value]) => ({
+      name: name.replace(/_/g, ' '),
+      value: value
+    }));
   };
 
   const onClick = (name, option) => {
@@ -441,8 +446,9 @@ const TextOptions = ({
       <SelectColor
         subtitle="Color"
         colors={getColors()}
-        selected={defState?.color}
-        onSelection={(option) => onClick('color', option.value)}
+        selected={defState?.color?.value} // Read the .value from the color object
+        // --- FIX #2: The handler now sends the full color object ---
+        onSelection={(option) => onClick('color', option)}
       />
       {windowWidth && (
         <>
@@ -464,11 +470,9 @@ const ColorOption = ({ title, windowWidth, both, setOptions, handleButton, color
   const [state, setState] = useState(false);
   const [color, setColor] = useState(!both ? colors.white : both);
 
-  // THIS IS THE ONLY FUNCTION THAT IS CHANGED IN THIS ENTIRE FILE
   const getColors = () => {
-    // This now uses Object.entries to create an object with both the name and the value
     return Object.entries(colors).map(([name, value]) => ({
-      name: name.replace(/_/g, ' '), // This makes names like "dark_brown" look like "dark brown"
+      name: name.replace(/_/g, ' '),
       value: value
     }));
   };
@@ -506,7 +510,6 @@ const ColorOption = ({ title, windowWidth, both, setOptions, handleButton, color
   );
 };
 
-// --- REFACTORED WebOption COMPONENT ---
 const WebOption = ({
   title,
   webs,
@@ -516,11 +519,9 @@ const WebOption = ({
   onWebTypeChange,
   onWebColorChange,
 }) => {
-  // Find the full text of the selected web to display in the accordion header.
   const selectedWebObject = webs.find(web => web.value === selectedWebType);
   const selectedOptionText = selectedWebObject ? selectedWebObject.text : '';
 
-  // Find the index of the selected web for the SelectImage component, as it expects an index.
   const selectedWebIndex = webs.findIndex(web => web.value === selectedWebType);
 
   return (
@@ -531,24 +532,19 @@ const WebOption = ({
     >
       <SelectImage
         subtitle="Type"
-        // Adapt the `webs` prop for SelectImage: it expects `src` for the image URL.
         options={webs.map(web => ({ ...web, src: web.image }))}
-        // Adapt the callback to pass only the `value` to the parent handler.
         onSelection={(option) => onWebTypeChange(option.value)}
-        // Pass the calculated index as the `selected` prop.
         selected={selectedWebIndex > -1 ? selectedWebIndex : 0}
       />
       <SelectColor
         subtitle="Color"
         colors={colors}
-        // Adapt the callback to pass only the `value` to the parent handler.
-        onSelection={(option) => onWebColorChange(option.value)}
+        onSelection={(option) => onWebColorChange(option)}
         selected={selectedWebColor}
       />
     </OptionAccordion>
   );
 };
-// --- END REFACTORED WebOption COMPONENT ---
 
 const NameOptions = ({ title, windowWidth, defState, names, onSelection, selected }) => {
   const arr = names.map((item, id) => ({ id, text: item, value: item }));
@@ -577,7 +573,6 @@ const NameOptions = ({ title, windowWidth, defState, names, onSelection, selecte
 const UI = (props) => {
   const isLoaded = false;
 
-  // Removed legacy comments regarding other stages.
   const renderGlove = () => (
     <div>
       <div>{props.glove.id}</div>
