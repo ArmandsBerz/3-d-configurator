@@ -3,7 +3,7 @@ import { configureStore, combineReducers, createSlice, PayloadAction } from '@re
 import { TypedUseSelectorHook, useDispatch, useSelector } from 'react-redux';
 
 // NEW: Define a type for a single selection (can be a color, text object, etc.)
-type SelectionValue = { value: string } | { text: string; font: string; color: string } | string;
+type SelectionValue = { value: string } | { text: string; font: string; color: { name: string; value: string } } | string;
 
 // Slice definition
 const initialState = {
@@ -14,6 +14,7 @@ const initialState = {
     stiffness: 0,
     hand: 0,
     isEngineReady: false,
+    activeModel: 0, // Keep track of the active glove model index
     // NEW: Add an object to hold all the selections made in the LeftPanel.
     selections: {} as { [key: string]: SelectionValue },
 };
@@ -21,7 +22,7 @@ const initialState = {
 // --- FIX STARTS HERE ---
 
 // 1. Create a specific type for ONLY the keys that have number values.
-type BuildStateNumberKey = Exclude<keyof typeof initialState, 'isEngineReady' | 'selections'>;
+type BuildStateNumberKey = 'pallette' | 'position' | 'size' | 'handSize' | 'stiffness' | 'hand' | 'activeModel';
 
 // --- FIX ENDS HERE ---
 
@@ -81,6 +82,11 @@ const rootReducer = combineReducers({
 export const setupStore = () =>
     configureStore({
         reducer: rootReducer,
+        // Add middleware to disable serializableCheck for complex non-serializable objects (like a Babylon Texture)
+        middleware: (getDefaultMiddleware) =>
+            getDefaultMiddleware({
+                serializableCheck: false,
+            }),
     });
 
 // Type definitions

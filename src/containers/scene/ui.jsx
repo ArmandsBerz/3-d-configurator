@@ -4,7 +4,8 @@ import { CgArrowRight } from 'react-icons/cg';
 import { NavLink } from 'react-router-dom';
 import { OptionAccordion } from '../../context/isopenContext';
 import SceneBabylon, { colorOptions, colorMap, configBuild, playerPosition } from './SceneBabylon';
-import { useAppDispatch, useAppSelector, buildSlice } from '../../store/rootReducer';
+// MODIFICATION: Import the correct action creator and remove the obsolete 'buildSlice' import.
+import { useAppDispatch, useAppSelector, setBuildProperty } from '../../store/rootReducer';
 
 import '../../../src/main.scss';
 
@@ -213,77 +214,30 @@ class SelectGroup extends React.Component {
 }
 
 function SelectBuild(props) {
-  const [selected, setSelected] = useState(null);
-  const [windowWidth, setWindowWidth] = useState();
+    const isSelected = (index) => props.selected === index;
 
-  useEffect(() => {
-    setWindowWidth(window.innerWidth && window.innerWidth <= 600);
-  }, []);
-
-  useEffect(() => {
-    setSelected(props.selected);
-  }, [props.selected]);
-
-  const handleSelection = (option) => {
-    setSelected(option);
-    if (props.onSelection) props.onSelection(option);
-  };
-
-  const isSelected = (index) => props.selected === index;
-
-  // Always wrap options; stage checks removed.
-  const getStyles = () => { // This function is defined but its return value is not used for styling the modalSelect-build div directly.
-    let style;
-    switch (props.options.length) {
-      case 2:
-        style = { flex: '1', width: '100%', flexWrap: 'wrap' };
-        break;
-      case 3:
-        style = { flex: '1', width: '100%', flexWrap: 'wrap' };
-        break;
-      case 4:
-        style = { flex: '1', width: '100%', flexWrap: 'wrap' };
-        break;
-      case 5:
-        style = { flex: '1', width: '100%', flexWrap: 'wrap' };
-        break;
-      default:
-        style = {};
-        break;
-    }
-    return style;
-  };
-
-  return (
-    <div className="select-build-container pb-4">
-      {props.subtitle ? (
-        <h3 className="subtitle mb-2 text-white text-lg"> {/* Changed */}
-          {props.subtitle}
-        </h3>
-      ) : null}
-      <div className="modalSelect-build flex-wrap"> {/* Changed */}
-        {props.options.map((option, index) => (
-          <div
-            className="select-block grow shrink basis-auto" // Changed
-            key={option.value}
-            ref={(element) => {
-              if (element && props.full) {
-                // element.style.setProperty('width', '100%', 'important'); // Removed
-              }
-            }}
-          >
-            <button
-              className={`option${isSelected(index) ? ' selected' : ''} px-4 py-2 flex-1 w-full`} // Changed
-              key={option.value}
-              onClick={() => handleSelection(option)}
-            >
-              {option.text}
-            </button>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
+    return (
+        <div className="select-build-container pb-4">
+            {props.subtitle ? (
+                <h3 className="subtitle mb-2 text-white text-lg">
+                    {props.subtitle}
+                </h3>
+            ) : null}
+            <div className="modalSelect-build flex-wrap">
+                {props.options.map((option, index) => (
+                    <div className="select-block grow shrink basis-auto" key={option.value}>
+                        <button
+                            className={`option${isSelected(index) ? ' selected' : ''} px-4 py-2 flex-1 w-full`}
+                            key={option.value}
+                            onClick={() => props.onSelection(option)}
+                        >
+                            {option.text}
+                        </button>
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
 }
 
 function SelectColor(props) {
@@ -330,52 +284,34 @@ function SelectColor(props) {
 }
 
 function SelectImage(props) {
-  const [selected, setSelected] = useState(0);
+    const isSelected = (index) => props.selected === index;
 
-  const handleSelection = (option) => {
-    console.log('option ::', option);
-    props.onSelection(option);
-  };
-
-  const isSelected = (index) => props.selected === index;
-
-  return (
-    <div className="select-image-container pb-2">
-      {props.subtitle ? (
-        <h3 className="subtitle mb-2 text-lg"> {/* Changed */}
-          {props.subtitle}
-        </h3>
-      ) : null}
-      <div className={`grid grid-cols-${props.options.length > 2 ? '3' : '2'} gap-3`}>
-        {props.options.map((option, index) => (
-          <button
-            className={`option${isSelected(index) ? ' selected' : ''}`}
-            style={{ backgroundImage: `url(${option.src})` }} // Dynamic style: Remains unchanged
-            key={`${option.value}${Math.random()}`}
-            onClick={() => handleSelection(option)}
-          >
-            <div className="checked">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                aria-hidden="true"
-                role="img"
-                width="14"
-                height="14"
-                preserveAspectRatio="xMidYMid meet"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  fill="black"
-                  d="m8.818 19.779l-6.364-6.364l2.83-2.83l3.534 3.544l9.898-9.908l2.83 2.83L8.818 19.779Z"
-                />
-              </svg>
+    return (
+        <div className="select-image-container pb-2">
+            {props.subtitle ? (
+                <h3 className="subtitle mb-2 text-lg">
+                    {props.subtitle}
+                </h3>
+            ) : null}
+            <div className={`grid grid-cols-${props.options.length > 2 ? '3' : '2'} gap-3`}>
+                {props.options.map((option, index) => (
+                    <button
+                        className={`option${isSelected(index) ? ' selected' : ''}`}
+                        style={{ backgroundImage: `url(${option.src})` }}
+                        key={`${option.value}${Math.random()}`}
+                        onClick={() => props.onSelection(option)}
+                    >
+                        <div className="checked">
+                            <svg xmlns="http://www.w3.org/2000/svg" aria-hidden="true" role="img" width="14" height="14" preserveAspectRatio="xMidYMid meet" viewBox="0 0 24 24" >
+                                <path fill="black" d="m8.818 19.779l-6.364-6.364l2.83-2.83l3.534 3.544l9.898-9.908l2.83 2.83L8.818 19.779Z" />
+                            </svg>
+                        </div>
+                        {option.title}
+                    </button>
+                ))}
             </div>
-            {option.title}
-          </button>
-        ))}
-      </div>
-    </div>
-  );
+        </div>
+    );
 }
 
 function SelectInput(props) {
@@ -613,91 +549,87 @@ const UI = (props) => {
   return <>{renderGlove()}</>;
 };
 
-/* ---------------- Other Components ---------------- */
-
+/* ---------------- Corrected BuildModal Component ---------------- */
 function BuildModal(props) {
-  const [positionName, setPositionName] = useState(configBuild.Position[0]);
-  const { pallette, size, stiffness, position, handSize, hand } = useAppSelector(
-    (state) => state.buildReducer
-  );
-  const { setPallette } = buildSlice.actions;
-  const myDispatch = useAppDispatch();
+    const { pallette, size, stiffness, position, handSize, hand } = useAppSelector(
+        (state) => state.buildReducer
+    );
+    const myDispatch = useAppDispatch();
 
-  const arrValues = [pallette, position, size, handSize, stiffness, hand];
+    const arrValues = [pallette, position, size, handSize, stiffness, hand];
 
-  const getOptions = (el) => {
-    const arr = [];
-    el.forEach((item, index) => {
-      arr.push({
-        text: item,
-        value: index,
-        id: index,
-      });
-    });
-    return arr;
-  };
+    const getOptions = (el) => {
+        return el.map((item, index) => ({
+            text: item,
+            value: index,
+            id: index,
+        }));
+    };
 
-  const btnHandler = (key, options) => {
-    myDispatch(setPallette({ key, val: options.id }));
-    if (key === 1) {
-      configBuild.Size = playerPosition[options.text].size;
-    }
-  };
+    const btnHandler = (keyName, option) => {
+        const keyMap = {
+            'Glove Leather': 'pallette',
+            'Position': 'position',
+            'Size': 'size',
+            'Hand Opening Size': 'handSize',
+            'Stiffness': 'stiffness',
+            'Throwing Hand': 'hand'
+        };
+        const dispatchKey = keyMap[keyName];
 
-  const getBuild = () =>
-    Object.entries(configBuild).map(([key, value], index) => {
-      const arr = getOptions(value);
-      if (key === 'Glove Leather') {
-        return (
-          <SelectImage
-            key={Math.random()}
-            subtitle={key}
-            options={[
-              {
-                title: 'Option Title',
-                text: 'Option Text',
-                value: 'option-value-1',
-                src: 'https://via.placeholder.com/150', // Placeholder, actual src would make this dynamic
-                id: 0,
-              },
-              {
-                title: 'Option Title',
-                text: 'Option Text',
-                value: 'option-value-2',
-                src: 'https://via.placeholder.com/150', // Placeholder, actual src would make this dynamic
-                id: 1,
-              },
-            ]}
-            selected={pallette}
-            onSelection={(options) => btnHandler(index, options)}
-          />
-        );
-      }
-      return (
-        <SelectBuild
-          key={Math.random()}
-          subtitle={key}
-          options={arr}
-          selected={arrValues[index]}
-          onSelection={(options) => btnHandler(index, options)}
-        />
-      );
-    });
+        if (dispatchKey) {
+            myDispatch(setBuildProperty({ key: dispatchKey, value: option.id }));
+        }
 
-  return (
-    <div
-      className={`build-modal-two ${props.show ? ' BuildModalShow ' : ' display-none'}`}
-    >
-      <div className={`build-modal-content${props.show ? ' animate-bottom' : ''}`}>
-        <div className="build-modal-header">
-          <h2 className="text-white text-base">{props.title}</h2> {/* Changed */}
+        if (dispatchKey === 'position') {
+            configBuild.Size = playerPosition[option.text].size;
+        }
+    };
+
+    const getBuild = () =>
+        Object.entries(configBuild).map(([key, value]) => {
+            const arr = getOptions(value);
+            const selectedIndex = arrValues[Object.keys(configBuild).indexOf(key)];
+
+            if (key === 'Glove Leather') {
+                return (
+                    <SelectImage
+                        key={key}
+                        subtitle={key}
+                        options={[
+                            { title: 'Japanese Kip', text: 'Japanese Kip', value: 'kip', src: 'https://via.placeholder.com/150', id: 0 },
+                            { title: 'US Steerhide', text: 'US Steerhide', value: 'steerhide', src: 'https://via.placeholder.com/150', id: 1 },
+                        ]}
+                        selected={selectedIndex}
+                        onSelection={(options) => btnHandler(key, options)}
+                    />
+                );
+            }
+            return (
+                <SelectBuild
+                    key={key}
+                    subtitle={key}
+                    options={arr}
+                    selected={selectedIndex}
+                    onSelection={(options) => btnHandler(key, options)}
+                />
+            );
+        });
+
+    return (
+        <div
+            className={`build-modal-two ${props.show ? ' BuildModalShow ' : ' display-none'}`}
+        >
+            <div className={`build-modal-content${props.show ? ' animate-bottom' : ''}`}>
+                <div className="build-modal-header">
+                    <h2 className="text-white text-base">{props.title}</h2>
+                </div>
+                <div className="build-modal-body">
+                    {getBuild()}
+                </div>
+            </div>
         </div>
-        <div className="build-modal-body">
-          {getBuild()}
-        </div>
-      </div>
-    </div>
-  );
+    );
 }
 
 /* ---------------- Exports ---------------- */
