@@ -171,6 +171,24 @@ handleCloseColorPicker();
 }
 };
 
+// --- MODIFICATION START ---
+// This new handler applies the selected color to all glove parts, but not to text colors.
+const handleApplyColorToAll = () => {
+    if (selectedColorInPicker) {
+      setConfiguration(prev => ({
+        ...prev,
+        thumb: selectedColorInPicker,
+        index: selectedColorInPicker,
+        middle: selectedColorInPicker,
+        ring: selectedColorInPicker,
+        pinky: selectedColorInPicker,
+      }));
+    }
+    handleCloseColorPicker();
+  };
+// --- MODIFICATION END ---
+
+
 // --- Handlers for Build Panel ---
 const handleOpenBuildPanel = (optionId, optionTitle) => {
 lastInteractedItemIdRef.current = optionId; // --- UPDATE: Save the ID of the clicked item
@@ -282,7 +300,11 @@ return (
 {activeView === 'textPanel' && ( <TextPanel editingTextContext={editingTextContext} panelState={textPanelState} setPanelState={setTextPanelState} handleClose={handleCloseTextPanel} colorSwatches={colorSwatches}/> )}
 </div>
 <footer className="flex-shrink-0 bg-[#161616] flex items-center justify-start mt-[10px] pb-[20px] px-[14px]">
-{activeView === 'colorPickerPanel' ? ( <> <button type="button" onClick={handleCloseColorPicker} className="flex items-center justify-center px-4 bg-[#3A3A3A] hover:bg-[#4A4A4A] active:bg-[#2A2A2A] rounded text-base font-semibold text-white w-[146px] h-[56px]" aria-label="Cancel color selection"><span>Cancel</span></button> <button type="button" onClick={handlePaintSectionAndReturn} className="flex items-center justify-between px-4 ml-[10px] bg-[#2997FF] hover:bg-[#73BBFF] active:bg-[#0083FF] rounded text-base font-semibold text-white w-[244px] h-[56px]" aria-label="Apply color to section and return"><span className="ml-[5px]">Primary</span><svg className="w-5 h-5 mr-[5px]" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg></button></>)
+{activeView === 'colorPickerPanel' ? ( <> 
+{/* --- MODIFICATION START --- */}
+<button type="button" onClick={handleApplyColorToAll} className="flex items-center justify-center px-4 bg-[#3A3A3A] hover:bg-[#4A4A4A] active:bg-[#2A2A2A] rounded text-base font-semibold text-white w-[146px] h-[56px]" aria-label="Apply color to all sections"><span>Apply to All</span></button> 
+{/* --- MODIFICATION END --- */}
+<button type="button" onClick={handlePaintSectionAndReturn} className="flex items-center justify-between px-4 ml-[10px] bg-[#2997FF] hover:bg-[#73BBFF] active:bg-[#0083FF] rounded text-base font-semibold text-white w-[244px] h-[56px]" aria-label="Apply color to section and return"><span className="ml-[5px]">Primary</span><svg className="w-5 h-5 mr-[5px]" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg></button></>)
 : activeView === 'buildPanel' ? ( <> <button type="button" onClick={handleCloseBuildPanel} className="text-white h-[56px] w-[146px] flex items-center justify-center">Cancel</button><button type="button" onClick={handleBuildCallToAction} className="flex items-center justify-center px-4 ml-[10px] bg-white hover:bg-gray-200 active:bg-gray-300 rounded text-base font-semibold text-[#161616] w-[244px] h-[56px]" aria-label="Confirm build options"><span>Call To Action</span><svg className="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg></button></>)
 : activeView === 'textPanel' ? ( <> <button type="button" onClick={handleCloseTextPanel} className="text-white h-[56px] w-[146px] flex items-center justify-center">Cancel</button><button type="button" onClick={handleTextPanelConfirm} className="flex items-center justify-center px-4 ml-[10px] bg-white hover:bg-gray-200 active:bg-gray-300 rounded text-base font-semibold text-[#161616] w-[244px] h-[56px]" aria-label="Confirm text customization"><span>Call To Action</span><svg className="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg></button></>)
 : activeView === 'configuratorList' ? ( isSummaryPanelVisible ? ( <> <button type="button" onClick={() => setIsSummaryPanelVisible(false)} className="flex items-center justify-center px-4 bg-[#3A3A3A] hover:bg-[#4A4A4A] active:bg-[#2A2A2A] rounded text-base font-semibold text-white w-[146px] h-[56px]" aria-label="Close summary panel"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="mr-2"><path d="M15 19L8 12L15 5" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg><span>Secondary</span></button> <button type="button" className="flex items-center justify-between px-4 ml-[10px] bg-[#2997FF] hover:bg-[#73BBFF] active:bg-[#0083FF] focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-opacity-50 rounded text-base font-semibold text-white w-[244px] h-[56px]" aria-label="Primary action"><span className="ml-[5px]">Primary</span><svg width="34" height="14" viewBox="0 0 34 16" fill="none" xmlns="http://www.w3.org/2000/svg" className="mr-[5px]"><path d="M0 8H32.5M32.5 8L25.5 1M32.5 8H0.5M32.5 8L25.6077 15" stroke="white" strokeWidth="2" strokeLinecap="round"/></svg></button></>)
