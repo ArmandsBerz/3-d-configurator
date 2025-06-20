@@ -32,7 +32,7 @@ return (
 </div>
 <span className="text-sm text-gray-400">{selectedColorInPicker || editingColorContext.currentColor}</span>
 </button>
-<div className="grid grid-cols-6 gap-[10px] overflow-y-auto flex-grow pb-4">
+<div className="grid grid-cols-[repeat(auto-fit,minmax(42px,1fr))] gap-[10px] overflow-y-auto flex-grow pb-4">
 {colorSwatches.map((color) => ( <button key={color} className={`w-[42px] h-[42px] rounded-full border-2 ${selectedColorInPicker === color ? 'border-transparent ring-4 ring-white' : 'border-transparent'}`} style={{ backgroundColor: color }} onClick={() => setSelectedColorInPicker(color)} aria-label={`Select color ${color}`}/>))}
 </div>
 </div>
@@ -90,7 +90,7 @@ return (
 </div>
 <div>
 <h3 className="text-sm font-semibold text-gray-400 mb-2">Color</h3>
-<div className="grid grid-cols-7 gap-[10px]">
+<div className="grid grid-cols-[repeat(auto-fit,minmax(42px,1fr))] gap-[10px]">
 {colorSwatches.map((color) => ( <button key={color} className={`w-[42px] h-[42px] rounded-full border-2 ${panelState.color === color ? 'border-transparent ring-4 ring-white' : 'border-transparent'}`} style={{ backgroundColor: color }} onClick={() => handleColorChange(color)} aria-label={`Select color ${color}`}/>))}
 </div>
 </div>
