@@ -145,15 +145,15 @@ const colorSwatches = [
 
 // --- UPDATE: Effect to restore scroll position ---
 useLayoutEffect(() => {
-    if (activeView === 'configuratorList' && lastInteractedItemIdRef.current && listContainerRef.current) {
+    // Only scroll if the list is the active view and the visualization is not expanded
+    if (activeView === 'configuratorList' && !isVisualizationExpanded && lastInteractedItemIdRef.current && listContainerRef.current) {
         const element = listContainerRef.current.querySelector(`[data-id="${lastInteractedItemIdRef.current}"]`);
         if (element) {
-            // --- THIS IS THE ONLY LINE THAT HAS BEEN CHANGED ---
             element.scrollIntoView({ block: 'center' });
         }
-        lastInteractedItemIdRef.current = null; // Clear after use
+        // We no longer clear the ref here, so it's "remembered"
     }
-}, [activeView]);
+}, [activeView, isVisualizationExpanded]); // Dependency array now includes isVisualizationExpanded
 
 
 // --- Handlers for Color Picker ---
