@@ -25,7 +25,7 @@ const ColorPickerPanel = ({ editingColorContext, handleCloseColorPicker, selecte
 if (!editingColorContext) return null;
 return (
 <div className="bg-[#161616] h-full flex flex-col px-[23px]">
-<button className="flex items-center justify-between text-white py-3 h-[56px] border-b border-gray-700 mb-3 w-full text-left" onClick={handleCloseColorPicker}>
+<button className="flex items-center justify-between text-white py-3 h-[56px] mb-3 w-full text-left" onClick={handleCloseColorPicker}>
 <div className="flex items-center">
 <svg className="w-5 h-5 mr-2 transform rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
 <span className="text-lg">{editingColorContext.title || 'Color Picker'}</span>
@@ -43,7 +43,7 @@ const BuildPanel = ({ editingBuildContext, handleCloseBuildPanel, selectedImageO
 if (!editingBuildContext) return null;
 return (
 <div className="bg-[#161616] h-full flex flex-col">
-<button className="flex items-center text-white py-3 px-4 h-[56px] border-b border-gray-700 w-full text-left" onClick={handleCloseBuildPanel}>
+<button className="flex items-center text-white py-3 px-4 h-[56px] w-full text-left" onClick={handleCloseBuildPanel}>
 <svg className="w-5 h-5 mr-2 transform rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
 <span className="text-lg">{editingBuildContext.title || 'Build Options'}</span>
 </button>
@@ -67,7 +67,7 @@ const handleColorChange = (color) => setPanelState(prev => ({ ...prev, color }))
 return (
 <div className="bg-[#161616] h-full flex flex-col">
 {/* --- MODIFICATION IS HERE --- */}
-<button className="flex items-center justify-between text-white py-3 px-4 h-[56px] border-b border-gray-700 w-full text-left" onClick={handleClose}>
+<button className="flex items-center justify-between text-white py-3 px-4 h-[56px] w-full text-left" onClick={handleClose}>
 <div className="flex items-center">
 <svg className="w-5 h-5 mr-2 transform rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
 <span className="text-lg">{editingTextContext.title}</span>
