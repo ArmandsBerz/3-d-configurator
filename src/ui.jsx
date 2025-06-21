@@ -19,9 +19,10 @@ const ImageOptionCard = ({ id, title, description, price, icon, isSelected, onSe
 
 const ChoiceButton = ({ label }) => (<button className="bg-[#2a2a2a] hover:bg-[#333333] text-white text-sm py-2 px-3 rounded-md h-[36px] flex items-center justify-center">{label}</button>);
 
-// --- NEW REUSABLE COMPONENT ---
-const ColorSwatchGrid = ({ swatches, selectedColor, onColorSelect, containerClassName = "" }) => (
-  <div className={`grid grid-cols-[repeat(auto-fit,minmax(42px,1fr))] gap-[10px] ${containerClassName}`}>
+// --- REFACTOR: MAKING THE COMPONENT TRULY AGNOSTIC ---
+// The containerClassName prop is removed, and padding is now handled internally.
+const ColorSwatchGrid = ({ swatches, selectedColor, onColorSelect }) => (
+  <div className="grid grid-cols-[repeat(auto-fit,minmax(42px,1fr))] gap-[10px] px-2 py-2">
     {swatches.map((color) => (
       <button
         key={color}
@@ -37,33 +38,54 @@ const ColorSwatchGrid = ({ swatches, selectedColor, onColorSelect, containerClas
     ))}
   </div>
 );
-// --- END NEW COMPONENT ---
+// --- END REFACTOR ---
+
+
+// --- REFACTOR: ABSTRACTION FOR PANELS ---
+const EditingPanel = ({ title, onClose, headerAccessory = null, children }) => (
+  <div className="bg-[#161616] h-full flex flex-col px-[23px]">
+    <button
+      className="flex items-center justify-between text-white py-3 h-[56px] w-full text-left mb-3"
+      onClick={onClose}
+    >
+      <div className="flex items-center">
+        <svg className="w-5 h-5 mr-2 transform rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path>
+        </svg>
+        <span className="text-lg">{title}</span>
+      </div>
+      {headerAccessory}
+    </button>
+    <div className="flex-grow overflow-y-auto">
+      {children}
+    </div>
+  </div>
+);
+// --- END REFACTOR ---
 
 
 // --- Panel Components ---
 
+// --- REFACTOR: USING THE NEW EditingPanel COMPONENT ---
 const ColorPickerPanel = ({ editingColorContext, handleCloseColorPicker, selectedColorInPicker, setSelectedColorInPicker, colorSwatches }) => {
-if (!editingColorContext) return null;
-return (
-<div className="bg-[#161616] h-full flex flex-col px-[23px]">
-<button className="flex items-center justify-between text-white py-3 h-[56px] mb-3 w-full text-left" onClick={handleCloseColorPicker}>
-<div className="flex items-center">
-<svg className="w-5 h-5 mr-2 transform rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
-<span className="text-lg">{editingColorContext.title || 'Color Picker'}</span>
-</div>
-<span className="text-sm text-gray-400">{selectedColorInPicker || editingColorContext.currentColor}</span>
-</button>
-{/* --- REFACTOR START --- */}
-<ColorSwatchGrid
-  swatches={colorSwatches}
-  selectedColor={selectedColorInPicker}
-  onColorSelect={setSelectedColorInPicker}
-  containerClassName="overflow-y-auto flex-grow px-2 py-2"
-/>
-{/* --- REFACTOR END --- */}
-</div>
-);
+  if (!editingColorContext) return null;
+
+  return (
+    <EditingPanel
+      title={editingColorContext.title || 'Color Picker'}
+      onClose={handleCloseColorPicker}
+      headerAccessory={<span className="text-sm text-gray-400">{selectedColorInPicker || editingColorContext.currentColor}</span>}
+    >
+      {/* --- REFACTOR: The containerClassName prop is now removed for consistency --- */}
+      <ColorSwatchGrid
+        swatches={colorSwatches}
+        selectedColor={selectedColorInPicker}
+        onColorSelect={setSelectedColorInPicker}
+      />
+    </EditingPanel>
+  );
 };
+// --- END REFACTOR ---
 
 const BuildPanel = ({ editingBuildContext, handleCloseBuildPanel, selectedImageOption, setSelectedImageOption }) => {
 if (!editingBuildContext) return null;
@@ -84,50 +106,44 @@ return (
 );
 };
 
+// --- REFACTOR: USING THE NEW EditingPanel COMPONENT ---
 const TextPanel = ({ editingTextContext, panelState, setPanelState, handleClose, colorSwatches }) => {
-if (!editingTextContext) return null;
-const handleTextChange = (e) => setPanelState(prev => ({ ...prev, text: e.target.value }));
-const handleFontChange = (font) => setPanelState(prev => ({ ...prev, font }));
-const handleColorChange = (color) => setPanelState(prev => ({ ...prev, color }));
+  if (!editingTextContext) return null;
+  const handleTextChange = (e) => setPanelState(prev => ({ ...prev, text: e.target.value }));
+  const handleFontChange = (font) => setPanelState(prev => ({ ...prev, font }));
+  const handleColorChange = (color) => setPanelState(prev => ({ ...prev, color }));
 
-return (
-<div className="bg-[#161616] h-full flex flex-col">
-{/* --- MODIFICATION IS HERE --- */}
-<button className="flex items-center justify-between text-white py-3 px-4 h-[56px] w-full text-left" onClick={handleClose}>
-<div className="flex items-center">
-<svg className="w-5 h-5 mr-2 transform rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
-<span className="text-lg">{editingTextContext.title}</span>
-</div>
-{/* The round swatch was replaced by this text span for consistency with the ColorPickerPanel */}
-<span className="text-sm text-gray-400">{panelState.color}</span>
-</button>
-{/* --- END MODIFICATION --- */}
-<div className="flex-grow overflow-y-auto px-4 pt-4 pb-4 space-y-5">
-<div>
-<h3 className="text-sm font-semibold text-gray-400 mb-2">Text</h3>
-<input type="text" className="w-full p-3 bg-[#2A2A2A] text-white rounded-md placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:outline-none" value={panelState.text} onChange={handleTextChange} placeholder="ENTER YOUR TEXT..."/>
-</div>
-<div>
-<h3 className="text-sm font-semibold text-gray-400 mb-2">Font</h3>
-<div className="grid grid-cols-2 gap-3">
-<button onClick={() => handleFontChange('SCRIPT')} className={`py-3 rounded-md text-base font-bold ${panelState.font === 'SCRIPT' ? 'bg-white text-black' : 'bg-[#2a2a2a] hover:bg-[#333333] text-white'}`}>SCRIPT</button>
-<button onClick={() => handleFontChange('BLOCK')} className={`py-3 rounded-md text-base font-bold ${panelState.font === 'BLOCK' ? 'bg-white text-black' : 'bg-[#2a2a2a] hover:bg-[#333333] text-white'}`}>BLOCK</button>
-</div>
-</div>
-<div>
-<h3 className="text-sm font-semibold text-gray-400 mb-2">Color</h3>
-{/* --- REFACTOR START --- */}
-<ColorSwatchGrid
-  swatches={colorSwatches}
-  selectedColor={panelState.color}
-  onColorSelect={handleColorChange}
-/>
-{/* --- REFACTOR END --- */}
-</div>
-</div>
-</div>
-);
+  return (
+    <EditingPanel
+      title={editingTextContext.title}
+      onClose={handleClose}
+      headerAccessory={<span className="text-sm text-gray-400">{panelState.color}</span>}
+    >
+      <div className="space-y-5">
+        <div>
+          <h3 className="text-sm font-semibold text-gray-400 mb-2">Text</h3>
+          <input type="text" className="w-full p-3 bg-[#2A2A2A] text-white rounded-md placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:outline-none" value={panelState.text} onChange={handleTextChange} placeholder="ENTER YOUR TEXT..."/>
+        </div>
+        <div>
+          <h3 className="text-sm font-semibold text-gray-400 mb-2">Font</h3>
+          <div className="grid grid-cols-2 gap-3">
+            <button onClick={() => handleFontChange('SCRIPT')} className={`py-3 rounded-md text-base font-bold ${panelState.font === 'SCRIPT' ? 'bg-white text-black' : 'bg-[#2a2a2a] hover:bg-[#333333] text-white'}`}>SCRIPT</button>
+            <button onClick={() => handleFontChange('BLOCK')} className={`py-3 rounded-md text-base font-bold ${panelState.font === 'BLOCK' ? 'bg-white text-black' : 'bg-[#2a2a2a] hover:bg-[#333333] text-white'}`}>BLOCK</button>
+          </div>
+        </div>
+        <div>
+          <h3 className="text-sm font-semibold text-gray-400 mb-2">Color</h3>
+          <ColorSwatchGrid
+            swatches={colorSwatches}
+            selectedColor={panelState.color}
+            onColorSelect={handleColorChange}
+          />
+        </div>
+      </div>
+    </EditingPanel>
+  );
 };
+// --- END REFACTOR ---
 
 
 // --- Main UI Component ---
