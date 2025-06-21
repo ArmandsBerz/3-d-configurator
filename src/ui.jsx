@@ -348,7 +348,14 @@ return (
 <button type="button" onClick={handlePaintSectionAndReturn} className="flex items-center justify-between px-4 bg-[#2997FF] hover:bg-[#73BBFF] active:bg-[#0083FF] rounded text-base font-semibold text-white h-[56px]" aria-label="Apply color to section and return"><span className="ml-[5px]">Primary</span><svg className="w-5 h-5 mr-[5px]" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg></button>
 </div>
 )
-: activeView === 'buildPanel' ? ( <> <button type="button" onClick={handleCloseBuildPanel} className="text-white h-[56px] w-[146px] flex items-center justify-center">Cancel</button><button type="button" onClick={handleBuildCallToAction} className="flex items-center justify-center px-4 ml-[10px] bg-white hover:bg-gray-200 active:bg-gray-300 rounded text-base font-semibold text-[#161616] w-[244px] h-[56px]" aria-label="Confirm build options"><span>Call To Action</span><svg className="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg></button></>)
+: activeView === 'buildPanel' ? (
+<div className="w-full grid grid-cols-1">
+<button type="button" onClick={handleBuildCallToAction} className="flex items-center justify-center px-4 bg-white hover:bg-gray-200 active:bg-gray-300 rounded text-base font-semibold text-[#161616] h-[56px]" aria-label="Confirm build options">
+<span>Call To Action</span>
+<svg className="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg>
+</button>
+</div>
+)
 : activeView === 'textPanel' ? (
 <div className="w-full grid grid-cols-1">
 <button type="button" onClick={handleTextPanelConfirm} className="flex items-center justify-center px-4 bg-white hover:bg-gray-200 active:bg-gray-300 rounded text-base font-semibold text-[#161616] h-[56px]" aria-label="Confirm text customization">
