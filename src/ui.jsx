@@ -281,7 +281,6 @@ const colorSwatches = [
 '#BDBDBD', '#37474F',
 ];
 
-// This is the single source of truth for checking and setting gradient visibility.
 const checkAndSetGradients = useCallback(() => {
     const listElement = listContainerRef.current;
     if (!listElement) return;
@@ -298,9 +297,8 @@ const checkAndSetGradients = useCallback(() => {
         setTopGradientVisible(false);
         setBottomGradientVisible(false);
     }
-}, []); // This function is stable and created once.
+}, []); 
 
-// This effect runs our check function whenever the view changes or the list might have changed size.
 useLayoutEffect(() => {
     checkAndSetGradients();
 
@@ -316,8 +314,6 @@ useLayoutEffect(() => {
 // This effect sets up and cleans up the event listeners.
 useEffect(() => {
     const listElement = listContainerRef.current;
-    
-    // The handler is just our check function. It will fire on every event.
     const handler = checkAndSetGradients;
 
     window.addEventListener('resize', handler);
@@ -332,7 +328,10 @@ useEffect(() => {
             listElement.removeEventListener('scroll', handler);
         }
     };
-}, [checkAndSetGradients]); // This effect only re-runs if the handler function itself changes (which it won't).
+    // The dependency array now includes `activeView`. This ensures the effect
+    // re-runs, and the scroll listener is re-attached to the new list element
+    // every time you navigate back to the configuratorList view.
+}, [activeView, checkAndSetGradients]);
 
 
 // --- Handlers for Color Picker ---
