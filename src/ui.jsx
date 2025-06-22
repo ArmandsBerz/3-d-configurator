@@ -3,7 +3,7 @@ import React, { useState, useRef, useLayoutEffect } from 'react';
 // --- Helper Components ---
 // RESTORED the ImageOptionCard component as it should not have been removed.
 const ImageOptionCard = ({ id, title, description, price, icon, isSelected, onSelect }) => (
-<button className={`relative p-3 rounded-md cursor-pointer flex flex-col justify-center items-center text-center bg-[#2a2a2a] ${isSelected ? 'border-4 border-white' : 'hover:bg-[#333333]'}`} onClick={onSelect}>
+<button className={`relative p-3 h-24 rounded-md cursor-pointer flex flex-col justify-center items-center text-center bg-[#2a2a2a] ${isSelected ? 'border-4 border-white' : 'hover:bg-[#333333]'}`} onClick={onSelect}>
     <h4 className="text-base font-semibold text-white">{title}</h4>
     {isSelected && (
         <svg className="absolute top-2 right-2 w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
