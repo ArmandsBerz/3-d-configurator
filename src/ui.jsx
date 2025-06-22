@@ -1,6 +1,7 @@
 import React, { useState, useRef, useLayoutEffect } from 'react';
 
 // --- Helper Components ---
+// RESTORED the ImageOptionCard component as it should not have been removed.
 const ImageOptionCard = ({ id, title, description, price, icon, isSelected, onSelect }) => (
 <button className={`p-3 rounded-md cursor-pointer flex flex-col justify-between text-left ${isSelected ? 'bg-[#3a3a3a] ring-2 ring-blue-500' : 'bg-[#2a2a2a] hover:bg-[#333333]'}`} onClick={onSelect}>
 <div>
@@ -17,7 +18,7 @@ const ImageOptionCard = ({ id, title, description, price, icon, isSelected, onSe
 </button>
 );
 
-const ChoiceButton = ({ label }) => (<button className="bg-[#2a2a2a] hover:bg-[#333333] text-white text-sm py-2 px-3 rounded-md h-[36px] flex items-center justify-center">{label}</button>);
+// The ChoiceButton is still unused by the BuildPanel, so it remains removed to prevent compiler warnings.
 
 const PrimaryActionButton = ({ onClick, ariaLabel }) => (
   <div className="w-full grid grid-cols-1">
@@ -33,8 +34,6 @@ const PrimaryActionButton = ({ onClick, ariaLabel }) => (
   </div>
 );
 
-// --- REFACTOR: MAKING THE COMPONENT TRULY AGNOSTIC ---
-// The containerClassName prop is removed, and padding is now handled internally.
 const ColorSwatchGrid = ({ swatches, selectedColor, onColorSelect }) => (
   <div className="grid grid-cols-[repeat(auto-fit,minmax(42px,1fr))] gap-[10px] px-2 py-2">
     {swatches.map((color) => (
@@ -52,10 +51,7 @@ const ColorSwatchGrid = ({ swatches, selectedColor, onColorSelect }) => (
     ))}
   </div>
 );
-// --- END REFACTOR ---
 
-
-// --- REFACTOR: ABSTRACTION FOR PANELS ---
 const EditingPanel = ({ title, onClose, headerAccessory = null, children }) => (
   <div className="bg-[#161616] h-full flex flex-col px-[23px]">
     <button
@@ -75,12 +71,39 @@ const EditingPanel = ({ title, onClose, headerAccessory = null, children }) => (
     </div>
   </div>
 );
-// --- END REFACTOR ---
+
+const SelectableButton = ({ label, isSelected, onSelect }) => (
+    <button
+      className={`text-white text-sm py-2 px-3 rounded-md h-[36px] flex items-center justify-center font-medium transition-colors ${
+        isSelected
+          ? 'bg-[#FFFFFF] text-[#222222]'
+          : 'bg-[#383838] hover:bg-[#595959] active:bg-[#272727]'
+      }`}
+      onClick={onSelect}
+    >
+      {label}
+    </button>
+);
+
+const OptionGroup = ({ title, options, layout, selectedOption, onSelectOption }) => (
+  <div>
+    <h3 className="text-sm font-semibold text-gray-400 mb-2">{title}</h3>
+    <div className={`grid ${layout} gap-2`}>
+      {options.map((option) => (
+        <SelectableButton
+          key={option}
+          label={option}
+          isSelected={selectedOption === option}
+          onSelect={() => onSelectOption(option)}
+        />
+      ))}
+    </div>
+  </div>
+);
 
 
 // --- Panel Components ---
 
-// --- REFACTOR: USING THE NEW EditingPanel COMPONENT ---
 const ColorPickerPanel = ({ editingColorContext, handleCloseColorPicker, selectedColorInPicker, setSelectedColorInPicker, colorSwatches }) => {
   if (!editingColorContext) return null;
 
@@ -90,7 +113,6 @@ const ColorPickerPanel = ({ editingColorContext, handleCloseColorPicker, selecte
       onClose={handleCloseColorPicker}
       headerAccessory={<span className="text-sm text-gray-400">{selectedColorInPicker || editingColorContext.currentColor}</span>}
     >
-      {/* --- REFACTOR: The containerClassName prop is now removed for consistency --- */}
       <ColorSwatchGrid
         swatches={colorSwatches}
         selectedColor={selectedColorInPicker}
@@ -99,28 +121,63 @@ const ColorPickerPanel = ({ editingColorContext, handleCloseColorPicker, selecte
     </EditingPanel>
   );
 };
-// --- END REFACTOR ---
+
+const buildOptionsData = [
+    { id: 'position', title: 'Position', options: ['INFIELD', 'OUTFIELD', 'PITCHER', 'CATCHER', 'FIRST BASE'], layout: 'grid-cols-3' },
+    { id: 'size', title: 'Size', options: ['11"', '11.25"', '11.5"', '11.75"', '12"'], layout: 'grid-cols-3' },
+    { id: 'handOpeningSize', title: 'Hand Opening Size', options: ['ADULT', 'YOUTH'], layout: 'grid-cols-2' },
+    { id: 'stiffness', title: 'Stiffness', options: ['STIFF', 'STANDARD', 'SOFT'], layout: 'grid-cols-3' },
+    { id: 'throwingHand', title: 'Throwing Hand', options: ['RIGHT HAND', 'LEFT HAND'], layout: 'grid-cols-2' }
+];
 
 const BuildPanel = ({ editingBuildContext, handleCloseBuildPanel, selectedImageOption, setSelectedImageOption }) => {
-if (!editingBuildContext) return null;
-return (
-<div className="bg-[#161616] h-full flex flex-col">
-<button className="flex items-center text-white py-3 px-4 h-[56px] w-full text-left" onClick={handleCloseBuildPanel}>
-<svg className="w-5 h-5 mr-2 transform rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
-<span className="text-lg">{editingBuildContext.title || 'Build Options'}</span>
-</button>
-<div className="flex-grow overflow-y-auto px-4 pt-3 pb-4 space-y-5">
-<div><h3 className="text-sm text-gray-400 mb-2">Option With Image</h3><div className="grid grid-cols-2 gap-3"><ImageOptionCard id="imgOpt1" title="Option Title 1" description="Lorem ipsum dolor sit amet, consectetur" price="$000 - $000" isSelected={selectedImageOption === 'imgOpt1'} onSelect={() => setSelectedImageOption('imgOpt1')}/><ImageOptionCard id="imgOpt2" title="Option Title 2" description="Lorem ipsum dolor sit amet, consectetur" price="$000 - $000" isSelected={selectedImageOption === 'imgOpt2'} onSelect={() => setSelectedImageOption('imgOpt2')}/></div></div>
-<div><h3 className="text-sm text-gray-400 mb-2">Option with 2 Choices</h3><div className="grid grid-cols-2 gap-3"><ChoiceButton label="OPTION"/><ChoiceButton label="OPTION"/></div></div>
-<div><h3 className="text-sm text-gray-400 mb-2">Option with 3 Choices</h3><div className="grid grid-cols-3 gap-3"><ChoiceButton label="OPTION"/><ChoiceButton label="OPTION"/><ChoiceButton label="OPTION"/></div></div>
-<div><h3 className="text-sm text-gray-400 mb-2">Option with 4 Choices</h3><div className="grid grid-cols-2 gap-3"><ChoiceButton label="OPTION"/><ChoiceButton label="OPTION"/><ChoiceButton label="OPTION"/><ChoiceButton label="OPTION"/></div></div>
-<div><h3 className="text-sm text-gray-400 mb-2">Option with 5 Choices</h3><div className="flex flex-wrap gap-3">{[...Array(5)].map((_, i) => <ChoiceButton key={i} label="OPTION"/>)}</div></div>
-</div>
-</div>
-);
+    if (!editingBuildContext) return null;
+
+    const buildConfig = selectedImageOption;
+    const setBuildConfig = setSelectedImageOption;
+
+    const handleSelectOption = (groupId, optionValue) => {
+        setBuildConfig(prevConfig => ({
+            ...prevConfig,
+            [groupId]: optionValue
+        }));
+    };
+    
+    const handleImageSelect = (selection) => {
+        setBuildConfig(prevConfig => ({
+            ...prevConfig,
+            imageSelection: selection
+        }));
+    };
+
+    return (
+        <EditingPanel title={editingBuildContext.title || 'Build Options'} onClose={handleCloseBuildPanel}>
+            <div className="space-y-6 pb-4">
+                {/* RESTORED THIS SECTION */}
+                <div>
+                    <h3 className="text-sm font-semibold text-gray-400 mb-2">Option With Image</h3>
+                    <div className="grid grid-cols-2 gap-3">
+                        <ImageOptionCard id="imgOpt1" title="Option Title 1" description="Lorem ipsum dolor sit amet, consectetur" price="$000 - $000" isSelected={buildConfig.imageSelection === 'imgOpt1'} onSelect={() => handleImageSelect('imgOpt1')}/>
+                        <ImageOptionCard id="imgOpt2" title="Option Title 2" description="Lorem ipsum dolor sit amet, consectetur" price="$000 - $000" isSelected={buildConfig.imageSelection === 'imgOpt2'} onSelect={() => handleImageSelect('imgOpt2')}/>
+                    </div>
+                </div>
+
+                {buildOptionsData.map((group) => (
+                    <OptionGroup
+                        key={group.id}
+                        title={group.title}
+                        options={group.options}
+                        layout={group.layout}
+                        selectedOption={buildConfig[group.id]}
+                        onSelectOption={(value) => handleSelectOption(group.id, value)}
+                    />
+                ))}
+            </div>
+        </EditingPanel>
+    );
 };
 
-// --- REFACTOR: USING THE NEW EditingPanel COMPONENT ---
+
 const TextPanel = ({ editingTextContext, panelState, setPanelState, handleClose, colorSwatches }) => {
   if (!editingTextContext) return null;
   const handleTextChange = (e) => setPanelState(prev => ({ ...prev, text: e.target.value }));
@@ -157,7 +214,6 @@ const TextPanel = ({ editingTextContext, panelState, setPanelState, handleClose,
     </EditingPanel>
   );
 };
-// --- END REFACTOR ---
 
 
 // --- Main UI Component ---
@@ -166,33 +222,39 @@ const [isSummaryPanelVisible, setIsSummaryPanelVisible] = useState(false);
 const [isVisualizationExpanded, setIsVisualizationExpanded] = useState(false);
 const [activeView, setActiveView] = useState('configuratorList');
 const [configuration, setConfiguration] = useState({
-build: 'imgOpt1',
-thumb: '#C62828',
-index: '#1565C0',
-middle: '#2E7D32',
-ring: '#F9A825',
-pinky: '#6A1B9A',
-thumbName: {
-text: 'Thumb',
-font: 'SCRIPT',
-color: '#BDBDBD'
-},
-pinkyName: {
-text: 'Pinky',
-font: 'BLOCK',
-color: '#FFFFFF'
-},
+    build: {
+        // ADDED imageSelection state
+        imageSelection: 'imgOpt1',
+        position: 'OUTFIELD',
+        size: '11"',
+        handOpeningSize: 'ADULT',
+        stiffness: 'STANDARD',
+        throwingHand: 'RIGHT HAND'
+    },
+    thumb: '#C62828',
+    index: '#1565C0',
+    middle: '#2E7D32',
+    ring: '#F9A825',
+    pinky: '#6A1B9A',
+    thumbName: {
+        text: 'Thumb',
+        font: 'SCRIPT',
+        color: '#BDBDBD'
+    },
+    pinkyName: {
+        text: 'Pinky',
+        font: 'BLOCK',
+        color: '#FFFFFF'
+    },
 });
 
 const [editingColorContext, setEditingColorContext] = useState(null);
 const [selectedColorInPicker, setSelectedColorInPicker] = useState('');
 const [editingBuildContext, setEditingBuildContext] = useState(null);
-const [selectedImageOption, setSelectedImageOption] = useState('');
-
+const [selectedImageOption, setSelectedImageOption] = useState(null);
 const [editingTextContext, setEditingTextContext] = useState(null);
 const [textPanelState, setTextPanelState] = useState(null);
 
-// --- UPDATE: Refs for scrollIntoView method ---
 const listContainerRef = useRef(null);
 const lastInteractedItemIdRef = useRef(null);
 
@@ -203,22 +265,19 @@ const colorSwatches = [
 '#BDBDBD', '#37474F',
 ];
 
-// --- UPDATE: Effect to restore scroll position ---
 useLayoutEffect(() => {
-    // Only scroll if the list is the active view and the visualization is not expanded
     if (activeView === 'configuratorList' && !isVisualizationExpanded && lastInteractedItemIdRef.current && listContainerRef.current) {
         const element = listContainerRef.current.querySelector(`[data-id="${lastInteractedItemIdRef.current}"]`);
         if (element) {
             element.scrollIntoView({ block: 'center' });
         }
-        // We no longer clear the ref here, so it's "remembered"
     }
-}, [activeView, isVisualizationExpanded]); // Dependency array now includes isVisualizationExpanded
+}, [activeView, isVisualizationExpanded]);
 
 
 // --- Handlers for Color Picker ---
 const handleOpenColorPicker = (optionId, optionTitle) => {
-lastInteractedItemIdRef.current = optionId; // --- UPDATE: Save the ID of the clicked item
+lastInteractedItemIdRef.current = optionId;
 setEditingColorContext({ id: optionId, title: optionTitle, currentColor: configuration[optionId] });
 setSelectedColorInPicker(configuration[optionId]);
 setActiveView('colorPickerPanel');
@@ -231,7 +290,6 @@ handleCloseColorPicker();
 }
 };
 
-// This new handler applies the selected color to all glove parts, but not to text colors.
 const handleApplyColorToAll = () => {
     if (selectedColorInPicker) {
       setConfiguration(prev => ({
@@ -249,21 +307,22 @@ const handleApplyColorToAll = () => {
 
 // --- Handlers for Build Panel ---
 const handleOpenBuildPanel = (optionId, optionTitle) => {
-lastInteractedItemIdRef.current = optionId; // --- UPDATE: Save the ID of the clicked item
-setEditingBuildContext({ id: optionId, title: optionTitle });
-setSelectedImageOption(configuration[optionId]);
-setActiveView('buildPanel');
+    lastInteractedItemIdRef.current = optionId;
+    setEditingBuildContext({ id: optionId, title: optionTitle });
+    setSelectedImageOption(configuration.build);
+    setActiveView('buildPanel');
 };
 const handleCloseBuildPanel = () => setActiveView('configuratorList');
 const handleBuildCallToAction = () => {
-if (editingBuildContext) {
-setConfiguration(prev => ({ ...prev, [editingBuildContext.id]: selectedImageOption }));
-}
-handleCloseBuildPanel();
+    if (editingBuildContext) {
+        setConfiguration(prev => ({ ...prev, build: selectedImageOption }));
+    }
+    handleCloseBuildPanel();
 };
+
 // --- Handlers for Text Panel ---
 const handleOpenTextPanel = (optionId, optionTitle) => {
-lastInteractedItemIdRef.current = optionId; // --- UPDATE: Save the ID of the clicked item
+lastInteractedItemIdRef.current = optionId;
 setEditingTextContext({ id: optionId, title: optionTitle });
 setTextPanelState(configuration[optionId]);
 setActiveView('textPanel');
@@ -307,7 +366,6 @@ return (
 <div className="relative flex-grow overflow-hidden">
 {activeView === 'configuratorList' && (
 <>
-{/* --- UPDATE: Added ref and data-id attributes for scrollIntoView --- */}
 <section ref={listContainerRef} className={`px-4 bg-[#161616] h-full overflow-y-auto ${isSummaryPanelVisible ? 'opacity-50 pointer-events-none' : ''}`}>
 <button data-id="build" className="w-full h-[56px] bg-[#1C1C1C] flex items-center justify-between px-4 mb-[10px] cursor-pointer hover:bg-[#2A2A2A] rounded-md" onClick={() => handleOpenBuildPanel('build', 'Build Options')}>
 <div className="flex items-center"><svg viewBox="0 0 10 16" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-4 w-auto mr-3"><path d="M1 1L8 8L1.10769 15" stroke="white" strokeWidth={2}/></svg><span className="text-lg">Build</span></div>
