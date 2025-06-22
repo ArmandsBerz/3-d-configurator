@@ -15,18 +15,18 @@ const ImageOptionCard = ({ id, title, description, price, icon, isSelected, onSe
 
 // The ChoiceButton is still unused by the BuildPanel, so it remains removed to prevent compiler warnings.
 
-const PrimaryActionButton = ({ onClick, ariaLabel }) => (
-  <div className="w-full grid grid-cols-1">
-    <button
-      type="button"
-      onClick={onClick}
-      className="flex items-center justify-center px-4 bg-white hover:bg-gray-200 active:bg-gray-300 rounded text-base font-semibold text-[#161616] h-[56px]"
-      aria-label={ariaLabel}
-    >
-      <span>Call To Action</span>
-      <svg className="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg>
-    </button>
-  </div>
+const ApplyActionButton = ({ onClick, ariaLabel }) => (
+    <div className="w-full grid grid-cols-1">
+        <button
+            type="button"
+            onClick={onClick}
+            className="flex items-center justify-between px-4 bg-white hover:bg-gray-200 active:bg-gray-300 rounded text-base font-semibold text-[#161616] h-[56px]"
+            aria-label={ariaLabel}
+        >
+            <span className="ml-[5px]">Apply</span>
+            <svg className="w-5 h-5 mr-[5px]" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg>
+        </button>
+    </div>
 );
 
 const ColorSwatchGrid = ({ swatches, selectedColor, onColorSelect }) => (
@@ -69,9 +69,9 @@ const EditingPanel = ({ title, onClose, headerAccessory = null, children }) => (
 
 const SelectableButton = ({ label, isSelected, onSelect }) => (
     <button
-      className={`text-white text-sm py-2 px-3 rounded-md h-[36px] flex items-center justify-center font-medium transition-colors ${
+      className={`text-sm py-2 px-3 rounded-md h-[36px] flex items-center justify-center font-medium transition-colors ${
         isSelected
-          ? 'bg-[#FFFFFF] text-[#222222]'
+          ? 'bg-white text-[#222222]'
           : 'bg-[#383838] hover:bg-[#595959] active:bg-[#272727]'
       }`}
       onClick={onSelect}
@@ -411,21 +411,24 @@ return (
 <footer className="flex-shrink-0 bg-[#161616] flex items-center justify-start mt-[10px] pb-[20px] px-[14px]">
 {activeView === 'colorPickerPanel' ? (
 <div className="w-full grid grid-cols-[1fr_1.618fr] gap-[10px]">
-<button type="button" onClick={handleApplyColorToAll} className="flex items-center justify-center px-4 bg-[#3A3A3A] hover:bg-[#4A4A4A] active:bg-[#2A2A2A] rounded text-base font-semibold text-white h-[56px]" aria-label="Apply color to all sections"><span>Apply to All</span></button>
-<button type="button" onClick={handlePaintSectionAndReturn} className="flex items-center justify-between px-4 bg-[#2997FF] hover:bg-[#73BBFF] active:bg-[#0083FF] rounded text-base font-semibold text-white h-[56px]" aria-label="Apply color to section and return"><span className="ml-[5px]">Primary</span><svg className="w-5 h-5 mr-[5px]" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg></button>
+<button type="button" onClick={handleApplyColorToAll} className="flex items-center justify-between px-4 bg-[#3A3A3A] hover:bg-[#4A4A4A] active:bg-[#2A2A2A] rounded text-base font-semibold text-white h-[56px]" aria-label="Apply color to all sections">
+    <span className="ml-[5px]">Apply to All</span>
+    <svg className="w-5 h-5 mr-[5px]" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg>
+</button>
+<button type="button" onClick={handlePaintSectionAndReturn} className="flex items-center justify-between px-4 bg-white hover:bg-gray-200 active:bg-gray-300 rounded text-base font-semibold text-[#161616] h-[56px]" aria-label="Apply color to section and return"><span className="ml-[5px]">Apply</span><svg className="w-5 h-5 mr-[5px]" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg></button>
 </div>
 )
 : activeView === 'buildPanel' ? (
-<PrimaryActionButton
-onClick={handleBuildCallToAction}
-ariaLabel="Confirm build options"
-/>
+    <ApplyActionButton
+        onClick={handleBuildCallToAction}
+        ariaLabel="Confirm build options"
+    />
 )
 : activeView === 'textPanel' ? (
-<PrimaryActionButton
-onClick={handleTextPanelConfirm}
-ariaLabel="Confirm text customization"
-/>
+    <ApplyActionButton
+        onClick={handleTextPanelConfirm}
+        ariaLabel="Confirm text customization"
+    />
 ) : activeView === 'configuratorList' ? ( isSummaryPanelVisible ? ( <div className="w-full grid grid-cols-[1fr_1.618fr] gap-[10px]"><button type="button" onClick={() => setIsSummaryPanelVisible(false)} className="flex items-center justify-center px-4 bg-[#3A3A3A] hover:bg-[#4A4A4A] active:bg-[#2A2A2A] rounded text-base font-semibold text-white h-[56px]" aria-label="Back to Design"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="mr-2"><path d="M15 19L8 12L15 5" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg><span>Back to Design</span></button><button type="button" onClick={() => alert('Complete Order clicked!')} className="flex items-center justify-between px-4 bg-[#2997FF] hover:bg-[#73BBFF] active:bg-[#0083FF] focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-opacity-50 rounded text-base font-semibold text-white h-[56px]" aria-label="Complete Order"><span className="ml-[5px]">Complete Order</span><svg width="34" height="14" viewBox="0 0 34 16" fill="none" xmlns="http://www.w3.org/2000/svg" className="mr-[5px]"><path d="M0 8H32.5M32.5 8L25.5 1M32.5 8H0.5M32.5 8L25.6077 15" stroke="white" strokeWidth="2" strokeLinecap="round"/></svg></button></div>)
 : ( <div className="w-full grid grid-cols-[1fr_1.618fr] gap-[10px]">
 <button type="button" onClick={() => setIsSummaryPanelVisible(true)} className="flex items-center justify-center space-x-2 px-4 bg-[#1A1A1A] hover:bg-[#222222] active:bg-[#1F1F1F] rounded text-base font-semibold text-white h-[56px]" aria-label="Open summary panel">
