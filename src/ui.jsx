@@ -1,7 +1,16 @@
-import React, { useState, useRef, useLayoutEffect } from 'react';
+import React, { useState, useRef, useLayoutEffect, useCallback, useEffect } from 'react';
 
 // --- Helper Components ---
-// RESTORED the ImageOptionCard component as it should not have been removed.
+const ScrollGradient = ({ position, isVisible }) => {
+    const isTop = position === 'top';
+    return (
+        <div
+            className={`absolute left-0 right-0 h-[63px] ${isTop ? 'top-0 bg-gradient-to-b' : 'bottom-0 bg-gradient-to-t'} from-[#161616] to-transparent pointer-events-none z-10 transition-opacity duration-200 ${isVisible ? 'opacity-100' : 'opacity-0'}`}
+            aria-hidden="true"
+        />
+    );
+};
+
 const ImageOptionCard = ({ id, title, description, price, icon, isSelected, onSelect }) => (
 <button className={`relative p-3 h-24 rounded-md cursor-pointer flex flex-col justify-center items-center text-center bg-[#2a2a2a] ${isSelected ? 'border-4 border-white' : 'hover:bg-[#333333]'}`} onClick={onSelect}>
     <h4 className="text-base font-semibold text-white">{title}</h4>
@@ -12,8 +21,6 @@ const ImageOptionCard = ({ id, title, description, price, icon, isSelected, onSe
     )}
 </button>
 );
-
-// The ChoiceButton is still unused by the BuildPanel, so it remains removed to prevent compiler warnings.
 
 const ApplyActionButton = ({ onClick, ariaLabel }) => (
     <div className="w-full grid grid-cols-1">
@@ -29,7 +36,6 @@ const ApplyActionButton = ({ onClick, ariaLabel }) => (
     </div>
 );
 
-// NEW REUSABLE COMPONENT FOR "Review & Order" and "Complete Order"
 const PrimaryCallToActionButton = ({ label, onClick, ariaLabel }) => (
     <button
         type="button"
@@ -41,7 +47,6 @@ const PrimaryCallToActionButton = ({ label, onClick, ariaLabel }) => (
         <svg width="34" height="14" viewBox="0 0 34 16" fill="none" xmlns="http://www.w3.org/2000/svg" className="mr-[5px]"><path d="M0 8H32.5M32.5 8L25.5 1M32.5 8H0.5M32.5 8L25.6077 15" stroke="white" strokeWidth="2" strokeLinecap="round"/></svg>
     </button>
 );
-
 
 const ColorSwatchGrid = ({ swatches, selectedColor, onColorSelect }) => (
   <div className="grid grid-cols-[repeat(auto-fit,minmax(42px,1fr))] gap-[10px] px-2 py-2">
@@ -232,7 +237,6 @@ const [isVisualizationExpanded, setIsVisualizationExpanded] = useState(false);
 const [activeView, setActiveView] = useState('configuratorList');
 const [configuration, setConfiguration] = useState({
     build: {
-        // ADDED imageSelection state
         imageSelection: 'imgOpt1',
         position: 'OUTFIELD',
         size: '11"',
@@ -267,6 +271,9 @@ const [textPanelState, setTextPanelState] = useState(null);
 const listContainerRef = useRef(null);
 const lastInteractedItemIdRef = useRef(null);
 
+const [topGradientVisible, setTopGradientVisible] = useState(false);
+const [bottomGradientVisible, setBottomGradientVisible] = useState(false);
+
 const colorSwatches = [
 '#C62828', '#AD1457', '#6A1B9A', '#4527A0', '#283593', '#1565C0',
 '#0277BD', '#00838F', '#00695C', '#2E7D32', '#558B2F', '#9E9D24',
@@ -274,14 +281,58 @@ const colorSwatches = [
 '#BDBDBD', '#37474F',
 ];
 
+// This is the single source of truth for checking and setting gradient visibility.
+const checkAndSetGradients = useCallback(() => {
+    const listElement = listContainerRef.current;
+    if (!listElement) return;
+
+    const hasOverflow = listElement.scrollHeight > listElement.clientHeight;
+
+    if (hasOverflow) {
+        const isAtTop = listElement.scrollTop === 0;
+        const isAtBottom = Math.abs(listElement.scrollHeight - listElement.clientHeight - listElement.scrollTop) < 1;
+        
+        setTopGradientVisible(!isAtTop);
+        setBottomGradientVisible(!isAtBottom);
+    } else {
+        setTopGradientVisible(false);
+        setBottomGradientVisible(false);
+    }
+}, []); // This function is stable and created once.
+
+// This effect runs our check function whenever the view changes or the list might have changed size.
 useLayoutEffect(() => {
+    checkAndSetGradients();
+
     if (activeView === 'configuratorList' && !isVisualizationExpanded && lastInteractedItemIdRef.current && listContainerRef.current) {
         const element = listContainerRef.current.querySelector(`[data-id="${lastInteractedItemIdRef.current}"]`);
         if (element) {
             element.scrollIntoView({ block: 'center' });
         }
     }
-}, [activeView, isVisualizationExpanded]);
+}, [activeView, isVisualizationExpanded, checkAndSetGradients]);
+
+
+// This effect sets up and cleans up the event listeners.
+useEffect(() => {
+    const listElement = listContainerRef.current;
+    
+    // The handler is just our check function. It will fire on every event.
+    const handler = checkAndSetGradients;
+
+    window.addEventListener('resize', handler);
+    if (listElement) {
+        listElement.addEventListener('scroll', handler);
+    }
+
+    // Cleanup function to remove listeners when the component unmounts.
+    return () => {
+        window.removeEventListener('resize', handler);
+        if (listElement) {
+            listElement.removeEventListener('scroll', handler);
+        }
+    };
+}, [checkAndSetGradients]); // This effect only re-runs if the handler function itself changes (which it won't).
 
 
 // --- Handlers for Color Picker ---
@@ -344,7 +395,6 @@ setConfiguration(prev => ({ ...prev, [editingTextContext.id]: textPanelState }))
 handleCloseTextPanel();
 };
 
-
 const GOLDEN_RATIO_CONSTANT = 1.618;
 const VIZ_PROPORTION = 1 / GOLDEN_RATIO_CONSTANT;
 const CONTROLS_PROPORTION = 1 - VIZ_PROPORTION;
@@ -373,9 +423,18 @@ return (
 {!isVisualizationExpanded && (
 <div className="flex flex-col overflow-hidden bg-[#161616]" style={{ flexBasis: `${CONTROLS_PROPORTION * 100}%` }}>
 <div className="relative flex-grow overflow-hidden">
+    {activeView === 'configuratorList' && (
+        <>
+            <ScrollGradient position="top" isVisible={topGradientVisible} />
+            <ScrollGradient position="bottom" isVisible={bottomGradientVisible} />
+        </>
+    )}
+    
 {activeView === 'configuratorList' && (
 <>
-<section ref={listContainerRef} className={`px-4 bg-[#161616] h-full overflow-y-auto ${isSummaryPanelVisible ? 'opacity-50 pointer-events-none' : ''}`}>
+<section 
+    ref={listContainerRef} 
+    className={`px-4 bg-[#161616] h-full overflow-y-auto ${isSummaryPanelVisible ? 'opacity-50 pointer-events-none' : ''}`}>
 <button data-id="build" className="w-full h-[56px] bg-[#1C1C1C] flex items-center justify-between px-4 mb-[10px] cursor-pointer hover:bg-[#2A2A2A] rounded-md" onClick={() => handleOpenBuildPanel('build', 'Build Options')}>
 <div className="flex items-center"><svg viewBox="0 0 10 16" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-4 w-auto mr-3"><path d="M1 1L8 8L1.10769 15" stroke="white" strokeWidth={2}/></svg><span className="text-lg">Build</span></div>
 <span className="text-sm text-gray-400">Modify</span>
