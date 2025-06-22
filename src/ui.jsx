@@ -155,10 +155,10 @@ const BuildPanel = ({ editingBuildContext, handleCloseBuildPanel, selectedImageO
             <div className="space-y-6 pb-4">
                 {/* RESTORED THIS SECTION */}
                 <div>
-                    <h3 className="text-sm font-semibold text-gray-400 mb-2">Option With Image</h3>
+                    <h3 className="text-sm font-semibold text-gray-400 mb-2">Glove Leather</h3>
                     <div className="grid grid-cols-2 gap-3">
-                        <ImageOptionCard id="imgOpt1" title="Option Title 1" description="Lorem ipsum dolor sit amet, consectetur" price="$000 - $000" isSelected={buildConfig.imageSelection === 'imgOpt1'} onSelect={() => handleImageSelect('imgOpt1')}/>
-                        <ImageOptionCard id="imgOpt2" title="Option Title 2" description="Lorem ipsum dolor sit amet, consectetur" price="$000 - $000" isSelected={buildConfig.imageSelection === 'imgOpt2'} onSelect={() => handleImageSelect('imgOpt2')}/>
+                        <ImageOptionCard id="imgOpt1" title="Japanese Kip" description="Kip leather is a soft and luxurious cowhide found in high-end gloves." isSelected={buildConfig.imageSelection === 'imgOpt1'} onSelect={() => handleImageSelect('imgOpt1')}/>
+                        <ImageOptionCard id="imgOpt2" title="US Steerhide" description="Heaviest leather, longest break in time, high quality and durability." isSelected={buildConfig.imageSelection === 'imgOpt2'} onSelect={() => handleImageSelect('imgOpt2')}/>
                     </div>
                 </div>
 
