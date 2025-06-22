@@ -3,18 +3,13 @@ import React, { useState, useRef, useLayoutEffect } from 'react';
 // --- Helper Components ---
 // RESTORED the ImageOptionCard component as it should not have been removed.
 const ImageOptionCard = ({ id, title, description, price, icon, isSelected, onSelect }) => (
-<button className={`p-3 rounded-md cursor-pointer flex flex-col justify-between text-left ${isSelected ? 'bg-[#3a3a3a] ring-2 ring-blue-500' : 'bg-[#2a2a2a] hover:bg-[#333333]'}`} onClick={onSelect}>
-<div>
-<div className="flex items-center justify-between mb-1">
-<div className="flex items-center text-xs text-gray-400">
-{icon || <svg className="w-4 h-4 text-gray-400 mr-1" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M17.707 9.293a1 1 0 010 1.414l-7 7a1 1 0 01-1.414 0l-7-7A1.007 1.007 0 012 10V5a1 1 0 011-1h5a1 1 0 01.707.293l7 7zM5 6a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd"></path></svg>}
-<span>{price}</span>
-</div>
-{isSelected && (<svg className="w-5 h-5 text-blue-400" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"></path></svg>)}
-</div>
-<h4 className="text-base font-semibold text-white mb-1">{title}</h4>
-<p className="text-xs text-gray-400 leading-tight">{description}</p>
-</div>
+<button className={`relative p-3 rounded-md cursor-pointer flex flex-col justify-center items-center text-center bg-[#2a2a2a] ${isSelected ? 'border-4 border-white' : 'hover:bg-[#333333]'}`} onClick={onSelect}>
+    <h4 className="text-base font-semibold text-white">{title}</h4>
+    {isSelected && (
+        <svg className="absolute top-2 right-2 w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
+            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"></path>
+        </svg>
+    )}
 </button>
 );
 
@@ -157,8 +152,8 @@ const BuildPanel = ({ editingBuildContext, handleCloseBuildPanel, selectedImageO
                 <div>
                     <h3 className="text-sm font-semibold text-gray-400 mb-2">Glove Leather</h3>
                     <div className="grid grid-cols-2 gap-3">
-                        <ImageOptionCard id="imgOpt1" title="Japanese Kip" description="Kip leather is a soft and luxurious cowhide found in high-end gloves." isSelected={buildConfig.imageSelection === 'imgOpt1'} onSelect={() => handleImageSelect('imgOpt1')}/>
-                        <ImageOptionCard id="imgOpt2" title="US Steerhide" description="Heaviest leather, longest break in time, high quality and durability." isSelected={buildConfig.imageSelection === 'imgOpt2'} onSelect={() => handleImageSelect('imgOpt2')}/>
+                        <ImageOptionCard id="imgOpt1" title="Japanese Kip" isSelected={buildConfig.imageSelection === 'imgOpt1'} onSelect={() => handleImageSelect('imgOpt1')}/>
+                        <ImageOptionCard id="imgOpt2" title="American Steerhide" isSelected={buildConfig.imageSelection === 'imgOpt2'} onSelect={() => handleImageSelect('imgOpt2')}/>
                     </div>
                 </div>
 
