@@ -533,7 +533,7 @@ return (
 <main className={`p-4 flex flex-col items-center justify-center relative bg-[#161616] overflow-auto ${ isVisualizationExpanded ? 'flex-grow h-full' : '' }`} style={!isVisualizationExpanded ? { flexBasis: `${VIZ_PROPORTION * 100}%` } : {}}>
 <div className="absolute top-[20px] left-[20px] w-[70px] h-[49px] bg-gray-300 bg-opacity-75 rounded z-10 flex items-center justify-center"><p className="font-bold text-xl text-gray-900">LOGO</p></div>
 <button
-    className="absolute top-[20px] right-[20px] z-10 p-2 rounded-md hover:bg-gray-800 hover:bg-opacity-50"
+    className="absolute top-[20px] right-[20px] z-20 p-2 rounded-md hover:bg-gray-800 hover:bg-opacity-50"
     aria-label="Share configuration"
     onClick={handleShare}
 >
