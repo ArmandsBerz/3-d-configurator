@@ -66,25 +66,77 @@ const ColorSwatchGrid = ({ swatches, selectedColor, onColorSelect }) => (
   </div>
 );
 
-const EditingPanel = ({ title, onClose, headerAccessory = null, children }) => (
-  <div className="bg-[#161616] h-full flex flex-col px-[23px]">
-    <button
-      className="flex items-center justify-between text-white py-3 h-[56px] w-full text-left mb-3"
-      onClick={onClose}
-    >
-      <div className="flex items-center">
-        <svg className="w-5 h-5 mr-2 transform rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path>
-        </svg>
-        <span className="text-lg">{title}</span>
-      </div>
-      {headerAccessory}
-    </button>
-    <div className="flex-grow overflow-y-auto">
-      {children}
-    </div>
-  </div>
-);
+const EditingPanel = ({ title, onClose, headerAccessory = null, children }) => {
+    const scrollContainerRef = useRef(null);
+    const [isTopGradientVisible, setIsTopGradientVisible] = useState(false);
+    const [isBottomGradientVisible, setIsBottomGradientVisible] = useState(false);
+
+    // This callback now checks the scroll position of the inner div
+    const checkAndSetGradients = useCallback(() => {
+        const element = scrollContainerRef.current;
+        if (!element) return;
+
+        const hasOverflow = element.scrollHeight > element.clientHeight;
+        if (hasOverflow) {
+            const isAtTop = element.scrollTop === 0;
+            const isAtBottom = Math.abs(element.scrollHeight - element.clientHeight - element.scrollTop) < 1;
+            setIsTopGradientVisible(!isAtTop);
+            setIsBottomGradientVisible(!isAtBottom);
+        } else {
+            setIsTopGradientVisible(false);
+            setIsBottomGradientVisible(false);
+        }
+    }, []);
+
+    // Effect to check gradients when content changes
+    useLayoutEffect(() => {
+        checkAndSetGradients();
+    }, [children, checkAndSetGradients]);
+    
+    // Effect to add/remove event listeners for scroll and resize
+    useEffect(() => {
+        const element = scrollContainerRef.current;
+        const handler = checkAndSetGradients;
+
+        window.addEventListener('resize', handler);
+        if (element) {
+            element.addEventListener('scroll', handler);
+        }
+        
+        return () => {
+            window.removeEventListener('resize', handler);
+            if (element) {
+                element.removeEventListener('scroll', handler);
+            }
+        };
+    }, [checkAndSetGradients]);
+
+    return (
+        <div className="bg-[#161616] h-full flex flex-col px-[23px]">
+            <button
+                className="flex items-center justify-between text-white py-3 h-[56px] w-full text-left mb-3"
+                onClick={onClose}
+            >
+                <div className="flex items-center">
+                    <svg className="w-5 h-5 mr-2 transform rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path>
+                    </svg>
+                    <span className="text-lg">{title}</span>
+                </div>
+                {headerAccessory}
+            </button>
+            {/* This outer div is the non-scrolling, relative frame for the gradients */}
+            <div className="flex-grow relative overflow-hidden">
+                <ScrollGradient position="top" isVisible={isTopGradientVisible} />
+                {/* This inner div is now the only element that scrolls its content */}
+                <div className="h-full overflow-y-auto" ref={scrollContainerRef}>
+                    {children}
+                </div>
+                <ScrollGradient position="bottom" isVisible={isBottomGradientVisible} />
+            </div>
+        </div>
+    );
+};
 
 const SelectableButton = ({ label, isSelected, onSelect }) => (
     <button
