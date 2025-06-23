@@ -181,7 +181,7 @@ const SummaryPanel = ({ onClose, configuration }) => {
     };
 
     return (
-        <div className="absolute inset-0 bg-[#161616] z-20 h-full">
+        <div className="absolute inset-0 bg-[#161616] z-20 h-full lg:inset-auto lg:bottom-28 lg:right-8 lg:w-96 lg:h-auto lg:rounded-lg lg:shadow-2xl">
             <EditingPanel title="Order Summary" onClose={onClose}>
                 <div className="text-base text-gray-300 space-y-4 p-1">
                     <div>
@@ -529,8 +529,8 @@ const handleShare = useCallback(async () => {
 
 
 return (
-<div className="flex flex-col h-[100dvh] bg-[#161616] text-white">
-<main className={`p-4 flex flex-col items-center justify-center relative bg-[#161616] overflow-auto ${ isVisualizationExpanded ? 'flex-grow h-full' : '' }`} style={!isVisualizationExpanded ? { flexBasis: `${VIZ_PROPORTION * 100}%` } : {}}>
+<div className="flex flex-col lg:relative h-[100dvh] bg-[#161616] text-white">
+<main className={`p-4 flex flex-col items-center justify-center relative lg:absolute lg:inset-0 bg-[#161616] overflow-auto ${ isVisualizationExpanded ? 'flex-grow h-full' : '' }`} style={!isVisualizationExpanded ? { flexBasis: `${VIZ_PROPORTION * 100}%` } : {}}>
 <div className="absolute top-[20px] left-[20px] w-[70px] h-[49px] bg-gray-300 bg-opacity-75 rounded z-10 flex items-center justify-center"><p className="font-bold text-xl text-gray-900">LOGO</p></div>
 <button
     className="absolute top-[20px] right-[20px] z-20 p-2 rounded-md hover:bg-gray-800 hover:bg-opacity-50"
@@ -555,7 +555,7 @@ return (
 
 {!isVisualizationExpanded && (
 <div className="flex flex-col overflow-hidden bg-[#161616]" style={{ flexBasis: `${CONTROLS_PROPORTION * 100}%` }}>
-<div className="relative flex-grow overflow-hidden">
+<div className="relative flex-grow overflow-hidden lg:absolute lg:left-0 lg:top-0 lg:bottom-0 lg:w-96 lg:z-10">
     {activeView === 'configuratorList' && (
         <>
             <ScrollGradient position="top" isVisible={topGradientVisible} />
@@ -567,7 +567,7 @@ return (
 <>
 <section 
     ref={listContainerRef} 
-    className={`px-4 bg-[#161616] h-full overflow-y-auto ${isSummaryPanelVisible ? 'opacity-50 pointer-events-none' : ''}`}>
+    className={`px-4 bg-[#161616] h-full overflow-y-auto`}>
 <button data-id="build" className="w-full h-[56px] bg-[#1C1C1C] flex items-center justify-between px-4 mb-[10px] cursor-pointer hover:bg-[#2A2A2A] rounded-md" onClick={() => handleOpenBuildPanel('build', 'Build Options')}>
 <div className="flex items-center"><svg viewBox="0 0 10 16" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-4 w-auto mr-3"><path d="M1 1L8 8L1.10769 15" stroke="white" strokeWidth={2}/></svg><span className="text-lg">Build</span></div>
 <span className="text-sm text-gray-400">Modify</span>
@@ -607,19 +607,13 @@ return (
 </div>
 </button>
 </section>
-{isSummaryPanelVisible && (
-    <SummaryPanel 
-        onClose={() => setIsSummaryPanelVisible(false)} 
-        configuration={configuration} 
-    />
-)}
 </>
 )}
 {activeView === 'colorPickerPanel' && ( <ColorPickerPanel editingColorContext={editingColorContext} handleCloseColorPicker={handleCloseColorPicker} selectedColorInPicker={selectedColorInPicker} setSelectedColorInPicker={setSelectedColorInPicker} colorSwatches={colorSwatches}/> )}
 {activeView === 'buildPanel' && ( <BuildPanel editingBuildContext={editingBuildContext} handleCloseBuildPanel={handleCloseBuildPanel} selectedImageOption={selectedImageOption} setSelectedImageOption={setSelectedImageOption}/> )}
 {activeView === 'textPanel' && ( <TextPanel editingTextContext={editingTextContext} panelState={textPanelState} setPanelState={setTextPanelState} handleClose={handleCloseTextPanel} colorSwatches={colorSwatches}/> )}
 </div>
-<footer className="flex-shrink-0 bg-[#161616] flex items-center justify-start mt-[10px] pb-[20px] px-[14px]">
+<footer className="flex-shrink-0 bg-[#161616] flex items-center justify-start mt-[10px] pb-[20px] px-[14px] lg:absolute lg:right-8 lg:bottom-8 lg:w-80 lg:z-10">
 {activeView === 'colorPickerPanel' ? (
 <div className="w-full grid grid-cols-[1fr_1.618fr] gap-[10px]">
 <button type="button" onClick={handleApplyColorToAll} className="flex items-center justify-between px-4 bg-[#393939] hover:bg-[#727272] active:bg-[#222222] rounded text-base font-semibold text-white h-[56px]" aria-label="Apply color to all sections">
@@ -665,6 +659,13 @@ return (
 )
 ) : null }
 </footer>
+
+{isSummaryPanelVisible && (
+    <SummaryPanel 
+        onClose={() => setIsSummaryPanelVisible(false)} 
+        configuration={configuration} 
+    />
+)}
 </div>
 )}
 </div>
