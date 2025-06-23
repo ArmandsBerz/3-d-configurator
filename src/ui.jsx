@@ -608,7 +608,7 @@ return (
         onClick={handleTextPanelConfirm}
         ariaLabel="Confirm text customization"
     />
-) : activeView === 'configuratorList' ? ( isSummaryPanelVisible ? ( <div className="w-full grid grid-cols-[1fr_1.618fr] gap-[10px]"><button type="button" onClick={() => setIsSummaryPanelVisible(false)} className="flex items-center justify-center px-4 bg-[#3A3A3A] hover:bg-[#4A4A4A] active:bg-[#2A2A2A] rounded text-base font-semibold text-white h-[56px]" aria-label="Back to Design"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="mr-2"><path d="M15 19L8 12L15 5" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg><span>Back to Design</span></button>
+) : activeView === 'configuratorList' ? ( isSummaryPanelVisible ? ( <div className="w-full grid grid-cols-[1fr_1.618fr] gap-[10px]"><button type="button" onClick={() => setIsSummaryPanelVisible(false)} className="flex items-center justify-center px-4 bg-[#3A3A3A] hover:bg-[#4A4A4A] active:bg-[#2A2A2A] rounded text-base font-semibold text-white h-[56px]" aria-label="Back to Design"><svg width="34" height="14" viewBox="0 0 34 16" fill="none" xmlns="http://www.w3.org/2000/svg" className="mr-[5px]"><path d="M15.92 8H1.5M1.5 8L8.5 1M1.5 8L8.5 15" stroke="white" strokeWidth="2" strokeLinecap="round"/></svg><span>Back to Design</span></button>
 <PrimaryCallToActionButton
     label="Complete Order"
     onClick={() => alert('Complete Order clicked!')}
