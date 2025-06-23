@@ -495,11 +495,48 @@ const GOLDEN_RATIO_CONSTANT = 1.618;
 const VIZ_PROPORTION = 1 / GOLDEN_RATIO_CONSTANT;
 const CONTROLS_PROPORTION = 1 - VIZ_PROPORTION;
 
+// --- Handler for Share Button ---
+const handleShare = useCallback(async () => {
+    // This creates a simplified URL. In a real app, you might use a service to generate a shorter link.
+    const configUrl = `${window.location.origin}?config=${encodeURIComponent(JSON.stringify(configuration))}`;
+
+    const shareData = {
+        title: 'My Custom Glove',
+        text: 'Check out the glove I designed!',
+        url: configUrl,
+    };
+
+    // Use the modern Web Share API if available (on mobile browsers)
+    if (navigator.share) {
+        try {
+            await navigator.share(shareData);
+            console.log('Configuration shared successfully');
+        } catch (err) {
+            // Handle cases where the user cancels the share dialog
+            console.log('Share was cancelled or failed', err);
+        }
+    } else {
+        // Fallback for desktop browsers: copy the link to the clipboard
+        try {
+            await navigator.clipboard.writeText(configUrl);
+            alert('Sharable link copied to clipboard!'); // Simple feedback for the user
+        } catch (err) {
+            console.error('Failed to copy link: ', err);
+            alert('Failed to copy link.');
+        }
+    }
+}, [configuration]);
+
+
 return (
 <div className="flex flex-col h-[100dvh] bg-[#161616] text-white">
 <main className={`p-4 flex flex-col items-center justify-center relative bg-[#161616] overflow-auto ${ isVisualizationExpanded ? 'flex-grow h-full' : '' }`} style={!isVisualizationExpanded ? { flexBasis: `${VIZ_PROPORTION * 100}%` } : {}}>
 <div className="absolute top-[20px] left-[20px] w-[70px] h-[49px] bg-gray-300 bg-opacity-75 rounded z-10 flex items-center justify-center"><p className="font-bold text-xl text-gray-900">LOGO</p></div>
-<button className="absolute top-[20px] right-[20px] z-10 p-2 rounded-md hover:bg-gray-800 hover:bg-opacity-50" aria-label="Share configuration">
+<button
+    className="absolute top-[20px] right-[20px] z-10 p-2 rounded-md hover:bg-gray-800 hover:bg-opacity-50"
+    aria-label="Share configuration"
+    onClick={handleShare}
+>
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-[31px] h-[31px] text-[#FFFFFF]"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>
 </button>
 <img src={`${process.env.PUBLIC_URL}/gloves.png`} alt="Glove Visualization" className="object-contain max-w-full max-h-full z-10" />
