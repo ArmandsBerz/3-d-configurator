@@ -22,7 +22,8 @@ const ImageOptionCard = ({ id, title, description, price, icon, isSelected, onSe
 </button>
 );
 
-const ApplyActionButton = ({ onClick, ariaLabel }) => (
+// RENAMED from ApplyActionButton and updated to be more generic
+const ContinueButton = ({ onClick, ariaLabel, label = "Continue" }) => (
     <div className="w-full grid grid-cols-1">
         <button
             type="button"
@@ -30,7 +31,7 @@ const ApplyActionButton = ({ onClick, ariaLabel }) => (
             className="flex items-center justify-between px-4 bg-white hover:bg-gray-200 active:bg-gray-300 rounded text-base font-semibold text-[#161616] h-[56px]"
             aria-label={ariaLabel}
         >
-            <span className="ml-[5px]">Apply</span>
+            <span className="ml-[5px]">{label}</span>
             <svg className="w-5 h-5 mr-[5px]" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg>
         </button>
     </div>
@@ -215,19 +216,20 @@ const SummaryPanel = ({ onClose, configuration }) => {
     );
 };
 
-const ColorPickerPanel = ({ editingColorContext, handleCloseColorPicker, selectedColorInPicker, setSelectedColorInPicker, colorSwatches }) => {
+// MODIFIED: No longer needs to manage its own temporary state.
+const ColorPickerPanel = ({ editingColorContext, handleCloseColorPicker, onColorSelect, colorSwatches, selectedColor }) => {
   if (!editingColorContext) return null;
 
   return (
     <EditingPanel
       title={editingColorContext.title || 'Color Picker'}
       onClose={handleCloseColorPicker}
-      headerAccessory={<span className="text-sm text-gray-400">{selectedColorInPicker || editingColorContext.currentColor}</span>}
+      headerAccessory={<span className="text-sm text-gray-400">{selectedColor}</span>}
     >
       <ColorSwatchGrid
         swatches={colorSwatches}
-        selectedColor={selectedColorInPicker}
-        onColorSelect={setSelectedColorInPicker}
+        selectedColor={selectedColor}
+        onColorSelect={onColorSelect}
       />
     </EditingPanel>
   );
@@ -241,30 +243,27 @@ const buildOptionsData = [
     { id: 'throwingHand', title: 'Throwing Hand', options: ['RIGHT HAND', 'LEFT HAND'], layout: 'grid-cols-2' }
 ];
 
-const BuildPanel = ({ editingBuildContext, handleCloseBuildPanel, selectedImageOption, setSelectedImageOption }) => {
+// MODIFIED: No longer needs to manage its own temporary state.
+const BuildPanel = ({ editingBuildContext, handleCloseBuildPanel, buildConfig, onBuildConfigChange }) => {
     if (!editingBuildContext) return null;
 
-    const buildConfig = selectedImageOption;
-    const setBuildConfig = setSelectedImageOption;
-
     const handleSelectOption = (groupId, optionValue) => {
-        setBuildConfig(prevConfig => ({
-            ...prevConfig,
+        onBuildConfigChange({
+            ...buildConfig,
             [groupId]: optionValue
-        }));
+        });
     };
     
     const handleImageSelect = (selection) => {
-        setBuildConfig(prevConfig => ({
-            ...prevConfig,
+        onBuildConfigChange({
+            ...buildConfig,
             imageSelection: selection
-        }));
+        });
     };
 
     return (
         <EditingPanel title={editingBuildContext.title || 'Build Options'} onClose={handleCloseBuildPanel}>
             <div className="space-y-6 pb-4">
-                {/* RESTORED THIS SECTION */}
                 <div>
                     <h3 className="text-sm font-semibold text-gray-400 mb-2">Glove Leather</h3>
                     <div className="grid grid-cols-2 gap-3">
@@ -288,12 +287,12 @@ const BuildPanel = ({ editingBuildContext, handleCloseBuildPanel, selectedImageO
     );
 };
 
-
-const TextPanel = ({ editingTextContext, panelState, setPanelState, handleClose, colorSwatches }) => {
+// MODIFIED: No longer needs to manage its own temporary state.
+const TextPanel = ({ editingTextContext, panelState, onPanelStateChange, handleClose, colorSwatches }) => {
   if (!editingTextContext) return null;
-  const handleTextChange = (e) => setPanelState(prev => ({ ...prev, text: e.target.value }));
-  const handleFontChange = (font) => setPanelState(prev => ({ ...prev, font }));
-  const handleColorChange = (color) => setPanelState(prev => ({ ...prev, color }));
+  const handleTextChange = (e) => onPanelStateChange({ ...panelState, text: e.target.value });
+  const handleFontChange = (font) => onPanelStateChange({ ...panelState, font });
+  const handleColorChange = (color) => onPanelStateChange({ ...panelState, color });
 
   return (
     <EditingPanel
@@ -359,11 +358,13 @@ const [configuration, setConfiguration] = useState({
 });
 
 const [editingColorContext, setEditingColorContext] = useState(null);
-const [selectedColorInPicker, setSelectedColorInPicker] = useState('');
 const [editingBuildContext, setEditingBuildContext] = useState(null);
-const [selectedImageOption, setSelectedImageOption] = useState(null);
 const [editingTextContext, setEditingTextContext] = useState(null);
-const [textPanelState, setTextPanelState] = useState(null);
+
+// REMOVED all temporary state variables
+// const [selectedColorInPicker, setSelectedColorInPicker] = useState('');
+// const [selectedImageOption, setSelectedImageOption] = useState(null);
+// const [textPanelState, setTextPanelState] = useState(null);
 
 const listContainerRef = useRef(null);
 const lastInteractedItemIdRef = useRef(null);
@@ -433,31 +434,31 @@ useEffect(() => {
 
 // --- Handlers for Color Picker ---
 const handleOpenColorPicker = (optionId, optionTitle) => {
-lastInteractedItemIdRef.current = optionId;
-setEditingColorContext({ id: optionId, title: optionTitle, currentColor: configuration[optionId] });
-setSelectedColorInPicker(configuration[optionId]);
-setActiveView('colorPickerPanel');
+    lastInteractedItemIdRef.current = optionId;
+    setEditingColorContext({ id: optionId, title: optionTitle });
+    setActiveView('colorPickerPanel');
 };
 const handleCloseColorPicker = () => setActiveView('configuratorList');
-const handlePaintSectionAndReturn = () => {
-if (editingColorContext) {
-setConfiguration(prev => ({ ...prev, [editingColorContext.id]: selectedColorInPicker }));
-handleCloseColorPicker();
-}
+
+// NEW: Handler for direct color selection
+const handleColorSelect = (color) => {
+    if (editingColorContext) {
+        setConfiguration(prev => ({ ...prev, [editingColorContext.id]: color }));
+    }
 };
 
 const handleApplyColorToAll = () => {
-    if (selectedColorInPicker) {
+    const colorToApply = editingColorContext ? configuration[editingColorContext.id] : null;
+    if (colorToApply) {
       setConfiguration(prev => ({
         ...prev,
-        thumb: selectedColorInPicker,
-        index: selectedColorInPicker,
-        middle: selectedColorInPicker,
-        ring: selectedColorInPicker,
-        pinky: selectedColorInPicker,
+        thumb: colorToApply,
+        index: colorToApply,
+        middle: colorToApply,
+        ring: colorToApply,
+        pinky: colorToApply,
       }));
     }
-    handleCloseColorPicker();
   };
 
 
@@ -465,30 +466,28 @@ const handleApplyColorToAll = () => {
 const handleOpenBuildPanel = (optionId, optionTitle) => {
     lastInteractedItemIdRef.current = optionId;
     setEditingBuildContext({ id: optionId, title: optionTitle });
-    setSelectedImageOption(configuration.build);
     setActiveView('buildPanel');
 };
 const handleCloseBuildPanel = () => setActiveView('configuratorList');
-const handleBuildCallToAction = () => {
-    if (editingBuildContext) {
-        setConfiguration(prev => ({ ...prev, build: selectedImageOption }));
-    }
-    handleCloseBuildPanel();
+
+// NEW: Handler for direct build option changes
+const handleBuildConfigChange = (newBuildData) => {
+    setConfiguration(prev => ({...prev, build: newBuildData}));
 };
 
 // --- Handlers for Text Panel ---
 const handleOpenTextPanel = (optionId, optionTitle) => {
-lastInteractedItemIdRef.current = optionId;
-setEditingTextContext({ id: optionId, title: optionTitle });
-setTextPanelState(configuration[optionId]);
-setActiveView('textPanel');
+    lastInteractedItemIdRef.current = optionId;
+    setEditingTextContext({ id: optionId, title: optionTitle });
+    setActiveView('textPanel');
 };
 const handleCloseTextPanel = () => setActiveView('configuratorList');
-const handleTextPanelConfirm = () => {
-if (editingTextContext) {
-setConfiguration(prev => ({ ...prev, [editingTextContext.id]: textPanelState }));
-}
-handleCloseTextPanel();
+
+// NEW: Handler for direct text changes
+const handleTextPanelChange = (newTextData) => {
+    if (editingTextContext) {
+        setConfiguration(prev => ({...prev, [editingTextContext.id]: newTextData}));
+    }
 };
 
 const GOLDEN_RATIO_CONSTANT = 1.618;
@@ -609,9 +608,28 @@ return (
 </section>
 </>
 )}
-{activeView === 'colorPickerPanel' && ( <ColorPickerPanel editingColorContext={editingColorContext} handleCloseColorPicker={handleCloseColorPicker} selectedColorInPicker={selectedColorInPicker} setSelectedColorInPicker={setSelectedColorInPicker} colorSwatches={colorSwatches}/> )}
-{activeView === 'buildPanel' && ( <BuildPanel editingBuildContext={editingBuildContext} handleCloseBuildPanel={handleCloseBuildPanel} selectedImageOption={selectedImageOption} setSelectedImageOption={setSelectedImageOption}/> )}
-{activeView === 'textPanel' && ( <TextPanel editingTextContext={editingTextContext} panelState={textPanelState} setPanelState={setTextPanelState} handleClose={handleCloseTextPanel} colorSwatches={colorSwatches}/> )}
+
+{activeView === 'colorPickerPanel' && ( <ColorPickerPanel 
+    editingColorContext={editingColorContext} 
+    handleCloseColorPicker={handleCloseColorPicker} 
+    colorSwatches={colorSwatches}
+    onColorSelect={handleColorSelect}
+    selectedColor={editingColorContext ? configuration[editingColorContext.id] : ''}
+/> )}
+{activeView === 'buildPanel' && ( <BuildPanel 
+    editingBuildContext={editingBuildContext} 
+    handleCloseBuildPanel={handleCloseBuildPanel} 
+    buildConfig={configuration.build}
+    onBuildConfigChange={handleBuildConfigChange}
+/> )}
+{activeView === 'textPanel' && ( <TextPanel 
+    editingTextContext={editingTextContext} 
+    panelState={editingTextContext ? configuration[editingTextContext.id] : null} 
+    onPanelStateChange={handleTextPanelChange}
+    handleClose={handleCloseTextPanel} 
+    colorSwatches={colorSwatches}
+/> )}
+
 </div>
 <footer className="flex-shrink-0 bg-[#161616] flex items-center justify-start mt-[10px] pb-[20px] px-[14px] lg:absolute lg:right-8 lg:bottom-8 lg:w-80 lg:z-10">
 {activeView === 'colorPickerPanel' ? (
@@ -621,23 +639,26 @@ return (
     <svg className="w-5 h-5 mr-[5px]" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg>
 </button>
 <div className="w-full grid grid-cols-1">
-    <ApplyActionButton
-        onClick={handlePaintSectionAndReturn}
-        ariaLabel="Apply color to section and return"
+    <ContinueButton
+        onClick={handleCloseColorPicker}
+        ariaLabel="Continue and return to list"
+        label="Continue"
     />
 </div>
 </div>
 )
 : activeView === 'buildPanel' ? (
-    <ApplyActionButton
-        onClick={handleBuildCallToAction}
-        ariaLabel="Confirm build options"
+    <ContinueButton
+        onClick={handleCloseBuildPanel}
+        ariaLabel="Continue and return to list"
+        label="Continue"
     />
 )
 : activeView === 'textPanel' ? (
-    <ApplyActionButton
-        onClick={handleTextPanelConfirm}
-        ariaLabel="Confirm text customization"
+    <ContinueButton
+        onClick={handleCloseTextPanel}
+        ariaLabel="Continue and return to list"
+        label="Continue"
     />
 ) : activeView === 'configuratorList' ? ( isSummaryPanelVisible ? ( <div className="w-full grid grid-cols-[1fr_1.618fr] gap-[10px]"><button type="button" onClick={() => setIsSummaryPanelVisible(false)} className="flex items-center justify-center px-4 bg-[#393939] hover:bg-[#727272] active:bg-[#222222] rounded text-base font-semibold text-white h-[56px]" aria-label="Back to Design"><svg width="34" height="14" viewBox="0 0 34 16" fill="none" xmlns="http://www.w3.org/2000/svg" className="mr-[5px]"><path d="M15.92 8H1.5M1.5 8L8.5 1M1.5 8L8.5 15" stroke="white" strokeWidth="2" strokeLinecap="round"/></svg><span>Back to Design</span></button>
 <PrimaryCallToActionButton
