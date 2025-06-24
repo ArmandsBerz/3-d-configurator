@@ -182,7 +182,7 @@ const SummaryPanel = ({ onClose, configuration }) => {
     };
 
     return (
-        <div className="absolute inset-0 bg-[#161616] z-20 h-full lg:inset-auto lg:bottom-28 lg:right-8 lg:w-96 lg:h-auto lg:rounded-lg lg:shadow-2xl">
+        <div className="absolute inset-0 bg-[#161616] z-20 h-full">
             <EditingPanel title="Order Summary" onClose={onClose}>
                 <div className="text-base text-gray-300 space-y-4 p-1">
                     <div>
@@ -566,7 +566,7 @@ return (
 <>
 <section 
     ref={listContainerRef} 
-    className={`px-4 bg-[#161616] h-full overflow-y-auto`}>
+    className={`px-4 bg-[#161616] h-full overflow-y-auto ${isSummaryPanelVisible ? 'opacity-50 pointer-events-none' : ''}`}>
 <button data-id="build" className="w-full h-[56px] bg-[#1C1C1C] flex items-center justify-between px-4 mb-[10px] cursor-pointer hover:bg-[#2A2A2A] rounded-md" onClick={() => handleOpenBuildPanel('build', 'Build Options')}>
 <div className="flex items-center"><svg viewBox="0 0 10 16" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-4 w-auto mr-3"><path d="M1 1L8 8L1.10769 15" stroke="white" strokeWidth={2}/></svg><span className="text-lg">Build</span></div>
 <span className="text-sm text-gray-400">Modify</span>
@@ -606,6 +606,12 @@ return (
 </div>
 </button>
 </section>
+{isSummaryPanelVisible && (
+    <SummaryPanel 
+        onClose={() => setIsSummaryPanelVisible(false)} 
+        configuration={configuration} 
+    />
+)}
 </>
 )}
 
@@ -681,12 +687,6 @@ return (
 ) : null }
 </footer>
 
-{isSummaryPanelVisible && (
-    <SummaryPanel 
-        onClose={() => setIsSummaryPanelVisible(false)} 
-        configuration={configuration} 
-    />
-)}
 </div>
 )}
 </div>
