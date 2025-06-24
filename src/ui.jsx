@@ -285,6 +285,7 @@ const BuildPanel = ({ editingBuildContext, handleCloseBuildPanel, buildConfig, o
 
 const TextPanel = ({ editingTextContext, panelState, onPanelStateChange, handleClose, colorSwatches }) => {
   if (!editingTextContext) return null;
+
   const handleTextChange = (e) => onPanelStateChange({ ...panelState, text: e.target.value });
   const handleFontChange = (font) => onPanelStateChange({ ...panelState, font });
   const handleColorChange = (color) => onPanelStateChange({ ...panelState, color });
@@ -441,12 +442,13 @@ const UI = () => {
     };
     const handleCloseColorPicker = () => setActiveView('configuratorList');
 
-    const handleColorSelect = (color) => {
-        if (editingColorContext) {
-            setConfiguration(prev => ({ ...prev, [editingColorContext.id]: color }));
+    const handleColorSelect = (color, contextId) => {
+        const id = contextId || (editingColorContext ? editingColorContext.id : null);
+        if (id) {
+            setConfiguration(prev => ({ ...prev, [id]: color }));
         }
     };
-
+    
     const handleApplyColorToAll = () => {
         const colorToApply = editingColorContext ? configuration[editingColorContext.id] : null;
         if (colorToApply) {
@@ -478,10 +480,12 @@ const UI = () => {
         setActiveView('textPanel');
     };
     const handleCloseTextPanel = () => setActiveView('configuratorList');
-
-    const handleTextPanelChange = (newTextData) => {
-        if (editingTextContext) {
-            setConfiguration(prev => ({...prev, [editingTextContext.id]: newTextData}));
+    
+    // MODIFIED: This handler now accepts a contextId to work with the desktop view
+    const handleTextPanelChange = (newTextData, contextId) => {
+        const id = contextId || (editingTextContext ? editingTextContext.id : null);
+        if (id) {
+            setConfiguration(prev => ({...prev, [id]: newTextData}));
         }
     };
 
@@ -516,7 +520,7 @@ const UI = () => {
 
     return (
         <div className="flex flex-col lg:relative h-[100dvh] bg-[#161616] text-white">
-            <main className={`p-4 flex flex-col items-center justify-center relative lg:absolute lg:inset-0 bg-[#161616] overflow-auto ${ isVisualizationExpanded ? 'flex-grow h-full' : '' }`} style={!isVisualizationExpanded ? { flexBasis: `${VIZ_PROPORTION * 100}%` } : {}}>
+            <main className={`p-4 flex flex-col items-center justify-center relative bg-[#161616] overflow-auto h-full w-full ${ isVisualizationExpanded ? 'flex-grow' : 'lg:absolute lg:inset-0'}`} style={!isDesktop && !isVisualizationExpanded ? { flexBasis: `${VIZ_PROPORTION * 100}%` } : {}}>
                 <div className="absolute top-[20px] left-[20px] w-[70px] h-[49px] bg-gray-300 bg-opacity-75 rounded z-10 flex items-center justify-center"><p className="font-bold text-xl text-gray-900">LOGO</p></div>
                 <button
                     className="absolute top-[20px] right-[20px] z-20 p-2 rounded-md hover:bg-gray-800 hover:bg-opacity-50"
@@ -525,7 +529,7 @@ const UI = () => {
                 >
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-[31px] h-[31px] text-[#FFFFFF]"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>
                 </button>
-                <img src={`${process.env.PUBLIC_URL}/gloves.png`} alt="Glove Visualization" className="object-contain max-w-full max-h-full z-10" />
+                <img src={`${process.env.PUBLIC_URL}/gloves.png`} alt="Glove Visualization" className="object-contain max-w-full max-h-full z-0" />
                 <div className="absolute bottom-4 inset-x-0 flex items-center justify-between text-xs z-10">
                     <button className="p-1 hover:bg-gray-800 hover:bg-opacity-50 rounded-md cursor-pointer ml-[14px]" onClick={() => setIsVisualizationExpanded(!isVisualizationExpanded)} aria-label={isVisualizationExpanded ? "Collapse visualization" : "Expand visualization"}>
                         {isVisualizationExpanded ? ( <svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-7 h-7"><path d="M17.3176 3.39899C16.9681 3.39899 16.633 3.53795 16.3856 3.78514C16.1386 4.03232 15.9997 4.3675 15.9997 4.71725V10.3042C15.9997 10.9906 16.5561 11.547 17.2424 11.547L22.8324 11.547C23.1819 11.547 23.5173 11.408 23.7644 11.1609C24.0116 10.9139 24.1505 10.5785 24.1505 10.229C24.1505 9.87922 24.0116 9.54402 23.7644 9.29685C23.5173 9.04967 23.1819 8.9107 22.8324 8.9107H20.501L27.167 2.24612C27.4123 1.99854 27.5496 1.66397 27.5488 1.31541C27.5482 0.966682 27.4093 0.632697 27.1629 0.386154C26.9164 0.139575 26.5824 0.000809714 26.2337 1.87161e-06C25.8852 -0.000604998 25.5505 0.136743 25.3029 0.382111L18.6359 7.04824V4.71693C18.6359 4.36719 18.4969 4.03199 18.2498 3.78482C18.0026 3.53764 17.6673 3.39899 17.3176 3.39899Z" fill="white"/><path d="M24.1489 17.3166C24.1489 16.9671 24.0099 16.632 23.7627 16.3846C23.5155 16.1377 23.1804 15.9987 22.8306 15.9987H17.2437C16.5573 15.9987 16.0008 16.5551 16.0008 17.2414V22.8314C16.0008 23.1809 16.1398 23.5163 16.387 23.7634C16.634 24.0106 16.9694 24.1496 17.3189 24.1496C17.6686 24.1496 18.0038 24.0106 18.251 23.7634C18.4982 23.5163 18.6372 23.1809 18.6372 22.8314V20.5L25.3017 27.166C25.5493 27.4113 25.8839 27.5487 26.2324 27.5478C26.5812 27.5472 26.9152 27.4083 27.1617 27.1619C27.4083 26.9154 27.547 26.5814 27.5478 26.2328C27.5485 25.8843 27.4111 25.5495 27.1657 25.3019L20.4996 18.6349H22.8309C23.1807 18.6349 23.5159 18.496 23.763 18.2488C24.0102 18.0016 24.1489 17.6664 24.1489 17.3166Z" fill="white"/><path d="M10.2312 24.1479C10.5807 24.1479 10.9159 24.0089 11.1632 23.7617C11.4102 23.5146 11.5491 23.1794 11.5491 22.8296V17.2427C11.5491 16.5563 10.9928 15.9999 10.3064 15.9999H4.71642C4.36691 15.9999 4.03154 16.1388 3.7844 16.386C3.53724 16.633 3.39829 16.9684 3.39829 17.3179C3.39829 17.6677 3.53724 18.0029 3.7844 18.25C4.03156 18.4972 4.36691 18.6362 4.71642 18.6362H7.04786L0.381872 25.3008C0.136529 25.5483 -0.0008042 25.8829 3.54305e-06 26.2315C0.000610281 26.5802 0.139565 26.9142 0.385917 27.1607C0.632472 27.4073 0.966407 27.5461 1.31508 27.5469C1.66358 27.5475 1.9983 27.4101 2.24591 27.1648L8.91293 20.4986V22.8299C8.91293 23.1797 9.05189 23.5149 9.29905 23.7621C9.54621 24.0092 9.88149 24.1479 10.2312 24.1479Z" fill="white"/><path d="M3.39996 10.2302C3.39996 10.5797 3.53893 10.9149 3.78612 11.1622C4.0333 11.4092 4.36848 11.5482 4.71822 11.5482L10.3052 11.5482C10.9916 11.5482 11.548 10.9918 11.548 10.3055L11.548 4.71544C11.548 4.36594 11.409 4.03057 11.1618 3.78343C10.9149 3.53627 10.5795 3.39731 10.2299 3.39731C9.88019 3.39731 9.54499 3.53627 9.29783 3.78343C9.05064 4.03059 8.91168 4.36594 8.91168 4.71544V7.04688L2.2471 0.380895C1.99951 0.135552 1.66495 -0.00178075 1.31639 -0.00097302C0.967659 -0.000366296 0.633674 0.138588 0.387132 0.384941C0.140553 0.631495 0.00178728 0.96543 0.00097943 1.31411C0.000372556 1.6626 0.137721 1.99733 0.383088 2.24493L7.04922 8.91195H4.71791C4.36817 8.91195 4.03296 9.05091 3.7858 9.29807C3.53861 9.54523 3.39996 9.88052 3.39996 10.2302Z" fill="white"/></svg>
@@ -544,141 +548,304 @@ const UI = () => {
                 </div>
             </main>
 
+            {/* This outer container for controls is now just a simple fragment for mobile,
+                and doesn't render at all on desktop, as the floating panels are handled below. */}
             {!isVisualizationExpanded && (
-                <div className="flex flex-col overflow-hidden bg-[#161616]" style={{ flexBasis: `${CONTROLS_PROPORTION * 100}%` }}>
-                    <div className="relative flex-grow overflow-hidden lg:absolute lg:left-0 lg:top-0 lg:bottom-0 lg:w-96 lg:z-10">
-                        {activeView === 'configuratorList' && (
-                            <>
-                                <ScrollGradient position="top" isVisible={topGradientVisible} />
-                                <ScrollGradient position="bottom" isVisible={bottomGradientVisible} />
-                            </>
-                        )}
-                        
-                        {activeView === 'configuratorList' && (
-                            <>
-                                <section 
-                                    ref={listContainerRef} 
-                                    className={`px-4 bg-[#161616] h-full overflow-y-auto ${isSummaryPanelVisible ? 'opacity-50 pointer-events-none' : ''}`}>
-                                    <button data-id="build" className="w-full h-[56px] bg-[#1C1C1C] flex items-center justify-between px-4 mb-[10px] cursor-pointer hover:bg-[#2A2A2A] rounded-md" onClick={() => handleOpenBuildPanel('build', 'Build Options')}>
-                                        <div className="flex items-center"><svg viewBox="0 0 10 16" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-4 w-auto mr-3"><path d="M1 1L8 8L1.10769 15" stroke="white" strokeWidth={2}/></svg><span className="text-lg">Build</span></div>
-                                        <span className="text-sm text-gray-400">Modify</span>
-                                    </button>
-                                    <button data-id="thumb" className="w-full h-[56px] bg-[#1C1C1C] flex items-center justify-between px-4 mb-[10px] cursor-pointer hover:bg-[#2A2A2A] rounded-md" onClick={() => handleOpenColorPicker('thumb', 'Thumb Color')}>
-                                        <div className="flex items-center"><svg viewBox="0 0 10 16" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-4 w-auto mr-3"><path d="M1 1L8 8L1.10769 15" stroke="white" strokeWidth={2}/></svg><span className="text-lg">Thumb</span></div>
+                isDesktop ? (
+                    // --- DESKTOP FLOATING UI ---
+                    <>
+                        {/* Layer 2: The Left Floating Accordion Panel */}
+                        <div className="absolute top-0 left-0 bottom-0 w-96 z-10 bg-[#161616] flex flex-col p-4 pointer-events-none">
+                            <div className="flex-grow overflow-y-auto space-y-4 pointer-events-auto">
+                                <h2 className="text-xl font-bold border-b border-gray-700 pb-2">Glove Customizer</h2>
+                                
+                                {/* Accordion Content Goes Here */}
+                                <div className="p-4 bg-[#1C1C1C] rounded-md">
+                                    <h3 className="text-lg font-semibold mb-3">Build Options</h3>
+                                    <div className="space-y-6">
+                                        <div>
+                                            <h3 className="text-sm font-semibold text-gray-400 mb-2">Glove Leather</h3>
+                                            <div className="grid grid-cols-2 gap-3">
+                                                <ImageOptionCard id="imgOpt1" title="Japanese Kip" isSelected={configuration.build.imageSelection === 'imgOpt1'} onSelect={() => handleBuildConfigChange({...configuration.build, imageSelection: 'imgOpt1'})}/>
+                                                <ImageOptionCard id="imgOpt2" title="American Steerhide" isSelected={configuration.build.imageSelection === 'imgOpt2'} onSelect={() => handleBuildConfigChange({...configuration.build, imageSelection: 'imgOpt2'})}/>
+                                            </div>
+                                        </div>
+                                        {buildOptionsData.map((group) => (
+                                            <OptionGroup
+                                                key={group.id}
+                                                title={group.title}
+                                                options={group.options}
+                                                layout={group.layout}
+                                                selectedOption={configuration.build[group.id]}
+                                                onSelectOption={(value) => handleBuildConfigChange({ ...configuration.build, [group.id]: value })}
+                                            />
+                                        ))}
+                                    </div>
+                                </div>
+                                
+                                <div className="p-4 bg-[#1C1C1C] rounded-md">
+                                    <div className="flex justify-between items-center mb-3">
+                                        <h3 className="text-lg font-semibold">Thumb Color</h3>
                                         <span className="w-6 h-6 rounded-full" style={{ backgroundColor: configuration.thumb }}></span>
-                                    </button>
-                                    <button data-id="index" className="w-full h-[56px] bg-[#1C1C1C] flex items-center justify-between px-4 mb-[10px] cursor-pointer hover:bg-[#2A2A2A] rounded-md" onClick={() => handleOpenColorPicker('index', 'Index Color')}>
-                                        <div className="flex items-center"><svg viewBox="0 0 10 16" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-4 w-auto mr-3"><path d="M1 1L8 8L1.10769 15" stroke="white" strokeWidth={2}/></svg><span className="text-lg">Index</span></div>
-                                        <span className="w-6 h-6 rounded-full" style={{ backgroundColor: configuration.index }}></span>
-                                    </button>
-                                    <button data-id="middle" className="w-full h-[56px] bg-[#1C1C1C] flex items-center justify-between px-4 mb-[10px] cursor-pointer hover:bg-[#2A2A2A] rounded-md" onClick={() => handleOpenColorPicker('middle', 'Middle Color')}>
-                                        <div className="flex items-center"><svg viewBox="0 0 10 16" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-4 w-auto mr-3"><path d="M1 1L8 8L1.10769 15" stroke="white" strokeWidth={2}/></svg><span className="text-lg">Middle</span></div>
-                                        <span className="w-6 h-6 rounded-full" style={{ backgroundColor: configuration.middle }}></span>
-                                    </button>
-                                    <button data-id="ring" className="w-full h-[56px] bg-[#1C1C1C] flex items-center justify-between px-4 mb-[10px] cursor-pointer hover:bg-[#2A2A2A] rounded-md" onClick={() => handleOpenColorPicker('ring', 'Ring Color')}>
-                                        <div className="flex items-center"><svg viewBox="0 0 10 16" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-4 w-auto mr-3"><path d="M1 1L8 8L1.10769 15" stroke="white" strokeWidth={2}/></svg><span className="text-lg">Ring</span></div>
-                                        <span className="w-6 h-6 rounded-full" style={{ backgroundColor: configuration.ring }}></span>
-                                    </button>
-                                    <button data-id="pinky" className="w-full h-[56px] bg-[#1C1C1C] flex items-center justify-between px-4 mb-[10px] cursor-pointer hover:bg-[#2A2A2A] rounded-md" onClick={() => handleOpenColorPicker('pinky', 'Pinky Color')}>
-                                        <div className="flex items-center"><svg viewBox="0 0 10 16" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-4 w-auto mr-3"><path d="M1 1L8 8L1.10769 15" stroke="white" strokeWidth={2}/></svg><span className="text-lg">Pinky</span></div>
-                                        <span className="w-6 h-6 rounded-full" style={{ backgroundColor: configuration.pinky }}></span>
-                                    </button>
-                                    <button data-id="thumbName" className="w-full h-[56px] bg-[#1C1C1C] flex items-center justify-between px-4 mb-[10px] cursor-pointer hover:bg-[#2A2A2A] rounded-md" onClick={() => handleOpenTextPanel('thumbName', 'Thumb Name')}>
-                                        <div className="flex items-center"><svg viewBox="0 0 10 16" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-4 w-auto mr-3"><path d="M1 1L8 8L1.10769 15" stroke="white" strokeWidth={2}/></svg><span className="text-lg">Thumb Name</span></div>
-                                        <div className="flex items-center space-x-3">
-                                            <span className="text-sm text-gray-400 truncate max-w-[100px]">{configuration.thumbName.text}</span>
-                                            <span className="w-6 h-6 rounded-full" style={{ backgroundColor: configuration.thumbName.color }}></span>
-                                        </div>
-                                    </button>
-                                    <button data-id="pinkyName" className="w-full h-[56px] bg-[#1C1C1C] flex items-center justify-between px-4 mb-[10px] cursor-pointer hover:bg-[#2A2A2A] rounded-md" onClick={() => handleOpenTextPanel('pinkyName', 'Pinky Name')}>
-                                        <div className="flex items-center"><svg viewBox="0 0 10 16" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-4 w-auto mr-3"><path d="M1 1L8 8L1.10769 15" stroke="white" strokeWidth={2}/></svg><span className="text-lg">Pinky Name</span></div>
-                                        <div className="flex items-center space-x-3">
-                                            <span className="text-sm text-gray-400 truncate max-w-[100px]">{configuration.pinkyName.text}</span>
-                                            <span className="w-6 h-6 rounded-full" style={{ backgroundColor: configuration.pinkyName.color }}></span>
-                                        </div>
-                                    </button>
-                                </section>
-                                {isSummaryPanelVisible && (
-                                    <SummaryPanel 
-                                        onClose={() => setIsSummaryPanelVisible(false)} 
-                                        configuration={configuration} 
-                                    />
-                                )}
-                            </>
-                        )}
-
-                        {activeView === 'colorPickerPanel' && ( <ColorPickerPanel 
-                            editingColorContext={editingColorContext} 
-                            handleCloseColorPicker={handleCloseColorPicker} 
-                            colorSwatches={colorSwatches}
-                            onColorSelect={handleColorSelect}
-                            selectedColor={editingColorContext ? configuration[editingColorContext.id] : ''}
-                        /> )}
-                        {activeView === 'buildPanel' && ( <BuildPanel 
-                            editingBuildContext={editingBuildContext} 
-                            handleCloseBuildPanel={handleCloseBuildPanel} 
-                            buildConfig={configuration.build}
-                            onBuildConfigChange={handleBuildConfigChange}
-                        /> )}
-                        {activeView === 'textPanel' && ( <TextPanel 
-                            editingTextContext={editingTextContext} 
-                            panelState={editingTextContext ? configuration[editingTextContext.id] : null} 
-                            onPanelStateChange={handleTextPanelChange}
-                            handleClose={handleCloseTextPanel} 
-                            colorSwatches={colorSwatches}
-                        /> )}
-
-                    </div>
-                    <footer className="flex-shrink-0 bg-[#161616] flex items-center justify-start mt-[10px] pb-[20px] px-[14px] lg:absolute lg:right-8 lg:bottom-8 lg:w-80 lg:z-10">
-                        {activeView === 'colorPickerPanel' ? (
-                            <div className="w-full grid grid-cols-[1fr_1.618fr] gap-[10px]">
-                                <button type="button" onClick={handleApplyColorToAll} className="flex items-center justify-between px-4 bg-[#393939] hover:bg-[#727272] active:bg-[#222222] rounded text-base font-semibold text-white h-[56px]" aria-label="Apply color to all sections">
-                                    <span className="ml-[5px]">Apply to All</span>
-                                    <svg className="w-5 h-5 mr-[5px]" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg>
-                                </button>
-                                <div className="w-full grid grid-cols-1">
-                                    <ContinueButton
-                                        onClick={handleCloseColorPicker}
-                                        ariaLabel="Continue and return to list"
-                                        label="Continue"
+                                    </div>
+                                    <ColorSwatchGrid
+                                        swatches={colorSwatches}
+                                        selectedColor={configuration.thumb}
+                                        onColorSelect={(color) => handleColorSelect(color, 'thumb')}
                                     />
                                 </div>
+                                
+                                {/* FILLED IN MISSING ITEMS */}
+                                <div className="p-4 bg-[#1C1C1C] rounded-md">
+                                    <div className="flex justify-between items-center mb-3">
+                                        <h3 className="text-lg font-semibold">Index Color</h3>
+                                        <span className="w-6 h-6 rounded-full" style={{ backgroundColor: configuration.index }}></span>
+                                    </div>
+                                    <ColorSwatchGrid
+                                        swatches={colorSwatches}
+                                        selectedColor={configuration.index}
+                                        onColorSelect={(color) => handleColorSelect(color, 'index')}
+                                    />
+                                </div>
+                                <div className="p-4 bg-[#1C1C1C] rounded-md">
+                                    <div className="flex justify-between items-center mb-3">
+                                        <h3 className="text-lg font-semibold">Middle Color</h3>
+                                        <span className="w-6 h-6 rounded-full" style={{ backgroundColor: configuration.middle }}></span>
+                                    </div>
+                                    <ColorSwatchGrid
+                                        swatches={colorSwatches}
+                                        selectedColor={configuration.middle}
+                                        onColorSelect={(color) => handleColorSelect(color, 'middle')}
+                                    />
+                                </div>
+                                <div className="p-4 bg-[#1C1C1C] rounded-md">
+                                    <div className="flex justify-between items-center mb-3">
+                                        <h3 className="text-lg font-semibold">Ring Color</h3>
+                                        <span className="w-6 h-6 rounded-full" style={{ backgroundColor: configuration.ring }}></span>
+                                    </div>
+                                    <ColorSwatchGrid
+                                        swatches={colorSwatches}
+                                        selectedColor={configuration.ring}
+                                        onColorSelect={(color) => handleColorSelect(color, 'ring')}
+                                    />
+                                </div>
+                                <div className="p-4 bg-[#1C1C1C] rounded-md">
+                                    <div className="flex justify-between items-center mb-3">
+                                        <h3 className="text-lg font-semibold">Pinky Color</h3>
+                                        <span className="w-6 h-6 rounded-full" style={{ backgroundColor: configuration.pinky }}></span>
+                                    </div>
+                                    <ColorSwatchGrid
+                                        swatches={colorSwatches}
+                                        selectedColor={configuration.pinky}
+                                        onColorSelect={(color) => handleColorSelect(color, 'pinky')}
+                                    />
+                                </div>
+                                <div className="p-4 bg-[#1C1C1C] rounded-md space-y-5">
+                                    <h3 className="text-lg font-semibold">Thumb Name</h3>
+                                    <div>
+                                        <h3 className="text-sm font-semibold text-gray-400 mb-2">Text</h3>
+                                        <input type="text" className="w-full p-3 bg-[#2A2A2A] text-white rounded-md placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:outline-none" value={configuration.thumbName.text} onChange={(e) => handleTextPanelChange({ ...configuration.thumbName, text: e.target.value }, 'thumbName')} placeholder="ENTER YOUR TEXT..."/>
+                                    </div>
+                                    <div>
+                                        <h3 className="text-sm font-semibold text-gray-400 mb-2">Font</h3>
+                                        <div className="grid grid-cols-2 gap-3">
+                                            <button onClick={() => handleTextPanelChange({ ...configuration.thumbName, font: 'SCRIPT' }, 'thumbName')} className={`py-3 rounded-md text-base font-bold ${configuration.thumbName.font === 'SCRIPT' ? 'bg-white text-black' : 'bg-[#2a2a2a] hover:bg-[#333333] text-white'}`}>SCRIPT</button>
+                                            <button onClick={() => handleTextPanelChange({ ...configuration.thumbName, font: 'BLOCK' }, 'thumbName')} className={`py-3 rounded-md text-base font-bold ${configuration.thumbName.font === 'BLOCK' ? 'bg-white text-black' : 'bg-[#2a2a2a] hover:bg-[#333333] text-white'}`}>BLOCK</button>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <h3 className="text-sm font-semibold text-gray-400 mb-2">Color</h3>
+                                        <ColorSwatchGrid
+                                            swatches={colorSwatches}
+                                            selectedColor={configuration.thumbName.color}
+                                            onColorSelect={(color) => handleTextPanelChange({ ...configuration.thumbName, color: color }, 'thumbName')}
+                                        />
+                                    </div>
+                                </div>
+                                <div className="p-4 bg-[#1C1C1C] rounded-md space-y-5">
+                                    <h3 className="text-lg font-semibold">Pinky Name</h3>
+                                    <div>
+                                        <h3 className="text-sm font-semibold text-gray-400 mb-2">Text</h3>
+                                        <input type="text" className="w-full p-3 bg-[#2A2A2A] text-white rounded-md placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:outline-none" value={configuration.pinkyName.text} onChange={(e) => handleTextPanelChange({ ...configuration.pinkyName, text: e.target.value }, 'pinkyName')} placeholder="ENTER YOUR TEXT..."/>
+                                    </div>
+                                    <div>
+                                        <h3 className="text-sm font-semibold text-gray-400 mb-2">Font</h3>
+                                        <div className="grid grid-cols-2 gap-3">
+                                            <button onClick={() => handleTextPanelChange({ ...configuration.pinkyName, font: 'SCRIPT' }, 'pinkyName')} className={`py-3 rounded-md text-base font-bold ${configuration.pinkyName.font === 'SCRIPT' ? 'bg-white text-black' : 'bg-[#2a2a2a] hover:bg-[#333333] text-white'}`}>SCRIPT</button>
+                                            <button onClick={() => handleTextPanelChange({ ...configuration.pinkyName, font: 'BLOCK' }, 'pinkyName')} className={`py-3 rounded-md text-base font-bold ${configuration.pinkyName.font === 'BLOCK' ? 'bg-white text-black' : 'bg-[#2a2a2a] hover:bg-[#333333] text-white'}`}>BLOCK</button>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <h3 className="text-sm font-semibold text-gray-400 mb-2">Color</h3>
+                                        <ColorSwatchGrid
+                                            swatches={colorSwatches}
+                                            selectedColor={configuration.pinkyName.color}
+                                            onColorSelect={(color) => handleTextPanelChange({ ...configuration.pinkyName, color: color }, 'pinkyName')}
+                                        />
+                                    </div>
+                                </div>
                             </div>
-                        )
-                        : activeView === 'buildPanel' ? (
-                            <ContinueButton
-                                onClick={handleCloseBuildPanel}
-                                ariaLabel="Continue and return to list"
-                                label="Continue"
-                            />
-                        )
-                        : activeView === 'textPanel' ? (
-                            <ContinueButton
-                                onClick={handleCloseTextPanel}
-                                ariaLabel="Continue and return to list"
-                                label="Continue"
-                            />
-                        ) : activeView === 'configuratorList' ? ( isSummaryPanelVisible ? ( <div className="w-full grid grid-cols-[1fr_1.618fr] gap-[10px]"><button type="button" onClick={() => setIsSummaryPanelVisible(false)} className="flex items-center justify-center px-4 bg-[#393939] hover:bg-[#727272] active:bg-[#222222] rounded text-base font-semibold text-white h-[56px]" aria-label="Back to Design"><svg width="34" height="14" viewBox="0 0 34 16" fill="none" xmlns="http://www.w3.org/2000/svg" className="mr-[5px]"><path d="M15.92 8H1.5M1.5 8L8.5 1M1.5 8L8.5 15" stroke="white" strokeWidth="2" strokeLinecap="round"/></svg><span>Back to Design</span></button>
-                        <PrimaryCallToActionButton
-                            label="Complete Order"
-                            onClick={() => alert('Complete Order clicked!')}
-                            ariaLabel="Complete Order"
-                        />
-                        </div>)
-                        : ( <div className="w-full grid grid-cols-[1fr_1.618fr] gap-[10px]">
-                        <button type="button" onClick={() => setIsSummaryPanelVisible(true)} className="flex items-center justify-center space-x-2 px-4 bg-[#393939] hover:bg-[#727272] active:bg-[#222222] rounded text-base font-semibold text-white h-[56px]" aria-label="Open summary panel">
-                        <svg width="22" height="22" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg"><g opacity="0.3"><path d="M17.1875 0H4.8125C3.53619 0 2.31204 0.507022 1.40953 1.40953C0.507021 2.31204 0 3.53619 0 4.8125V17.1875C0 18.4638 0.507021 19.688 1.40953 20.5905C2.31204 21.493 3.53619 22 4.8125 22H17.1875C18.4638 22 19.688 21.493 20.5905 20.5905C21.493 19.688 22 18.4638 22 17.1875V4.8125C22 3.53619 21.493 2.31204 20.5905 1.40953C19.688 0.507022 18.4638 0 17.1875 0ZM20.625 17.1875C20.625 18.0992 20.2628 18.9735 19.6181 19.6181C18.9735 20.2628 18.0992 20.625 17.1875 20.625H4.8125C3.9008 20.625 3.02653 20.2628 2.38185 19.6181C1.73717 18.9735 1.375 18.0992 1.375 17.1875V4.8125C1.375 3.9008 1.73717 3.02653 2.38185 2.38185C3.02654 1.73718 3.9008 1.375 4.8125 1.375H17.1875C18.0992 1.375 18.9735 1.73717 19.6181 2.38185C20.2628 3.02654 20.625 3.9008 20.625 4.8125V17.1875Z" fill="white"/><path d="M8.9375 5.5H17.1875V6.875H8.9375V5.5Z" fill="white"/><path d="M8.9375 10.3125H17.1875V11.6875H8.9375V10.3125Z" fill="white"/><path d="M8.9375 15.125H17.1875V16.5H8.9375V15.125Z" fill="white"/><path d="M7.5625 6.1875C7.5625 6.94681 6.94681 7.5625 6.1875 7.5625C5.42819 7.5625 4.8125 6.94681 4.8125 6.1875C4.8125 5.42819 5.42819 4.8125 6.1875 4.8125C6.94681 4.8125 7.5625 5.42819 7.5625 6.1875Z" fill="white"/><path d="M7.5625 11C7.5625 11.7593 6.94681 12.375 6.1875 12.375C5.42819 12.375 4.8125 11.7593 4.8125 11C4.8125 10.2407 5.42819 9.625 6.1875 9.625C6.94681 9.625 7.5625 10.2407 7.5625 11Z" fill="white"/><path d="M7.5625 15.8125C7.5625 16.5718 6.94681 17.1875 6.1875 17.1875C5.42819 17.1875 4.8125 16.5718 4.8125 15.8125C4.8125 15.0532 5.42819 14.4375 6.1875 14.4375C6.94681 14.4375 7.5625 15.0532 7.5625 15.8125Z" fill="white"/></g></svg>
-                        <span>Overview</span>
-                        </button>
-                        <PrimaryCallToActionButton
-                            label="Review & Order"
-                            onClick={() => setIsSummaryPanelVisible(true)}
-                        />
                         </div>
-                        )
-                        ) : null }
-                    </footer>
-                </div>
+
+                        {/* Layer 3: The Right Floating Action Buttons */}
+                        <footer className="absolute bottom-8 right-8 w-80 z-10 pointer-events-auto">
+                           <div className="w-full grid grid-cols-[1fr_1.618fr] gap-[10px]">
+                                <button type="button" onClick={() => setIsSummaryPanelVisible(true)} className="flex items-center justify-center space-x-2 px-4 bg-[#393939] hover:bg-[#727272] active:bg-[#222222] rounded text-base font-semibold text-white h-[56px]" aria-label="Open summary panel">
+                                <svg width="22" height="22" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg"><g opacity="0.3"><path d="M17.1875 0H4.8125C3.53619 0 2.31204 0.507022 1.40953 1.40953C0.507021 2.31204 0 3.53619 0 4.8125V17.1875C0 18.4638 0.507021 19.688 1.40953 20.5905C2.31204 21.493 3.53619 22 4.8125 22H17.1875C18.4638 22 19.688 21.493 20.5905 20.5905C21.493 19.688 22 18.4638 22 17.1875V4.8125C22 3.53619 21.493 2.31204 20.5905 1.40953C19.688 0.507022 18.4638 0 17.1875 0ZM20.625 17.1875C20.625 18.0992 20.2628 18.9735 19.6181 19.6181C18.9735 20.2628 18.0992 20.625 17.1875 20.625H4.8125C3.9008 20.625 3.02653 20.2628 2.38185 19.6181C1.73717 18.9735 1.375 18.0992 1.375 17.1875V4.8125C1.375 3.9008 1.73717 3.02653 2.38185 2.38185C3.02654 1.73718 3.9008 1.375 4.8125 1.375H17.1875C18.0992 1.375 18.9735 1.73717 19.6181 2.38185C20.2628 3.02654 20.625 3.9008 20.625 4.8125V17.1875Z" fill="white"/><path d="M8.9375 5.5H17.1875V6.875H8.9375V5.5Z" fill="white"/><path d="M8.9375 10.3125H17.1875V11.6875H8.9375V10.3125Z" fill="white"/><path d="M8.9375 15.125H17.1875V16.5H8.9375V15.125Z" fill="white"/><path d="M7.5625 6.1875C7.5625 6.94681 6.94681 7.5625 6.1875 7.5625C5.42819 7.5625 4.8125 6.94681 4.8125 6.1875C4.8125 5.42819 5.42819 4.8125 6.1875 4.8125C6.94681 4.8125 7.5625 5.42819 7.5625 6.1875Z" fill="white"/><path d="M7.5625 11C7.5625 11.7593 6.94681 12.375 6.1875 12.375C5.42819 12.375 4.8125 11.7593 4.8125 11C4.8125 10.2407 5.42819 9.625 6.1875 9.625C6.94681 9.625 7.5625 10.2407 7.5625 11Z" fill="white"/><path d="M7.5625 15.8125C7.5625 16.5718 6.94681 17.1875 6.1875 17.1875C5.42819 17.1875 4.8125 16.5718 4.8125 15.8125C4.8125 15.0532 5.42819 14.4375 6.1875 14.4375C6.94681 14.4375 7.5625 15.0532 7.5625 15.8125Z" fill="white"/></g></svg>
+                                <span>Overview</span>
+                                </button>
+                                <PrimaryCallToActionButton
+                                    label="Review & Order"
+                                    onClick={() => setIsSummaryPanelVisible(true)}
+                                />
+                            </div>
+                        </footer>
+
+                        {/* The summary panel also needs to be available in desktop view */}
+                        {isSummaryPanelVisible && (
+                            <SummaryPanel 
+                                onClose={() => setIsSummaryPanelVisible(false)} 
+                                configuration={configuration} 
+                            />
+                        )}
+                    </>
+                ) : (
+                    // --- MOBILE PANEL-BASED LAYOUT (ORIGINAL LOGIC) ---
+                    <div className="flex flex-col overflow-hidden bg-[#161616]" style={{ flexBasis: `${CONTROLS_PROPORTION * 100}%` }}>
+                        <div className="relative flex-grow overflow-hidden">
+                            {activeView === 'configuratorList' && (
+                                <>
+                                    <ScrollGradient position="top" isVisible={topGradientVisible} />
+                                    <ScrollGradient position="bottom" isVisible={bottomGradientVisible} />
+                                </>
+                            )}
+                            
+                            {activeView === 'configuratorList' && (
+                                <>
+                                    <section 
+                                        ref={listContainerRef} 
+                                        className={`px-4 bg-[#161616] h-full overflow-y-auto ${isSummaryPanelVisible ? 'opacity-50 pointer-events-none' : ''}`}>
+                                        <button data-id="build" className="w-full h-[56px] bg-[#1C1C1C] flex items-center justify-between px-4 mb-[10px] cursor-pointer hover:bg-[#2A2A2A] rounded-md" onClick={() => handleOpenBuildPanel('build', 'Build Options')}>
+                                            <div className="flex items-center"><svg viewBox="0 0 10 16" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-4 w-auto mr-3"><path d="M1 1L8 8L1.10769 15" stroke="white" strokeWidth={2}/></svg><span className="text-lg">Build</span></div>
+                                            <span className="text-sm text-gray-400">Modify</span>
+                                        </button>
+                                        <button data-id="thumb" className="w-full h-[56px] bg-[#1C1C1C] flex items-center justify-between px-4 mb-[10px] cursor-pointer hover:bg-[#2A2A2A] rounded-md" onClick={() => handleOpenColorPicker('thumb', 'Thumb Color')}>
+                                            <div className="flex items-center"><svg viewBox="0 0 10 16" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-4 w-auto mr-3"><path d="M1 1L8 8L1.10769 15" stroke="white" strokeWidth={2}/></svg><span className="text-lg">Thumb</span></div>
+                                            <span className="w-6 h-6 rounded-full" style={{ backgroundColor: configuration.thumb }}></span>
+                                        </button>
+                                        <button data-id="index" className="w-full h-[56px] bg-[#1C1C1C] flex items-center justify-between px-4 mb-[10px] cursor-pointer hover:bg-[#2A2A2A] rounded-md" onClick={() => handleOpenColorPicker('index', 'Index Color')}>
+                                            <div className="flex items-center"><svg viewBox="0 0 10 16" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-4 w-auto mr-3"><path d="M1 1L8 8L1.10769 15" stroke="white" strokeWidth={2}/></svg><span className="text-lg">Index</span></div>
+                                            <span className="w-6 h-6 rounded-full" style={{ backgroundColor: configuration.index }}></span>
+                                        </button>
+                                        <button data-id="middle" className="w-full h-[56px] bg-[#1C1C1C] flex items-center justify-between px-4 mb-[10px] cursor-pointer hover:bg-[#2A2A2A] rounded-md" onClick={() => handleOpenColorPicker('middle', 'Middle Color')}>
+                                            <div className="flex items-center"><svg viewBox="0 0 10 16" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-4 w-auto mr-3"><path d="M1 1L8 8L1.10769 15" stroke="white" strokeWidth={2}/></svg><span className="text-lg">Middle</span></div>
+                                            <span className="w-6 h-6 rounded-full" style={{ backgroundColor: configuration.middle }}></span>
+                                        </button>
+                                        <button data-id="ring" className="w-full h-[56px] bg-[#1C1C1C] flex items-center justify-between px-4 mb-[10px] cursor-pointer hover:bg-[#2A2A2A] rounded-md" onClick={() => handleOpenColorPicker('ring', 'Ring Color')}>
+                                            <div className="flex items-center"><svg viewBox="0 0 10 16" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-4 w-auto mr-3"><path d="M1 1L8 8L1.10769 15" stroke="white" strokeWidth={2}/></svg><span className="text-lg">Ring</span></div>
+                                            <span className="w-6 h-6 rounded-full" style={{ backgroundColor: configuration.ring }}></span>
+                                        </button>
+                                        <button data-id="pinky" className="w-full h-[56px] bg-[#1C1C1C] flex items-center justify-between px-4 mb-[10px] cursor-pointer hover:bg-[#2A2A2A] rounded-md" onClick={() => handleOpenColorPicker('pinky', 'Pinky Color')}>
+                                            <div className="flex items-center"><svg viewBox="0 0 10 16" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-4 w-auto mr-3"><path d="M1 1L8 8L1.10769 15" stroke="white" strokeWidth={2}/></svg><span className="text-lg">Pinky</span></div>
+                                            <span className="w-6 h-6 rounded-full" style={{ backgroundColor: configuration.pinky }}></span>
+                                        </button>
+                                        <button data-id="thumbName" className="w-full h-[56px] bg-[#1C1C1C] flex items-center justify-between px-4 mb-[10px] cursor-pointer hover:bg-[#2A2A2A] rounded-md" onClick={() => handleOpenTextPanel('thumbName', 'Thumb Name')}>
+                                            <div className="flex items-center"><svg viewBox="0 0 10 16" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-4 w-auto mr-3"><path d="M1 1L8 8L1.10769 15" stroke="white" strokeWidth={2}/></svg><span className="text-lg">Thumb Name</span></div>
+                                            <div className="flex items-center space-x-3">
+                                                <span className="text-sm text-gray-400 truncate max-w-[100px]">{configuration.thumbName.text}</span>
+                                                <span className="w-6 h-6 rounded-full" style={{ backgroundColor: configuration.thumbName.color }}></span>
+                                            </div>
+                                        </button>
+                                        <button data-id="pinkyName" className="w-full h-[56px] bg-[#1C1C1C] flex items-center justify-between px-4 mb-[10px] cursor-pointer hover:bg-[#2A2A2A] rounded-md" onClick={() => handleOpenTextPanel('pinkyName', 'Pinky Name')}>
+                                            <div className="flex items-center"><svg viewBox="0 0 10 16" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-4 w-auto mr-3"><path d="M1 1L8 8L1.10769 15" stroke="white" strokeWidth={2}/></svg><span className="text-lg">Pinky Name</span></div>
+                                            <div className="flex items-center space-x-3">
+                                                <span className="text-sm text-gray-400 truncate max-w-[100px]">{configuration.pinkyName.text}</span>
+                                                <span className="w-6 h-6 rounded-full" style={{ backgroundColor: configuration.pinkyName.color }}></span>
+                                            </div>
+                                        </button>
+                                    </section>
+                                    {isSummaryPanelVisible && (
+                                        <SummaryPanel 
+                                            onClose={() => setIsSummaryPanelVisible(false)} 
+                                            configuration={configuration} 
+                                        />
+                                    )}
+                                </>
+                            )}
+
+                            {activeView === 'colorPickerPanel' && ( <ColorPickerPanel 
+                                editingColorContext={editingColorContext} 
+                                handleCloseColorPicker={handleCloseColorPicker} 
+                                colorSwatches={colorSwatches}
+                                onColorSelect={(color) => handleColorSelect(color)}
+                                selectedColor={editingColorContext ? configuration[editingColorContext.id] : ''}
+                            /> )}
+                            {activeView === 'buildPanel' && ( <BuildPanel 
+                                editingBuildContext={editingBuildContext} 
+                                handleCloseBuildPanel={handleCloseBuildPanel} 
+                                buildConfig={configuration.build}
+                                onBuildConfigChange={handleBuildConfigChange}
+                            /> )}
+                            {activeView === 'textPanel' && ( <TextPanel 
+                                editingTextContext={editingTextContext} 
+                                panelState={editingTextContext ? configuration[editingTextContext.id] : null} 
+                                onPanelStateChange={(newState) => handleTextPanelChange(newState, editingTextContext.id)}
+                                handleClose={handleCloseTextPanel} 
+                                colorSwatches={colorSwatches}
+                            /> )}
+                        </div>
+
+                        <footer className="flex-shrink-0 bg-[#161616] flex items-center justify-start mt-[10px] pb-[20px] px-[14px]">
+                            {activeView === 'colorPickerPanel' ? (
+                                <div className="w-full grid grid-cols-[1fr_1.618fr] gap-[10px]">
+                                    <button type="button" onClick={handleApplyColorToAll} className="flex items-center justify-between px-4 bg-[#393939] hover:bg-[#727272] active:bg-[#222222] rounded text-base font-semibold text-white h-[56px]" aria-label="Apply color to all sections">
+                                        <span className="ml-[5px]">Apply to All</span>
+                                        <svg className="w-5 h-5 mr-[5px]" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg>
+                                    </button>
+                                    <div className="w-full grid grid-cols-1">
+                                        <ContinueButton
+                                            onClick={handleCloseColorPicker}
+                                            ariaLabel="Continue and return to list"
+                                            label="Continue"
+                                        />
+                                    </div>
+                                </div>
+                            )
+                            : activeView === 'buildPanel' ? (
+                                <ContinueButton
+                                    onClick={handleCloseBuildPanel}
+                                    ariaLabel="Continue and return to list"
+                                    label="Continue"
+                                />
+                            )
+                            : activeView === 'textPanel' ? (
+                                <ContinueButton
+                                    onClick={handleCloseTextPanel}
+                                    ariaLabel="Continue and return to list"
+                                    label="Continue"
+                                />
+                            ) : activeView === 'configuratorList' ? ( isSummaryPanelVisible ? ( <div className="w-full grid grid-cols-[1fr_1.618fr] gap-[10px]"><button type="button" onClick={() => setIsSummaryPanelVisible(false)} className="flex items-center justify-center px-4 bg-[#393939] hover:bg-[#727272] active:bg-[#222222] rounded text-base font-semibold text-white h-[56px]" aria-label="Back to Design"><svg width="34" height="14" viewBox="0 0 34 16" fill="none" xmlns="http://www.w3.org/2000/svg" className="mr-[5px]"><path d="M15.92 8H1.5M1.5 8L8.5 1M1.5 8L8.5 15" stroke="white" strokeWidth="2" strokeLinecap="round"/></svg><span>Back to Design</span></button>
+                            <PrimaryCallToActionButton
+                                label="Complete Order"
+                                onClick={() => alert('Complete Order clicked!')}
+                                ariaLabel="Complete Order"
+                            />
+                            </div>)
+                            : ( <div className="w-full grid grid-cols-[1fr_1.618fr] gap-[10px]">
+                            <button type="button" onClick={() => setIsSummaryPanelVisible(true)} className="flex items-center justify-center space-x-2 px-4 bg-[#393939] hover:bg-[#727272] active:bg-[#222222] rounded text-base font-semibold text-white h-[56px]" aria-label="Open summary panel">
+                            <svg width="22" height="22" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg"><g opacity="0.3"><path d="M17.1875 0H4.8125C3.53619 0 2.31204 0.507022 1.40953 1.40953C0.507021 2.31204 0 3.53619 0 4.8125V17.1875C0 18.4638 0.507021 19.688 1.40953 20.5905C2.31204 21.493 3.53619 22 4.8125 22H17.1875C18.4638 22 19.688 21.493 20.5905 20.5905C21.493 19.688 22 18.4638 22 17.1875V4.8125C22 3.53619 21.493 2.31204 20.5905 1.40953C19.688 0.507022 18.4638 0 17.1875 0ZM20.625 17.1875C20.625 18.0992 20.2628 18.9735 19.6181 19.6181C18.9735 20.2628 18.0992 20.625 17.1875 20.625H4.8125C3.9008 20.625 3.02653 20.2628 2.38185 19.6181C1.73717 18.9735 1.375 18.0992 1.375 17.1875V4.8125C1.375 3.9008 1.73717 3.02653 2.38185 2.38185C3.02654 1.73718 3.9008 1.375 4.8125 1.375H17.1875C18.0992 1.375 18.9735 1.73717 19.6181 2.38185C20.2628 3.02654 20.625 3.9008 20.625 4.8125V17.1875Z" fill="white"/><path d="M8.9375 5.5H17.1875V6.875H8.9375V5.5Z" fill="white"/><path d="M8.9375 10.3125H17.1875V11.6875H8.9375V10.3125Z" fill="white"/><path d="M8.9375 15.125H17.1875V16.5H8.9375V15.125Z" fill="white"/><path d="M7.5625 6.1875C7.5625 6.94681 6.94681 7.5625 6.1875 7.5625C5.42819 7.5625 4.8125 6.94681 4.8125 6.1875C4.8125 5.42819 5.42819 4.8125 6.1875 4.8125C6.94681 4.8125 7.5625 5.42819 7.5625 6.1875Z" fill="white"/><path d="M7.5625 11C7.5625 11.7593 6.94681 12.375 6.1875 12.375C5.42819 12.375 4.8125 11.7593 4.8125 11C4.8125 10.2407 5.42819 9.625 6.1875 9.625C6.94681 9.625 7.5625 10.2407 7.5625 11Z" fill="white"/><path d="M7.5625 15.8125C7.5625 16.5718 6.94681 17.1875 6.1875 17.1875C5.42819 17.1875 4.8125 16.5718 4.8125 15.8125C4.8125 15.0532 5.42819 14.4375 6.1875 14.4375C6.94681 14.4375 7.5625 15.0532 7.5625 15.8125Z" fill="white"/></g></svg>
+                            <span>Overview</span>
+                            </button>
+                            <PrimaryCallToActionButton
+                                label="Review & Order"
+                                onClick={() => setIsSummaryPanelVisible(true)}
+                            />
+                            </div>
+                            )
+                            ) : null }
+                        </footer>
+                    </div>
+                )
             )}
         </div>
     );
