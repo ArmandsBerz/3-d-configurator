@@ -521,7 +521,7 @@ const UI = () => {
     return (
         <div className="flex flex-col lg:relative h-[100dvh] bg-[#161616] text-white">
             <main className={`p-4 flex flex-col items-center justify-center relative bg-[#161616] overflow-auto h-full w-full ${ isVisualizationExpanded ? 'flex-grow' : 'lg:absolute lg:inset-0'}`} style={!isDesktop && !isVisualizationExpanded ? { flexBasis: `${VIZ_PROPORTION * 100}%` } : {}}>
-                <div className="absolute top-[20px] left-[20px] w-[70px] h-[49px] bg-gray-300 bg-opacity-75 rounded z-10 flex items-center justify-center"><p className="font-bold text-xl text-gray-900">LOGO</p></div>
+                { !isDesktop && <div className="absolute top-[20px] left-[20px] w-[70px] h-[49px] bg-gray-300 bg-opacity-75 rounded z-10 flex items-center justify-center"><p className="font-bold text-xl text-gray-900">LOGO</p></div> }
                 <button
                     className="absolute top-[20px] right-[20px] z-20 p-2 rounded-md hover:bg-gray-800 hover:bg-opacity-50"
                     aria-label="Share configuration"
@@ -556,8 +556,8 @@ const UI = () => {
                     <>
                         {/* Layer 2: The Left Floating Accordion Panel */}
                         <div className="absolute top-0 left-0 bottom-0 w-96 z-10 bg-[#161616] flex flex-col p-4 pointer-events-none">
+                            <div className="w-[70px] h-[49px] bg-gray-300 bg-opacity-75 rounded mb-4 flex-shrink-0 flex items-center justify-center pointer-events-auto"><p className="font-bold text-xl text-gray-900">LOGO</p></div>
                             <div className="flex-grow overflow-y-auto space-y-4 pointer-events-auto">
-                                <h2 className="text-xl font-bold border-b border-gray-700 pb-2">Glove Customizer</h2>
                                 
                                 {/* Accordion Content Goes Here */}
                                 <div className="p-4 bg-[#1C1C1C] rounded-md">
