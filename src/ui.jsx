@@ -738,10 +738,18 @@ const UI = () => {
 
                         <footer className={`absolute bottom-8 right-8 w-80 z-10 pointer-events-auto`}>
                            <div className="w-full flex flex-col flex-col-reverse gap-[10px]">
-                                <PrimaryCallToActionButton
-                                    label="Review & Order"
-                                    onClick={() => setIsOverviewExpanded(true)}
-                                />
+                                {isOverviewExpanded ? (
+                                    <PrimaryCallToActionButton
+                                        label="Complete Order"
+                                        onClick={() => alert('Complete Order clicked!')}
+                                        ariaLabel="Complete Order"
+                                    />
+                                ) : (
+                                    <PrimaryCallToActionButton
+                                        label="Review & Order"
+                                        onClick={() => setIsOverviewExpanded(true)}
+                                    />
+                                )}
 
                                 <div className={`transition-all duration-500 ease-in-out grid ${!isOverviewExpanded ? 'grid-rows-[0fr] opacity-0' : 'grid-rows-[1fr] opacity-100'}`}>
                                     <div className="overflow-hidden">
