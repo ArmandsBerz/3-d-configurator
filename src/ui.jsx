@@ -198,7 +198,7 @@ const AccordionItem = ({ title, children, isOpen, onToggle, headerContent }) => 
 
 // --- Panel Components ---
 
-const SummaryPanel = ({ onClose, configuration }) => {
+const OrderSummaryInfo = ({ configuration }) => {
     const { build, thumb, index, middle, ring, pinky, thumbName, pinkyName } = configuration;
     const buildDataMap = {
         imageSelection: "Glove Leather",
@@ -214,34 +214,40 @@ const SummaryPanel = ({ onClose, configuration }) => {
     };
 
     return (
-        <EditingPanel title="Order Summary" onClose={onClose}>
-            <div className="text-base text-gray-300 space-y-4 p-1">
-                <div>
-                    <h3 className="text-lg font-semibold text-white mb-2">Glove Foundation</h3>
-                    <div className="space-y-1 pl-2">
-                        {Object.entries(build).map(([key, value]) => (
-                            <p key={key}><span className="font-semibold text-gray-400">{buildDataMap[key]}:</span> {buildDataDisplay[value] || value}</p>
-                        ))}
-                    </div>
-                </div>
-                 <div>
-                    <h3 className="text-lg font-semibold text-white mb-2">Color Scheme</h3>
-                    <div className="space-y-1 pl-2">
-                        <p><span className="font-semibold text-gray-400">Thumb:</span> {thumb}</p>
-                        <p><span className="font-semibold text-gray-400">Index:</span> {index}</p>
-                        <p><span className="font-semibold text-gray-400">Middle:</span> {middle}</p>
-                        <p><span className="font-semibold text-gray-400">Ring:</span> {ring}</p>
-                        <p><span className="font-semibold text-gray-400">Pinky:</span> {pinky}</p>
-                    </div>
-                </div>
-                 <div>
-                    <h3 className="text-lg font-semibold text-white mb-2">Personalization</h3>
-                    <div className="space-y-1 pl-2">
-                        <p><span className="font-semibold text-gray-400">Thumb Name:</span> "{thumbName.text}" ({thumbName.font}, {thumbName.color})</p>
-                        <p><span className="font-semibold text-gray-400">Pinky Name:</span> "{pinkyName.text}" ({pinkyName.font}, {pinkyName.color})</p>
-                    </div>
+        <div className="text-base text-gray-300 space-y-4 p-1">
+            <div>
+                <h3 className="text-lg font-semibold text-white mb-2">Glove Foundation</h3>
+                <div className="space-y-1 pl-2">
+                    {Object.entries(build).map(([key, value]) => (
+                        <p key={key}><span className="font-semibold text-gray-400">{buildDataMap[key]}:</span> {buildDataDisplay[value] || value}</p>
+                    ))}
                 </div>
             </div>
+            <div>
+                <h3 className="text-lg font-semibold text-white mb-2">Color Scheme</h3>
+                <div className="space-y-1 pl-2">
+                    <p><span className="font-semibold text-gray-400">Thumb:</span> {thumb}</p>
+                    <p><span className="font-semibold text-gray-400">Index:</span> {index}</p>
+                    <p><span className="font-semibold text-gray-400">Middle:</span> {middle}</p>
+                    <p><span className="font-semibold text-gray-400">Ring:</span> {ring}</p>
+                    <p><span className="font-semibold text-gray-400">Pinky:</span> {pinky}</p>
+                </div>
+            </div>
+            <div>
+                <h3 className="text-lg font-semibold text-white mb-2">Personalization</h3>
+                <div className="space-y-1 pl-2">
+                    <p><span className="font-semibold text-gray-400">Thumb Name:</span> "{thumbName.text}" ({thumbName.font}, {thumbName.color})</p>
+                    <p><span className="font-semibold text-gray-400">Pinky Name:</span> "{pinkyName.text}" ({pinkyName.font}, {pinkyName.color})</p>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+const SummaryPanel = ({ onClose, configuration }) => {
+    return (
+        <EditingPanel title="Order Summary" onClose={onClose}>
+            <OrderSummaryInfo configuration={configuration} />
         </EditingPanel>
     );
 };
@@ -384,7 +390,7 @@ const UI = () => {
     const [isVisualizationExpanded, setIsVisualizationExpanded] = useState(false);
     const [openAccordion, setOpenAccordion] = useState('build');
     const [activePanel, setActivePanel] = useState(null);
-    const [isOverviewExpanded, setIsOverviewExpanded] = useState(false); // New state for desktop accordion
+    const [agnosticAccordionOpen, setAgnosticAccordionOpen] = useState(false);
     const [configuration, setConfiguration] = useState({
         build: {
             imageSelection: 'imgOpt1',
@@ -422,20 +428,6 @@ const UI = () => {
     '#F9A825', '#FF8F00', '#EF6C00', '#D84315', '#4E342E', '#424242',
     '#BDBDBD', '#37474F',
     ];
-
-    const { build, thumb, index, middle, ring, pinky, thumbName, pinkyName } = configuration;
-    const buildDataMap = {
-        imageSelection: "Glove Leather",
-        position: "Position",
-        size: "Size",
-        handOpeningSize: "Hand Opening Size",
-        stiffness: "Stiffness",
-        throwingHand: "Throwing Hand"
-    };
-    const buildDataDisplay = {
-        imgOpt1: "Japanese Kip",
-        imgOpt2: "American Steerhide"
-    };
 
     const checkAndSetGradients = useCallback(() => {
         const listElement = listContainerRef.current;
@@ -490,13 +482,13 @@ const UI = () => {
             const colorToApply = configuration[activePanel.context.id];
             if (colorToApply) {
               setConfiguration(prev => ({
-                ...prev,
-                thumb: colorToApply,
-                index: colorToApply,
-                middle: colorToApply,
-                ring: colorToApply,
-                pinky: colorToApply,
-              }));
+                    ...prev,
+                    thumb: colorToApply,
+                    index: colorToApply,
+                    middle: colorToApply,
+                    ring: colorToApply,
+                    pinky: colorToApply,
+                }));
             }
         }
     };
@@ -736,71 +728,71 @@ const UI = () => {
                             </div>
                         </div>
 
-                        <footer className={`absolute bottom-8 right-8 w-80 z-10 pointer-events-auto`}>
-                           <div className="w-full flex flex-col flex-col-reverse gap-[10px]">
-                                {isOverviewExpanded ? (
-                                    <PrimaryCallToActionButton
-                                        label="Complete Order"
-                                        onClick={() => alert('Complete Order clicked!')}
-                                        ariaLabel="Complete Order"
-                                    />
-                                ) : (
-                                    <PrimaryCallToActionButton
-                                        label="Review & Order"
-                                        onClick={() => setIsOverviewExpanded(true)}
-                                    />
-                                )}
+                        {/* This is the main container, combining the '.accordionAndCTA' classes.
+                            It handles the positioning for both desktop and mobile.
+                            - Default (Mobile <= 920px): fixed, full-width bottom bar.
+                            - lg: (Desktop > 920px): absolute positioning in the bottom-right.
+                        */}
+                        <div
+                            className="
+                            flex 
+                            lg:absolute lg:bottom-[60px] lg:right-[60px] 
+                            fixed w-full bottom-[-1rem] flex-row items-center gap-4 
+                            lg:flex-col lg:justify-end lg:w-auto lg:h-auto lg:gap-0
+                            "
+                        >
+                            {/* This is the 'UpAccordion' component, now inlined.
+                                - Default (Mobile): Takes up a specific height.
+                                - lg: (Desktop): Height is auto.
+                            */}
+                            <div
+                                className="
+                                text-[#999999] font-black text-[1.3rem] my-0 lg:mb-2.5 mx-0
+                                flex flex-col justify-end
+                                lg:h-auto h-[80.8vh]
+                                "
+                            >
+                                {/* Accordion Button */}
+                                <button
+                                    onClick={() => setAgnosticAccordionOpen(!agnosticAccordionOpen)}
+                                    className="
+                                    w-full bg-[#222222] text-white my-2.5 h-14 
+                                    flex flex-row-reverse gap-4 items-center z-[1000] py-3.5 px-6
+                                    "
+                                >
+                                    <div className={`flex items-center mr-2 grow-0 transform transition-transform duration-200 ${agnosticAccordionOpen ? 'rotate-90' : '-rotate-90'}`}>
+                                        <svg xmlns="http://www.w3.org/2000/svg" aria-hidden="true" role="img" width="14" height="14" preserveAspectRatio="xMidYMid meet" viewBox="0 0 24 24">
+                                            <path fill="white" d="M8.465 20.485L16.95 12L8.465 3.515L7.05 4.929L14.122 12L7.05 19.071l1.415 1.414Z" />
+                                        </svg>
+                                    </div>
+                                    <h3 className="grow text-left">
+                                        Glove Foundation <span className="hidden lg:inline">Up</span>
+                                    </h3>
+                                    <span style={{color: "gray", fontSize: '30px', fontFamily: 'monospace'}}>(i)</span>
+                                </button>
 
-                                <div className={`transition-all duration-500 ease-in-out grid ${!isOverviewExpanded ? 'grid-rows-[0fr] opacity-0' : 'grid-rows-[1fr] opacity-100'}`}>
-                                    <div className="overflow-hidden">
-                                        <div className="bg-[#1C1C1C] rounded-md p-4 text-base text-gray-300 space-y-4">
-                                            <div>
-                                                <h3 className="text-lg font-semibold text-white mb-2">Glove Foundation</h3>
-                                                <div className="space-y-1 pl-2">
-                                                    {Object.entries(build).map(([key, value]) => (
-                                                        <p key={key}><span className="font-semibold text-gray-400">{buildDataMap[key]}:</span> {buildDataDisplay[value] || value}</p>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                            <div>
-                                                <h3 className="text-lg font-semibold text-white mb-2">Color Scheme</h3>
-                                                <div className="space-y-1 pl-2">
-                                                    <p><span className="font-semibold text-gray-400">Thumb:</span> {thumb}</p>
-                                                    <p><span className="font-semibold text-gray-400">Index:</span> {index}</p>
-                                                    <p><span className="font-semibold text-gray-400">Middle:</span> {middle}</p>
-                                                    <p><span className="font-semibold text-gray-400">Ring:</span> {ring}</p>
-                                                    <p><span className="font-semibold text-gray-400">Pinky:</span> {pinky}</p>
-                                                </div>
-                                            </div>
-                                            <div>
-                                                <h3 className="text-lg font-semibold text-white mb-2">Personalization</h3>
-                                                <div className="space-y-1 pl-2">
-                                                    <p><span className="font-semibold text-gray-400">Thumb Name:</span> "{thumbName.text}" ({thumbName.font}, {thumbName.color})</p>
-                                                    <p><span className="font-semibold text-gray-400">Pinky Name:</span> "{pinkyName.text}" ({pinkyName.font}, {pinkyName.color})</p>
-                                                </div>
-                                            </div>
+                                {/* Accordion Body - Height is controlled by the 'agnosticAccordionOpen' state.
+                                    - Default (closed): 'h-0'
+                                    - Open: 'h-[calc(100vh-335px)]' on desktop
+                                    The mobile height will be constrained by its parent's 'h-[80.8vh]'.
+                                */}
+                                <div className={`bg-[#222222] overflow-y-scroll transition-[height] duration-300 ease-in ${agnosticAccordionOpen ? 'h-auto lg:h-[calc(100vh-335px)]' : 'h-0'}`}>
+                                    <div className="text-base py-3.5 px-6">
+                                        {/* This is the '.overScroll' div from your original code */}
+                                        <div>
+                                            {/* Original content can still go here if needed */}
                                         </div>
                                     </div>
                                 </div>
-                                
-                                <button type="button" onClick={() => setIsOverviewExpanded(!isOverviewExpanded)} className="flex items-center justify-between px-4 bg-[#393939] hover:bg-[#727272] active:bg-[#222222] rounded text-base font-semibold text-white h-[56px]" aria-label="Toggle overview panel">
-                                    <div className="flex items-center space-x-2">
-                                        <svg width="22" height="22" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg"><g opacity="0.3"><path d="M17.1875 0H4.8125C3.53619 0 2.31204 0.507022 1.40953 1.40953C0.507021 2.31204 0 3.53619 0 4.8125V17.1875C0 18.4638 0.507021 19.688 1.40953 20.5905C2.31204 21.493 3.53619 22 4.8125 22H17.1875C18.4638 22 19.688 21.493 20.5905 20.5905C21.493 19.688 22 18.4638 22 17.1875V4.8125C22 3.53619 21.493 2.31204 20.5905 1.40953C19.688 0.507022 18.4638 0 17.1875 0ZM20.625 17.1875C20.625 18.0992 20.2628 18.9735 19.6181 19.6181C18.9735 20.2628 18.0992 20.625 17.1875 20.625H4.8125C3.9008 20.625 3.02653 20.2628 2.38185 19.6181C1.73717 18.9735 1.375 18.0992 1.375 17.1875V4.8125C1.375 3.9008 1.73717 3.02653 2.38185 2.38185C3.02654 1.73718 3.9008 1.375 4.8125 1.375H17.1875C18.0992 1.375 18.9735 1.73717 19.6181 2.38185C20.2628 3.02654 20.625 3.9008 20.625 4.8125V17.1875Z" fill="white"/><path d="M8.9375 5.5H17.1875V6.875H8.9375V5.5Z" fill="white"/><path d="M8.9375 10.3125H17.1875V11.6875H8.9375V10.3125Z" fill="white"/><path d="M8.9375 15.125H17.1875V16.5H8.9375V15.125Z" fill="white"/><path d="M7.5625 6.1875C7.5625 6.94681 6.94681 7.5625 6.1875 7.5625C5.42819 7.5625 4.8125 6.94681 4.8125 6.1875C4.8125 5.42819 5.42819 4.8125 6.1875 4.8125C6.94681 4.8125 7.5625 5.42819 7.5625 6.1875Z" fill="white"/><path d="M7.5625 11C7.5625 11.7593 6.94681 12.375 6.1875 12.375C5.42819 12.375 4.8125 11.7593 4.8125 11C4.8125 10.2407 5.42819 9.625 6.1875 9.625C6.94681 9.625 7.5625 10.2407 7.5625 11Z" fill="white"/><path d="M7.5625 15.8125C7.5625 16.5718 6.94681 17.1875 6.1875 17.1875C5.42819 17.1875 4.8125 16.5718 4.8125 15.8125C4.8125 15.0532 5.42819 14.4375 6.1875 14.4375C6.94681 14.4375 7.5625 15.0532 7.5625 15.8125Z" fill="white"/></g></svg>
-                                        <span>Overview</span>
-                                    </div>
-                                    <svg
-                                        className={`w-5 h-5 transform transition-transform duration-300 ${isOverviewExpanded ? 'rotate-180' : 'rotate-0'}`}
-                                        fill="none"
-                                        stroke="currentColor"
-                                        viewBox="0 0 24 24"
-                                        xmlns="http://www.w3.org/2000/svg"
-                                    >
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path>
-                                    </svg>
-                                </button>
                             </div>
-                        </footer>
-                        {/* Unified Panel Rendering Area */}
+
+                            <div className="lg:w-[400px] w-full self-end mb-[1.9rem] mr-[2.5rem] lg:m-0 z-[1]">
+    <PrimaryCallToActionButton
+        label="Review & Order"
+        onClick={() => setAgnosticAccordionOpen(true)}
+    />
+</div>
+</div>
                     </>
                 ) : (
                     <div className="flex flex-col overflow-hidden bg-[#161616]" style={{ flexBasis: `${CONTROLS_PROPORTION * 100}%` }}>
