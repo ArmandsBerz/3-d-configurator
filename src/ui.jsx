@@ -623,7 +623,7 @@ const UI = () => {
                     <>
                         <div className="absolute top-0 left-0 bottom-0 w-[400px] z-10 bg-[#161616] p-4 pointer-events-none">
                             <div className="absolute w-[70px] h-[49px] bg-gray-300 bg-opacity-75 rounded flex items-center justify-center pointer-events-auto"><p className="font-bold text-xl text-gray-900">LOGO</p></div>
-                            <div className="absolute top-20 bottom-4 left-4 right-4 overflow-y-auto space-y-4 pointer-events-auto pr-2">
+                            <div className="absolute top-[142px] bottom-4 left-4 right-4 overflow-y-auto space-y-4 pointer-events-auto pr-2">
                                 
                                 <AccordionItem 
                                     title="Build Options"
