@@ -780,7 +780,7 @@ const UI = () => {
                                     <div className="text-base py-3.5 px-6">
                                         {/* This is the '.overScroll' div from your original code */}
                                         <div>
-                                            {/* Original content can still go here if needed */}
+                                            <OrderSummaryInfo configuration={configuration} />
                                         </div>
                                     </div>
                                 </div>
