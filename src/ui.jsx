@@ -786,11 +786,19 @@ const UI = () => {
                                 </div>
                             </div>
 
-                            <div className="lg:w-[400px] w-full self-end mb-[1.9rem] mr-[2.5rem] lg:m-0 z-[1]">
-    <PrimaryCallToActionButton
-        label="Review & Order"
-        onClick={() => setAgnosticAccordionOpen(true)}
-    />
+                           <div className="lg:w-[400px] w-full self-end mb-[1.9rem] mr-[2.5rem] lg:m-0 z-[1]">
+    {agnosticAccordionOpen ? (
+        <PrimaryCallToActionButton
+            label="Continue Order"
+            onClick={() => alert('Proceeding to next step...')}
+            ariaLabel="Continue Order"
+        />
+    ) : (
+        <PrimaryCallToActionButton
+            label="Review & Order"
+            onClick={() => setAgnosticAccordionOpen(true)}
+        />
+    )}
 </div>
 </div>
                     </>
