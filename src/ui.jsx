@@ -230,9 +230,11 @@ const AccordionItem = ({ title, children, isOpen, onToggle, headerContent }) => 
             className={`transition-all duration-500 ease-in-out grid ${isOpen ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'}`}
         >
             <div className="overflow-hidden">
-                <div className="p-4 border-t border-black/20">
-                    {children}
-                </div>
+                {isOpen && (
+                    <div className="p-4 border-t border-black/20">
+                        {children}
+                    </div>
+                )}
             </div>
         </div>
     </div>
@@ -616,7 +618,7 @@ const UI = () => {
                     <>
                         <div className="absolute top-0 left-0 bottom-0 w-[400px] z-10 bg-[#161616] p-4 pointer-events-none">
                             <div className="absolute w-[70px] h-[49px] bg-gray-300 bg-opacity-75 rounded flex items-center justify-center pointer-events-auto"><p className="font-bold text-xl text-gray-900">LOGO</p></div>
-                            <div className="absolute top-[142px] bottom-4 left-4 right-4 overflow-y-auto space-y-4 pointer-events-auto pr-2">
+                            <div className="absolute top-[142px] bottom-4 left-4 right-4 overflow-y-auto space-y-4 pointer-events-auto pr-2" tabIndex="-1">
                                
                                 <AccordionItem 
                                     title="Build Options"
@@ -814,9 +816,11 @@ const UI = () => {
                 ) : (
                     <div className="flex flex-col overflow-hidden bg-[#161616]" style={{ flexBasis: `${CONTROLS_PROPORTION * 100}%` }}>
                         <div className="relative flex-grow overflow-hidden">
-                            <section 
-                                ref={listContainerRef} 
-                                className={`px-4 bg-[#161616] h-full overflow-y-auto ${activePanel ? 'opacity-50 pointer-events-none' : ''}`}>
+                            <section
+                                ref={listContainerRef}
+                                className={`px-4 bg-[#161616] h-full overflow-y-auto ${activePanel ? 'opacity-50 pointer-events-none' : ''}`}
+                                tabIndex="-1"
+                            >
                                 <ScrollGradient position="top" isVisible={topGradientVisible} />
                                 <button data-id="build" className="w-full h-[56px] bg-[#1C1C1C] flex items-center justify-between px-4 mb-[10px] cursor-pointer hover:bg-[#2A2A2A] rounded-md" onClick={() => handleOpenBuildPanel('build', 'Build Options')}>
                                     <div className="flex items-center"><svg viewBox="0 0 10 16" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-4 w-auto mr-3"><path d="M1 1L8 8L1.10769 15" stroke="white" strokeWidth={2}/></svg><span className="text-lg">Build</span></div>
