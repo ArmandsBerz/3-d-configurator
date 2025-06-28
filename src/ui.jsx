@@ -1,4 +1,5 @@
 import React, { useState, useRef, useLayoutEffect, useCallback, useEffect } from 'react';
+import FocusTrap from 'focus-trap-react';
 
 // --- Helper Components ---
 const ScrollGradient = ({ position, isVisible }) => {
@@ -818,7 +819,7 @@ const UI = () => {
                         <div className="relative flex-grow overflow-hidden">
                             <section
                                 ref={listContainerRef}
-                                className={`px-4 bg-[#161616] h-full overflow-y-auto ${activePanel ? 'opacity-50 pointer-events-none' : ''}`}
+                                className="px-4 bg-[#161616] h-full overflow-y-auto"
                                 tabIndex="-1"
                             >
                                 <ScrollGradient position="top" isVisible={topGradientVisible} />
@@ -862,38 +863,54 @@ const UI = () => {
                                 </button>
                                 <ScrollGradient position="bottom" isVisible={bottomGradientVisible} />
                             </section>
-                           
+
                             {activePanel?.name === 'summary' && (
-                                <SummaryPanel 
-                                    onClose={() => setActivePanel(null)}
-                                    configuration={configuration}
-                                />
+                                <FocusTrap active={activePanel.name === 'summary'}>
+                                    <div>
+                                        <SummaryPanel
+                                            onClose={() => setActivePanel(null)}
+                                            configuration={configuration}
+                                        />
+                                    </div>
+                                </FocusTrap>
                             )}
                             {activePanel?.name === 'color' && (
-                                <ColorPickerPanel 
-                                    onClose={() => setActivePanel(null)}
-                                    editingColorContext={activePanel.context}
-                                    colorSwatches={colorSwatches}
-                                    onColorSelect={(color) => handleColorSelect(color, activePanel.context.id)}
-                                    selectedColor={activePanel.context ? configuration[activePanel.context.id] : ''}
-                                />
+                                <FocusTrap active={activePanel.name === 'color'}>
+                                    <div>
+                                        <ColorPickerPanel
+                                            onClose={() => setActivePanel(null)}
+                                            editingColorContext={activePanel.context}
+                                            colorSwatches={colorSwatches}
+                                            onColorSelect={(color) => handleColorSelect(color, activePanel.context.id)}
+                                            selectedColor={activePanel.context ? configuration[activePanel.context.id] : ''}
+                                        />
+                                    </div>
+                                </FocusTrap>
                             )}
                             {activePanel?.name === 'build' && (
-                                <BuildPanel 
-                                    onClose={() => setActivePanel(null)}
-                                    editingBuildContext={activePanel.context}
-                                    buildConfig={configuration.build}
-                                    onBuildConfigChange={handleBuildConfigChange}
-                                />
+                                <FocusTrap active={activePanel.name === 'build'}>
+                                    <div>
+                                        <BuildPanel
+                                            onClose={() => setActivePanel(null)}
+                                            editingBuildContext={activePanel.context}
+                                            buildConfig={configuration.build}
+                                            onBuildConfigChange={handleBuildConfigChange}
+                                        />
+                                    </div>
+                                </FocusTrap>
                             )}
                             {activePanel?.name === 'text' && (
-                                <TextPanel 
-                                    onClose={() => setActivePanel(null)}
-                                    editingTextContext={activePanel.context}
-                                    panelState={activePanel.context ? configuration[activePanel.context.id] : null}
-                                    onPanelStateChange={(newState) => handleTextPanelChange(newState, activePanel.context.id)}
-                                    colorSwatches={colorSwatches}
-                                />
+                                <FocusTrap active={activePanel.name === 'text'}>
+                                    <div>
+                                        <TextPanel
+                                            onClose={() => setActivePanel(null)}
+                                            editingTextContext={activePanel.context}
+                                            panelState={activePanel.context ? configuration[activePanel.context.id] : null}
+                                            onPanelStateChange={(newState) => handleTextPanelChange(newState, activePanel.context.id)}
+                                            colorSwatches={colorSwatches}
+                                        />
+                                    </div>
+                                </FocusTrap>
                             )}
                         </div>
 
