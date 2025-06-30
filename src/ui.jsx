@@ -439,6 +439,29 @@ const MobilePanelManager = ({
     handleBuildConfigChange,
     handleTextPanelChange,
 }) => {
+    
+    // *** CORRECTED FIX IS HERE: The hook is now at the top level. ***
+    useEffect(() => {
+        // We only add the listener if a panel is active.
+        if (!activePanel) {
+            return;
+        }
+
+        const handleKeyDown = (event) => {
+            if (event.key === 'Escape') {
+                onClose();
+            }
+        };
+
+        document.addEventListener('keydown', handleKeyDown);
+
+        // This cleanup function runs when the panel closes.
+        return () => {
+            document.removeEventListener('keydown', handleKeyDown);
+        };
+    }, [activePanel, onClose]); // Reruns when the active panel or close function changes.
+
+    // The conditional return is now AFTER the hook, which follows React's rules.
     if (!activePanel) return null;
 
     return (
@@ -498,7 +521,7 @@ const MobilePanelManager = ({
                             ariaLabel="Continue and return to list"
                         />
                     ) : activePanel.name === 'summary' ? (
-                         <div className="w-full grid grid-cols-[1fr_1.618fr] gap-[10px]">
+                       <div className="w-full grid grid-cols-[1fr_1.618fr] gap-[10px]">
                             <button type="button" onClick={onClose} className="flex items-center justify-center px-4 bg-[#393939] hover:bg-[#727272] active:bg-[#222222] rounded text-base font-semibold text-white h-[56px]" aria-label="Back to Design">
                                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg" className="mr-[5px]"><path d="M13 7H1M1 7L7 1M1 7L7 13" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
                                  <span>Back</span>
@@ -674,6 +697,22 @@ const UI = () => {
         };
     }, [checkAndSetGradients]);
     
+    useEffect(() => {
+        if (!agnosticAccordionOpen) return;
+
+        const handleKeyDown = (event) => {
+            if (event.key === 'Escape') {
+                setAgnosticAccordionOpen(false);
+            }
+        };
+
+        document.addEventListener('keydown', handleKeyDown);
+
+        return () => {
+            document.removeEventListener('keydown', handleKeyDown);
+        };
+    }, [agnosticAccordionOpen]);
+
     const handleAccordionToggle = (accordionId) => {
         setOpenAccordion(prev => (prev === accordionId ? null : accordionId));
     };
