@@ -638,6 +638,11 @@ const UI = () => {
     const [openAccordion, setOpenAccordion] = useState('build');
     const [activePanel, setActivePanel] = useState(null);
     const [agnosticAccordionOpen, setAgnosticAccordionOpen] = useState(false);
+    
+    // --- CHANGE 1 OF 3: Add state and ref for the accordion scroll effect ---
+    const [isAccordionScrolled, setIsAccordionScrolled] = useState(false);
+    const accordionContainerRef = useRef(null);
+
     const [configuration, setConfiguration] = useState({
         build: {
             imageSelection: 'imgOpt1',
@@ -801,6 +806,28 @@ const UI = () => {
         }
     }, [configuration]);
 
+    // --- CHANGE 2 OF 3: Add the scroll listener effect ---
+    useEffect(() => {
+        const handleAccordionScroll = () => {
+            if (accordionContainerRef.current) {
+                const { scrollTop } = accordionContainerRef.current;
+                setIsAccordionScrolled(scrollTop > 0);
+            }
+        };
+
+        const element = accordionContainerRef.current;
+        // Only add the listener on desktop view
+        if (element && isDesktop) {
+            element.addEventListener('scroll', handleAccordionScroll);
+        }
+
+        return () => {
+            if (element) {
+                element.removeEventListener('scroll', handleAccordionScroll);
+            }
+        };
+    }, [isDesktop]); // Dependency array ensures this only re-runs when the desktop view state changes
+
     return (
         <div className="flex flex-col lg:relative h-[100dvh] bg-[#161616] text-white">
             <main className={`p-4 flex flex-col items-center justify-center relative bg-[#161616] overflow-auto h-full w-full ${ isVisualizationExpanded ? 'flex-grow' : 'lg:absolute lg:inset-0'}`} style={!isDesktop && !isVisualizationExpanded ? { flexBasis: `${VIZ_PROPORTION * 100}%` } : {}}>
@@ -836,7 +863,11 @@ const UI = () => {
                     <>
                         <div className="absolute top-0 left-0 bottom-0 w-[400px] z-10 bg-[#161616] p-4 pointer-events-none">
                             <div className="absolute w-[70px] h-[49px] bg-gray-300 bg-opacity-75 rounded flex items-center justify-center pointer-events-auto"><p className="font-bold text-xl text-gray-900">LOGO</p></div>
-                            <div className="absolute top-[142px] bottom-4 left-4 right-4 overflow-y-auto space-y-4 pointer-events-auto pr-2" tabIndex="-1">
+                            <div 
+                                ref={accordionContainerRef}
+                                className={`absolute ${isAccordionScrolled ? 'top-[82px]' : 'top-[142px]'} bottom-4 left-4 right-4 overflow-y-auto space-y-4 pointer-events-auto pr-2 transition-all duration-30 ease-in-out`} 
+                                tabIndex="-1"
+                            >
                                 <AccordionItem
                                     title="Build Options"
                                     isOpen={openAccordion === 'build'}
