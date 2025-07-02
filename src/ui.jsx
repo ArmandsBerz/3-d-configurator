@@ -91,7 +91,7 @@ const EditingPanel = ({ title, onClose, headerAccessory = null, children }) => {
     useLayoutEffect(() => {
         checkAndSetGradients();
     }, [children, checkAndSetGradients]);
-
+    
     useEffect(() => {
         const element = scrollContainerRef.current;
         const handler = checkAndSetGradients;
@@ -112,7 +112,7 @@ const EditingPanel = ({ title, onClose, headerAccessory = null, children }) => {
     return (
         <div className="absolute inset-0 bg-[#161616] z-20 h-full flex flex-col px-[23px]">
             <button
-                className="flex items-center justify-between text-white py-3 h-[56px] w-full text-left mb-3 flex-shrink-0"
+                className="flex items-center justify-between text-white py-3 h-[56px] w-full text-left mb-3"
                 onClick={onClose}
             >
                 <div className="flex items-center">
@@ -209,7 +209,7 @@ const AccordionItem = ({ title, children, isOpen, onToggle, headerContent }) => 
     <div className="bg-[#1C1C1C] rounded-md overflow-hidden pointer-events-auto">
         <button
             onClick={onToggle}
-            className="w-full flex justify-between items-center p-4 text-left hover:bg-[#2A2A2A] transition-colors focus:outline-none focus-visible:ring-4 focus-visible:ring-inset"
+            className="w-full flex justify-between items-center p-4 text-left hover:bg-[#2A2A2A] transition-colors"
         >
             <div className="flex items-center space-x-3">
                 <svg
@@ -428,207 +428,6 @@ const useBreakpoint = (breakpoint = '1024px') => {
     return isMatch;
 };
 
-// --- NEW: Mobile Panel Manager ---
-const MobilePanelManager = ({
-    activePanel,
-    onClose,
-    configuration,
-    colorSwatches,
-    handleColorSelect,
-    handleApplyColorToAll,
-    handleBuildConfigChange,
-    handleTextPanelChange,
-}) => {
-    
-    // *** CORRECTED FIX IS HERE: The hook is now at the top level. ***
-    useEffect(() => {
-        // We only add the listener if a panel is active.
-        if (!activePanel) {
-            return;
-        }
-
-        const handleKeyDown = (event) => {
-            if (event.key === 'Escape') {
-                onClose();
-            }
-        };
-
-        document.addEventListener('keydown', handleKeyDown);
-
-        // This cleanup function runs when the panel closes.
-        return () => {
-            document.removeEventListener('keydown', handleKeyDown);
-        };
-    }, [activePanel, onClose]); // Reruns when the active panel or close function changes.
-
-    // The conditional return is now AFTER the hook, which follows React's rules.
-    if (!activePanel) return null;
-
-    return (
-        <FocusTrap active={!!activePanel}>
-            <div className="h-full flex flex-col bg-[#161616]">
-                {/* This container replicates the original positioning context for the panel */}
-                <div className="relative flex-grow overflow-hidden">
-                    {activePanel.name === 'summary' && (
-                        <SummaryPanel
-                            onClose={onClose}
-                            configuration={configuration}
-                        />
-                    )}
-                    {activePanel.name === 'color' && (
-                        <ColorPickerPanel
-                            onClose={onClose}
-                            editingColorContext={activePanel.context}
-                            colorSwatches={colorSwatches}
-                            onColorSelect={(color) => handleColorSelect(color, activePanel.context.id)}
-                            selectedColor={activePanel.context ? configuration[activePanel.context.id] : ''}
-                        />
-                    )}
-                    {activePanel.name === 'build' && (
-                        <BuildPanel
-                            onClose={onClose}
-                            editingBuildContext={activePanel.context}
-                            buildConfig={configuration.build}
-                            onBuildConfigChange={handleBuildConfigChange}
-                        />
-                    )}
-                    {activePanel.name === 'text' && (
-                        <TextPanel
-                            onClose={onClose}
-                            editingTextContext={activePanel.context}
-                            panelState={activePanel.context ? configuration[activePanel.context.id] : null}
-                            onPanelStateChange={(newState) => handleTextPanelChange(newState, activePanel.context.id)}
-                            colorSwatches={colorSwatches}
-                        />
-                    )}
-                </div>
-                {/* The footer is now a sibling to the panel's container, but inside the focus trap */}
-                <footer className="flex-shrink-0 mt-[10px] pb-[20px] px-[14px]">
-                    {activePanel.name === 'color' ? (
-                        <div className="w-full grid grid-cols-[1fr_1.618fr] gap-[10px]">
-                            <button type="button" onClick={handleApplyColorToAll} className="flex items-center justify-between px-4 bg-[#393939] hover:bg-[#727272] active:bg-[#222222] rounded text-base font-semibold text-white h-[56px]" aria-label="Apply color to all sections">
-                                <span className="ml-[5px]">Apply to All</span>
-                                <svg className="w-5 h-5 mr-[5px]" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg>
-                            </button>
-                            <ContinueButton
-                                onClick={onClose}
-                                ariaLabel="Continue and return to list"
-                            />
-                        </div>
-                    ) : activePanel.name === 'build' || activePanel.name === 'text' ? (
-                        <ContinueButton
-                            onClick={onClose}
-                            ariaLabel="Continue and return to list"
-                        />
-                    ) : activePanel.name === 'summary' ? (
-                       <div className="w-full grid grid-cols-[1fr_1.618fr] gap-[10px]">
-                            <button type="button" onClick={onClose} className="flex items-center justify-center px-4 bg-[#393939] hover:bg-[#727272] active:bg-[#222222] rounded text-base font-semibold text-white h-[56px]" aria-label="Back to Design">
-                                 <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg" className="mr-[5px]"><path d="M13 7H1M1 7L7 1M1 7L7 13" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                                 <span>Back</span>
-                            </button>
-                            <DynamicOrderButton
-                                isSummaryVisible={true}
-                                onCompleteClick={() => alert('Complete Order clicked!')}
-                                onReviewClick={() => {}}
-                            />
-                        </div>
-                    ) : null }
-                </footer>
-            </div>
-        </FocusTrap>
-    );
-};
-
-// --- NEW: Mobile Options List (CORRECTED) ---
-const MobileOptionsList = ({
-    listContainerRef,
-    topGradientVisible,
-    bottomGradientVisible,
-    handleOpenBuildPanel,
-    handleOpenColorPicker,
-    handleOpenTextPanel,
-    configuration,
-    isDesktop,
-    setActivePanel,
-}) => {
-    return (
-        // The main container is now the positioning context for the footer and the list area.
-        <div className="h-full relative">
-            
-            {/* This container holds the list AND its non-scrolling gradients. It's positioned to fill the space
-                ABOVE the footer and also serves as the 'relative' anchor for the gradients. */}
-            <div className="absolute top-0 left-0 right-0 bottom-[86px] overflow-hidden">
-                <ScrollGradient position="top" isVisible={topGradientVisible} />
-
-                {/* This section scrolls internally, underneath the fixed gradients. */}
-                <section
-                    ref={listContainerRef}
-                    className="h-full overflow-y-auto px-4"
-                    tabIndex="-1"
-                >
-                    {/* The list of options, as seen in your screenshot */}
-                    <button data-id="build" className="w-full h-[56px] bg-[#1C1C1C] flex items-center justify-between px-4 mb-[10px] cursor-pointer hover:bg-[#2A2A2A] rounded-md" onClick={() => handleOpenBuildPanel('build', 'Build Options')}>
-                        <div className="flex items-center"><svg viewBox="0 0 10 16" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-4 w-auto mr-3"><path d="M1 1L8 8L1.10769 15" stroke="white" strokeWidth={2}/></svg><span className="text-lg">Build</span></div>
-                        <span className="text-sm text-gray-400">Modify</span>
-                    </button>
-                    <button data-id="thumb" className="w-full h-[56px] bg-[#1C1C1C] flex items-center justify-between px-4 mb-[10px] cursor-pointer hover:bg-[#2A2A2A] rounded-md" onClick={() => handleOpenColorPicker('thumb', 'Thumb Color')}>
-                        <div className="flex items-center"><svg viewBox="0 0 10 16" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-4 w-auto mr-3"><path d="M1 1L8 8L1.10769 15" stroke="white" strokeWidth={2}/></svg><span className="text-lg">Thumb</span></div>
-                        <span className="w-6 h-6 rounded-full" style={{ backgroundColor: configuration.thumb }}></span>
-                    </button>
-                    <button data-id="index" className="w-full h-[56px] bg-[#1C1C1C] flex items-center justify-between px-4 mb-[10px] cursor-pointer hover:bg-[#2A2A2A] rounded-md" onClick={() => handleOpenColorPicker('index', 'Index Color')}>
-                        <div className="flex items-center"><svg viewBox="0 0 10 16" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-4 w-auto mr-3"><path d="M1 1L8 8L1.10769 15" stroke="white" strokeWidth={2}/></svg><span className="text-lg">Index</span></div>
-                        <span className="w-6 h-6 rounded-full" style={{ backgroundColor: configuration.index }}></span>
-                    </button>
-                    <button data-id="middle" className="w-full h-[56px] bg-[#1C1C1C] flex items-center justify-between px-4 mb-[10px] cursor-pointer hover:bg-[#2A2A2A] rounded-md" onClick={() => handleOpenColorPicker('middle', 'Middle Color')}>
-                        <div className="flex items-center"><svg viewBox="0 0 10 16" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-4 w-auto mr-3"><path d="M1 1L8 8L1.10769 15" stroke="white" strokeWidth={2}/></svg><span className="text-lg">Middle</span></div>
-                        <span className="w-6 h-6 rounded-full" style={{ backgroundColor: configuration.middle }}></span>
-                    </button>
-                    <button data-id="ring" className="w-full h-[56px] bg-[#1C1C1C] flex items-center justify-between px-4 mb-[10px] cursor-pointer hover:bg-[#2A2A2A] rounded-md" onClick={() => handleOpenColorPicker('ring', 'Ring Color')}>
-                        <div className="flex items-center"><svg viewBox="0 0 10 16" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-4 w-auto mr-3"><path d="M1 1L8 8L1.10769 15" stroke="white" strokeWidth={2}/></svg><span className="text-lg">Ring</span></div>
-                        <span className="w-6 h-6 rounded-full" style={{ backgroundColor: configuration.ring }}></span>
-                    </button>
-                    <button data-id="pinky" className="w-full h-[56px] bg-[#1C1C1C] flex items-center justify-between px-4 mb-[10px] cursor-pointer hover:bg-[#2A2A2A] rounded-md" onClick={() => handleOpenColorPicker('pinky', 'Pinky Color')}>
-                        <div className="flex items-center"><svg viewBox="0 0 10 16" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-4 w-auto mr-3"><path d="M1 1L8 8L1.10769 15" stroke="white" strokeWidth={2}/></svg><span className="text-lg">Pinky</span></div>
-                        <span className="w-6 h-6 rounded-full" style={{ backgroundColor: configuration.pinky }}></span>
-                    </button>
-                    <button data-id="thumbName" className="w-full h-[56px] bg-[#1C1C1C] flex items-center justify-between px-4 mb-[10px] cursor-pointer hover:bg-[#2A2A2A] rounded-md" onClick={() => handleOpenTextPanel('thumbName', 'Thumb Name')}>
-                        <div className="flex items-center"><svg viewBox="0 0 10 16" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-4 w-auto mr-3"><path d="M1 1L8 8L1.10769 15" stroke="white" strokeWidth={2}/></svg><span className="text-lg">Thumb Name</span></div>
-                        <div className="flex items-center space-x-3">
-                            <span className="text-sm text-gray-400 truncate max-w-[100px]">{configuration.thumbName.text}</span>
-                            <span className="w-6 h-6 rounded-full" style={{ backgroundColor: configuration.thumbName.color }}></span>
-                        </div>
-                    </button>
-                    <button data-id="pinkyName" className="w-full h-[56px] bg-[#1C1C1C] flex items-center justify-between px-4 mb-[10px] cursor-pointer hover:bg-[#2A2A2A] rounded-md" onClick={() => handleOpenTextPanel('pinkyName', 'Pinky Name')}>
-                        <div className="flex items-center"><svg viewBox="0 0 10 16" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-4 w-auto mr-3"><path d="M1 1L8 8L1.10769 15" stroke="white" strokeWidth={2}/></svg><span className="text-lg">Pinky Name</span></div>
-                        <div className="flex items-center space-x-3">
-                            <span className="text-sm text-gray-400 truncate max-w-[100px]">{configuration.pinkyName.text}</span>
-                            <span className="w-6 h-6 rounded-full" style={{ backgroundColor: configuration.pinkyName.color }}></span>
-                        </div>
-                    </button>
-                </section>
-                
-                <ScrollGradient position="bottom" isVisible={bottomGradientVisible} />
-            </div>
-
-            {/* The footer is positioned absolutely at the bottom of the main container. */}
-            <footer className="absolute bottom-0 left-0 right-0 bg-[#161616] pt-[10px] pb-[20px] px-[14px]">
-                <div className="w-full grid grid-cols-[1fr_1.618fr] gap-[10px]">
-                    <OverviewButton
-                        onClick={() => setActivePanel({ name: 'summary' })}
-                        isDesktop={isDesktop}
-                        isOpen={false}
-                    />
-                    <DynamicOrderButton
-                        isSummaryVisible={false}
-                        onReviewClick={() => setActivePanel({ name: 'summary' })}
-                        onCompleteClick={() => alert('Complete Order clicked!')}
-                    />
-                </div>
-            </footer>
-        </div>
-    );
-};
-
 
 // --- Main UI Component ---
 const UI = () => {
@@ -638,14 +437,6 @@ const UI = () => {
     const [openAccordion, setOpenAccordion] = useState('build');
     const [activePanel, setActivePanel] = useState(null);
     const [agnosticAccordionOpen, setAgnosticAccordionOpen] = useState(false);
-    
-    const [isAccordionScrolled, setIsAccordionScrolled] = useState(false);
-    const accordionContainerRef = useRef(null);
-    // State for desktop gradients
-    const [isTopGradientVisibleDesktop, setTopGradientVisibleDesktop] = useState(false);
-    const [isBottomGradientVisibleDesktop, setBottomGradientVisibleDesktop] = useState(false);
-
-
     const [configuration, setConfiguration] = useState({
         build: {
             imageSelection: 'imgOpt1',
@@ -699,71 +490,25 @@ const UI = () => {
         }
     }, []);
 
-    const checkAndSetGradientsDesktop = useCallback(() => {
-        const element = accordionContainerRef.current;
-        if (!element) return;
-        const hasOverflow = element.scrollHeight > element.clientHeight;
-        if (hasOverflow) {
-            const isAtTop = element.scrollTop === 0;
-            const isAtBottom = Math.abs(element.scrollHeight - element.clientHeight - element.scrollTop) < 1;
-            setTopGradientVisibleDesktop(!isAtTop);
-            setBottomGradientVisibleDesktop(!isAtBottom);
-        } else {
-            setTopGradientVisibleDesktop(false);
-            setBottomGradientVisibleDesktop(false);
-        }
-    }, []);
-
     useEffect(() => {
         checkAndSetGradients();
-        checkAndSetGradientsDesktop();
-    }, [checkAndSetGradients, checkAndSetGradientsDesktop, activePanel, openAccordion]);
+    }, [checkAndSetGradients, activePanel]);
     
     useEffect(() => {
-        const mobileHandler = checkAndSetGradients;
-        const desktopHandler = checkAndSetGradientsDesktop;
-        
-        window.addEventListener('resize', mobileHandler);
-        window.addEventListener('resize', desktopHandler);
-
-        const mobileElement = listContainerRef.current;
-        if (mobileElement) {
-            mobileElement.addEventListener('scroll', mobileHandler);
+        const listElement = listContainerRef.current;
+        const handler = checkAndSetGradients;
+        window.addEventListener('resize', handler);
+        if (listElement) {
+            listElement.addEventListener('scroll', handler);
         }
-
-        const desktopElement = accordionContainerRef.current;
-        if (desktopElement) {
-            desktopElement.addEventListener('scroll', desktopHandler);
-        }
-        
         return () => {
-            window.removeEventListener('resize', mobileHandler);
-            window.removeEventListener('resize', desktopHandler);
-            if (mobileElement) {
-                mobileElement.removeEventListener('scroll', mobileHandler);
-            }
-            if (desktopElement) {
-                desktopElement.removeEventListener('scroll', desktopHandler);
+            window.removeEventListener('resize', handler);
+            if (listElement) {
+                listElement.removeEventListener('scroll', handler);
             }
         };
-    }, [checkAndSetGradients, checkAndSetGradientsDesktop]);
+    }, [checkAndSetGradients]);
     
-    useEffect(() => {
-        if (!agnosticAccordionOpen) return;
-
-        const handleKeyDown = (event) => {
-            if (event.key === 'Escape') {
-                setAgnosticAccordionOpen(false);
-            }
-        };
-
-        document.addEventListener('keydown', handleKeyDown);
-
-        return () => {
-            document.removeEventListener('keydown', handleKeyDown);
-        };
-    }, [agnosticAccordionOpen]);
-
     const handleAccordionToggle = (accordionId) => {
         setOpenAccordion(prev => (prev === accordionId ? null : accordionId));
     };
@@ -839,26 +584,6 @@ const UI = () => {
         }
     }, [configuration]);
 
-    useEffect(() => {
-        const handleAccordionScroll = () => {
-            if (accordionContainerRef.current) {
-                const { scrollTop } = accordionContainerRef.current;
-                setIsAccordionScrolled(scrollTop > 0);
-            }
-        };
-
-        const element = accordionContainerRef.current;
-        if (element && isDesktop) {
-            element.addEventListener('scroll', handleAccordionScroll);
-        }
-
-        return () => {
-            if (element) {
-                element.removeEventListener('scroll', handleAccordionScroll);
-            }
-        };
-    }, [isDesktop]);
-
     return (
         <div className="flex flex-col lg:relative h-[100dvh] bg-[#161616] text-white">
             <main className={`p-4 flex flex-col items-center justify-center relative bg-[#161616] overflow-auto h-full w-full ${ isVisualizationExpanded ? 'flex-grow' : 'lg:absolute lg:inset-0'}`} style={!isDesktop && !isVisualizationExpanded ? { flexBasis: `${VIZ_PROPORTION * 100}%` } : {}}>
@@ -894,170 +619,176 @@ const UI = () => {
                     <>
                         <div className="absolute top-0 left-0 bottom-0 w-[400px] z-10 bg-[#161616] p-4 pointer-events-none">
                             <div className="absolute w-[70px] h-[49px] bg-gray-300 bg-opacity-75 rounded flex items-center justify-center pointer-events-auto"><p className="font-bold text-xl text-gray-900">LOGO</p></div>
-                            <div 
-                                className={`absolute ${isAccordionScrolled ? 'top-[82px]' : 'top-[142px]'} bottom-4 left-4 right-4 pointer-events-auto pr-2 transition-all duration-30 ease-in-out overflow-hidden`} 
-                            >
-                                <ScrollGradient position="top" isVisible={isTopGradientVisibleDesktop} />
-                                <div ref={accordionContainerRef} className="h-full overflow-y-auto space-y-4">
-                                    <AccordionItem
-                                        title="Build Options"
-                                        isOpen={openAccordion === 'build'}
-                                        onToggle={() => handleAccordionToggle('build')}
-                                        headerContent={<span className="text-sm text-gray-400">Modify</span>}
-                                    >
-                                        <div className="space-y-6">
-                                            <div>
-                                                <h3 className="text-sm font-semibold text-gray-400 mb-2">Glove Leather</h3>
-                                                <div className="grid grid-cols-2 gap-3">
-                                                    <ImageOptionCard id="imgOpt1" title="Japanese Kip" isSelected={configuration.build.imageSelection === 'imgOpt1'} onSelect={() => handleBuildConfigChange({...configuration.build, imageSelection: 'imgOpt1'})}/>
-                                                    <ImageOptionCard id="imgOpt2" title="American Steerhide" isSelected={configuration.build.imageSelection === 'imgOpt2'} onSelect={() => handleBuildConfigChange({...configuration.build, imageSelection: 'imgOpt2'})}/>
-                                                </div>
-                                            </div>
-                                            {buildOptionsData.map((group) => (
-                                                <OptionGroup
-                                                    key={group.id}
-                                                    title={group.title}
-                                                    options={group.options}
-                                                    layout={group.layout}
-                                                    selectedOption={configuration.build[group.id]}
-                                                    onSelectOption={(value) => handleBuildConfigChange({ ...configuration.build, [group.id]: value })}
-                                                />
-                                            ))}
-                                        </div>
-                                    </AccordionItem>
-
-                                    <AccordionItem
-                                        title="Thumb Color"
-                                        isOpen={openAccordion === 'thumb'}
-                                        onToggle={() => handleAccordionToggle('thumb')}
-                                        headerContent={<span className="w-6 h-6 rounded-full border border-white/20" style={{ backgroundColor: configuration.thumb }}></span>}
-                                    >
-                                        <ColorSwatchGrid
-                                            swatches={colorSwatches}
-                                            selectedColor={configuration.thumb}
-                                            onColorSelect={(color) => handleColorSelect(color, 'thumb')}
-                                        />
-                                    </AccordionItem>
-
-                                    <AccordionItem
-                                        title="Index Color"
-                                        isOpen={openAccordion === 'index'}
-                                        onToggle={() => handleAccordionToggle('index')}
-                                        headerContent={<span className="w-6 h-6 rounded-full border border-white/20" style={{ backgroundColor: configuration.index }}></span>}
-                                    >
-                                        <ColorSwatchGrid
-                                            swatches={colorSwatches}
-                                            selectedColor={configuration.index}
-                                            onColorSelect={(color) => handleColorSelect(color, 'index')}
-                                        />
-                                    </AccordionItem>
-
-                                    <AccordionItem
-                                        title="Middle Color"
-                                        isOpen={openAccordion === 'middle'}
-                                        onToggle={() => handleAccordionToggle('middle')}
-                                        headerContent={<span className="w-6 h-6 rounded-full border border-white/20" style={{ backgroundColor: configuration.middle }}></span>}
-                                    >
-                                        <ColorSwatchGrid
-                                            swatches={colorSwatches}
-                                            selectedColor={configuration.middle}
-                                            onColorSelect={(color) => handleColorSelect(color, 'middle')}
-                                        />
-                                    </AccordionItem>
-                                    
-                                    <AccordionItem
-                                        title="Ring Color"
-                                        isOpen={openAccordion === 'ring'}
-                                        onToggle={() => handleAccordionToggle('ring')}
-                                        headerContent={<span className="w-6 h-6 rounded-full border border-white/20" style={{ backgroundColor: configuration.ring }}></span>}
-                                    >
-                                        <ColorSwatchGrid
-                                            swatches={colorSwatches}
-                                            selectedColor={configuration.ring}
-                                            onColorSelect={(color) => handleColorSelect(color, 'ring')}
-                                        />
-                                    </AccordionItem>
-                                    
-                                    <AccordionItem
-                                        title="Pinky Color"
-                                        isOpen={openAccordion === 'pinky'}
-                                        onToggle={() => handleAccordionToggle('pinky')}
-                                        headerContent={<span className="w-6 h-6 rounded-full border border-white/20" style={{ backgroundColor: configuration.pinky }}></span>}
-                                    >
-                                        <ColorSwatchGrid
-                                            swatches={colorSwatches}
-                                            selectedColor={configuration.pinky}
-                                            onColorSelect={(color) => handleColorSelect(color, 'pinky')}
-                                        />
-                                    </AccordionItem>
-
-                                    <AccordionItem
-                                        title="Thumb Name"
-                                        isOpen={openAccordion === 'thumbName'}
-                                        onToggle={() => handleAccordionToggle('thumbName')}
-                                        headerContent={<span className="text-sm text-gray-400 truncate max-w-[100px]">{configuration.thumbName.text}</span>}
-                                    >
-                                        <div className="space-y-5">
-                                            <div>
-                                                <h3 className="text-sm font-semibold text-gray-400 mb-2">Text</h3>
-                                                <input type="text" className="w-full p-3 bg-[#2A2A2A] text-white rounded-md placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:outline-none" value={configuration.thumbName.text} onChange={(e) => handleTextPanelChange({ ...configuration.thumbName, text: e.target.value }, 'thumbName')} placeholder="ENTER YOUR TEXT..."/>
-                                            </div>
-                                            <div>
-                                                <h3 className="text-sm font-semibold text-gray-400 mb-2">Font</h3>
-                                                <div className="grid grid-cols-2 gap-3">
-                                                    <button onClick={() => handleTextPanelChange({ ...configuration.thumbName, font: 'SCRIPT' }, 'thumbName')} className={`py-3 rounded-md text-base font-bold ${configuration.thumbName.font === 'SCRIPT' ? 'bg-white text-black' : 'bg-[#2a2a2a] hover:bg-[#333333] text-white'}`}>SCRIPT</button>
-                                                    <button onClick={() => handleTextPanelChange({ ...configuration.thumbName, font: 'BLOCK' }, 'thumbName')} className={`py-3 rounded-md text-base font-bold ${configuration.thumbName.font === 'BLOCK' ? 'bg-white text-black' : 'bg-[#2a2a2a] hover:bg-[#333333] text-white'}`}>BLOCK</button>
-                                                </div>
-                                            </div>
-                                            <div>
-                                                <h3 className="text-sm font-semibold text-gray-400 mb-2">Color</h3>
-                                                <ColorSwatchGrid
-                                                    swatches={colorSwatches}
-                                                    selectedColor={configuration.thumbName.color}
-                                                    onColorSelect={(color) => handleTextPanelChange({ ...configuration.thumbName, color: color }, 'thumbName')}
-                                                />
+                            <div className="absolute top-[142px] bottom-4 left-4 right-4 overflow-y-auto space-y-4 pointer-events-auto pr-2" tabIndex="-1">
+                                
+                                <AccordionItem 
+                                    title="Build Options"
+                                    isOpen={openAccordion === 'build'}
+                                    onToggle={() => handleAccordionToggle('build')}
+                                    headerContent={<span className="text-sm text-gray-400">Modify</span>}
+                                >
+                                    <div className="space-y-6">
+                                        <div>
+                                            <h3 className="text-sm font-semibold text-gray-400 mb-2">Glove Leather</h3>
+                                            <div className="grid grid-cols-2 gap-3">
+                                                <ImageOptionCard id="imgOpt1" title="Japanese Kip" isSelected={configuration.build.imageSelection === 'imgOpt1'} onSelect={() => handleBuildConfigChange({...configuration.build, imageSelection: 'imgOpt1'})}/>
+                                                <ImageOptionCard id="imgOpt2" title="American Steerhide" isSelected={configuration.build.imageSelection === 'imgOpt2'} onSelect={() => handleBuildConfigChange({...configuration.build, imageSelection: 'imgOpt2'})}/>
                                             </div>
                                         </div>
-                                    </AccordionItem>
+                                        {buildOptionsData.map((group) => (
+                                            <OptionGroup
+                                                key={group.id}
+                                                title={group.title}
+                                                options={group.options}
+                                                layout={group.layout}
+                                                selectedOption={configuration.build[group.id]}
+                                                onSelectOption={(value) => handleBuildConfigChange({ ...configuration.build, [group.id]: value })}
+                                            />
+                                        ))}
+                                    </div>
+                                </AccordionItem>
+                                
+                                <AccordionItem
+                                    title="Thumb Color"
+                                    isOpen={openAccordion === 'thumb'}
+                                    onToggle={() => handleAccordionToggle('thumb')}
+                                    headerContent={<span className="w-6 h-6 rounded-full border border-white/20" style={{ backgroundColor: configuration.thumb }}></span>}
+                                >
+                                    <ColorSwatchGrid
+                                        swatches={colorSwatches}
+                                        selectedColor={configuration.thumb}
+                                        onColorSelect={(color) => handleColorSelect(color, 'thumb')}
+                                    />
+                                </AccordionItem>
 
-                                    <AccordionItem
-                                        title="Pinky Name"
-                                        isOpen={openAccordion === 'pinkyName'}
-                                        onToggle={() => handleAccordionToggle('pinkyName')}
-                                        headerContent={<span className="text-sm text-gray-400 truncate max-w-[100px]">{configuration.pinkyName.text}</span>}
-                                    >
-                                        <div className="space-y-5">
-                                            <div>
-                                                <h3 className="text-sm font-semibold text-gray-400 mb-2">Text</h3>
-                                                <input type="text" className="w-full p-3 bg-[#2A2A2A] text-white rounded-md placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:outline-none" value={configuration.pinkyName.text} onChange={(e) => handleTextPanelChange({ ...configuration.pinkyName, text: e.target.value }, 'pinkyName')} placeholder="ENTER YOUR TEXT..."/>
-                                            </div>
-                                            <div>
-                                                <h3 className="text-sm font-semibold text-gray-400 mb-2">Font</h3>
-                                                <div className="grid grid-cols-2 gap-3">
-                                                    <button onClick={() => handleTextPanelChange({ ...configuration.pinkyName, font: 'SCRIPT' }, 'pinkyName')} className={`py-3 rounded-md text-base font-bold ${configuration.pinkyName.font === 'SCRIPT' ? 'bg-white text-black' : 'bg-[#2a2a2a] hover:bg-[#333333] text-white'}`}>SCRIPT</button>
-                                                    <button onClick={() => handleTextPanelChange({ ...configuration.pinkyName, font: 'BLOCK' }, 'pinkyName')} className={`py-3 rounded-md text-base font-bold ${configuration.pinkyName.font === 'BLOCK' ? 'bg-white text-black' : 'bg-[#2a2a2a] hover:bg-[#333333] text-white'}`}>BLOCK</button>
-                                                </div>
-                                            </div>
-                                            <div>
-                                                <h3 className="text-sm font-semibold text-gray-400 mb-2">Color</h3>
-                                                <ColorSwatchGrid
-                                                    swatches={colorSwatches}
-                                                    selectedColor={configuration.pinkyName.color}
-                                                    onColorSelect={(color) => handleTextPanelChange({ ...configuration.pinkyName, color: color }, 'pinkyName')}
-                                                />
+                                <AccordionItem
+                                    title="Index Color"
+                                    isOpen={openAccordion === 'index'}
+                                    onToggle={() => handleAccordionToggle('index')}
+                                    headerContent={<span className="w-6 h-6 rounded-full border border-white/20" style={{ backgroundColor: configuration.index }}></span>}
+                                >
+                                    <ColorSwatchGrid
+                                        swatches={colorSwatches}
+                                        selectedColor={configuration.index}
+                                        onColorSelect={(color) => handleColorSelect(color, 'index')}
+                                    />
+                                </AccordionItem>
+
+                                <AccordionItem
+                                    title="Middle Color"
+                                    isOpen={openAccordion === 'middle'}
+                                    onToggle={() => handleAccordionToggle('middle')}
+                                    headerContent={<span className="w-6 h-6 rounded-full border border-white/20" style={{ backgroundColor: configuration.middle }}></span>}
+                                >
+                                    <ColorSwatchGrid
+                                        swatches={colorSwatches}
+                                        selectedColor={configuration.middle}
+                                        onColorSelect={(color) => handleColorSelect(color, 'middle')}
+                                    />
+                                </AccordionItem>
+
+                                <AccordionItem
+                                    title="Ring Color"
+                                    isOpen={openAccordion === 'ring'}
+                                    onToggle={() => handleAccordionToggle('ring')}
+                                    headerContent={<span className="w-6 h-6 rounded-full border border-white/20" style={{ backgroundColor: configuration.ring }}></span>}
+                                >
+                                    <ColorSwatchGrid
+                                        swatches={colorSwatches}
+                                        selectedColor={configuration.ring}
+                                        onColorSelect={(color) => handleColorSelect(color, 'ring')}
+                                    />
+                                </AccordionItem>
+                                
+                                <AccordionItem
+                                    title="Pinky Color"
+                                    isOpen={openAccordion === 'pinky'}
+                                    onToggle={() => handleAccordionToggle('pinky')}
+                                    headerContent={<span className="w-6 h-6 rounded-full border border-white/20" style={{ backgroundColor: configuration.pinky }}></span>}
+                                >
+                                    <ColorSwatchGrid
+                                        swatches={colorSwatches}
+                                        selectedColor={configuration.pinky}
+                                        onColorSelect={(color) => handleColorSelect(color, 'pinky')}
+                                    />
+                                </AccordionItem>
+
+                                <AccordionItem
+                                    title="Thumb Name"
+                                    isOpen={openAccordion === 'thumbName'}
+                                    onToggle={() => handleAccordionToggle('thumbName')}
+                                    headerContent={<span className="text-sm text-gray-400 truncate max-w-[100px]">{configuration.thumbName.text}</span>}
+                                >
+                                    <div className="space-y-5">
+                                        <div>
+                                            <h3 className="text-sm font-semibold text-gray-400 mb-2">Text</h3>
+                                            <input type="text" className="w-full p-3 bg-[#2A2A2A] text-white rounded-md placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:outline-none" value={configuration.thumbName.text} onChange={(e) => handleTextPanelChange({ ...configuration.thumbName, text: e.target.value }, 'thumbName')} placeholder="ENTER YOUR TEXT..."/>
+                                        </div>
+                                        <div>
+                                            <h3 className="text-sm font-semibold text-gray-400 mb-2">Font</h3>
+                                            <div className="grid grid-cols-2 gap-3">
+                                                <button onClick={() => handleTextPanelChange({ ...configuration.thumbName, font: 'SCRIPT' }, 'thumbName')} className={`py-3 rounded-md text-base font-bold ${configuration.thumbName.font === 'SCRIPT' ? 'bg-white text-black' : 'bg-[#2a2a2a] hover:bg-[#333333] text-white'}`}>SCRIPT</button>
+                                                <button onClick={() => handleTextPanelChange({ ...configuration.thumbName, font: 'BLOCK' }, 'thumbName')} className={`py-3 rounded-md text-base font-bold ${configuration.thumbName.font === 'BLOCK' ? 'bg-white text-black' : 'bg-[#2a2a2a] hover:bg-[#333333] text-white'}`}>BLOCK</button>
                                             </div>
                                         </div>
-                                    </AccordionItem>
-                                </div>
-                                <ScrollGradient position="bottom" isVisible={isBottomGradientVisibleDesktop} />
+                                        <div>
+                                            <h3 className="text-sm font-semibold text-gray-400 mb-2">Color</h3>
+                                            <ColorSwatchGrid
+                                                swatches={colorSwatches}
+                                                selectedColor={configuration.thumbName.color}
+                                                onColorSelect={(color) => handleTextPanelChange({ ...configuration.thumbName, color: color }, 'thumbName')}
+                                            />
+                                        </div>
+                                    </div>
+                                </AccordionItem>
+
+                                <AccordionItem
+                                    title="Pinky Name"
+                                    isOpen={openAccordion === 'pinkyName'}
+                                    onToggle={() => handleAccordionToggle('pinkyName')}
+                                    headerContent={<span className="text-sm text-gray-400 truncate max-w-[100px]">{configuration.pinkyName.text}</span>}
+                                >
+                                    <div className="space-y-5">
+                                        <div>
+                                            <h3 className="text-sm font-semibold text-gray-400 mb-2">Text</h3>
+                                            <input type="text" className="w-full p-3 bg-[#2A2A2A] text-white rounded-md placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:outline-none" value={configuration.pinkyName.text} onChange={(e) => handleTextPanelChange({ ...configuration.pinkyName, text: e.target.value }, 'pinkyName')} placeholder="ENTER YOUR TEXT..."/>
+                                        </div>
+                                        <div>
+                                            <h3 className="text-sm font-semibold text-gray-400 mb-2">Font</h3>
+                                            <div className="grid grid-cols-2 gap-3">
+                                                <button onClick={() => handleTextPanelChange({ ...configuration.pinkyName, font: 'SCRIPT' }, 'pinkyName')} className={`py-3 rounded-md text-base font-bold ${configuration.pinkyName.font === 'SCRIPT' ? 'bg-white text-black' : 'bg-[#2a2a2a] hover:bg-[#333333] text-white'}`}>SCRIPT</button>
+                                                <button onClick={() => handleTextPanelChange({ ...configuration.pinkyName, font: 'BLOCK' }, 'pinkyName')} className={`py-3 rounded-md text-base font-bold ${configuration.pinkyName.font === 'BLOCK' ? 'bg-white text-black' : 'bg-[#2a2a2a] hover:bg-[#333333] text-white'}`}>BLOCK</button>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <h3 className="text-sm font-semibold text-gray-400 mb-2">Color</h3>
+                                            <ColorSwatchGrid
+                                                swatches={colorSwatches}
+                                                selectedColor={configuration.pinkyName.color}
+                                                onColorSelect={(color) => handleTextPanelChange({ ...configuration.pinkyName, color: color }, 'pinkyName')}
+                                            />
+                                        </div>
+                                    </div>
+                                </AccordionItem>
+
                             </div>
                         </div>
 
                         <div
-                            className="flex lg:absolute lg:bottom-[60px] lg:right-[60px] fixed w-full bottom-[-1rem] flex-row items-center gap-4 lg:flex-col lg:justify-end lg:w-auto lg:h-auto lg:gap-0"
+                            className=" 
+                            flex 
+                            lg:absolute lg:bottom-[60px] lg:right-[60px] 
+                            fixed w-full bottom-[-1rem] flex-row items-center gap-4 
+                            lg:flex-col lg:justify-end lg:w-auto lg:h-auto lg:gap-0 
+                            "
                         >
                             <div
-                                className="lg:w-[400px] text-[#999999] font-black text-[1.3rem] my-0 lg:mb-2.5 mx-0 flex flex-col justify-end lg:h-auto h-[80.8vh]"
+                                className=" 
+                                lg:w-[400px] 
+                                text-[#999999] font-black text-[1.3rem] my-0 lg:mb-2.5 mx-0 
+                                flex flex-col justify-end 
+                                lg:h-auto h-[80.8vh] 
+                                "
                             >
                                 <OverviewButton
                                     onClick={() => setAgnosticAccordionOpen(!agnosticAccordionOpen)}
@@ -1065,7 +796,7 @@ const UI = () => {
                                     isOpen={agnosticAccordionOpen}
                                 />
 
-                                <div className={`bg-[#222222] transition-[height] duration-300 ease-in ${agnosticAccordionOpen ? 'overflow-y-scroll h-auto lg:h-[calc(100vh-335px)]' : 'overflow-hidden h-0'}`}>
+                                <div className={`bg-[#222222] overflow-y-scroll transition-[height] duration-300 ease-in ${agnosticAccordionOpen ? 'h-auto lg:h-[calc(100vh-335px)]' : 'h-0'}`}>
                                     <div className="text-base py-3.5 px-6">
                                         <div>
                                             <OrderSummaryInfo configuration={configuration} />
@@ -1085,31 +816,133 @@ const UI = () => {
                     </>
                 ) : (
                     <div className="flex flex-col overflow-hidden bg-[#161616]" style={{ flexBasis: `${CONTROLS_PROPORTION * 100}%` }}>
-                        
-                        {/* --- REFACTORED MOBILE VIEW --- */}
-                        {!activePanel ? (
-                            <MobileOptionsList
-                                listContainerRef={listContainerRef}
-                                topGradientVisible={topGradientVisible}
-                                bottomGradientVisible={bottomGradientVisible}
-                                handleOpenBuildPanel={handleOpenBuildPanel}
-                                handleOpenColorPicker={handleOpenColorPicker}
-                                handleOpenTextPanel={handleOpenTextPanel}
-                                configuration={configuration}
-                                isDesktop={isDesktop}
-                                setActivePanel={setActivePanel}
-                            />
-                        ) : (
-                            <MobilePanelManager
-                                activePanel={activePanel}
-                                onClose={() => setActivePanel(null)}
-                                configuration={configuration}
-                                colorSwatches={colorSwatches}
-                                handleColorSelect={handleColorSelect}
-                                handleApplyColorToAll={handleApplyColorToAll}
-                                handleBuildConfigChange={handleBuildConfigChange}
-                                handleTextPanelChange={handleTextPanelChange}
-                            />
+                        {/* This container now holds both the list and the trapped overlay */}
+                        <div className="relative flex-grow overflow-hidden">
+                    
+                            {/* 1. The main list. This section is unchanged. It will be correctly hidden by your existing CSS. */}
+                            <section
+                                ref={listContainerRef}
+                                className={`px-4 bg-[#161616] h-full overflow-y-auto ${activePanel ? 'opacity-50 pointer-events-none' : ''}`}
+                                tabIndex="-1"
+                            >
+                                <ScrollGradient position="top" isVisible={topGradientVisible} />
+                                <button data-id="build" className="w-full h-[56px] bg-[#1C1C1C] flex items-center justify-between px-4 mb-[10px] cursor-pointer hover:bg-[#2A2A2A] rounded-md" onClick={() => handleOpenBuildPanel('build', 'Build Options')}>
+                                    <div className="flex items-center"><svg viewBox="0 0 10 16" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-4 w-auto mr-3"><path d="M1 1L8 8L1.10769 15" stroke="white" strokeWidth={2}/></svg><span className="text-lg">Build</span></div>
+                                    <span className="text-sm text-gray-400">Modify</span>
+                                </button>
+                                <button data-id="thumb" className="w-full h-[56px] bg-[#1C1C1C] flex items-center justify-between px-4 mb-[10px] cursor-pointer hover:bg-[#2A2A2A] rounded-md" onClick={() => handleOpenColorPicker('thumb', 'Thumb Color')}>
+                                    <div className="flex items-center"><svg viewBox="0 0 10 16" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-4 w-auto mr-3"><path d="M1 1L8 8L1.10769 15" stroke="white" strokeWidth={2}/></svg><span className="text-lg">Thumb</span></div>
+                                    <span className="w-6 h-6 rounded-full" style={{ backgroundColor: configuration.thumb }}></span>
+                                </button>
+                                <button data-id="index" className="w-full h-[56px] bg-[#1C1C1C] flex items-center justify-between px-4 mb-[10px] cursor-pointer hover:bg-[#2A2A2A] rounded-md" onClick={() => handleOpenColorPicker('index', 'Index Color')}>
+                                    <div className="flex items-center"><svg viewBox="0 0 10 16" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-4 w-auto mr-3"><path d="M1 1L8 8L1.10769 15" stroke="white" strokeWidth={2}/></svg><span className="text-lg">Index</span></div>
+                                    <span className="w-6 h-6 rounded-full" style={{ backgroundColor: configuration.index }}></span>
+                                </button>
+                                <button data-id="middle" className="w-full h-[56px] bg-[#1C1C1C] flex items-center justify-between px-4 mb-[10px] cursor-pointer hover:bg-[#2A2A2A] rounded-md" onClick={() => handleOpenColorPicker('middle', 'Middle Color')}>
+                                    <div className="flex items-center"><svg viewBox="0 0 10 16" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-4 w-auto mr-3"><path d="M1 1L8 8L1.10769 15" stroke="white" strokeWidth={2}/></svg><span className="text-lg">Middle</span></div>
+                                    <span className="w-6 h-6 rounded-full" style={{ backgroundColor: configuration.middle }}></span>
+                                </button>
+                                <button data-id="ring" className="w-full h-[56px] bg-[#1C1C1C] flex items-center justify-between px-4 mb-[10px] cursor-pointer hover:bg-[#2A2A2A] rounded-md" onClick={() => handleOpenColorPicker('ring', 'Ring Color')}>
+                                    <div className="flex items-center"><svg viewBox="0 0 10 16" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-4 w-auto mr-3"><path d="M1 1L8 8L1.10769 15" stroke="white" strokeWidth={2}/></svg><span className="text-lg">Ring</span></div>
+                                    <span className="w-6 h-6 rounded-full" style={{ backgroundColor: configuration.ring }}></span>
+                                </button>
+                                <button data-id="pinky" className="w-full h-[56px] bg-[#1C1C1C] flex items-center justify-between px-4 mb-[10px] cursor-pointer hover:bg-[#2A2A2A] rounded-md" onClick={() => handleOpenColorPicker('pinky', 'Pinky Color')}>
+                                    <div className="flex items-center"><svg viewBox="0 0 10 16" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-4 w-auto mr-3"><path d="M1 1L8 8L1.10769 15" stroke="white" strokeWidth={2}/></svg><span className="text-lg">Pinky</span></div>
+                                    <span className="w-6 h-6 rounded-full" style={{ backgroundColor: configuration.pinky }}></span>
+                                </button>
+                                <button data-id="thumbName" className="w-full h-[56px] bg-[#1C1C1C] flex items-center justify-between px-4 mb-[10px] cursor-pointer hover:bg-[#2A2A2A] rounded-md" onClick={() => handleOpenTextPanel('thumbName', 'Thumb Name')}>
+                                    <div className="flex items-center"><svg viewBox="0 0 10 16" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-4 w-auto mr-3"><path d="M1 1L8 8L1.10769 15" stroke="white" strokeWidth={2}/></svg><span className="text-lg">Thumb Name</span></div>
+                                    <div className="flex items-center space-x-3">
+                                        <span className="text-sm text-gray-400 truncate max-w-[100px]">{configuration.thumbName.text}</span>
+                                        <span className="w-6 h-6 rounded-full" style={{ backgroundColor: configuration.thumbName.color }}></span>
+                                    </div>
+                                </button>
+                                <button data-id="pinkyName" className="w-full h-[56px] bg-[#1C1C1C] flex items-center justify-between px-4 mb-[10px] cursor-pointer hover:bg-[#2A2A2A] rounded-md" onClick={() => handleOpenTextPanel('pinkyName', 'Pinky Name')}>
+                                    <div className="flex items-center"><svg viewBox="0 0 10 16" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-4 w-auto mr-3"><path d="M1 1L8 8L1.10769 15" stroke="white" strokeWidth={2}/></svg><span className="text-lg">Pinky Name</span></div>
+                                    <div className="flex items-center space-x-3">
+                                        <span className="text-sm text-gray-400 truncate max-w-[100px]">{configuration.pinkyName.text}</span>
+                                        <span className="w-6 h-6 rounded-full" style={{ backgroundColor: configuration.pinkyName.color }}></span>
+                                    </div>
+                                </button>
+                                <ScrollGradient position="bottom" isVisible={bottomGradientVisible} />
+                            </section>
+                            
+                            {/* 2. The Focus-Trapped Overlay. This ONLY appears when a panel is active and only on mobile. */}
+                            {activePanel && (
+                                <FocusTrap active={!isDesktop && !!activePanel}>
+                                    <div className="absolute inset-0 z-30 flex flex-col"> {/* Wrapper for the trap */}
+                                        
+                                        {/* The Panel Itself */}
+                                        <div className="flex-grow relative overflow-hidden">
+                                            {activePanel.name === 'summary' && <SummaryPanel onClose={() => setActivePanel(null)} configuration={configuration} />}
+                                            {activePanel.name === 'color' && <ColorPickerPanel onClose={() => setActivePanel(null)} editingColorContext={activePanel.context} colorSwatches={colorSwatches} onColorSelect={(color) => handleColorSelect(color, activePanel.context.id)} selectedColor={activePanel.context ? configuration[activePanel.context.id] : ''} />}
+                                            {activePanel.name === 'build' && <BuildPanel onClose={() => setActivePanel(null)} editingBuildContext={activePanel.context} buildConfig={configuration.build} onBuildConfigChange={handleBuildConfigChange} />}
+                                            {activePanel.name === 'text' && <TextPanel onClose={() => setActivePanel(null)} editingTextContext={activePanel.context} panelState={activePanel.context ? configuration[activePanel.context.id] : null} onPanelStateChange={(newState) => handleTextPanelChange(newState, activePanel.context.id)} colorSwatches={colorSwatches} />}
+                                        </div>
+                    
+                                        {/* The Footer - Moved INSIDE the trap's wrapper */}
+                                        <footer className="flex-shrink-0 bg-[#161616] flex items-center justify-start mt-[10px] pb-[20px] px-[14px]">
+                                            {activePanel?.name === 'color' ? (
+                                                <div className="w-full grid grid-cols-[1fr_1.618fr] gap-[10px]">
+                                                    <button type="button" onClick={handleApplyColorToAll} className="flex items-center justify-between px-4 bg-[#393939] hover:bg-[#727272] active:bg-[#222222] rounded text-base font-semibold text-white h-[56px]" aria-label="Apply color to all sections">
+                                                        <span className="ml-[5px]">Apply to All</span>
+                                                        <svg className="w-5 h-5 mr-[5px]" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg>
+                                                    </button>
+                                                    <div className="w-full grid grid-cols-1">
+                                                        <ContinueButton
+                                                            onClick={() => setActivePanel(null)}
+                                                            ariaLabel="Continue and return to list"
+                                                            label="Continue"
+                                                        />
+                                                    </div>
+                                                </div>
+                                            )
+                                            : activePanel?.name === 'build' ? (
+                                                <ContinueButton
+                                                    onClick={() => setActivePanel(null)}
+                                                    ariaLabel="Continue and return to list"
+                                                    label="Continue"
+                                                />
+                                            )
+                                            : activePanel?.name === 'text' ? (
+                                                <ContinueButton
+                                                    onClick={() => setActivePanel(null)}
+                                                    ariaLabel="Continue and return to list"
+                                                    label="Continue"
+                                                />
+                                            )
+                                            : (
+                                                <></>
+                                            )}
+                                        </footer>
+                                    </div>
+                                </FocusTrap>
+                            )}
+                        </div>
+                    
+                        {/* 3. The Default Footer. This only appears when NO panel is active. */}
+                        {!activePanel && (
+                            <footer className="flex-shrink-0 bg-[#161616] flex items-center justify-start mt-[10px] pb-[20px] px-[14px]">
+                                <div className="w-full grid grid-cols-[1fr_1.618fr] gap-[10px]">
+                                    {activePanel?.name === 'summary' ? (
+                                        <button type="button" onClick={() => setActivePanel(null)} className="flex items-center justify-center px-4 bg-[#393939] hover:bg-[#727272] active:bg-[#222222] rounded text-base font-semibold text-white h-[56px]" aria-label="Back to Design">
+                                            <svg width="34" height="14" viewBox="0 0 34 16" fill="none" xmlns="http://www.w3.org/2000/svg" className="mr-[5px]"><path d="M15.92 8H1.5M1.5 8L8.5 1M1.5 8L8.5 15" stroke="white" strokeWidth="2" strokeLinecap="round"/></svg>
+                                            <span>Back to Design</span>
+                                        </button>
+                                    ) : (
+                                        <OverviewButton
+                                            onClick={() => setActivePanel({ name: 'summary' })}
+                                            isDesktop={isDesktop}
+                                            isOpen={activePanel?.name === 'summary'}
+                                        />
+                                    )}
+                                    <DynamicOrderButton
+                                        isSummaryVisible={activePanel?.name === 'summary'}
+                                        onReviewClick={() => setActivePanel({ name: 'summary' })}
+                                        onCompleteClick={() => alert('Complete Order clicked!')}
+                                    />
+                                </div>
+                            </footer>
                         )}
                     </div>
                 )
