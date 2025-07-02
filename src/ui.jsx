@@ -209,7 +209,7 @@ const AccordionItem = ({ title, children, isOpen, onToggle, headerContent }) => 
     <div className="bg-[#1C1C1C] rounded-md overflow-hidden pointer-events-auto">
         <button
             onClick={onToggle}
-            className="w-full flex justify-between items-center p-4 text-left hover:bg-[#2A2A2A] transition-colors focus:outline-none focus:ring-4 focus:ring-inset"
+            className="w-full flex justify-between items-center p-4 text-left hover:bg-[#2A2A2A] transition-colors focus:outline-none focus-visible:ring-4 focus-visible:ring-inset"
         >
             <div className="flex items-center space-x-3">
                 <svg
