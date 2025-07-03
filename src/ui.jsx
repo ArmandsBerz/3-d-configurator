@@ -13,7 +13,7 @@ const ScrollGradient = ({ position, isVisible }) => {
 };
 
 const ImageOptionCard = ({ id, title, description, price, icon, isSelected, onSelect }) => (
-<button className={`relative p-3 h-24 rounded-md cursor-pointer flex flex-col justify-center items-center text-center bg-[#2a2a2a] ${isSelected ? 'border-4 border-white' : 'hover:bg-[#333333]'}`} onClick={onSelect}>
+<button className={`relative p-3 h-24 rounded-md cursor-pointer flex flex-col justify-center items-center text-center bg-[#2a2a2a] ${isSelected ? 'border-4 border-white' : 'hover:bg-[#333333]'} focus:outline-none focus:ring-4 focus:ring-inset focus:ring-white`} onClick={onSelect}>
     <h4 className="text-base font-semibold text-white">{title}</h4>
     {isSelected && (
         <svg className="absolute top-2 right-2 w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
@@ -28,7 +28,7 @@ const ContinueButton = ({ onClick, ariaLabel, label = "Continue" }) => (
         <button
             type="button"
             onClick={onClick}
-            className="flex items-center justify-between px-4 bg-white hover:bg-gray-200 active:bg-gray-300 rounded text-base font-semibold text-[#161616] h-[56px]"
+            className="flex items-center justify-between px-4 bg-white hover:bg-gray-200 active:bg-gray-300 rounded text-base font-semibold text-[#161616] h-[56px] focus:outline-none focus:ring-4 focus:ring-inset focus:ring-blue-400"
             aria-label={ariaLabel}
         >
             <span className="ml-[5px]">{label}</span>
@@ -54,10 +54,10 @@ const ColorSwatchGrid = ({ swatches, selectedColor, onColorSelect }) => (
     {swatches.map((color) => (
       <button
         key={color}
-        className={`w-[42px] h-[42px] rounded-full border-2 ${
+        className={`w-[42px] h-[42px] rounded-full border-2 focus:outline-none ${
           selectedColor === color
             ? 'border-transparent ring-4 ring-white'
-            : 'border-transparent'
+            : 'border-transparent focus:ring-4 focus:ring-white/50'
         }`}
         style={{ backgroundColor: color }}
         onClick={() => onColorSelect(color)}
@@ -112,7 +112,7 @@ const EditingPanel = ({ title, onClose, headerAccessory = null, children }) => {
     return (
         <div className="absolute inset-0 bg-[#161616] z-20 h-full flex flex-col px-[23px]">
             <button
-                className="flex items-center justify-between text-white py-3 h-[56px] w-full text-left mb-3"
+                className="flex items-center justify-between text-white py-3 h-[56px] w-full text-left mb-3 focus:outline-none focus:ring-4 focus:ring-inset focus:ring-white/50 rounded"
                 onClick={onClose}
             >
                 <div className="flex items-center">
@@ -136,10 +136,10 @@ const EditingPanel = ({ title, onClose, headerAccessory = null, children }) => {
 
 const SelectableButton = ({ label, isSelected, onSelect }) => (
     <button
-      className={`text-sm py-2 px-3 rounded-md h-[36px] flex items-center justify-center font-medium transition-colors ${
+      className={`text-sm py-2 px-3 rounded-md h-[36px] flex items-center justify-center font-medium transition-colors focus:outline-none focus:ring-4 focus:ring-inset ${
         isSelected
-          ? 'bg-white text-[#222222]'
-          : 'bg-[#383838] hover:bg-[#595959] active:bg-[#272727]'
+          ? 'bg-white text-[#222222] focus:ring-blue-400'
+          : 'bg-[#383838] hover:bg-[#595959] active:bg-[#272727] focus:ring-white'
       }`}
       onClick={onSelect}
     >
@@ -167,7 +167,7 @@ const OverviewButton = ({ onClick, isDesktop, isOpen }) => (
     <button
         type="button"
         onClick={onClick}
-        className={`w-full flex items-center h-[56px] rounded bg-[#393939] hover:bg-[#727272] active:bg-[#222222] text-base font-semibold text-white px-5 ${isDesktop ? 'justify-between' : 'justify-center'}`}
+        className={`w-full flex items-center h-[56px] rounded bg-[#393939] hover:bg-[#727272] active:bg-[#222222] text-base font-semibold text-white px-5 focus:outline-none focus:ring-4 focus:ring-inset focus:ring-white/50 ${isDesktop ? 'justify-between' : 'justify-center'}`}
         aria-label="Open summary panel"
     >
         <div className="flex items-center space-x-2">
@@ -209,7 +209,7 @@ const AccordionItem = ({ title, children, isOpen, onToggle, headerContent }) => 
     <div className="bg-[#1C1C1C] rounded-md overflow-hidden pointer-events-auto">
         <button
             onClick={onToggle}
-            className="w-full flex justify-between items-center p-4 text-left hover:bg-[#2A2A2A] transition-colors"
+            className="w-full flex justify-between items-center p-4 text-left hover:bg-[#2A2A2A] transition-colors focus:outline-none focus:ring-4 focus:ring-inset"
         >
             <div className="flex items-center space-x-3">
                 <svg
@@ -388,8 +388,8 @@ const TextPanel = ({ editingTextContext, panelState, onPanelStateChange, onClose
         <div>
           <h3 className="text-sm font-semibold text-gray-400 mb-2">Font</h3>
           <div className="grid grid-cols-2 gap-3">
-            <button onClick={() => handleFontChange('SCRIPT')} className={`py-3 rounded-md text-base font-bold ${panelState.font === 'SCRIPT' ? 'bg-white text-black' : 'bg-[#2a2a2a] hover:bg-[#333333] text-white'}`}>SCRIPT</button>
-            <button onClick={() => handleFontChange('BLOCK')} className={`py-3 rounded-md text-base font-bold ${panelState.font === 'BLOCK' ? 'bg-white text-black' : 'bg-[#2a2a2a] hover:bg-[#333333] text-white'}`}>BLOCK</button>
+            <button onClick={() => handleFontChange('SCRIPT')} className={`py-3 rounded-md text-base font-bold focus:outline-none focus:ring-4 focus:ring-inset ${panelState.font === 'SCRIPT' ? 'bg-white text-black focus:ring-blue-400' : 'bg-[#2a2a2a] hover:bg-[#333333] text-white focus:ring-white'}`}>SCRIPT</button>
+            <button onClick={() => handleFontChange('BLOCK')} className={`py-3 rounded-md text-base font-bold focus:outline-none focus:ring-4 focus:ring-inset ${panelState.font === 'BLOCK' ? 'bg-white text-black focus:ring-blue-400' : 'bg-[#2a2a2a] hover:bg-[#333333] text-white focus:ring-white'}`}>BLOCK</button>
           </div>
         </div>
         <div>
@@ -606,7 +606,7 @@ const UI = () => {
             <main className={`p-4 flex flex-col items-center justify-center relative bg-[#161616] overflow-auto h-full w-full ${ isVisualizationExpanded ? 'flex-grow' : 'lg:absolute lg:inset-0'}`} style={!isDesktop && !isVisualizationExpanded ? { flexBasis: `${VIZ_PROPORTION * 100}%` } : {}}>
                 { !isDesktop && <div className="absolute top-[20px] left-[20px] w-[70px] h-[49px] bg-gray-300 bg-opacity-75 rounded z-10 flex items-center justify-center"><p className="font-bold text-xl text-gray-900">LOGO</p></div> }
                 <button
-                    className="absolute top-[20px] right-[20px] z-20 p-2 rounded-md hover:bg-gray-800 hover:bg-opacity-50"
+                    className="absolute top-[20px] right-[20px] z-20 p-2 rounded-md hover:bg-gray-800 hover:bg-opacity-50 focus:outline-none focus:ring-4 focus:ring-inset focus:ring-white"
                     aria-label="Share configuration"
                     onClick={handleShare}
                 >
@@ -614,10 +614,10 @@ const UI = () => {
                 </button>
                 <img src={`${process.env.PUBLIC_URL}/gloves.png`} alt="Glove Visualization" className="object-contain max-w-full max-h-full z-0" />
                 <div className="absolute bottom-4 inset-x-0 flex items-center justify-between text-xs z-10">
-                    {!isDesktop && <button className="p-1 hover:bg-gray-800 hover:bg-opacity-50 rounded-md cursor-pointer ml-[14px]" onClick={() => setIsVisualizationExpanded(!isVisualizationExpanded)} aria-label={isVisualizationExpanded ? "Collapse visualization" : "Expand visualization"}>
+                    {!isDesktop && <button className="p-1 hover:bg-gray-800 hover:bg-opacity-50 rounded-md cursor-pointer ml-[14px] focus:outline-none focus:ring-4 focus:ring-inset focus:ring-white" onClick={() => setIsVisualizationExpanded(!isVisualizationExpanded)} aria-label={isVisualizationExpanded ? "Collapse visualization" : "Expand visualization"}>
                         {isVisualizationExpanded ? ( <svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-7 h-7"><path d="M17.3176 3.39899C16.9681 3.39899 16.633 3.53795 16.3856 3.78514C16.1386 4.03232 15.9997 4.3675 15.9997 4.71725V10.3042C15.9997 10.9906 16.5561 11.547 17.2424 11.547L22.8324 11.547C23.1819 11.547 23.5173 11.408 23.7644 11.1609C24.0116 10.9139 24.1505 10.5785 24.1505 10.229C24.1505 9.87922 24.0116 9.54402 23.7644 9.29685C23.5173 9.04967 23.1819 8.9107 22.8324 8.9107H20.501L27.167 2.24612C27.4123 1.99854 27.5496 1.66397 27.5488 1.31541C27.5482 0.966682 27.4093 0.632697 27.1629 0.386154C26.9164 0.139575 26.5824 0.000809714 26.2337 1.87161e-06C25.8852 -0.000604998 25.5505 0.136743 25.3029 0.382111L18.6359 7.04824V4.71693C18.6359 4.36719 18.4969 4.03199 18.2498 3.78482C18.0026 3.53764 17.6673 3.39899 17.3176 3.39899Z" fill="white"/><path d="M24.1489 17.3166C24.1489 16.9671 24.0099 16.632 23.7627 16.3846C23.5155 16.1377 23.1804 15.9987 22.8306 15.9987H17.2437C16.5573 15.9987 16.0008 16.5551 16.0008 17.2414V22.8314C16.0008 23.1809 16.1398 23.5163 16.387 23.7634C16.634 24.0106 16.9694 24.1496 17.3189 24.1496C17.6686 24.1496 18.0038 24.0106 18.251 23.7634C18.4982 23.5163 18.6372 23.1809 18.6372 22.8314V20.5L25.3017 27.166C25.5493 27.4113 25.8839 27.5487 26.2324 27.5478C26.5812 27.5472 26.9152 27.4083 27.1617 27.1619C27.4083 26.9154 27.547 26.5814 27.5478 26.2328C27.5485 25.8843 27.4111 25.5495 27.1657 25.3019L20.4996 18.6349H22.8309C23.1807 18.6349 23.5159 18.496 23.763 18.2488C24.0102 18.0016 24.1489 17.6664 24.1489 17.3166Z" fill="white"/><path d="M10.2312 24.1479C10.5807 24.1479 10.9159 24.0089 11.1632 23.7617C11.4102 23.5146 11.5491 23.1794 11.5491 22.8296V17.2427C11.5491 16.5563 10.9928 15.9999 10.3064 15.9999H4.71642C4.36691 15.9999 4.03154 16.1388 3.7844 16.386C3.53724 16.633 3.39829 16.9684 3.39829 17.3179C3.39829 17.6677 3.53724 18.0029 3.7844 18.25C4.03156 18.4972 4.36691 18.6362 4.71642 18.6362H7.04786L0.381872 25.3008C0.136529 25.5483 -0.0008042 25.8829 3.54305e-06 26.2315C0.000610281 26.5802 0.139565 26.9142 0.385917 27.1607C0.632472 27.4073 0.966407 27.5461 1.31508 27.5469C1.66358 27.5475 1.9983 27.4101 2.24591 27.1648L8.91293 20.4986V22.8299C8.91293 23.1797 9.05189 23.5149 9.29905 23.7621C9.54621 24.0092 9.88149 24.1479 10.2312 24.1479Z" fill="white"/><path d="M3.39996 10.2302C3.39996 10.5797 3.53893 10.9149 3.78612 11.1622C4.0333 11.4092 4.36848 11.5482 4.71822 11.5482L10.3052 11.5482C10.9916 11.5482 11.548 10.9918 11.548 10.3055L11.548 4.71544C11.548 4.36594 11.409 4.03057 11.1618 3.78343C10.9149 3.53627 10.5795 3.39731 10.2299 3.39731C9.88019 3.39731 9.54499 3.53627 9.29783 3.78343C9.05064 4.03059 8.91168 4.36594 8.91168 4.71544V7.04688L2.2471 0.380895C1.99951 0.135552 1.66495 -0.00178075 1.31639 -0.00097302C0.967659 -0.000366296 0.633674 0.138588 0.387132 0.384941C0.140553 0.631495 0.00178728 0.96543 0.00097943 1.31411C0.000372556 1.6626 0.137721 1.99733 0.383088 2.24493L7.04922 8.91195H4.71791C4.36817 8.91195 4.03296 9.05091 3.7858 9.29807C3.53861 9.54523 3.39996 9.88052 3.39996 10.2302Z" fill="white"/></svg>
                         ) : ( <svg viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-7 h-7"><path d="M28 1.24271C28 0.556382 27.4436 0 26.7572 0H21.1692C20.8195 0 20.4843 0.138953 20.2371 0.386114C19.9899 0.633274 19.851 0.968417 19.851 1.31792C19.851 1.66763 19.9899 2.0028 20.2371 2.24994C20.4843 2.4971 20.8195 2.63605 21.1692 2.63605H23.4991L16.8345 9.30049C16.5891 9.54805 16.4518 9.88279 16.4524 10.2313C16.4532 10.58 16.5920 10.914 16.8385 11.1605C17.0851 11.4068 17.4191 11.5456 17.7678 11.5464C18.1163 11.5472 18.4509 11.4099 18.6985 11.1645L25.3636 4.49957V6.83184C25.3636 7.18135 25.5024 7.51672 25.7498 7.76386C25.9969 8.01102 26.3321 8.14997 26.6819 8.14997C27.0314 8.14997 27.3666 8.01102 27.6138 7.76386C27.861 7.5167 27.9999 7.18135 27.9999 6.83184L28 1.24271Z" fill="white"/><path d="M11.1656 16.8327C10.9184 16.5856 10.5831 16.4468 10.2335 16.4468C9.88397 16.4468 9.54857 16.5856 9.30141 16.8327L2.63631 23.4992V21.167C2.63631 20.8175 2.49735 20.4821 2.25016 20.235C2.00298 19.9878 1.6678 19.8488 1.31805 19.8488C0.968513 19.8488 0.633316 19.9878 0.386152 20.235C0.138967 20.4821 0 20.8175 0 21.167V26.7565C0 27.4428 0.556426 27.9992 1.24281 27.9992H6.82977C7.17931 27.9992 7.51471 27.8602 7.76187 27.6133C8.00906 27.3661 8.14803 27.0307 8.14803 26.6812C8.14803 26.3315 8.00906 25.9964 7.76187 25.7492C7.51469 25.5021 7.17931 25.3631 6.82977 25.3631H4.49929L11.1654 18.6966C11.4126 18.4492 11.5514 18.1141 11.5514 17.7646C11.5514 17.4151 11.4126 17.0797 11.1654 16.8326L11.1656 16.8327Z" fill="white"/><path d="M19.8508 26.6821C19.8508 27.0316 19.9898 27.3667 20.237 27.6141C20.4841 27.861 20.8193 28 21.1691 28H26.756C27.4424 28 27.9988 27.4436 27.9988 26.7573V21.1673C27.9988 20.8178 27.8599 20.4824 27.6127 20.2353C27.3657 19.9881 27.0303 19.8492 26.6808 19.8492C26.331 19.8492 25.9958 19.8881 25.7487 20.2353C25.5015 20.4824 25.3625 20.8178 25.3625 21.1673V23.4987L18.6979 16.8327C18.4503 16.5874 18.1158 16.4501 17.7672 16.4509C17.4185 16.4515 17.0845 16.5904 16.838 16.8368C16.5914 17.0833 16.4526 17.4173 16.4518 17.7659C16.4512 18.1144 16.5886 18.4492 16.8339 18.6968L23.5001 25.3638H21.1687C20.819 25.3638 20.4838 25.5027 20.2366 25.7499C19.9895 25.9971 19.8505 26.3322 19.8505 26.6819L19.8508 26.6821Z" fill="white"/><path d="M11.1656 9.30049L4.50001 2.63605H6.82987C7.17941 2.63605 7.51481 2.4971 7.76198 2.24994C8.00916 2.00278 8.14813 1.66764 8.14813 1.31792C8.14813 0.968417 8.00916 0.633253 7.76198 0.386114C7.51479 0.138953 7.17941 0 6.82987 0H1.24292C0.55653 0 0.000103511 0.55637 0.000103511 1.24269V6.8322C0.000103511 7.1817 0.139071 7.51707 0.386255 7.76421C0.63344 8.01137 0.968616 8.15033 1.31816 8.15033C1.6679 8.15033 2.0031 8.01137 2.25027 7.76421C2.49745 7.51705 2.63642 7.1817 2.63642 6.8322V4.49993L9.30151 11.1649C9.5491 11.4102 9.88387 11.5476 10.2324 11.5467C10.5812 11.5459 10.9151 11.4072 11.1617 11.1608C11.4081 10.9143 11.5468 10.5803 11.5476 10.2317C11.5484 9.88317 11.4111 9.54845 11.1657 9.30084L11.1656 9.30049Z" fill="white"/> </svg>
-                        )}
+                        ) }
                     </button>}
                     <div className="flex items-center space-x-4">
                         <div className="flex items-center space-x-1.5 text-gray-400">
@@ -744,8 +744,8 @@ const UI = () => {
                                         <div>
                                             <h3 className="text-sm font-semibold text-gray-400 mb-2">Font</h3>
                                             <div className="grid grid-cols-2 gap-3">
-                                                <button onClick={() => handleTextPanelChange({ ...configuration.thumbName, font: 'SCRIPT' }, 'thumbName')} className={`py-3 rounded-md text-base font-bold ${configuration.thumbName.font === 'SCRIPT' ? 'bg-white text-black' : 'bg-[#2a2a2a] hover:bg-[#333333] text-white'}`}>SCRIPT</button>
-                                                <button onClick={() => handleTextPanelChange({ ...configuration.thumbName, font: 'BLOCK' }, 'thumbName')} className={`py-3 rounded-md text-base font-bold ${configuration.thumbName.font === 'BLOCK' ? 'bg-white text-black' : 'bg-[#2a2a2a] hover:bg-[#333333] text-white'}`}>BLOCK</button>
+                                                <button onClick={() => handleTextPanelChange({ ...configuration.thumbName, font: 'SCRIPT' }, 'thumbName')} className={`py-3 rounded-md text-base font-bold focus:outline-none focus:ring-4 focus:ring-inset ${configuration.thumbName.font === 'SCRIPT' ? 'bg-white text-black focus:ring-blue-400' : 'bg-[#2a2a2a] hover:bg-[#333333] text-white focus:ring-white'}`}>SCRIPT</button>
+                                                <button onClick={() => handleTextPanelChange({ ...configuration.thumbName, font: 'BLOCK' }, 'thumbName')} className={`py-3 rounded-md text-base font-bold focus:outline-none focus:ring-4 focus:ring-inset ${configuration.thumbName.font === 'BLOCK' ? 'bg-white text-black focus:ring-blue-400' : 'bg-[#2a2a2a] hover:bg-[#333333] text-white focus:ring-white'}`}>BLOCK</button>
                                             </div>
                                         </div>
                                         <div>
@@ -773,8 +773,8 @@ const UI = () => {
                                         <div>
                                             <h3 className="text-sm font-semibold text-gray-400 mb-2">Font</h3>
                                             <div className="grid grid-cols-2 gap-3">
-                                                <button onClick={() => handleTextPanelChange({ ...configuration.pinkyName, font: 'SCRIPT' }, 'pinkyName')} className={`py-3 rounded-md text-base font-bold ${configuration.pinkyName.font === 'SCRIPT' ? 'bg-white text-black' : 'bg-[#2a2a2a] hover:bg-[#333333] text-white'}`}>SCRIPT</button>
-                                                <button onClick={() => handleTextPanelChange({ ...configuration.pinkyName, font: 'BLOCK' }, 'pinkyName')} className={`py-3 rounded-md text-base font-bold ${configuration.pinkyName.font === 'BLOCK' ? 'bg-white text-black' : 'bg-[#2a2a2a] hover:bg-[#333333] text-white'}`}>BLOCK</button>
+                                                <button onClick={() => handleTextPanelChange({ ...configuration.pinkyName, font: 'SCRIPT' }, 'pinkyName')} className={`py-3 rounded-md text-base font-bold focus:outline-none focus:ring-4 focus:ring-inset ${configuration.pinkyName.font === 'SCRIPT' ? 'bg-white text-black focus:ring-blue-400' : 'bg-[#2a2a2a] hover:bg-[#333333] text-white focus:ring-white'}`}>SCRIPT</button>
+                                                <button onClick={() => handleTextPanelChange({ ...configuration.pinkyName, font: 'BLOCK' }, 'pinkyName')} className={`py-3 rounded-md text-base font-bold focus:outline-none focus:ring-4 focus:ring-inset ${configuration.pinkyName.font === 'BLOCK' ? 'bg-white text-black focus:ring-blue-400' : 'bg-[#2a2a2a] hover:bg-[#333333] text-white focus:ring-white'}`}>BLOCK</button>
                                             </div>
                                         </div>
                                         <div>
@@ -792,7 +792,7 @@ const UI = () => {
                         </div>
 
                         <div
-                            className=" 
+                            className="
                             flex 
                             lg:absolute lg:bottom-[60px] lg:right-[60px] 
                             fixed w-full bottom-[-1rem] flex-row items-center gap-4 
@@ -800,7 +800,7 @@ const UI = () => {
                             "
                         >
                             <div
-                                className=" 
+                                className="
                                 lg:w-[400px] 
                                 text-[#999999] font-black text-[1.3rem] my-0 lg:mb-2.5 mx-0 
                                 flex flex-col justify-end 
@@ -843,38 +843,38 @@ const UI = () => {
                                 tabIndex="-1"
                             >
                                 <ScrollGradient position="top" isVisible={topGradientVisible} />
-                                <button data-id="build" className="w-full h-[56px] bg-[#1C1C1C] flex items-center justify-between px-4 mb-[10px] cursor-pointer hover:bg-[#2A2A2A] rounded-md" onClick={() => handleOpenBuildPanel('build', 'Build Options')}>
+                                <button data-id="build" className="w-full h-[56px] bg-[#1C1C1C] flex items-center justify-between px-4 mb-[10px] cursor-pointer hover:bg-[#2A2A2A] rounded-md focus:outline-none focus:ring-4 focus:ring-inset focus:ring-white" onClick={() => handleOpenBuildPanel('build', 'Build Options')}>
                                     <div className="flex items-center"><svg viewBox="0 0 10 16" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-4 w-auto mr-3"><path d="M1 1L8 8L1.10769 15" stroke="white" strokeWidth={2}/></svg><span className="text-lg">Build</span></div>
                                     <span className="text-sm text-gray-400">Modify</span>
                                 </button>
-                                <button data-id="thumb" className="w-full h-[56px] bg-[#1C1C1C] flex items-center justify-between px-4 mb-[10px] cursor-pointer hover:bg-[#2A2A2A] rounded-md" onClick={() => handleOpenColorPicker('thumb', 'Thumb Color')}>
+                                <button data-id="thumb" className="w-full h-[56px] bg-[#1C1C1C] flex items-center justify-between px-4 mb-[10px] cursor-pointer hover:bg-[#2A2A2A] rounded-md focus:outline-none focus:ring-4 focus:ring-inset focus:ring-white" onClick={() => handleOpenColorPicker('thumb', 'Thumb Color')}>
                                     <div className="flex items-center"><svg viewBox="0 0 10 16" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-4 w-auto mr-3"><path d="M1 1L8 8L1.10769 15" stroke="white" strokeWidth={2}/></svg><span className="text-lg">Thumb</span></div>
                                     <span className="w-6 h-6 rounded-full" style={{ backgroundColor: configuration.thumb }}></span>
                                 </button>
-                                <button data-id="index" className="w-full h-[56px] bg-[#1C1C1C] flex items-center justify-between px-4 mb-[10px] cursor-pointer hover:bg-[#2A2A2A] rounded-md" onClick={() => handleOpenColorPicker('index', 'Index Color')}>
+                                <button data-id="index" className="w-full h-[56px] bg-[#1C1C1C] flex items-center justify-between px-4 mb-[10px] cursor-pointer hover:bg-[#2A2A2A] rounded-md focus:outline-none focus:ring-4 focus:ring-inset focus:ring-white" onClick={() => handleOpenColorPicker('index', 'Index Color')}>
                                     <div className="flex items-center"><svg viewBox="0 0 10 16" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-4 w-auto mr-3"><path d="M1 1L8 8L1.10769 15" stroke="white" strokeWidth={2}/></svg><span className="text-lg">Index</span></div>
                                     <span className="w-6 h-6 rounded-full" style={{ backgroundColor: configuration.index }}></span>
                                 </button>
-                                <button data-id="middle" className="w-full h-[56px] bg-[#1C1C1C] flex items-center justify-between px-4 mb-[10px] cursor-pointer hover:bg-[#2A2A2A] rounded-md" onClick={() => handleOpenColorPicker('middle', 'Middle Color')}>
+                                <button data-id="middle" className="w-full h-[56px] bg-[#1C1C1C] flex items-center justify-between px-4 mb-[10px] cursor-pointer hover:bg-[#2A2A2A] rounded-md focus:outline-none focus:ring-4 focus:ring-inset focus:ring-white" onClick={() => handleOpenColorPicker('middle', 'Middle Color')}>
                                     <div className="flex items-center"><svg viewBox="0 0 10 16" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-4 w-auto mr-3"><path d="M1 1L8 8L1.10769 15" stroke="white" strokeWidth={2}/></svg><span className="text-lg">Middle</span></div>
                                     <span className="w-6 h-6 rounded-full" style={{ backgroundColor: configuration.middle }}></span>
                                 </button>
-                                <button data-id="ring" className="w-full h-[56px] bg-[#1C1C1C] flex items-center justify-between px-4 mb-[10px] cursor-pointer hover:bg-[#2A2A2A] rounded-md" onClick={() => handleOpenColorPicker('ring', 'Ring Color')}>
+                                <button data-id="ring" className="w-full h-[56px] bg-[#1C1C1C] flex items-center justify-between px-4 mb-[10px] cursor-pointer hover:bg-[#2A2A2A] rounded-md focus:outline-none focus:ring-4 focus:ring-inset focus:ring-white" onClick={() => handleOpenColorPicker('ring', 'Ring Color')}>
                                     <div className="flex items-center"><svg viewBox="0 0 10 16" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-4 w-auto mr-3"><path d="M1 1L8 8L1.10769 15" stroke="white" strokeWidth={2}/></svg><span className="text-lg">Ring</span></div>
                                     <span className="w-6 h-6 rounded-full" style={{ backgroundColor: configuration.ring }}></span>
                                 </button>
-                                <button data-id="pinky" className="w-full h-[56px] bg-[#1C1C1C] flex items-center justify-between px-4 mb-[10px] cursor-pointer hover:bg-[#2A2A2A] rounded-md" onClick={() => handleOpenColorPicker('pinky', 'Pinky Color')}>
+                                <button data-id="pinky" className="w-full h-[56px] bg-[#1C1C1C] flex items-center justify-between px-4 mb-[10px] cursor-pointer hover:bg-[#2A2A2A] rounded-md focus:outline-none focus:ring-4 focus:ring-inset focus:ring-white" onClick={() => handleOpenColorPicker('pinky', 'Pinky Color')}>
                                     <div className="flex items-center"><svg viewBox="0 0 10 16" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-4 w-auto mr-3"><path d="M1 1L8 8L1.10769 15" stroke="white" strokeWidth={2}/></svg><span className="text-lg">Pinky</span></div>
                                     <span className="w-6 h-6 rounded-full" style={{ backgroundColor: configuration.pinky }}></span>
                                 </button>
-                                <button data-id="thumbName" className="w-full h-[56px] bg-[#1C1C1C] flex items-center justify-between px-4 mb-[10px] cursor-pointer hover:bg-[#2A2A2A] rounded-md" onClick={() => handleOpenTextPanel('thumbName', 'Thumb Name')}>
+                                <button data-id="thumbName" className="w-full h-[56px] bg-[#1C1C1C] flex items-center justify-between px-4 mb-[10px] cursor-pointer hover:bg-[#2A2A2A] rounded-md focus:outline-none focus:ring-4 focus:ring-inset focus:ring-white" onClick={() => handleOpenTextPanel('thumbName', 'Thumb Name')}>
                                     <div className="flex items-center"><svg viewBox="0 0 10 16" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-4 w-auto mr-3"><path d="M1 1L8 8L1.10769 15" stroke="white" strokeWidth={2}/></svg><span className="text-lg">Thumb Name</span></div>
                                     <div className="flex items-center space-x-3">
                                         <span className="text-sm text-gray-400 truncate max-w-[100px]">{configuration.thumbName.text}</span>
                                         <span className="w-6 h-6 rounded-full" style={{ backgroundColor: configuration.thumbName.color }}></span>
                                     </div>
                                 </button>
-                                <button data-id="pinkyName" className="w-full h-[56px] bg-[#1C1C1C] flex items-center justify-between px-4 mb-[10px] cursor-pointer hover:bg-[#2A2A2A] rounded-md" onClick={() => handleOpenTextPanel('pinkyName', 'Pinky Name')}>
+                                <button data-id="pinkyName" className="w-full h-[56px] bg-[#1C1C1C] flex items-center justify-between px-4 mb-[10px] cursor-pointer hover:bg-[#2A2A2A] rounded-md focus:outline-none focus:ring-4 focus:ring-inset focus:ring-white" onClick={() => handleOpenTextPanel('pinkyName', 'Pinky Name')}>
                                     <div className="flex items-center"><svg viewBox="0 0 10 16" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-4 w-auto mr-3"><path d="M1 1L8 8L1.10769 15" stroke="white" strokeWidth={2}/></svg><span className="text-lg">Pinky Name</span></div>
                                     <div className="flex items-center space-x-3">
                                         <span className="text-sm text-gray-400 truncate max-w-[100px]">{configuration.pinkyName.text}</span>
@@ -896,12 +896,12 @@ const UI = () => {
                                             {activePanel.name === 'build' && <BuildPanel onClose={() => setActivePanel(null)} editingBuildContext={activePanel.context} buildConfig={configuration.build} onBuildConfigChange={handleBuildConfigChange} />}
                                             {activePanel.name === 'text' && <TextPanel onClose={() => setActivePanel(null)} editingTextContext={activePanel.context} panelState={activePanel.context ? configuration[activePanel.context.id] : null} onPanelStateChange={(newState) => handleTextPanelChange(newState, activePanel.context.id)} colorSwatches={colorSwatches} />}
                                         </div>
-                                
+                                    
                                         {/* The Footer - Moved INSIDE the trap's wrapper */}
                                         <footer className="flex-shrink-0 bg-[#161616] flex items-center justify-start mt-[10px] pb-[20px] px-[14px]">
                                             {activePanel?.name === 'color' ? (
                                                 <div className="w-full grid grid-cols-[1fr_1.618fr] gap-[10px]">
-                                                    <button type="button" onClick={handleApplyColorToAll} className="flex items-center justify-between px-4 bg-[#393939] hover:bg-[#727272] active:bg-[#222222] rounded text-base font-semibold text-white h-[56px]" aria-label="Apply color to all sections">
+                                                    <button type="button" onClick={handleApplyColorToAll} className="flex items-center justify-between px-4 bg-[#393939] hover:bg-[#727272] active:bg-[#222222] rounded text-base font-semibold text-white h-[56px] focus:outline-none focus:ring-4 focus:ring-inset focus:ring-white" aria-label="Apply color to all sections">
                                                         <span className="ml-[5px]">Apply to All</span>
                                                         <svg className="w-5 h-5 mr-[5px]" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg>
                                                     </button>
@@ -942,7 +942,7 @@ const UI = () => {
                             <footer className="flex-shrink-0 bg-[#161616] flex items-center justify-start mt-[10px] pb-[20px] px-[14px]">
                                 <div className="w-full grid grid-cols-[1fr_1.618fr] gap-[10px]">
                                     {activePanel?.name === 'summary' ? (
-                                        <button type="button" onClick={() => setActivePanel(null)} className="flex items-center justify-center px-4 bg-[#393939] hover:bg-[#727272] active:bg-[#222222] rounded text-base font-semibold text-white h-[56px]" aria-label="Back to Design">
+                                        <button type="button" onClick={() => setActivePanel(null)} className="flex items-center justify-center px-4 bg-[#393939] hover:bg-[#727272] active:bg-[#222222] rounded text-base font-semibold text-white h-[56px] focus:outline-none focus:ring-4 focus:ring-inset focus:ring-white" aria-label="Back to Design">
                                             <svg width="34" height="14" viewBox="0 0 34 16" fill="none" xmlns="http://www.w3.org/2000/svg" className="mr-[5px]"><path d="M15.92 8H1.5M1.5 8L8.5 1M1.5 8L8.5 15" stroke="white" strokeWidth="2" strokeLinecap="round"/></svg>
                                             <span>Back to Design</span>
                                         </button>
