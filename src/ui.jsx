@@ -979,7 +979,7 @@ const UI = () => {
                             {/* 2. The Focus-Trapped Overlay. This ONLY appears when a panel is active and only on mobile. */}
                             {activePanel && (
                                 <FocusTrap active={!isDesktop && !!activePanel}>
-                                    <div className="absolute inset-0 z-30 flex flex-col"> {/* Wrapper for the trap */}
+                                    <div className="absolute inset-0 z-30 flex flex-col bg-[#161616] pt-[10px]"> {/* Wrapper for the trap */}
                                         
                                         {/* The Panel Itself */}
                                         <div className="flex-grow relative overflow-hidden">
@@ -990,7 +990,7 @@ const UI = () => {
                                         </div>
                                         
                                         {/* The Footer - Moved INSIDE the trap's wrapper */}
-                                        <footer className="flex-shrink-0 bg-[#161616] flex items-center justify-start mt-[10px] pb-[20px] px-[14px]">
+                                        <footer className="flex-shrink-0 bg-[#161616] flex items-center justify-start pb-[20px] px-[14px]">
                                              {activePanel?.name === 'color' ? (
                                                  <div className="w-full grid grid-cols-[1fr_1.618fr] gap-[10px]">
                                                      <ApplyToAllButton onClick={() => handleApplyColorToAll(null)} />
@@ -1021,7 +1021,7 @@ const UI = () => {
                         
                         {/* 3. The Default Footer. This only appears when NO panel is active. */}
                         {!activePanel && (
-                            <footer className="flex-shrink-0 bg-[#161616] flex items-center justify-start mt-[10px] pb-[20px] px-[14px]">
+                            <footer className="flex-shrink-0 bg-[#161616] flex items-center justify-start pt-[10px] pb-[20px] px-[14px]">
                                 <div className="w-full grid grid-cols-[1fr_1.618fr] gap-[10px]">
                                     {activePanel?.name === 'summary' ? (
                                         <button type="button" onClick={() => setActivePanel(null)} className="flex items-center justify-center px-4 bg-[#393939] hover:bg-[#727272] active:bg-[#222222] rounded text-base font-semibold text-white h-[56px] focus:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-white" aria-label="Back to Design">
