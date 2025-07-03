@@ -67,6 +67,20 @@ const ColorSwatchGrid = ({ swatches, selectedColor, onColorSelect }) => (
   </div>
 );
 
+// --- NEW Reusable ApplyToAllButton Component ---
+const ApplyToAllButton = ({ onClick }) => (
+    <button
+        type="button"
+        onClick={onClick}
+        className="w-full flex items-center justify-between px-4 bg-[#393939] hover:bg-[#727272] active:bg-[#222222] rounded text-base font-semibold text-white h-[56px] focus:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-white"
+        aria-label="Apply color to all sections"
+    >
+        <span className="ml-[5px]">Apply to All</span>
+        <svg className="w-5 h-5 mr-[5px]" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg>
+    </button>
+);
+
+
 const EditingPanel = ({ title, onClose, headerAccessory = null, children }) => {
     const scrollContainerRef = useRef(null);
     const [isTopGradientVisible, setIsTopGradientVisible] = useState(false);
@@ -240,6 +254,36 @@ const AccordionItem = ({ title, children, isOpen, onToggle, headerContent }) => 
         </div>
     </div>
 );
+
+// --- NEW SPECIALIZED COLOR ACCORDION ---
+const ColorAccordion = ({
+    title,
+    isOpen,
+    onToggle,
+    colorValue,
+    colorSwatches,
+    onColorSelect,
+    onApplyToAll,
+    headerAccessory
+}) => {
+    return (
+        <>
+            <AccordionItem
+                title={title}
+                isOpen={isOpen}
+                onToggle={onToggle}
+                headerContent={headerAccessory}
+            >
+                <ColorSwatchGrid
+                    swatches={colorSwatches}
+                    selectedColor={colorValue}
+                    onColorSelect={onColorSelect}
+                />
+            </AccordionItem>
+            {isOpen && <ApplyToAllButton onClick={onApplyToAll} />}
+        </>
+    );
+};
 
 
 // --- Panel Components ---
@@ -598,21 +642,21 @@ const UI = () => {
         }
     };
     
-    const handleApplyColorToAll = () => {
-        if (activePanel && activePanel.name === 'color' && activePanel.context) {
-            const colorToApply = configuration[activePanel.context.id];
-            if (colorToApply) {
-              setConfiguration(prev => ({
-                    ...prev,
-                    thumb: colorToApply,
-                    index: colorToApply,
-                    middle: colorToApply,
-                    ring: colorToApply,
-                    pinky: colorToApply,
-                }));
-            }
+    const handleApplyColorToAll = (colorToApply) => {
+        const aColorToApply = colorToApply || (activePanel && activePanel.name === 'color' && activePanel.context ? configuration[activePanel.context.id] : null);
+
+        if (aColorToApply) {
+            setConfiguration(prev => ({
+                ...prev,
+                thumb: aColorToApply,
+                index: aColorToApply,
+                middle: aColorToApply,
+                ring: aColorToApply,
+                pinky: aColorToApply,
+            }));
         }
     };
+
 
     const handleOpenBuildPanel = (optionId, optionTitle) => {
         setActivePanel({ name: 'build', context: { id: optionId, title: optionTitle } });
@@ -726,71 +770,57 @@ const UI = () => {
                                         </div>
                                     </AccordionItem>
 
-                                    <AccordionItem
+                                    <ColorAccordion
                                         title="Thumb Color"
                                         isOpen={openAccordion === 'thumb'}
                                         onToggle={() => handleAccordionToggle('thumb')}
-                                        headerContent={<span className="w-6 h-6 rounded-full border border-white/20" style={{ backgroundColor: configuration.thumb }}></span>}
-                                    >
-                                        <ColorSwatchGrid
-                                            swatches={colorSwatches}
-                                            selectedColor={configuration.thumb}
-                                            onColorSelect={(color) => handleColorSelect(color, 'thumb')}
-                                        />
-                                    </AccordionItem>
-
-                                    <AccordionItem
+                                        colorValue={configuration.thumb}
+                                        colorSwatches={colorSwatches}
+                                        onColorSelect={(color) => handleColorSelect(color, 'thumb')}
+                                        onApplyToAll={() => handleApplyColorToAll(configuration.thumb)}
+                                        headerAccessory={<span className="w-6 h-6 rounded-full border border-white/20" style={{ backgroundColor: configuration.thumb }}></span>}
+                                    />
+                                    <ColorAccordion
                                         title="Index Color"
                                         isOpen={openAccordion === 'index'}
                                         onToggle={() => handleAccordionToggle('index')}
-                                        headerContent={<span className="w-6 h-6 rounded-full border border-white/20" style={{ backgroundColor: configuration.index }}></span>}
-                                    >
-                                        <ColorSwatchGrid
-                                            swatches={colorSwatches}
-                                            selectedColor={configuration.index}
-                                            onColorSelect={(color) => handleColorSelect(color, 'index')}
-                                        />
-                                    </AccordionItem>
-
-                                    <AccordionItem
+                                        colorValue={configuration.index}
+                                        colorSwatches={colorSwatches}
+                                        onColorSelect={(color) => handleColorSelect(color, 'index')}
+                                        onApplyToAll={() => handleApplyColorToAll(configuration.index)}
+                                        headerAccessory={<span className="w-6 h-6 rounded-full border border-white/20" style={{ backgroundColor: configuration.index }}></span>}
+                                    />
+                                    <ColorAccordion
                                         title="Middle Color"
                                         isOpen={openAccordion === 'middle'}
                                         onToggle={() => handleAccordionToggle('middle')}
-                                        headerContent={<span className="w-6 h-6 rounded-full border border-white/20" style={{ backgroundColor: configuration.middle }}></span>}
-                                    >
-                                        <ColorSwatchGrid
-                                            swatches={colorSwatches}
-                                            selectedColor={configuration.middle}
-                                            onColorSelect={(color) => handleColorSelect(color, 'middle')}
-                                        />
-                                    </AccordionItem>
-                                    
-                                    <AccordionItem
+                                        colorValue={configuration.middle}
+                                        colorSwatches={colorSwatches}
+                                        onColorSelect={(color) => handleColorSelect(color, 'middle')}
+                                        onApplyToAll={() => handleApplyColorToAll(configuration.middle)}
+                                        headerAccessory={<span className="w-6 h-6 rounded-full border border-white/20" style={{ backgroundColor: configuration.middle }}></span>}
+                                    />
+                                    <ColorAccordion
                                         title="Ring Color"
                                         isOpen={openAccordion === 'ring'}
                                         onToggle={() => handleAccordionToggle('ring')}
-                                        headerContent={<span className="w-6 h-6 rounded-full border border-white/20" style={{ backgroundColor: configuration.ring }}></span>}
-                                    >
-                                        <ColorSwatchGrid
-                                            swatches={colorSwatches}
-                                            selectedColor={configuration.ring}
-                                            onColorSelect={(color) => handleColorSelect(color, 'ring')}
-                                        />
-                                    </AccordionItem>
-                                    
-                                    <AccordionItem
+                                        colorValue={configuration.ring}
+                                        colorSwatches={colorSwatches}
+                                        onColorSelect={(color) => handleColorSelect(color, 'ring')}
+                                        onApplyToAll={() => handleApplyColorToAll(configuration.ring)}
+                                        headerAccessory={<span className="w-6 h-6 rounded-full border border-white/20" style={{ backgroundColor: configuration.ring }}></span>}
+                                    />
+                                    <ColorAccordion
                                         title="Pinky Color"
                                         isOpen={openAccordion === 'pinky'}
                                         onToggle={() => handleAccordionToggle('pinky')}
-                                        headerContent={<span className="w-6 h-6 rounded-full border border-white/20" style={{ backgroundColor: configuration.pinky }}></span>}
-                                    >
-                                        <ColorSwatchGrid
-                                            swatches={colorSwatches}
-                                            selectedColor={configuration.pinky}
-                                            onColorSelect={(color) => handleColorSelect(color, 'pinky')}
-                                        />
-                                    </AccordionItem>
-
+                                        colorValue={configuration.pinky}
+                                        colorSwatches={colorSwatches}
+                                        onColorSelect={(color) => handleColorSelect(color, 'pinky')}
+                                        onApplyToAll={() => handleApplyColorToAll(configuration.pinky)}
+                                        headerAccessory={<span className="w-6 h-6 rounded-full border border-white/20" style={{ backgroundColor: configuration.pinky }}></span>}
+                                    />
+                                    
                                     <AccordionItem
                                         title="Thumb Name"
                                         isOpen={openAccordion === 'thumbName'}
@@ -962,30 +992,27 @@ const UI = () => {
                                         {/* The Footer - Moved INSIDE the trap's wrapper */}
                                         <footer className="flex-shrink-0 bg-[#161616] flex items-center justify-start mt-[10px] pb-[20px] px-[14px]">
                                              {activePanel?.name === 'color' ? (
-                                                <div className="w-full grid grid-cols-[1fr_1.618fr] gap-[10px]">
-                                                    <button type="button" onClick={handleApplyColorToAll} className="flex items-center justify-between px-4 bg-[#393939] hover:bg-[#727272] active:bg-[#222222] rounded text-base font-semibold text-white h-[56px] focus:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-white" aria-label="Apply color to all sections">
-                                                        <span className="ml-[5px]">Apply to All</span>
-                                                        <svg className="w-5 h-5 mr-[5px]" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg>
-                                                    </button>
-                                                    <ContinueButton onClick={() => setActivePanel(null)} ariaLabel="Continue and return to list" label="Continue" />
-                                                </div>
-                                            ) : activePanel?.name === 'build' || activePanel?.name === 'text' ? (
-                                                <ContinueButton onClick={() => setActivePanel(null)} ariaLabel="Continue and return to list" label="Continue" />
-                                            ) : activePanel?.name === 'summary' ? (
-                                                <div className="w-full grid grid-cols-[1fr_1.618fr] gap-[10px]">
-                                                    <button type="button" onClick={() => setActivePanel(null)} className="flex items-center justify-center px-4 bg-[#393939] hover:bg-[#727272] active:bg-[#222222] rounded text-base font-semibold text-white h-[56px]" aria-label="Back to Design">
-                                                        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg" className="mr-[5px]"><path d="M13 7H1M1 7L7 1M1 7L7 13" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                                                        <span>Back</span>
-                                                    </button>
-                                                    <DynamicOrderButton
-                                                        isSummaryVisible={true}
-                                                        onCompleteClick={() => alert('Complete Order clicked!')}
-                                                        onReviewClick={() => {}}
-                                                    />
-                                                </div>
-                                            ) : (
-                                                <></>
-                                            )}
+                                                 <div className="w-full grid grid-cols-[1fr_1.618fr] gap-[10px]">
+                                                     <ApplyToAllButton onClick={() => handleApplyColorToAll(null)} />
+                                                     <ContinueButton onClick={() => setActivePanel(null)} ariaLabel="Continue and return to list" label="Continue" />
+                                                 </div>
+                                             ) : activePanel?.name === 'build' || activePanel?.name === 'text' ? (
+                                                 <ContinueButton onClick={() => setActivePanel(null)} ariaLabel="Continue and return to list" label="Continue" />
+                                             ) : activePanel?.name === 'summary' ? (
+                                                 <div className="w-full grid grid-cols-[1fr_1.618fr] gap-[10px]">
+                                                     <button type="button" onClick={() => setActivePanel(null)} className="flex items-center justify-center px-4 bg-[#393939] hover:bg-[#727272] active:bg-[#222222] rounded text-base font-semibold text-white h-[56px]" aria-label="Back to Design">
+                                                         <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg" className="mr-[5px]"><path d="M13 7H1M1 7L7 1M1 7L7 13" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                                                         <span>Back</span>
+                                                     </button>
+                                                     <DynamicOrderButton
+                                                         isSummaryVisible={true}
+                                                         onCompleteClick={() => alert('Complete Order clicked!')}
+                                                         onReviewClick={() => {}}
+                                                     />
+                                                 </div>
+                                             ) : (
+                                                 <></>
+                                             )}
                                         </footer>
                                     </div>
                                 </FocusTrap>
