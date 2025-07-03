@@ -532,7 +532,7 @@ const UI = () => {
         const hasOverflow = listElement.scrollHeight > listElement.clientHeight;
         if (hasOverflow) {
             const isAtTop = listElement.scrollTop === 0;
-            const isAtBottom = Math.abs(listElement.scrollHeight - listElement.clientHeight - listElement.scrollTop) < 1;
+            const isAtBottom = Math.ceil(listElement.scrollTop) + listElement.clientHeight >= listElement.scrollHeight;
             setTopGradientVisible(!isAtTop);
             setBottomGradientVisible(!isAtBottom);
         } else {
@@ -547,7 +547,7 @@ const UI = () => {
         const hasOverflow = element.scrollHeight > element.clientHeight;
         if (hasOverflow) {
             const isAtTop = element.scrollTop === 0;
-            const isAtBottom = Math.abs(element.scrollHeight - element.clientHeight - element.scrollTop) < 1;
+            const isAtBottom = Math.ceil(element.scrollTop) + element.clientHeight >= element.scrollHeight;
             setTopGradientVisibleDesktop(!isAtTop);
             setBottomGradientVisibleDesktop(!isAtBottom);
         } else {
