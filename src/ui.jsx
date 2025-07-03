@@ -813,7 +813,7 @@ const UI = () => {
                                     isOpen={agnosticAccordionOpen}
                                 />
 
-                                <div className={`bg-[#222222] overflow-y-scroll transition-[height] duration-300 ease-in ${agnosticAccordionOpen ? 'h-auto lg:h-[calc(100vh-335px)]' : 'h-0'}`}>
+                                <div className={`bg-[#222222] transition-[height] duration-300 ease-in ${agnosticAccordionOpen ? 'overflow-y-scroll h-auto lg:h-[calc(100vh-335px)]' : 'overflow-hidden h-0'}`}>
                                     <div className="text-base py-3.5 px-6">
                                         <div>
                                             <OrderSummaryInfo configuration={configuration} />
@@ -936,7 +936,7 @@ const UI = () => {
                                 </FocusTrap>
                             )}
                         </div>
-                    
+                        
                         {/* 3. The Default Footer. This only appears when NO panel is active. */}
                         {!activePanel && (
                             <footer className="flex-shrink-0 bg-[#161616] flex items-center justify-start mt-[10px] pb-[20px] px-[14px]">
