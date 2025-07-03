@@ -509,6 +509,23 @@ const UI = () => {
         };
     }, [checkAndSetGradients]);
     
+    // START: Added useEffect for desktop Escape key functionality
+    useEffect(() => {
+        if (!isDesktop || !agnosticAccordionOpen) return;
+
+        const handleKeyDown = (event) => {
+            if (event.key === 'Escape') {
+                setAgnosticAccordionOpen(false);
+            }
+        };
+        document.addEventListener('keydown', handleKeyDown);
+
+        return () => {
+            document.removeEventListener('keydown', handleKeyDown);
+        };
+    }, [agnosticAccordionOpen, isDesktop]);
+    // END: Added useEffect
+
     const handleAccordionToggle = (accordionId) => {
         setOpenAccordion(prev => (prev === accordionId ? null : accordionId));
     };
@@ -818,7 +835,7 @@ const UI = () => {
                     <div className="flex flex-col overflow-hidden bg-[#161616]" style={{ flexBasis: `${CONTROLS_PROPORTION * 100}%` }}>
                         {/* This container now holds both the list and the trapped overlay */}
                         <div className="relative flex-grow overflow-hidden">
-                    
+                        
                             {/* 1. The main list. This section is unchanged. It will be correctly hidden by your existing CSS. */}
                             <section
                                 ref={listContainerRef}
@@ -879,7 +896,7 @@ const UI = () => {
                                             {activePanel.name === 'build' && <BuildPanel onClose={() => setActivePanel(null)} editingBuildContext={activePanel.context} buildConfig={configuration.build} onBuildConfigChange={handleBuildConfigChange} />}
                                             {activePanel.name === 'text' && <TextPanel onClose={() => setActivePanel(null)} editingTextContext={activePanel.context} panelState={activePanel.context ? configuration[activePanel.context.id] : null} onPanelStateChange={(newState) => handleTextPanelChange(newState, activePanel.context.id)} colorSwatches={colorSwatches} />}
                                         </div>
-                    
+                                
                                         {/* The Footer - Moved INSIDE the trap's wrapper */}
                                         <footer className="flex-shrink-0 bg-[#161616] flex items-center justify-start mt-[10px] pb-[20px] px-[14px]">
                                             {activePanel?.name === 'color' ? (
