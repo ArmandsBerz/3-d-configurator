@@ -764,7 +764,7 @@ const UI = () => {
                                             onColorSelect={(color) => handleColorSelect(color, 'middle')}
                                         />
                                     </AccordionItem>
-
+                                    
                                     <AccordionItem
                                         title="Ring Color"
                                         isOpen={openAccordion === 'ring'}
@@ -897,7 +897,7 @@ const UI = () => {
                     <div className="flex flex-col overflow-hidden bg-[#161616]" style={{ flexBasis: `${CONTROLS_PROPORTION * 100}%` }}>
                         {/* This container now holds both the list and the trapped overlay */}
                         <div className="relative flex-grow overflow-hidden">
-                        
+                            
                             {/* 1. The main list. This section is unchanged. It will be correctly hidden by your existing CSS. */}
                             <section
                                 ref={listContainerRef}
@@ -961,36 +961,29 @@ const UI = () => {
                                         
                                         {/* The Footer - Moved INSIDE the trap's wrapper */}
                                         <footer className="flex-shrink-0 bg-[#161616] flex items-center justify-start mt-[10px] pb-[20px] px-[14px]">
-                                            {activePanel?.name === 'color' ? (
+                                             {activePanel?.name === 'color' ? (
                                                 <div className="w-full grid grid-cols-[1fr_1.618fr] gap-[10px]">
                                                     <button type="button" onClick={handleApplyColorToAll} className="flex items-center justify-between px-4 bg-[#393939] hover:bg-[#727272] active:bg-[#222222] rounded text-base font-semibold text-white h-[56px] focus:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-white" aria-label="Apply color to all sections">
                                                         <span className="ml-[5px]">Apply to All</span>
                                                         <svg className="w-5 h-5 mr-[5px]" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg>
                                                     </button>
-                                                    <div className="w-full grid grid-cols-1">
-                                                        <ContinueButton
-                                                            onClick={() => setActivePanel(null)}
-                                                            ariaLabel="Continue and return to list"
-                                                            label="Continue"
-                                                        />
-                                                    </div>
+                                                    <ContinueButton onClick={() => setActivePanel(null)} ariaLabel="Continue and return to list" label="Continue" />
                                                 </div>
-                                            )
-                                            : activePanel?.name === 'build' ? (
-                                                <ContinueButton
-                                                    onClick={() => setActivePanel(null)}
-                                                    ariaLabel="Continue and return to list"
-                                                    label="Continue"
-                                                />
-                                            )
-                                            : activePanel?.name === 'text' ? (
-                                                <ContinueButton
-                                                    onClick={() => setActivePanel(null)}
-                                                    ariaLabel="Continue and return to list"
-                                                    label="Continue"
-                                                />
-                                            )
-                                            : (
+                                            ) : activePanel?.name === 'build' || activePanel?.name === 'text' ? (
+                                                <ContinueButton onClick={() => setActivePanel(null)} ariaLabel="Continue and return to list" label="Continue" />
+                                            ) : activePanel?.name === 'summary' ? (
+                                                <div className="w-full grid grid-cols-[1fr_1.618fr] gap-[10px]">
+                                                    <button type="button" onClick={() => setActivePanel(null)} className="flex items-center justify-center px-4 bg-[#393939] hover:bg-[#727272] active:bg-[#222222] rounded text-base font-semibold text-white h-[56px]" aria-label="Back to Design">
+                                                        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg" className="mr-[5px]"><path d="M13 7H1M1 7L7 1M1 7L7 13" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                                                        <span>Back</span>
+                                                    </button>
+                                                    <DynamicOrderButton
+                                                        isSummaryVisible={true}
+                                                        onCompleteClick={() => alert('Complete Order clicked!')}
+                                                        onReviewClick={() => {}}
+                                                    />
+                                                </div>
+                                            ) : (
                                                 <></>
                                             )}
                                         </footer>
