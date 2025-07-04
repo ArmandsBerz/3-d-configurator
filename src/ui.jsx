@@ -1,5 +1,4 @@
 import React, { useState, useRef, useLayoutEffect, useCallback, useEffect } from 'react';
-import FocusTrap from 'focus-trap-react';
 
 // --- Helper Components ---
 const ScrollGradient = ({ position, isVisible }) => {
@@ -978,44 +977,42 @@ const UI = () => {
                             
                             {/* 2. The Focus-Trapped Overlay. This ONLY appears when a panel is active and only on mobile. */}
                             {activePanel && (
-                                <FocusTrap active={!isDesktop && !!activePanel}>
-                                    <div className="absolute inset-0 z-30 flex flex-col bg-[#161616] pt-[10px]"> {/* Wrapper for the trap */}
-                                        
-                                        {/* The Panel Itself */}
-                                        <div className="flex-grow relative overflow-hidden">
-                                            {activePanel.name === 'summary' && <SummaryPanel onClose={() => setActivePanel(null)} configuration={configuration} />}
-                                            {activePanel.name === 'color' && <ColorPickerPanel onClose={() => setActivePanel(null)} editingColorContext={activePanel.context} colorSwatches={colorSwatches} onColorSelect={(color) => handleColorSelect(color, activePanel.context.id)} selectedColor={activePanel.context ? configuration[activePanel.context.id] : ''} />}
-                                            {activePanel.name === 'build' && <BuildPanel onClose={() => setActivePanel(null)} editingBuildContext={activePanel.context} buildConfig={configuration.build} onBuildConfigChange={handleBuildConfigChange} />}
-                                            {activePanel.name === 'text' && <TextPanel onClose={() => setActivePanel(null)} editingTextContext={activePanel.context} panelState={activePanel.context ? configuration[activePanel.context.id] : null} onPanelStateChange={(newState) => handleTextPanelChange(newState, activePanel.context.id)} colorSwatches={colorSwatches} />}
-                                        </div>
-                                        
-                                        {/* The Footer - Moved INSIDE the trap's wrapper */}
-                                        <footer className="flex-shrink-0 bg-[#161616] flex items-center justify-start pb-[20px] px-[14px]">
-                                             {activePanel?.name === 'color' ? (
-                                                 <div className="w-full grid grid-cols-[1fr_1.618fr] gap-[10px]">
-                                                     <ApplyToAllButton onClick={() => handleApplyColorToAll(null)} />
-                                                     <ContinueButton onClick={() => setActivePanel(null)} ariaLabel="Continue and return to list" label="Continue" />
-                                                 </div>
-                                             ) : activePanel?.name === 'build' || activePanel?.name === 'text' ? (
-                                                 <ContinueButton onClick={() => setActivePanel(null)} ariaLabel="Continue and return to list" label="Continue" />
-                                             ) : activePanel?.name === 'summary' ? (
-                                                 <div className="w-full grid grid-cols-[1fr_1.618fr] gap-[10px]">
-                                                     <button type="button" onClick={() => setActivePanel(null)} className="flex items-center justify-center px-4 bg-[#393939] hover:bg-[#727272] active:bg-[#222222] rounded text-base font-semibold text-white h-[56px]" aria-label="Back to Design">
-                                                         <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg" className="mr-[5px]"><path d="M13 7H1M1 7L7 1M1 7L7 13" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                                                         <span>Back</span>
-                                                     </button>
-                                                     <DynamicOrderButton
-                                                         isSummaryVisible={true}
-                                                         onCompleteClick={() => alert('Complete Order clicked!')}
-                                                         onReviewClick={() => {}}
-                                                     />
-                                                 </div>
-                                             ) : (
-                                                 <></>
-                                             )}
-                                        </footer>
+                                <div className="absolute inset-0 z-30 flex flex-col bg-[#161616] pt-[10px]"> {/* Wrapper for the trap */}
+                                    
+                                    {/* The Panel Itself */}
+                                    <div className="flex-grow relative overflow-hidden">
+                                        {activePanel.name === 'summary' && <SummaryPanel onClose={() => setActivePanel(null)} configuration={configuration} />}
+                                        {activePanel.name === 'color' && <ColorPickerPanel onClose={() => setActivePanel(null)} editingColorContext={activePanel.context} colorSwatches={colorSwatches} onColorSelect={(color) => handleColorSelect(color, activePanel.context.id)} selectedColor={activePanel.context ? configuration[activePanel.context.id] : ''} />}
+                                        {activePanel.name === 'build' && <BuildPanel onClose={() => setActivePanel(null)} editingBuildContext={activePanel.context} buildConfig={configuration.build} onBuildConfigChange={handleBuildConfigChange} />}
+                                        {activePanel.name === 'text' && <TextPanel onClose={() => setActivePanel(null)} editingTextContext={activePanel.context} panelState={activePanel.context ? configuration[activePanel.context.id] : null} onPanelStateChange={(newState) => handleTextPanelChange(newState, activePanel.context.id)} colorSwatches={colorSwatches} />}
                                     </div>
-                                </FocusTrap>
+                                    
+                                    {/* The Footer - Moved INSIDE the trap's wrapper */}
+                                    <footer className="flex-shrink-0 bg-[#161616] flex items-center justify-start pb-[20px] px-[14px]">
+                                         {activePanel?.name === 'color' ? (
+                                             <div className="w-full grid grid-cols-[1fr_1.618fr] gap-[10px]">
+                                                 <ApplyToAllButton onClick={() => handleApplyColorToAll(null)} />
+                                                 <ContinueButton onClick={() => setActivePanel(null)} ariaLabel="Continue and return to list" label="Continue" />
+                                             </div>
+                                         ) : activePanel?.name === 'build' || activePanel?.name === 'text' ? (
+                                             <ContinueButton onClick={() => setActivePanel(null)} ariaLabel="Continue and return to list" label="Continue" />
+                                         ) : activePanel?.name === 'summary' ? (
+                                             <div className="w-full grid grid-cols-[1fr_1.618fr] gap-[10px]">
+                                                 <button type="button" onClick={() => setActivePanel(null)} className="flex items-center justify-center px-4 bg-[#393939] hover:bg-[#727272] active:bg-[#222222] rounded text-base font-semibold text-white h-[56px]" aria-label="Back to Design">
+                                                     <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg" className="mr-[5px]"><path d="M13 7H1M1 7L7 1M1 7L7 13" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                                                     <span>Back</span>
+                                                 </button>
+                                                 <DynamicOrderButton
+                                                     isSummaryVisible={true}
+                                                     onCompleteClick={() => alert('Complete Order clicked!')}
+                                                     onReviewClick={() => {}}
+                                                 />
+                                             </div>
+                                         ) : (
+                                             <></>
+                                         )}
+                                    </footer>
+                                </div>
                             )}
                         </div>
                         
