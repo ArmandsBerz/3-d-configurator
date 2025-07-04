@@ -8,7 +8,6 @@
   "homepage": "/build",
   "dependencies": {
     "@reduxjs/toolkit": "^2.2.5",
-    "focus-trap-react": "^11.0.4",
     "jquery": "^3.7.1",
     "lodash": "^4.17.21",
     "react": "^18.3.1",
