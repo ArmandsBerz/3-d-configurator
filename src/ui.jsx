@@ -22,21 +22,7 @@ const ImageOptionCard = ({ id, title, description, price, icon, isSelected, onSe
 </button>
 );
 
-const ContinueButton = ({ onClick, ariaLabel, label = "Continue" }) => (
-    <div className="w-full grid grid-cols-1">
-        <button
-            type="button"
-            onClick={onClick}
-            className="flex items-center justify-between px-4 bg-white hover:bg-gray-200 active:bg-gray-300 rounded text-base font-semibold text-[#161616] h-[56px] focus:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-blue-400"
-            aria-label={ariaLabel}
-        >
-            <span className="ml-[5px]">{label}</span>
-            <svg className="w-5 h-5 mr-[5px]" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg>
-        </button>
-    </div>
-);
-
-const PrimaryCallToActionButton = ({ label, onClick, ariaLabel }) => (
+const PrimaryCTAButton = ({ label, onClick, ariaLabel }) => (
     <button
         type="button"
         onClick={onClick}
@@ -47,6 +33,37 @@ const PrimaryCallToActionButton = ({ label, onClick, ariaLabel }) => (
         <svg width="34" height="14" viewBox="0 0 34 16" fill="none" xmlns="http://www.w3.org/2000/svg" className="mr-[5px]"><path d="M0 8H32.5M32.5 8L25.5 1M32.5 8H0.5M32.5 8L25.6077 15" stroke="white" strokeWidth="2" strokeLinecap="round"/></svg>
     </button>
 );
+
+const SecondaryButton = ({ label, onClick, variant = 'dark', icon = 'checkmark' }) => {
+  const baseClasses = "w-full flex items-center justify-center px-4 rounded text-base font-semibold h-[56px] focus:outline-none";
+
+  const variantClasses = variant === 'light'
+    ? 'bg-white hover:bg-gray-200 active:bg-gray-300 text-[#161616] focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-blue-400'
+    : 'bg-[#393939] hover:bg-[#727272] active:bg-[#222222] text-white focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-white';
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`${baseClasses} ${variantClasses}`}
+      aria-label={label}
+    >
+      {icon === 'backArrow' && (
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg" className="mr-[5px]">
+            <path d="M13 7H1M1 7L7 1M1 7L7 13" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+        </svg>
+      )}
+      
+      <span>{label}</span>
+      
+      {icon === 'checkmark' && (
+        <svg className="w-5 h-5 ml-[5px]" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+        </svg>
+      )}
+    </button>
+  );
+};
 
 const ColorSwatchGrid = ({ swatches, selectedColor, onColorSelect }) => (
   <div className="grid grid-cols-[repeat(auto-fit,minmax(42px,1fr))] gap-[10px] px-2 py-2">
@@ -65,20 +82,6 @@ const ColorSwatchGrid = ({ swatches, selectedColor, onColorSelect }) => (
     ))}
   </div>
 );
-
-// --- NEW Reusable ApplyToAllButton Component ---
-const ApplyToAllButton = ({ onClick }) => (
-    <button
-        type="button"
-        onClick={onClick}
-        className="w-full flex items-center justify-between px-4 bg-[#393939] hover:bg-[#727272] active:bg-[#222222] rounded text-base font-semibold text-white h-[56px] focus:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-white"
-        aria-label="Apply color to all sections"
-    >
-        <span className="ml-[5px]">Apply to All</span>
-        <svg className="w-5 h-5 mr-[5px]" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg>
-    </button>
-);
-
 
 const AccordionOptionMobile = ({ title, onClose, headerAccessory = null, children }) => {
     const scrollContainerRef = useRef(null);
@@ -201,15 +204,15 @@ const OverviewButton = ({ onClick, isDesktop, isOpen }) => (
     </button>
 );
 
-const DynamicOrderButton = ({ isSummaryVisible, onReviewClick, onCompleteClick }) => {
+const OrderButtonController = ({ isSummaryVisible, onReviewClick, onCompleteClick }) => {
   return isSummaryVisible ? (
-    <PrimaryCallToActionButton
+    <PrimaryCTAButton
       label="Complete Order"
       onClick={onCompleteClick}
       ariaLabel="Complete Order"
     />
   ) : (
-    <PrimaryCallToActionButton
+    <PrimaryCTAButton
       label="Review & Order"
       onClick={onReviewClick}
       ariaLabel="Review and Order"
@@ -279,7 +282,7 @@ const ColorOptionDesktop = ({
                     onColorSelect={onColorSelect}
                 />
             </AccordionOptionDesktop>
-            {isOpen && <ApplyToAllButton onClick={onApplyToAll} />}
+            {isOpen && <SecondaryButton label="Apply to All" onClick={onApplyToAll} variant="dark" icon="checkmark" />}
         </>
     );
 };
@@ -914,7 +917,7 @@ const UI = () => {
                             </div>
 
                             <div className="lg:w-[400px] w-full self-end mb-[1.9rem] mr-[2.5rem] lg:m-0 z-[1]">
-                                <DynamicOrderButton
+                                <OrderButtonController
                                     isSummaryVisible={agnosticAccordionOpen}
                                     onReviewClick={() => setAgnosticAccordionOpen(true)}
                                     onCompleteClick={() => alert('Proceeding to next step...')}
@@ -991,18 +994,15 @@ const UI = () => {
                                     <footer className="flex-shrink-0 bg-[#161616] flex items-center justify-start pb-[20px] px-[14px]">
                                          {activePanel?.name === 'color' ? (
                                              <div className="w-full grid grid-cols-[1fr_1.618fr] gap-[10px]">
-                                                 <ApplyToAllButton onClick={() => handleApplyColorToAll(null)} />
-                                                 <ContinueButton onClick={() => setActivePanel(null)} ariaLabel="Continue and return to list" label="Continue" />
+                                                 <SecondaryButton label="Apply to All" onClick={() => handleApplyColorToAll(null)} variant="dark" icon="checkmark" />
+                                                 <SecondaryButton label="Continue" onClick={() => setActivePanel(null)} variant="light" icon="checkmark" />
                                              </div>
                                          ) : activePanel?.name === 'build' || activePanel?.name === 'text' ? (
-                                             <ContinueButton onClick={() => setActivePanel(null)} ariaLabel="Continue and return to list" label="Continue" />
+                                             <SecondaryButton label="Continue" onClick={() => setActivePanel(null)} variant="light" icon="checkmark" />
                                          ) : activePanel?.name === 'summary' ? (
                                              <div className="w-full grid grid-cols-[1fr_1.618fr] gap-[10px]">
-                                                 <button type="button" onClick={() => setActivePanel(null)} className="flex items-center justify-center px-4 bg-[#393939] hover:bg-[#727272] active:bg-[#222222] rounded text-base font-semibold text-white h-[56px]" aria-label="Back to Design">
-                                                     <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg" className="mr-[5px]"><path d="M13 7H1M1 7L7 1M1 7L7 13" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                                                     <span>Back</span>
-                                                 </button>
-                                                 <DynamicOrderButton
+                                                 <SecondaryButton label="Back" onClick={() => setActivePanel(null)} variant="dark" icon="backArrow" />
+                                                 <OrderButtonController
                                                      isSummaryVisible={true}
                                                      onCompleteClick={() => alert('Complete Order clicked!')}
                                                      onReviewClick={() => {}}
@@ -1021,10 +1021,7 @@ const UI = () => {
                             <footer className="flex-shrink-0 bg-[#161616] flex items-center justify-start pt-[10px] pb-[20px] px-[14px]">
                                 <div className="w-full grid grid-cols-[1fr_1.618fr] gap-[10px]">
                                     {activePanel?.name === 'summary' ? (
-                                        <button type="button" onClick={() => setActivePanel(null)} className="flex items-center justify-center px-4 bg-[#393939] hover:bg-[#727272] active:bg-[#222222] rounded text-base font-semibold text-white h-[56px] focus:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-white" aria-label="Back to Design">
-                                            <svg width="34" height="14" viewBox="0 0 34 16" fill="none" xmlns="http://www.w3.org/2000/svg" className="mr-[5px]"><path d="M15.92 8H1.5M1.5 8L8.5 1M1.5 8L8.5 15" stroke="white" strokeWidth="2" strokeLinecap="round"/></svg>
-                                            <span>Back to Design</span>
-                                        </button>
+                                        <SecondaryButton label="Back to Design" onClick={() => setActivePanel(null)} variant="dark" icon="backArrow" />
                                     ) : (
                                         <OverviewButton
                                             onClick={() => setActivePanel({ name: 'summary' })}
@@ -1032,7 +1029,7 @@ const UI = () => {
                                             isOpen={activePanel?.name === 'summary'}
                                         />
                                     )}
-                                    <DynamicOrderButton
+                                    <OrderButtonController
                                         isSummaryVisible={activePanel?.name === 'summary'}
                                         onReviewClick={() => setActivePanel({ name: 'summary' })}
                                         onCompleteClick={() => alert('Complete Order clicked!')}
