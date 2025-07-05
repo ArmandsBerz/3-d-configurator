@@ -370,7 +370,7 @@ const buildOptionsData = [
     { id: 'throwingHand', title: 'Throwing Hand', options: ['RIGHT HAND', 'LEFT HAND'], layout: 'grid-cols-2' }
 ];
 
-const BuildPanel = ({ editingBuildContext, onClose, buildConfig, onBuildConfigChange }) => {
+const BuildOptionMobile = ({ editingBuildContext, onClose, buildConfig, onBuildConfigChange }) => {
     if (!editingBuildContext) return null;
 
     const handleSelectOption = (groupId, optionValue) => {
@@ -413,7 +413,7 @@ const BuildPanel = ({ editingBuildContext, onClose, buildConfig, onBuildConfigCh
     );
 };
 
-const TextPanel = ({ editingTextContext, panelState, onPanelStateChange, onClose, colorSwatches }) => {
+const TextOptionMobile = ({ editingTextContext, panelState, onPanelStateChange, onClose, colorSwatches }) => {
   if (!editingTextContext) return null;
 
   const handleTextChange = (e) => onPanelStateChange({ ...panelState, text: e.target.value });
@@ -660,7 +660,7 @@ const UI = () => {
     };
 
 
-    const handleOpenBuildPanel = (optionId, optionTitle) => {
+    const handleOpenBuildOption = (optionId, optionTitle) => {
         setActivePanel({ name: 'build', context: { id: optionId, title: optionTitle } });
     };
 
@@ -668,11 +668,11 @@ const UI = () => {
         setConfiguration(prev => ({...prev, build: newBuildData}));
     };
 
-    const handleOpenTextPanel = (optionId, optionTitle) => {
+    const handleOpenTextOption = (optionId, optionTitle) => {
         setActivePanel({ name: 'text', context: { id: optionId, title: optionTitle } });
     };
     
-    const handleTextPanelChange = (newTextData, contextId) => {
+    const handleTextOptionChange = (newTextData, contextId) => {
         if (contextId) {
             setConfiguration(prev => ({...prev, [contextId]: newTextData}));
         }
@@ -832,13 +832,13 @@ const UI = () => {
                                         <div className="space-y-5">
                                             <div>
                                                 <h3 className="text-sm font-semibold text-gray-400 mb-2">Text</h3>
-                                                <input type="text" className="w-full p-3 bg-[#2A2A2A] text-white rounded-md placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:outline-none" value={configuration.thumbName.text} onChange={(e) => handleTextPanelChange({ ...configuration.thumbName, text: e.target.value }, 'thumbName')} placeholder="ENTER YOUR TEXT..."/>
+                                                <input type="text" className="w-full p-3 bg-[#2A2A2A] text-white rounded-md placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:outline-none" value={configuration.thumbName.text} onChange={(e) => handleTextOptionChange({ ...configuration.thumbName, text: e.target.value }, 'thumbName')} placeholder="ENTER YOUR TEXT..."/>
                                             </div>
                                             <div>
                                                 <h3 className="text-sm font-semibold text-gray-400 mb-2">Font</h3>
                                                 <div className="grid grid-cols-2 gap-3">
-                                                    <button onClick={() => handleTextPanelChange({ ...configuration.thumbName, font: 'SCRIPT' }, 'thumbName')} className={`py-3 rounded-md text-base font-bold ${configuration.thumbName.font === 'SCRIPT' ? 'bg-white text-black' : 'bg-[#2a2a2a] hover:bg-[#333333] text-white'}`}>SCRIPT</button>
-                                                    <button onClick={() => handleTextPanelChange({ ...configuration.thumbName, font: 'BLOCK' }, 'thumbName')} className={`py-3 rounded-md text-base font-bold ${configuration.thumbName.font === 'BLOCK' ? 'bg-white text-black' : 'bg-[#2a2a2a] hover:bg-[#333333] text-white'}`}>BLOCK</button>
+                                                    <button onClick={() => handleTextOptionChange({ ...configuration.thumbName, font: 'SCRIPT' }, 'thumbName')} className={`py-3 rounded-md text-base font-bold ${configuration.thumbName.font === 'SCRIPT' ? 'bg-white text-black' : 'bg-[#2a2a2a] hover:bg-[#333333] text-white'}`}>SCRIPT</button>
+                                                    <button onClick={() => handleTextOptionChange({ ...configuration.thumbName, font: 'BLOCK' }, 'thumbName')} className={`py-3 rounded-md text-base font-bold ${configuration.thumbName.font === 'BLOCK' ? 'bg-white text-black' : 'bg-[#2a2a2a] hover:bg-[#333333] text-white'}`}>BLOCK</button>
                                                 </div>
                                             </div>
                                             <div>
@@ -846,7 +846,7 @@ const UI = () => {
                                                 <ColorSwatchGrid
                                                     swatches={colorSwatches}
                                                     selectedColor={configuration.thumbName.color}
-                                                    onColorSelect={(color) => handleTextPanelChange({ ...configuration.thumbName, color: color }, 'thumbName')}
+                                                    onColorSelect={(color) => handleTextOptionChange({ ...configuration.thumbName, color: color }, 'thumbName')}
                                                 />
                                             </div>
                                         </div>
@@ -861,13 +861,13 @@ const UI = () => {
                                         <div className="space-y-5">
                                             <div>
                                                 <h3 className="text-sm font-semibold text-gray-400 mb-2">Text</h3>
-                                                <input type="text" className="w-full p-3 bg-[#2A2A2A] text-white rounded-md placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:outline-none" value={configuration.pinkyName.text} onChange={(e) => handleTextPanelChange({ ...configuration.pinkyName, text: e.target.value }, 'pinkyName')} placeholder="ENTER YOUR TEXT..."/>
+                                                <input type="text" className="w-full p-3 bg-[#2A2A2A] text-white rounded-md placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:outline-none" value={configuration.pinkyName.text} onChange={(e) => handleTextOptionChange({ ...configuration.pinkyName, text: e.target.value }, 'pinkyName')} placeholder="ENTER YOUR TEXT..."/>
                                             </div>
                                             <div>
                                                 <h3 className="text-sm font-semibold text-gray-400 mb-2">Font</h3>
                                                 <div className="grid grid-cols-2 gap-3">
-                                                    <button onClick={() => handleTextPanelChange({ ...configuration.pinkyName, font: 'SCRIPT' }, 'pinkyName')} className={`py-3 rounded-md text-base font-bold ${configuration.pinkyName.font === 'SCRIPT' ? 'bg-white text-black' : 'bg-[#2a2a2a] hover:bg-[#333333] text-white'}`}>SCRIPT</button>
-                                                    <button onClick={() => handleTextPanelChange({ ...configuration.pinkyName, font: 'BLOCK' }, 'pinkyName')} className={`py-3 rounded-md text-base font-bold ${configuration.pinkyName.font === 'BLOCK' ? 'bg-white text-black' : 'bg-[#2a2a2a] hover:bg-[#333333] text-white'}`}>BLOCK</button>
+                                                    <button onClick={() => handleTextOptionChange({ ...configuration.pinkyName, font: 'SCRIPT' }, 'pinkyName')} className={`py-3 rounded-md text-base font-bold ${configuration.pinkyName.font === 'SCRIPT' ? 'bg-white text-black' : 'bg-[#2a2a2a] hover:bg-[#333333] text-white'}`}>SCRIPT</button>
+                                                    <button onClick={() => handleTextOptionChange({ ...configuration.pinkyName, font: 'BLOCK' }, 'pinkyName')} className={`py-3 rounded-md text-base font-bold ${configuration.pinkyName.font === 'BLOCK' ? 'bg-white text-black' : 'bg-[#2a2a2a] hover:bg-[#333333] text-white'}`}>BLOCK</button>
                                                 </div>
                                             </div>
                                             <div>
@@ -875,7 +875,7 @@ const UI = () => {
                                                 <ColorSwatchGrid
                                                     swatches={colorSwatches}
                                                     selectedColor={configuration.pinkyName.color}
-                                                    onColorSelect={(color) => handleTextPanelChange({ ...configuration.pinkyName, color: color }, 'pinkyName')}
+                                                    onColorSelect={(color) => handleTextOptionChange({ ...configuration.pinkyName, color: color }, 'pinkyName')}
                                                 />
                                             </div>
                                         </div>
@@ -886,7 +886,7 @@ const UI = () => {
                         </div>
 
                         <div
-                            className="
+                            className=" 
                             flex 
                             lg:absolute lg:bottom-[60px] lg:right-[60px] 
                             fixed w-full bottom-[-1rem] flex-row items-center gap-4 
@@ -894,7 +894,7 @@ const UI = () => {
                             "
                         >
                             <div
-                                className="
+                                className=" 
                                 lg:w-[400px] 
                                 text-[#999999] font-black text-[1.3rem] my-0 lg:mb-2.5 mx-0 
                                 flex flex-col justify-end 
@@ -937,7 +937,7 @@ const UI = () => {
                                 tabIndex="-1"
                             >
                                 <ScrollGradient position="top" isVisible={topGradientVisible} />
-                                <button data-id="build" className="w-full h-[56px] bg-[#1C1C1C] flex items-center justify-between px-4 mb-[10px] cursor-pointer hover:bg-[#2A2A2A] rounded-md focus:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-white" onClick={() => handleOpenBuildPanel('build', 'Build Options')}>
+                                <button data-id="build" className="w-full h-[56px] bg-[#1C1C1C] flex items-center justify-between px-4 mb-[10px] cursor-pointer hover:bg-[#2A2A2A] rounded-md focus:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-white" onClick={() => handleOpenBuildOption('build', 'Build Options')}>
                                     <div className="flex items-center"><svg viewBox="0 0 10 16" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-4 w-auto mr-3"><path d="M1 1L8 8L1.10769 15" stroke="white" strokeWidth={2}/></svg><span className="text-lg">Build</span></div>
                                     <span className="text-sm text-gray-400">Modify</span>
                                 </button>
@@ -961,14 +961,14 @@ const UI = () => {
                                     <div className="flex items-center"><svg viewBox="0 0 10 16" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-4 w-auto mr-3"><path d="M1 1L8 8L1.10769 15" stroke="white" strokeWidth={2}/></svg><span className="text-lg">Pinky</span></div>
                                     <span className="w-6 h-6 rounded-full" style={{ backgroundColor: configuration.pinky }}></span>
                                 </button>
-                                <button data-id="thumbName" className="w-full h-[56px] bg-[#1C1C1C] flex items-center justify-between px-4 mb-[10px] cursor-pointer hover:bg-[#2A2A2A] rounded-md focus:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-white" onClick={() => handleOpenTextPanel('thumbName', 'Thumb Name')}>
+                                <button data-id="thumbName" className="w-full h-[56px] bg-[#1C1C1C] flex items-center justify-between px-4 mb-[10px] cursor-pointer hover:bg-[#2A2A2A] rounded-md focus:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-white" onClick={() => handleOpenTextOption('thumbName', 'Thumb Name')}>
                                     <div className="flex items-center"><svg viewBox="0 0 10 16" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-4 w-auto mr-3"><path d="M1 1L8 8L1.10769 15" stroke="white" strokeWidth={2}/></svg><span className="text-lg">Thumb Name</span></div>
                                     <div className="flex items-center space-x-3">
                                         <span className="text-sm text-gray-400 truncate max-w-[100px]">{configuration.thumbName.text}</span>
                                         <span className="w-6 h-6 rounded-full" style={{ backgroundColor: configuration.thumbName.color }}></span>
                                     </div>
                                 </button>
-                                <button data-id="pinkyName" className="w-full h-[56px] bg-[#1C1C1C] flex items-center justify-between px-4 mb-[10px] cursor-pointer hover:bg-[#2A2A2A] rounded-md focus:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-white" onClick={() => handleOpenTextPanel('pinkyName', 'Pinky Name')}>
+                                <button data-id="pinkyName" className="w-full h-[56px] bg-[#1C1C1C] flex items-center justify-between px-4 mb-[10px] cursor-pointer hover:bg-[#2A2A2A] rounded-md focus:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-white" onClick={() => handleOpenTextOption('pinkyName', 'Pinky Name')}>
                                     <div className="flex items-center"><svg viewBox="0 0 10 16" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-4 w-auto mr-3"><path d="M1 1L8 8L1.10769 15" stroke="white" strokeWidth={2}/></svg><span className="text-lg">Pinky Name</span></div>
                                     <div className="flex items-center space-x-3">
                                         <span className="text-sm text-gray-400 truncate max-w-[100px]">{configuration.pinkyName.text}</span>
@@ -986,8 +986,8 @@ const UI = () => {
                                     <div className="flex-grow relative overflow-hidden">
                                         {activePanel.name === 'summary' && <SummaryPanel onClose={() => setActivePanel(null)} configuration={configuration} />}
                                         {activePanel.name === 'color' && <ColorOptionMobile onClose={() => setActivePanel(null)} editingColorContext={activePanel.context} colorSwatches={colorSwatches} onColorSelect={(color) => handleColorSelect(color, activePanel.context.id)} selectedColor={activePanel.context ? configuration[activePanel.context.id] : ''} />}
-                                        {activePanel.name === 'build' && <BuildPanel onClose={() => setActivePanel(null)} editingBuildContext={activePanel.context} buildConfig={configuration.build} onBuildConfigChange={handleBuildConfigChange} />}
-                                        {activePanel.name === 'text' && <TextPanel onClose={() => setActivePanel(null)} editingTextContext={activePanel.context} panelState={activePanel.context ? configuration[activePanel.context.id] : null} onPanelStateChange={(newState) => handleTextPanelChange(newState, activePanel.context.id)} colorSwatches={colorSwatches} />}
+                                        {activePanel.name === 'build' && <BuildOptionMobile onClose={() => setActivePanel(null)} editingBuildContext={activePanel.context} buildConfig={configuration.build} onBuildConfigChange={handleBuildConfigChange} />}
+                                        {activePanel.name === 'text' && <TextOptionMobile onClose={() => setActivePanel(null)} editingTextContext={activePanel.context} panelState={activePanel.context ? configuration[activePanel.context.id] : null} onPanelStateChange={(newState) => handleTextOptionChange(newState, activePanel.context.id)} colorSwatches={colorSwatches} />}
                                     </div>
                                     
                                     {/* The Footer - Moved INSIDE the trap's wrapper */}
