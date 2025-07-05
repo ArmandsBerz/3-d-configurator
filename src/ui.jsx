@@ -80,7 +80,7 @@ const ApplyToAllButton = ({ onClick }) => (
 );
 
 
-const EditingPanel = ({ title, onClose, headerAccessory = null, children }) => {
+const AccordionOptionMobile = ({ title, onClose, headerAccessory = null, children }) => {
     const scrollContainerRef = useRef(null);
     const [isTopGradientVisible, setIsTopGradientVisible] = useState(false);
     const [isBottomGradientVisible, setIsBottomGradientVisible] = useState(false);
@@ -218,7 +218,7 @@ const DynamicOrderButton = ({ isSummaryVisible, onReviewClick, onCompleteClick }
 };
 
 // --- Accordion Component for Desktop ---
-const AccordionItem = ({ title, children, isOpen, onToggle, headerContent }) => (
+const AccordionOptionDesktop = ({ title, children, isOpen, onToggle, headerContent }) => (
     <div className="bg-[#1C1C1C] rounded-md overflow-hidden pointer-events-auto">
         <button
             onClick={onToggle}
@@ -267,7 +267,7 @@ const ColorOptionDesktop = ({
 }) => {
     return (
         <>
-            <AccordionItem
+            <AccordionOptionDesktop
                 title={title}
                 isOpen={isOpen}
                 onToggle={onToggle}
@@ -278,7 +278,7 @@ const ColorOptionDesktop = ({
                     selectedColor={colorValue}
                     onColorSelect={onColorSelect}
                 />
-            </AccordionItem>
+            </AccordionOptionDesktop>
             {isOpen && <ApplyToAllButton onClick={onApplyToAll} />}
         </>
     );
@@ -335,9 +335,9 @@ const OrderSummaryInfo = ({ configuration }) => {
 
 const SummaryPanel = ({ onClose, configuration }) => {
     return (
-        <EditingPanel title="Order Summary" onClose={onClose}>
+        <AccordionOptionMobile title="Order Summary" onClose={onClose}>
             <OrderSummaryInfo configuration={configuration} />
-        </EditingPanel>
+        </AccordionOptionMobile>
     );
 };
 
@@ -345,7 +345,7 @@ const ColorOptionMobile = ({ editingColorContext, onClose, onColorSelect, colorS
   if (!editingColorContext) return null;
 
   return (
-    <EditingPanel
+    <AccordionOptionMobile
       title={editingColorContext.title || 'Color Picker'}
       onClose={onClose}
       headerAccessory={<span className="text-sm text-gray-400">{selectedColor}</span>}
@@ -355,7 +355,7 @@ const ColorOptionMobile = ({ editingColorContext, onClose, onColorSelect, colorS
         selectedColor={selectedColor}
         onColorSelect={onColorSelect}
       />
-    </EditingPanel>
+    </AccordionOptionMobile>
   );
 };
 
@@ -385,7 +385,7 @@ const BuildPanel = ({ editingBuildContext, onClose, buildConfig, onBuildConfigCh
     };
 
     return (
-        <EditingPanel title={editingBuildContext.title || 'Build Options'} onClose={onClose}>
+        <AccordionOptionMobile title={editingBuildContext.title || 'Build Options'} onClose={onClose}>
             <div className="space-y-6 pb-4">
                 <div>
                     <h3 className="text-sm font-semibold text-gray-400 mb-2">Glove Leather</h3>
@@ -406,7 +406,7 @@ const BuildPanel = ({ editingBuildContext, onClose, buildConfig, onBuildConfigCh
                     />
                 ))}
             </div>
-        </EditingPanel>
+        </AccordionOptionMobile>
     );
 };
 
@@ -418,7 +418,7 @@ const TextPanel = ({ editingTextContext, panelState, onPanelStateChange, onClose
   const handleColorChange = (color) => onPanelStateChange({ ...panelState, color });
 
   return (
-    <EditingPanel
+    <AccordionOptionMobile
       title={editingTextContext.title}
       onClose={onClose}
       headerAccessory={<span className="text-sm text-gray-400">{panelState.color}</span>}
@@ -444,7 +444,7 @@ const TextPanel = ({ editingTextContext, panelState, onPanelStateChange, onClose
           />
         </div>
       </div>
-    </EditingPanel>
+    </AccordionOptionMobile>
   );
 };
 
@@ -742,7 +742,7 @@ const UI = () => {
                             >
                                 <ScrollGradient position="top" isVisible={isTopGradientVisibleDesktop} />
                                 <div ref={accordionContainerRef} className="h-full overflow-y-auto space-y-4">
-                                    <AccordionItem
+                                    <AccordionOptionDesktop
                                         title="Build Options"
                                         isOpen={openAccordion === 'build'}
                                         onToggle={() => handleAccordionToggle('build')}
@@ -767,7 +767,7 @@ const UI = () => {
                                                 />
                                             ))}
                                         </div>
-                                    </AccordionItem>
+                                    </AccordionOptionDesktop>
 
                                     <ColorOptionDesktop
                                         title="Thumb Color"
@@ -820,7 +820,7 @@ const UI = () => {
                                         headerAccessory={<span className="w-6 h-6 rounded-full border border-white/20" style={{ backgroundColor: configuration.pinky }}></span>}
                                     />
                                     
-                                    <AccordionItem
+                                    <AccordionOptionDesktop
                                         title="Thumb Name"
                                         isOpen={openAccordion === 'thumbName'}
                                         onToggle={() => handleAccordionToggle('thumbName')}
@@ -847,9 +847,9 @@ const UI = () => {
                                                 />
                                             </div>
                                         </div>
-                                    </AccordionItem>
+                                    </AccordionOptionDesktop>
 
-                                    <AccordionItem
+                                    <AccordionOptionDesktop
                                         title="Pinky Name"
                                         isOpen={openAccordion === 'pinkyName'}
                                         onToggle={() => handleAccordionToggle('pinkyName')}
@@ -876,7 +876,7 @@ const UI = () => {
                                                 />
                                             </div>
                                         </div>
-                                    </AccordionItem>
+                                    </AccordionOptionDesktop>
                                 </div>
                                 <ScrollGradient position="bottom" isVisible={isBottomGradientVisibleDesktop} />
                             </div>
