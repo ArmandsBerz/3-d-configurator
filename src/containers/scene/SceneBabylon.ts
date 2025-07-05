@@ -1013,19 +1013,20 @@ export default class SceneBabylon {
     const hdrTexture = CubeTexture.CreateFromPrefilteredData('assets/environment.env', scene);
     scene.environmentTexture = hdrTexture;
 
-    // CAMERA
+      // CAMERA
     const camera = new ArcRotateCamera(
       'Camera',
       Math.PI / 2,
       Math.PI / 2,
-      2,
+      3,
       Vector3.Zero(),
       scene
     );
-    camera.lowerRadiusLimit = 0.5;
-    camera.upperRadiusLimit = 2;
+    camera.lowerRadiusLimit = 1.5;
+    camera.upperRadiusLimit = 4;
     camera.minZ = 0.1;
     camera.wheelPrecision = 150;
+    camera.fov = 0.3;
     camera.attachControl(this.canvas, true);
 
     // This setting universally disables panning for mouse, touch, and pen.
