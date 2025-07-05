@@ -11,7 +11,7 @@ const ScrollGradient = ({ position, isVisible }) => {
     );
 };
 
-const ImageOptionCard = ({ id, title, description, price, icon, isSelected, onSelect }) => (
+const ImageOption = ({ id, title, description, price, icon, isSelected, onSelect }) => (
 <button className={`relative p-3 h-24 rounded-md cursor-pointer flex flex-col justify-center items-center text-center bg-[#2a2a2a] ${isSelected ? 'border-4 border-white' : 'hover:bg-[#333333]'} focus:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-white`} onClick={onSelect}>
     <h4 className="text-base font-semibold text-white">{title}</h4>
     {isSelected && (
@@ -393,8 +393,8 @@ const BuildOptionMobile = ({ editingBuildContext, onClose, buildConfig, onBuildC
                 <div>
                     <h3 className="text-sm font-semibold text-gray-400 mb-2">Glove Leather</h3>
                     <div className="grid grid-cols-2 gap-3">
-                        <ImageOptionCard id="imgOpt1" title="Japanese Kip" isSelected={buildConfig.imageSelection === 'imgOpt1'} onSelect={() => handleImageSelect('imgOpt1')}/>
-                        <ImageOptionCard id="imgOpt2" title="American Steerhide" isSelected={buildConfig.imageSelection === 'imgOpt2'} onSelect={() => handleImageSelect('imgOpt2')}/>
+                        <ImageOption id="imgOpt1" title="Japanese Kip" isSelected={buildConfig.imageSelection === 'imgOpt1'} onSelect={() => handleImageSelect('imgOpt1')}/>
+                        <ImageOption id="imgOpt2" title="American Steerhide" isSelected={buildConfig.imageSelection === 'imgOpt2'} onSelect={() => handleImageSelect('imgOpt2')}/>
                     </div>
                 </div>
 
@@ -755,8 +755,8 @@ const UI = () => {
                                             <div>
                                                 <h3 className="text-sm font-semibold text-gray-400 mb-2">Glove Leather</h3>
                                                 <div className="grid grid-cols-2 gap-3">
-                                                    <ImageOptionCard id="imgOpt1" title="Japanese Kip" isSelected={configuration.build.imageSelection === 'imgOpt1'} onSelect={() => handleBuildConfigChange({...configuration.build, imageSelection: 'imgOpt1'})}/>
-                                                    <ImageOptionCard id="imgOpt2" title="American Steerhide" isSelected={configuration.build.imageSelection === 'imgOpt2'} onSelect={() => handleBuildConfigChange({...configuration.build, imageSelection: 'imgOpt2'})}/>
+                                                    <ImageOption id="imgOpt1" title="Japanese Kip" isSelected={configuration.build.imageSelection === 'imgOpt1'} onSelect={() => handleBuildConfigChange({...configuration.build, imageSelection: 'imgOpt1'})}/>
+                                                    <ImageOption id="imgOpt2" title="American Steerhide" isSelected={configuration.build.imageSelection === 'imgOpt2'} onSelect={() => handleBuildConfigChange({...configuration.build, imageSelection: 'imgOpt2'})}/>
                                                 </div>
                                             </div>
                                             {buildOptionsData.map((group) => (
