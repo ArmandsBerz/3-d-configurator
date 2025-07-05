@@ -53,9 +53,9 @@ const SecondaryButton = ({ label, onClick, variant = 'dark', icon = 'checkmark' 
             <path d="M13 7H1M1 7L7 1M1 7L7 13" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
         </svg>
       )}
-      
+
       <span>{label}</span>
-      
+
       {icon === 'checkmark' && (
         <svg className="w-5 h-5 ml-[5px]" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
@@ -107,7 +107,7 @@ const AccordionOptionMobile = ({ title, onClose, headerAccessory = null, childre
     useLayoutEffect(() => {
         checkAndSetGradients();
     }, [children, checkAndSetGradients]);
-    
+
     useEffect(() => {
         const element = scrollContainerRef.current;
         const handler = checkAndSetGradients;
@@ -116,7 +116,7 @@ const AccordionOptionMobile = ({ title, onClose, headerAccessory = null, childre
         if (element) {
             element.addEventListener('scroll', handler);
         }
-        
+
         return () => {
             window.removeEventListener('resize', handler);
             if (element) {
@@ -336,7 +336,7 @@ const OrderSummaryInfo = ({ configuration }) => {
     );
 };
 
-const SummaryPanel = ({ onClose, configuration }) => {
+const OverviewMobile = ({ onClose, configuration }) => {
     return (
         <AccordionOptionMobile title="Order Summary" onClose={onClose}>
             <OrderSummaryInfo configuration={configuration} />
@@ -379,7 +379,7 @@ const BuildOptionMobile = ({ editingBuildContext, onClose, buildConfig, onBuildC
             [groupId]: optionValue
         });
     };
-    
+
     const handleImageSelect = (selection) => {
         onBuildConfigChange({
             ...buildConfig,
@@ -474,6 +474,67 @@ const useBreakpoint = (breakpoint = '1024px') => {
     return isMatch;
 };
 
+const OverviewDesktop = ({ configuration }) => {
+    const [agnosticAccordionOpen, setAgnosticAccordionOpen] = useState(false);
+
+    useEffect(() => {
+        if (!agnosticAccordionOpen) return;
+
+        const handleKeyDown = (event) => {
+            if (event.key === 'Escape') {
+                setAgnosticAccordionOpen(false);
+            }
+        };
+        document.addEventListener('keydown', handleKeyDown);
+
+        return () => {
+            document.removeEventListener('keydown', handleKeyDown);
+        };
+    }, [agnosticAccordionOpen]);
+
+    return (
+        <div
+            className="
+            flex
+            lg:absolute lg:bottom-[60px] lg:right-[60px]
+            fixed w-full bottom-[-1rem] flex-row items-center gap-4
+            lg:flex-col lg:justify-end lg:w-auto lg:h-auto lg:gap-0
+            "
+        >
+            <div
+                className="
+                lg:w-[400px]
+                text-[#999999] font-black text-[1.3rem] my-0 lg:mb-2.5 mx-0
+                flex flex-col justify-end
+                lg:h-auto h-[80.8vh]
+                "
+            >
+                <OverviewButton
+                    onClick={() => setAgnosticAccordionOpen(!agnosticAccordionOpen)}
+                    isDesktop={true}
+                    isOpen={agnosticAccordionOpen}
+                />
+
+                <div className={`bg-[#222222] transition-[height] duration-300 ease-in ${agnosticAccordionOpen ? 'overflow-y-scroll h-auto lg:h-[calc(100vh-335px)]' : 'overflow-hidden h-0'}`}>
+                    <div className="text-base py-3.5 px-6">
+                        <div>
+                            <OrderSummaryInfo configuration={configuration} />
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div className="lg:w-[400px] w-full self-end mb-[1.9rem] mr-[2.5rem] lg:m-0 z-[1]">
+                <OrderButtonController
+                    isSummaryVisible={agnosticAccordionOpen}
+                    onReviewClick={() => setAgnosticAccordionOpen(true)}
+                    onCompleteClick={() => alert('Proceeding to next step...')}
+                />
+            </div>
+        </div>
+    );
+};
+
 
 // --- Main UI Component ---
 const UI = () => {
@@ -482,8 +543,7 @@ const UI = () => {
     const [isVisualizationExpanded, setIsVisualizationExpanded] = useState(false);
     const [openAccordion, setOpenAccordion] = useState('build');
     const [activePanel, setActivePanel] = useState(null);
-    const [agnosticAccordionOpen, setAgnosticAccordionOpen] = useState(false);
-    
+
     const [isAccordionScrolled, setIsAccordionScrolled] = useState(false);
     const accordionContainerRef = useRef(null);
     // State for desktop gradients
@@ -517,7 +577,7 @@ const UI = () => {
     });
 
     const listContainerRef = useRef(null);
-    
+
     const [topGradientVisible, setTopGradientVisible] = useState(false);
     const [bottomGradientVisible, setBottomGradientVisible] = useState(false);
 
@@ -562,11 +622,11 @@ const UI = () => {
         checkAndSetGradients();
         checkAndSetGradientsDesktop();
     }, [checkAndSetGradients, checkAndSetGradientsDesktop, activePanel, openAccordion]);
-    
+
     useEffect(() => {
         const mobileHandler = checkAndSetGradients;
         const desktopHandler = checkAndSetGradientsDesktop;
-        
+
         window.addEventListener('resize', mobileHandler);
         window.addEventListener('resize', desktopHandler);
 
@@ -579,7 +639,7 @@ const UI = () => {
         if (desktopElement) {
             desktopElement.addEventListener('scroll', desktopHandler);
         }
-        
+
         return () => {
             window.removeEventListener('resize', mobileHandler);
             window.removeEventListener('resize', desktopHandler);
@@ -591,7 +651,7 @@ const UI = () => {
             }
         };
     }, [checkAndSetGradients, checkAndSetGradientsDesktop]);
-    
+
     useEffect(() => {
         const handleAccordionScroll = () => {
             if (accordionContainerRef.current) {
@@ -612,23 +672,6 @@ const UI = () => {
             }
         };
     }, [isDesktop]);
-    
-    // START: Added useEffect for desktop Escape key functionality
-    useEffect(() => {
-        if (!isDesktop || !agnosticAccordionOpen) return;
-
-        const handleKeyDown = (event) => {
-            if (event.key === 'Escape') {
-                setAgnosticAccordionOpen(false);
-            }
-        };
-        document.addEventListener('keydown', handleKeyDown);
-
-        return () => {
-            document.removeEventListener('keydown', handleKeyDown);
-        };
-    }, [agnosticAccordionOpen, isDesktop]);
-    // END: Added useEffect
 
     const handleAccordionToggle = (accordionId) => {
         setOpenAccordion(prev => (prev === accordionId ? null : accordionId));
@@ -643,7 +686,7 @@ const UI = () => {
             setConfiguration(prev => ({ ...prev, [contextId]: color }));
         }
     };
-    
+
     const handleApplyColorToAll = (colorToApply) => {
         const aColorToApply = colorToApply || (activePanel && activePanel.name === 'color' && activePanel.context ? configuration[activePanel.context.id] : null);
 
@@ -671,7 +714,7 @@ const UI = () => {
     const handleOpenTextOption = (optionId, optionTitle) => {
         setActivePanel({ name: 'text', context: { id: optionId, title: optionTitle } });
     };
-    
+
     const handleTextOptionChange = (newTextData, contextId) => {
         if (contextId) {
             setConfiguration(prev => ({...prev, [contextId]: newTextData}));
@@ -719,7 +762,7 @@ const UI = () => {
                 <img src={`${process.env.PUBLIC_URL}/gloves.png`} alt="Glove Visualization" className="object-contain max-w-full max-h-full z-0" />
                 <div className="absolute bottom-4 inset-x-0 flex items-center justify-between text-xs z-10">
                     {!isDesktop && <button className="p-1 hover:bg-gray-800 hover:bg-opacity-50 rounded-md cursor-pointer ml-[14px] focus:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-white" onClick={() => setIsVisualizationExpanded(!isVisualizationExpanded)} aria-label={isVisualizationExpanded ? "Collapse visualization" : "Expand visualization"}>
-                        {isVisualizationExpanded ? ( <svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-7 h-7"><path d="M17.3176 3.39899C16.9681 3.39899 16.633 3.53795 16.3856 3.78514C16.1386 4.03232 15.9997 4.3675 15.9997 4.71725V10.3042C15.9997 10.9906 16.5561 11.547 17.2424 11.547L22.8324 11.547C23.1819 11.547 23.5173 11.408 23.7644 11.1609C24.0116 10.9139 24.1505 10.5785 24.1505 10.229C24.1505 9.87922 24.0116 9.54402 23.7644 9.29685C23.5173 9.04967 23.1819 8.9107 22.8324 8.9107H20.501L27.167 2.24612C27.4123 1.99854 27.5496 1.66397 27.5488 1.31541C27.5482 0.966682 27.4093 0.632697 27.1629 0.386154C26.9164 0.139575 26.5824 0.000809714 26.2337 1.87161e-06C25.8852 -0.000604998 25.5505 0.136743 25.3029 0.382111L18.6359 7.04824V4.71693C18.6359 4.36719 18.4969 4.03199 18.2498 3.78482C18.0026 3.53764 17.6673 3.39899 17.3176 3.39899Z" fill="white"/><path d="M24.1489 17.3166C24.1489 16.9671 24.0099 16.632 23.7627 16.3846C23.5155 16.1377 23.1804 15.9987 22.8306 15.9987H17.2437C16.5573 15.9987 16.0008 16.5551 16.0008 17.2414V22.8314C16.0008 23.1809 16.1398 23.5163 16.387 23.7634C16.634 24.0106 16.9694 24.1496 17.3189 24.1496C17.6686 24.1496 18.0038 24.0106 18.251 23.7634C18.4982 23.5163 18.6372 23.1809 18.6372 22.8314V20.5L25.3017 27.166C25.5493 27.4113 25.8839 27.5487 26.2324 27.5478C26.5812 27.5472 26.9152 27.4083 27.1617 27.1619C27.4083 26.9154 27.547 26.5814 27.5478 26.2328C27.5485 25.8843 27.4111 25.5495 27.1657 25.3019L20.4996 18.6349H22.8309C23.1807 18.6349 23.5159 18.496 23.763 18.2488C24.0102 18.0016 24.1489 17.6664 24.1489 17.3166Z" fill="white"/><path d="M10.2312 24.1479C10.5807 24.1479 10.9159 24.0089 11.1632 23.7617C11.4102 23.5146 11.5491 23.1794 11.5491 22.8296V17.2427C11.5491 16.5563 10.9928 15.9999 10.3064 15.9999H4.71642C4.36691 15.9999 4.03154 16.1388 3.7844 16.386C3.53724 16.633 3.39829 16.9684 3.39829 17.3179C3.39829 17.6677 3.53724 18.0029 3.7844 18.25C4.03156 18.4972 4.36691 18.6362 4.71642 18.6362H7.04786L0.381872 25.3008C0.136529 25.5483 -0.0008042 25.8829 3.54305e-06 26.2315C0.000610281 26.5802 0.139565 26.9142 0.385917 27.1607C0.632472 27.4073 0.966407 27.5461 1.31508 27.5469C1.66358 27.5475 1.9983 27.4101 2.24591 27.1648L8.91293 20.4986V22.8299C8.91293 23.1797 9.05189 23.5149 9.29905 23.7621C9.54621 24.0092 9.88149 24.1479 10.2312 24.1479Z" fill="white"/><path d="M3.39996 10.2302C3.39996 10.5797 3.53893 10.9149 3.78612 11.1622C4.0333 11.4092 4.36848 11.5482 4.71822 11.5482L10.3052 11.5482C10.9916 11.5482 11.548 10.9918 11.548 10.3055L11.548 4.71544C11.548 4.36594 11.409 4.03057 11.1618 3.78343C10.9149 3.53627 10.5795 3.39731 10.2299 3.39731C9.88019 3.39731 9.54499 3.53627 9.29783 3.78343C9.05064 4.03059 8.91168 4.36594 8.91168 4.71544V7.04688L2.2471 0.380895C1.99951 0.135552 1.66495 -0.00178075 1.31639 -0.00097302C0.967659 -0.000366296 0.633674 0.138588 0.387132 0.384941C0.140553 0.631495 0.00178728 0.96543 0.00097943 1.31411C0.000372556 1.6626 0.137721 1.99733 0.383088 2.24493L7.04922 8.91195H4.71791C4.36817 8.91195 4.03296 9.05091 3.7858 9.29807C3.53861 9.54523 3.39996 9.88052 3.39996 10.2302Z" fill="white"/></svg>
+                        {isVisualizationExpanded ? ( <svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-7 h-7"><path d="M17.3176 3.39899C16.9681 3.39899 16.6330 3.53795 16.3856 3.78514C16.1386 4.03232 15.9997 4.3675 15.9997 4.71725V10.3042C15.9997 10.9906 16.5561 11.547 17.2424 11.547L22.8324 11.547C23.1819 11.547 23.5173 11.408 23.7644 11.1609C24.0116 10.9139 24.1505 10.5785 24.1505 10.229C24.1505 9.87922 24.0116 9.54402 23.7644 9.29685C23.5173 9.04967 23.1819 8.9107 22.8324 8.9107H20.501L27.167 2.24612C27.4123 1.99854 27.5496 1.66397 27.5488 1.31541C27.5482 0.966682 27.4093 0.632697 27.1629 0.386154C26.9164 0.139575 26.5824 0.000809714 26.2337 1.87161e-06C25.8852 -0.000604998 25.5505 0.136743 25.3029 0.382111L18.6359 7.04824V4.71693C18.6359 4.36719 18.4969 4.03199 18.2498 3.78482C18.0026 3.53764 17.6673 3.39899 17.3176 3.39899Z" fill="white"/><path d="M24.1489 17.3166C24.1489 16.9671 24.0099 16.632 23.7627 16.3846C23.5155 16.1377 23.1804 15.9987 22.8306 15.9987H17.2437C16.5573 15.9987 16.0008 16.5551 16.0008 17.2414V22.8314C16.0008 23.1809 16.1398 23.5163 16.387 23.7634C16.634 24.0106 16.9694 24.1496 17.3189 24.1496C17.6686 24.1496 18.0038 24.0106 18.251 23.7634C18.4982 23.5163 18.6372 23.1809 18.6372 22.8314V20.5L25.3017 27.166C25.5493 27.4113 25.8839 27.5487 26.2324 27.5478C26.5812 27.5472 26.9152 27.4083 27.1617 27.1619C27.4083 26.9154 27.547 26.5814 27.5478 26.2328C27.5485 25.8843 27.4111 25.5495 27.1657 25.3019L20.4996 18.6349H22.8309C23.1807 18.6349 23.5159 18.496 23.763 18.2488C24.0102 18.0016 24.1489 17.6664 24.1489 17.3166Z" fill="white"/><path d="M10.2312 24.1479C10.5807 24.1479 10.9159 24.0089 11.1632 23.7617C11.4102 23.5146 11.5491 23.1794 11.5491 22.8296V17.2427C11.5491 16.5563 10.9928 15.9999 10.3064 15.9999H4.71642C4.36691 15.9999 4.03154 16.1388 3.7844 16.386C3.53724 16.633 3.39829 16.9684 3.39829 17.3179C3.39829 17.6677 3.53724 18.0029 3.7844 18.25C4.03156 18.4972 4.36691 18.6362 4.71642 18.6362H7.04786L0.381872 25.3008C0.136529 25.5483 -0.0008042 25.8829 3.54305e-06 26.2315C0.000610281 26.5802 0.139565 26.9142 0.385917 27.1607C0.632472 27.4073 0.966407 27.5461 1.31508 27.5469C1.66358 27.5475 1.9983 27.4101 2.24591 27.1648L8.91293 20.4986V22.8299C8.91293 23.1797 9.05189 23.5149 9.29905 23.7621C9.54621 24.0092 9.88149 24.1479 10.2312 24.1479Z" fill="white"/><path d="M3.39996 10.2302C3.39996 10.5797 3.53893 10.9149 3.78612 11.1622C4.0333 11.4092 4.36848 11.5482 4.71822 11.5482L10.3052 11.5482C10.9916 11.5482 11.548 10.9918 11.548 10.3055L11.548 4.71544C11.548 4.36594 11.409 4.03057 11.1618 3.78343C10.9149 3.53627 10.5795 3.39731 10.2299 3.39731C9.88019 3.39731 9.54499 3.53627 9.29783 3.78343C9.05064 4.03059 8.91168 4.36594 8.91168 4.71544V7.04688L2.2471 0.380895C1.99951 0.135552 1.66495 -0.00178075 1.31639 -0.00097302C0.967659 -0.000366296 0.633674 0.138588 0.387132 0.384941C0.140553 0.631495 0.00178728 0.96543 0.00097943 1.31411C0.000372556 1.6626 0.137721 1.99733 0.383088 2.24493L7.04922 8.91195H4.71791C4.36817 8.91195 4.03296 9.05091 3.7858 9.29807C3.53861 9.54523 3.39996 9.88052 3.39996 10.2302Z" fill="white"/></svg>
                         ) : ( <svg viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-7 h-7"><path d="M28 1.24271C28 0.556382 27.4436 0 26.7572 0H21.1692C20.8195 0 20.4843 0.138953 20.2371 0.386114C19.9899 0.633274 19.851 0.968417 19.851 1.31792C19.851 1.66763 19.9899 2.0028 20.2371 2.24994C20.4843 2.4971 20.8195 2.63605 21.1692 2.63605H23.4991L16.8345 9.30049C16.5891 9.54805 16.4518 9.88279 16.4524 10.2313C16.4532 10.58 16.5920 10.914 16.8385 11.1605C17.0851 11.4068 17.4191 11.5456 17.7678 11.5464C18.1163 11.5472 18.4509 11.4099 18.6985 11.1645L25.3636 4.49957V6.83184C25.3636 7.18135 25.5024 7.51672 25.7498 7.76386C25.9969 8.01102 26.3321 8.14997 26.6819 8.14997C27.0314 8.14997 27.3666 8.01102 27.6138 7.76386C27.861 7.5167 27.9999 7.18135 27.9999 6.83184L28 1.24271Z" fill="white"/><path d="M11.1656 16.8327C10.9184 16.5856 10.5831 16.4468 10.2335 16.4468C9.88397 16.4468 9.54857 16.5856 9.30141 16.8327L2.63631 23.4992V21.167C2.63631 20.8175 2.49735 20.4821 2.25016 20.235C2.00298 19.9878 1.6678 19.8488 1.31805 19.8488C0.968513 19.8488 0.633316 19.9878 0.386152 20.235C0.138967 20.4821 0 20.8175 0 21.167V26.7565C0 27.4428 0.556426 27.9992 1.24281 27.9992H6.82977C7.17931 27.9992 7.51471 27.8602 7.76187 27.6133C8.00906 27.3661 8.14803 27.0307 8.14803 26.6812C8.14803 26.3315 8.00906 25.9964 7.76187 25.7492C7.51469 25.5021 7.17931 25.3631 6.82977 25.3631H4.49929L11.1654 18.6966C11.4126 18.4492 11.5514 18.1141 11.5514 17.7646C11.5514 17.4151 11.4126 17.0797 11.1654 16.8326L11.1656 16.8327Z" fill="white"/><path d="M19.8508 26.6821C19.8508 27.0316 19.9898 27.3667 20.237 27.6141C20.4841 27.861 20.8193 28 21.1691 28H26.756C27.4424 28 27.9988 27.4436 27.9988 26.7573V21.1673C27.9988 20.8178 27.8599 20.4824 27.6127 20.2353C27.3657 19.9881 27.0303 19.8492 26.6808 19.8492C26.331 19.8492 25.9958 19.8881 25.7487 20.2353C25.5015 20.4824 25.3625 20.8178 25.3625 21.1673V23.4987L18.6979 16.8327C18.4503 16.5874 18.1158 16.4501 17.7672 16.4509C17.4185 16.4515 17.0845 16.5904 16.838 16.8368C16.5914 17.0833 16.4526 17.4173 16.4518 17.7659C16.4512 18.1144 16.5886 18.4492 16.8339 18.6968L23.5001 25.3638H21.1687C20.819 25.3638 20.4838 25.5027 20.2366 25.7499C19.9895 25.9971 19.8505 26.3322 19.8505 26.6819L19.8508 26.6821Z" fill="white"/><path d="M11.1656 9.30049L4.50001 2.63605H6.82987C7.17941 2.63605 7.51481 2.4971 7.76198 2.24994C8.00916 2.00278 8.14813 1.66764 8.14813 1.31792C8.14813 0.968417 8.00916 0.633253 7.76198 0.386114C7.51479 0.138953 7.17941 0 6.82987 0H1.24292C0.55653 0 0.000103511 0.55637 0.000103511 1.24269V6.8322C0.000103511 7.1817 0.139071 7.51707 0.386255 7.76421C0.63344 8.01137 0.968616 8.15033 1.31816 8.15033C1.6679 8.15033 2.0031 8.01137 2.25027 7.76421C2.49745 7.51705 2.63642 7.1817 2.63642 6.8322V4.49993L9.30151 11.1649C9.5491 11.4102 9.88387 11.5476 10.2324 11.5467C10.5812 11.5459 10.9151 11.4072 11.1617 11.1608C11.4081 10.9143 11.5468 10.5803 11.5476 10.2317C11.5484 9.88317 11.4111 9.54845 11.1657 9.30084L11.1656 9.30049Z" fill="white"/> </svg>
                         ) }
                     </button>}
@@ -822,7 +865,7 @@ const UI = () => {
                                         onApplyToAll={() => handleApplyColorToAll(configuration.pinky)}
                                         headerAccessory={<span className="w-6 h-6 rounded-full border border-white/20" style={{ backgroundColor: configuration.pinky }}></span>}
                                     />
-                                    
+
                                     <AccordionOptionDesktop
                                         title="Thumb Name"
                                         isOpen={openAccordion === 'thumbName'}
@@ -884,52 +927,13 @@ const UI = () => {
                                 <ScrollGradient position="bottom" isVisible={isBottomGradientVisibleDesktop} />
                             </div>
                         </div>
-
-                        <div
-                            className=" 
-                            flex 
-                            lg:absolute lg:bottom-[60px] lg:right-[60px] 
-                            fixed w-full bottom-[-1rem] flex-row items-center gap-4 
-                            lg:flex-col lg:justify-end lg:w-auto lg:h-auto lg:gap-0 
-                            "
-                        >
-                            <div
-                                className=" 
-                                lg:w-[400px] 
-                                text-[#999999] font-black text-[1.3rem] my-0 lg:mb-2.5 mx-0 
-                                flex flex-col justify-end 
-                                lg:h-auto h-[80.8vh] 
-                                "
-                            >
-                                <OverviewButton
-                                    onClick={() => setAgnosticAccordionOpen(!agnosticAccordionOpen)}
-                                    isDesktop={isDesktop}
-                                    isOpen={agnosticAccordionOpen}
-                                />
-
-                                <div className={`bg-[#222222] transition-[height] duration-300 ease-in ${agnosticAccordionOpen ? 'overflow-y-scroll h-auto lg:h-[calc(100vh-335px)]' : 'overflow-hidden h-0'}`}>
-                                    <div className="text-base py-3.5 px-6">
-                                        <div>
-                                            <OrderSummaryInfo configuration={configuration} />
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="lg:w-[400px] w-full self-end mb-[1.9rem] mr-[2.5rem] lg:m-0 z-[1]">
-                                <OrderButtonController
-                                    isSummaryVisible={agnosticAccordionOpen}
-                                    onReviewClick={() => setAgnosticAccordionOpen(true)}
-                                    onCompleteClick={() => alert('Proceeding to next step...')}
-                                />
-                            </div>
-                        </div>
+                        <OverviewDesktop configuration={configuration} />
                     </>
                 ) : (
                     <div className="flex flex-col overflow-hidden bg-[#161616]" style={{ flexBasis: `${CONTROLS_PROPORTION * 100}%` }}>
                         {/* This container now holds both the list and the trapped overlay */}
                         <div className="relative flex-grow overflow-hidden">
-                            
+
                             {/* 1. The main list. This section is unchanged. It will be correctly hidden by your existing CSS. */}
                             <section
                                 ref={listContainerRef}
@@ -977,19 +981,19 @@ const UI = () => {
                                 </button>
                                 <ScrollGradient position="bottom" isVisible={bottomGradientVisible} />
                             </section>
-                            
+
                             {/* 2. The Focus-Trapped Overlay. This ONLY appears when a panel is active and only on mobile. */}
                             {activePanel && (
                                 <div className="absolute inset-0 z-30 flex flex-col bg-[#161616] pt-[10px]"> {/* Wrapper for the trap */}
-                                    
+
                                     {/* The Panel Itself */}
                                     <div className="flex-grow relative overflow-hidden">
-                                        {activePanel.name === 'summary' && <SummaryPanel onClose={() => setActivePanel(null)} configuration={configuration} />}
+                                        {activePanel.name === 'summary' && <OverviewMobile onClose={() => setActivePanel(null)} configuration={configuration} />}
                                         {activePanel.name === 'color' && <ColorOptionMobile onClose={() => setActivePanel(null)} editingColorContext={activePanel.context} colorSwatches={colorSwatches} onColorSelect={(color) => handleColorSelect(color, activePanel.context.id)} selectedColor={activePanel.context ? configuration[activePanel.context.id] : ''} />}
                                         {activePanel.name === 'build' && <BuildOptionMobile onClose={() => setActivePanel(null)} editingBuildContext={activePanel.context} buildConfig={configuration.build} onBuildConfigChange={handleBuildConfigChange} />}
                                         {activePanel.name === 'text' && <TextOptionMobile onClose={() => setActivePanel(null)} editingTextContext={activePanel.context} panelState={activePanel.context ? configuration[activePanel.context.id] : null} onPanelStateChange={(newState) => handleTextOptionChange(newState, activePanel.context.id)} colorSwatches={colorSwatches} />}
                                     </div>
-                                    
+
                                     {/* The Footer - Moved INSIDE the trap's wrapper */}
                                     <footer className="flex-shrink-0 bg-[#161616] flex items-center justify-start pb-[20px] px-[14px]">
                                          {activePanel?.name === 'color' ? (
@@ -1015,7 +1019,7 @@ const UI = () => {
                                 </div>
                             )}
                         </div>
-                        
+
                         {/* 3. The Default Footer. This only appears when NO panel is active. */}
                         {!activePanel && (
                             <footer className="flex-shrink-0 bg-[#161616] flex items-center justify-start pt-[10px] pb-[20px] px-[14px]">
