@@ -150,7 +150,7 @@ const AccordionOptionMobile = ({ title, onClose, headerAccessory = null, childre
     );
 };
 
-const SelectableButton = ({ label, isSelected, onSelect }) => (
+const Option = ({ label, isSelected, onSelect }) => (
     <button
       className={`text-sm py-2 px-3 rounded-md h-[36px] flex items-center justify-center font-medium transition-colors focus:outline-none focus-visible:ring-4 focus-visible:ring-inset ${
         isSelected
@@ -168,7 +168,7 @@ const OptionGroup = ({ title, options, layout, selectedOption, onSelectOption })
     <h3 className="text-sm font-semibold text-gray-400 mb-2">{title}</h3>
     <div className={`grid ${layout} gap-2`}>
       {options.map((option) => (
-        <SelectableButton
+        <Option
           key={option}
           label={option}
           isSelected={selectedOption === option}
