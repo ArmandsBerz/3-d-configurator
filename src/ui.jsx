@@ -254,8 +254,8 @@ const AccordionItem = ({ title, children, isOpen, onToggle, headerContent }) => 
     </div>
 );
 
-// --- NEW SPECIALIZED COLOR ACCORDION ---
-const ColorAccordion = ({
+// --- DESKTOP COLOR OPTION COMPONENT ---
+const ColorOptionDesktop = ({
     title,
     isOpen,
     onToggle,
@@ -341,7 +341,7 @@ const SummaryPanel = ({ onClose, configuration }) => {
     );
 };
 
-const ColorPickerPanel = ({ editingColorContext, onClose, onColorSelect, colorSwatches, selectedColor }) => {
+const ColorOptionMobile = ({ editingColorContext, onClose, onColorSelect, colorSwatches, selectedColor }) => {
   if (!editingColorContext) return null;
 
   return (
@@ -769,7 +769,7 @@ const UI = () => {
                                         </div>
                                     </AccordionItem>
 
-                                    <ColorAccordion
+                                    <ColorOptionDesktop
                                         title="Thumb Color"
                                         isOpen={openAccordion === 'thumb'}
                                         onToggle={() => handleAccordionToggle('thumb')}
@@ -779,7 +779,7 @@ const UI = () => {
                                         onApplyToAll={() => handleApplyColorToAll(configuration.thumb)}
                                         headerAccessory={<span className="w-6 h-6 rounded-full border border-white/20" style={{ backgroundColor: configuration.thumb }}></span>}
                                     />
-                                    <ColorAccordion
+                                    <ColorOptionDesktop
                                         title="Index Color"
                                         isOpen={openAccordion === 'index'}
                                         onToggle={() => handleAccordionToggle('index')}
@@ -789,7 +789,7 @@ const UI = () => {
                                         onApplyToAll={() => handleApplyColorToAll(configuration.index)}
                                         headerAccessory={<span className="w-6 h-6 rounded-full border border-white/20" style={{ backgroundColor: configuration.index }}></span>}
                                     />
-                                    <ColorAccordion
+                                    <ColorOptionDesktop
                                         title="Middle Color"
                                         isOpen={openAccordion === 'middle'}
                                         onToggle={() => handleAccordionToggle('middle')}
@@ -799,7 +799,7 @@ const UI = () => {
                                         onApplyToAll={() => handleApplyColorToAll(configuration.middle)}
                                         headerAccessory={<span className="w-6 h-6 rounded-full border border-white/20" style={{ backgroundColor: configuration.middle }}></span>}
                                     />
-                                    <ColorAccordion
+                                    <ColorOptionDesktop
                                         title="Ring Color"
                                         isOpen={openAccordion === 'ring'}
                                         onToggle={() => handleAccordionToggle('ring')}
@@ -809,7 +809,7 @@ const UI = () => {
                                         onApplyToAll={() => handleApplyColorToAll(configuration.ring)}
                                         headerAccessory={<span className="w-6 h-6 rounded-full border border-white/20" style={{ backgroundColor: configuration.ring }}></span>}
                                     />
-                                    <ColorAccordion
+                                    <ColorOptionDesktop
                                         title="Pinky Color"
                                         isOpen={openAccordion === 'pinky'}
                                         onToggle={() => handleAccordionToggle('pinky')}
@@ -982,7 +982,7 @@ const UI = () => {
                                     {/* The Panel Itself */}
                                     <div className="flex-grow relative overflow-hidden">
                                         {activePanel.name === 'summary' && <SummaryPanel onClose={() => setActivePanel(null)} configuration={configuration} />}
-                                        {activePanel.name === 'color' && <ColorPickerPanel onClose={() => setActivePanel(null)} editingColorContext={activePanel.context} colorSwatches={colorSwatches} onColorSelect={(color) => handleColorSelect(color, activePanel.context.id)} selectedColor={activePanel.context ? configuration[activePanel.context.id] : ''} />}
+                                        {activePanel.name === 'color' && <ColorOptionMobile onClose={() => setActivePanel(null)} editingColorContext={activePanel.context} colorSwatches={colorSwatches} onColorSelect={(color) => handleColorSelect(color, activePanel.context.id)} selectedColor={activePanel.context ? configuration[activePanel.context.id] : ''} />}
                                         {activePanel.name === 'build' && <BuildPanel onClose={() => setActivePanel(null)} editingBuildContext={activePanel.context} buildConfig={configuration.build} onBuildConfigChange={handleBuildConfigChange} />}
                                         {activePanel.name === 'text' && <TextPanel onClose={() => setActivePanel(null)} editingTextContext={activePanel.context} panelState={activePanel.context ? configuration[activePanel.context.id] : null} onPanelStateChange={(newState) => handleTextPanelChange(newState, activePanel.context.id)} colorSwatches={colorSwatches} />}
                                     </div>
