@@ -257,7 +257,38 @@ const AccordionOptionDesktop = ({ title, children, isOpen, onToggle, headerConte
     </div>
 );
 
-// --- DESKTOP COLOR OPTION COMPONENT ---
+// --- DESKTOP OPTION COMPONENTS ---
+const BuildOptionDesktop = ({ isOpen, onToggle, buildConfig, onBuildConfigChange, headerContent }) => {
+    return (
+        <AccordionOptionDesktop
+            title="Build Options"
+            isOpen={isOpen}
+            onToggle={onToggle}
+            headerContent={headerContent}
+        >
+            <div className="space-y-6">
+                <div>
+                    <h3 className="text-sm font-semibold text-gray-400 mb-2">Glove Leather</h3>
+                    <div className="grid grid-cols-2 gap-3">
+                        <ImageOption id="imgOpt1" title="Japanese Kip" isSelected={buildConfig.imageSelection === 'imgOpt1'} onSelect={() => onBuildConfigChange({...buildConfig, imageSelection: 'imgOpt1'})}/>
+                        <ImageOption id="imgOpt2" title="American Steerhide" isSelected={buildConfig.imageSelection === 'imgOpt2'} onSelect={() => onBuildConfigChange({...buildConfig, imageSelection: 'imgOpt2'})}/>
+                    </div>
+                </div>
+                {buildOptionsData.map((group) => (
+                    <OptionGroup
+                        key={group.id}
+                        title={group.title}
+                        options={group.options}
+                        layout={group.layout}
+                        selectedOption={buildConfig[group.id]}
+                        onSelectOption={(value) => onBuildConfigChange({ ...buildConfig, [group.id]: value })}
+                    />
+                ))}
+            </div>
+        </AccordionOptionDesktop>
+    );
+};
+
 const ColorOptionDesktop = ({
     title,
     isOpen,
@@ -284,6 +315,39 @@ const ColorOptionDesktop = ({
             </AccordionOptionDesktop>
             {isOpen && <SecondaryButton label="Apply to All" onClick={onApplyToAll} variant="dark" icon="checkmark" />}
         </>
+    );
+};
+
+const TextOptionDesktop = ({ title, isOpen, onToggle, value, onChange, colorSwatches, headerContent }) => {
+    return (
+        <AccordionOptionDesktop
+            title={title}
+            isOpen={isOpen}
+            onToggle={onToggle}
+            headerContent={headerContent}
+        >
+            <div className="space-y-5">
+                <div>
+                    <h3 className="text-sm font-semibold text-gray-400 mb-2">Text</h3>
+                    <input type="text" className="w-full p-3 bg-[#2A2A2A] text-white rounded-md placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:outline-none" value={value.text} onChange={(e) => onChange({ ...value, text: e.target.value })} placeholder="ENTER YOUR TEXT..."/>
+                </div>
+                <div>
+                    <h3 className="text-sm font-semibold text-gray-400 mb-2">Font</h3>
+                    <div className="grid grid-cols-2 gap-3">
+                        <button onClick={() => onChange({ ...value, font: 'SCRIPT' })} className={`py-3 rounded-md text-base font-bold focus:outline-none focus-visible:ring-4 focus-visible:ring-inset ${value.font === 'SCRIPT' ? 'bg-white text-black focus-visible:ring-blue-400' : 'bg-[#2a2a2a] hover:bg-[#333333] text-white focus-visible:ring-white'}`}>SCRIPT</button>
+                        <button onClick={() => onChange({ ...value, font: 'BLOCK' })} className={`py-3 rounded-md text-base font-bold focus:outline-none focus-visible:ring-4 focus-visible:ring-inset ${value.font === 'BLOCK' ? 'bg-white text-black focus-visible:ring-blue-400' : 'bg-[#2a2a2a] hover:bg-[#333333] text-white focus-visible:ring-white'}`}>BLOCK</button>
+                    </div>
+                </div>
+                <div>
+                    <h3 className="text-sm font-semibold text-gray-400 mb-2">Color</h3>
+                    <ColorSwatchGrid
+                        swatches={colorSwatches}
+                        selectedColor={value.color}
+                        onColorSelect={(color) => onChange({ ...value, color: color })}
+                    />
+                </div>
+            </div>
+        </AccordionOptionDesktop>
     );
 };
 
@@ -788,32 +852,13 @@ const UI = () => {
                             >
                                 <ScrollGradient position="top" isVisible={isTopGradientVisibleDesktop} />
                                 <div ref={accordionContainerRef} className="h-full overflow-y-auto space-y-4">
-                                    <AccordionOptionDesktop
-                                        title="Build Options"
+                                    <BuildOptionDesktop
                                         isOpen={openAccordion === 'build'}
                                         onToggle={() => handleAccordionToggle('build')}
+                                        buildConfig={configuration.build}
+                                        onBuildConfigChange={handleBuildConfigChange}
                                         headerContent={<span className="text-sm text-gray-400">Modify</span>}
-                                    >
-                                        <div className="space-y-6">
-                                            <div>
-                                                <h3 className="text-sm font-semibold text-gray-400 mb-2">Glove Leather</h3>
-                                                <div className="grid grid-cols-2 gap-3">
-                                                    <ImageOption id="imgOpt1" title="Japanese Kip" isSelected={configuration.build.imageSelection === 'imgOpt1'} onSelect={() => handleBuildConfigChange({...configuration.build, imageSelection: 'imgOpt1'})}/>
-                                                    <ImageOption id="imgOpt2" title="American Steerhide" isSelected={configuration.build.imageSelection === 'imgOpt2'} onSelect={() => handleBuildConfigChange({...configuration.build, imageSelection: 'imgOpt2'})}/>
-                                                </div>
-                                            </div>
-                                            {buildOptionsData.map((group) => (
-                                                <OptionGroup
-                                                    key={group.id}
-                                                    title={group.title}
-                                                    options={group.options}
-                                                    layout={group.layout}
-                                                    selectedOption={configuration.build[group.id]}
-                                                    onSelectOption={(value) => handleBuildConfigChange({ ...configuration.build, [group.id]: value })}
-                                                />
-                                            ))}
-                                        </div>
-                                    </AccordionOptionDesktop>
+                                    />
 
                                     <ColorOptionDesktop
                                         title="Thumb Color"
@@ -866,63 +911,25 @@ const UI = () => {
                                         headerAccessory={<span className="w-6 h-6 rounded-full border border-white/20" style={{ backgroundColor: configuration.pinky }}></span>}
                                     />
 
-                                    <AccordionOptionDesktop
+                                    <TextOptionDesktop
                                         title="Thumb Name"
                                         isOpen={openAccordion === 'thumbName'}
                                         onToggle={() => handleAccordionToggle('thumbName')}
+                                        value={configuration.thumbName}
+                                        onChange={(newState) => handleTextOptionChange(newState, 'thumbName')}
+                                        colorSwatches={colorSwatches}
                                         headerContent={<span className="text-sm text-gray-400 truncate max-w-[100px]">{configuration.thumbName.text}</span>}
-                                    >
-                                        <div className="space-y-5">
-                                            <div>
-                                                <h3 className="text-sm font-semibold text-gray-400 mb-2">Text</h3>
-                                                <input type="text" className="w-full p-3 bg-[#2A2A2A] text-white rounded-md placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:outline-none" value={configuration.thumbName.text} onChange={(e) => handleTextOptionChange({ ...configuration.thumbName, text: e.target.value }, 'thumbName')} placeholder="ENTER YOUR TEXT..."/>
-                                            </div>
-                                            <div>
-                                                <h3 className="text-sm font-semibold text-gray-400 mb-2">Font</h3>
-                                                <div className="grid grid-cols-2 gap-3">
-                                                    <button onClick={() => handleTextOptionChange({ ...configuration.thumbName, font: 'SCRIPT' }, 'thumbName')} className={`py-3 rounded-md text-base font-bold ${configuration.thumbName.font === 'SCRIPT' ? 'bg-white text-black' : 'bg-[#2a2a2a] hover:bg-[#333333] text-white'}`}>SCRIPT</button>
-                                                    <button onClick={() => handleTextOptionChange({ ...configuration.thumbName, font: 'BLOCK' }, 'thumbName')} className={`py-3 rounded-md text-base font-bold ${configuration.thumbName.font === 'BLOCK' ? 'bg-white text-black' : 'bg-[#2a2a2a] hover:bg-[#333333] text-white'}`}>BLOCK</button>
-                                                </div>
-                                            </div>
-                                            <div>
-                                                <h3 className="text-sm font-semibold text-gray-400 mb-2">Color</h3>
-                                                <ColorSwatchGrid
-                                                    swatches={colorSwatches}
-                                                    selectedColor={configuration.thumbName.color}
-                                                    onColorSelect={(color) => handleTextOptionChange({ ...configuration.thumbName, color: color }, 'thumbName')}
-                                                />
-                                            </div>
-                                        </div>
-                                    </AccordionOptionDesktop>
+                                    />
 
-                                    <AccordionOptionDesktop
+                                    <TextOptionDesktop
                                         title="Pinky Name"
                                         isOpen={openAccordion === 'pinkyName'}
                                         onToggle={() => handleAccordionToggle('pinkyName')}
+                                        value={configuration.pinkyName}
+                                        onChange={(newState) => handleTextOptionChange(newState, 'pinkyName')}
+                                        colorSwatches={colorSwatches}
                                         headerContent={<span className="text-sm text-gray-400 truncate max-w-[100px]">{configuration.pinkyName.text}</span>}
-                                    >
-                                        <div className="space-y-5">
-                                            <div>
-                                                <h3 className="text-sm font-semibold text-gray-400 mb-2">Text</h3>
-                                                <input type="text" className="w-full p-3 bg-[#2A2A2A] text-white rounded-md placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:outline-none" value={configuration.pinkyName.text} onChange={(e) => handleTextOptionChange({ ...configuration.pinkyName, text: e.target.value }, 'pinkyName')} placeholder="ENTER YOUR TEXT..."/>
-                                            </div>
-                                            <div>
-                                                <h3 className="text-sm font-semibold text-gray-400 mb-2">Font</h3>
-                                                <div className="grid grid-cols-2 gap-3">
-                                                    <button onClick={() => handleTextOptionChange({ ...configuration.pinkyName, font: 'SCRIPT' }, 'pinkyName')} className={`py-3 rounded-md text-base font-bold ${configuration.pinkyName.font === 'SCRIPT' ? 'bg-white text-black' : 'bg-[#2a2a2a] hover:bg-[#333333] text-white'}`}>SCRIPT</button>
-                                                    <button onClick={() => handleTextOptionChange({ ...configuration.pinkyName, font: 'BLOCK' }, 'pinkyName')} className={`py-3 rounded-md text-base font-bold ${configuration.pinkyName.font === 'BLOCK' ? 'bg-white text-black' : 'bg-[#2a2a2a] hover:bg-[#333333] text-white'}`}>BLOCK</button>
-                                                </div>
-                                            </div>
-                                            <div>
-                                                <h3 className="text-sm font-semibold text-gray-400 mb-2">Color</h3>
-                                                <ColorSwatchGrid
-                                                    swatches={colorSwatches}
-                                                    selectedColor={configuration.pinkyName.color}
-                                                    onColorSelect={(color) => handleTextOptionChange({ ...configuration.pinkyName, color: color }, 'pinkyName')}
-                                                />
-                                            </div>
-                                        </div>
-                                    </AccordionOptionDesktop>
+                                    />
                                 </div>
                                 <ScrollGradient position="bottom" isVisible={isBottomGradientVisibleDesktop} />
                             </div>
@@ -1007,9 +1014,9 @@ const UI = () => {
                                              <div className="w-full grid grid-cols-[1fr_1.618fr] gap-[10px]">
                                                  <SecondaryButton label="Back" onClick={() => setOpenAccordionOptionMobile(null)} variant="dark" icon="backArrow" />
                                                  <OrderButtonController
-                                                     isSummaryVisible={true}
-                                                     onCompleteClick={() => alert('Complete Order clicked!')}
-                                                     onReviewClick={() => {}}
+                                                      isSummaryVisible={true}
+                                                      onCompleteClick={() => alert('Complete Order clicked!')}
+                                                      onReviewClick={() => {}}
                                                  />
                                              </div>
                                          ) : (
