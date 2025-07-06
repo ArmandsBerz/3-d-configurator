@@ -1,5 +1,32 @@
 import React, { useState, useRef, useLayoutEffect, useCallback, useEffect } from 'react';
 
+// --- Constants (Decoupled Data Sources) ---
+
+const leatherOptions = [
+    { id: 'imgOpt1', title: 'Japanese Kip' },
+    { id: 'imgOpt2', title: 'American Steerhide' }
+];
+
+const fontOptions = [
+    { id: 'SCRIPT', label: 'SCRIPT' },
+    { id: 'BLOCK', label: 'BLOCK' }
+];
+
+const colorSwatches = [
+    '#C62828', '#AD1457', '#6A1B9A', '#4527A0', '#283593', '#1565C0',
+    '#0277BD', '#00838F', '#00695C', '#2E7D32', '#558B2F', '#9E9D24',
+    '#F9A825', '#FF8F00', '#EF6C00', '#D84315', '#4E342E', '#424242',
+    '#BDBDBD', '#37474F',
+];
+
+const buildOptionsData = [
+    { id: 'position', title: 'Position', options: [{id: 'INFIELD', label: 'INFIELD'}, {id: 'OUTFIELD', label: 'OUTFIELD'}, {id: 'PITCHER', label: 'PITCHER'}, {id: 'CATCHER', label: 'CATCHER'}, {id: 'FIRST BASE', label: 'FIRST BASE'}], layout: 'grid-cols-3' },
+    { id: 'size', title: 'Size', options: [{id: '11"', label: '11"'}, {id: '11.25"', label: '11.25"'}, {id: '11.5"', label: '11.5"'}, {id: '11.75"', label: '11.75"'}, {id: '12"', label: '12"'}], layout: 'grid-cols-3' },
+    { id: 'handOpeningSize', title: 'Hand Opening Size', options: [{id: 'ADULT', label: 'ADULT'}, {id: 'YOUTH', label: 'YOUTH'}], layout: 'grid-cols-2' },
+    { id: 'stiffness', title: 'Stiffness', options: [{id: 'STIFF', label: 'STIFF'}, {id: 'STANDARD', label: 'STANDARD'}, {id: 'SOFT', label: 'SOFT'}], layout: 'grid-cols-3' },
+    { id: 'throwingHand', title: 'Throwing Hand', options: [{id: 'RIGHT HAND', label: 'RIGHT HAND'}, {id: 'LEFT HAND', label: 'LEFT HAND'}], layout: 'grid-cols-2' }
+];
+
 // --- Helper Components ---
 const ScrollGradient = ({ position, isVisible }) => {
     const isTop = position === 'top';
@@ -11,15 +38,15 @@ const ScrollGradient = ({ position, isVisible }) => {
     );
 };
 
-const ImageOption = ({ id, title, description, price, icon, isSelected, onSelect }) => (
-<button className={`relative p-3 h-24 rounded-md cursor-pointer flex flex-col justify-center items-center text-center bg-[#2a2a2a] ${isSelected ? 'border-4 border-white' : 'hover:bg-[#333333]'} focus:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-white`} onClick={onSelect}>
-    <h4 className="text-base font-semibold text-white">{title}</h4>
-    {isSelected && (
-        <svg className="absolute top-2 right-2 w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
-            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"></path>
-        </svg>
-    )}
-</button>
+const ImageOption = ({ id, title, isSelected, onSelect }) => (
+    <button className={`relative p-3 h-24 rounded-md cursor-pointer flex flex-col justify-center items-center text-center bg-[#2a2a2a] ${isSelected ? 'border-4 border-white' : 'hover:bg-[#333333]'} focus:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-white`} onClick={onSelect}>
+        <h4 className="text-base font-semibold text-white">{title}</h4>
+        {isSelected && (
+            <svg className="absolute top-2 right-2 w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"></path>
+            </svg>
+        )}
+    </button>
 );
 
 const PrimaryCTAButton = ({ label, onClick, ariaLabel }) => (
@@ -65,22 +92,30 @@ const SecondaryButton = ({ label, onClick, variant = 'dark', icon = 'checkmark' 
   );
 };
 
-const ColorSwatchGrid = ({ swatches, selectedColor, onColorSelect }) => (
-  <div className="grid grid-cols-[repeat(auto-fit,minmax(42px,1fr))] gap-[10px] px-2 py-2">
-    {swatches.map((color) => (
-      <button
-        key={color}
+const ColorSwatch = ({ color, isSelected, onSelect }) => (
+    <button
         className={`w-[42px] h-[42px] rounded-full border-2 focus:outline-none ${
-          selectedColor === color
-            ? 'border-transparent ring-4 ring-white'
-            : 'border-transparent focus-visible:ring-4 focus-visible:ring-white/50'
+            isSelected
+                ? 'border-transparent ring-4 ring-white'
+                : 'border-transparent focus-visible:ring-4 focus-visible:ring-white/50'
         }`}
         style={{ backgroundColor: color }}
-        onClick={() => onColorSelect(color)}
+        onClick={() => onSelect(color)}
         aria-label={`Select color ${color}`}
-      />
-    ))}
-  </div>
+    />
+);
+
+const ColorSwatchGrid = ({ swatches, selectedColor, onColorSelect }) => (
+    <div className="grid grid-cols-[repeat(auto-fit,minmax(42px,1fr))] gap-[10px] px-2 py-2">
+        {swatches.map((color) => (
+            <ColorSwatch
+                key={color}
+                color={color}
+                isSelected={selectedColor === color}
+                onSelect={onColorSelect}
+            />
+        ))}
+    </div>
 );
 
 const AccordionOptionMobile = ({ title, onClose, headerAccessory = null, children }) => {
@@ -164,19 +199,19 @@ const Option = ({ label, isSelected, onSelect }) => (
 );
 
 const OptionGroup = ({ title, options, layout, selectedOption, onSelectOption }) => (
-  <div>
-    <h3 className="text-sm font-semibold text-gray-400 mb-2">{title}</h3>
-    <div className={`grid ${layout} gap-2`}>
-      {options.map((option) => (
-        <Option
-          key={option}
-          label={option}
-          isSelected={selectedOption === option}
-          onSelect={() => onSelectOption(option)}
-        />
-      ))}
+    <div>
+        <h3 className="text-sm font-semibold text-gray-400 mb-2">{title}</h3>
+        <div className={`grid ${layout} gap-2`}>
+            {options.map((option) => (
+                <Option
+                    key={option.id}
+                    label={option.label}
+                    isSelected={selectedOption === option.id}
+                    onSelect={() => onSelectOption(option.id)}
+                />
+            ))}
+        </div>
     </div>
-  </div>
 );
 
 const OverviewButton = ({ onClick, isDesktop, isOpen }) => (
@@ -270,8 +305,15 @@ const BuildOptionDesktop = ({ isOpen, onToggle, buildConfig, onBuildConfigChange
                 <div>
                     <h3 className="text-sm font-semibold text-gray-400 mb-2">Glove Leather</h3>
                     <div className="grid grid-cols-2 gap-3">
-                        <ImageOption id="imgOpt1" title="Japanese Kip" isSelected={buildConfig.imageSelection === 'imgOpt1'} onSelect={() => onBuildConfigChange({...buildConfig, imageSelection: 'imgOpt1'})}/>
-                        <ImageOption id="imgOpt2" title="American Steerhide" isSelected={buildConfig.imageSelection === 'imgOpt2'} onSelect={() => onBuildConfigChange({...buildConfig, imageSelection: 'imgOpt2'})}/>
+                        {leatherOptions.map(option => (
+                           <ImageOption
+                             key={option.id}
+                             id={option.id}
+                             title={option.title}
+                             isSelected={buildConfig.imageSelection === option.id}
+                             onSelect={() => onBuildConfigChange({...buildConfig, imageSelection: option.id})}
+                           />
+                        ))}
                     </div>
                 </div>
                 {buildOptionsData.map((group) => (
@@ -294,7 +336,6 @@ const ColorOptionDesktop = ({
     isOpen,
     onToggle,
     colorValue,
-    colorSwatches,
     onColorSelect,
     onApplyToAll,
     headerAccessory
@@ -318,7 +359,7 @@ const ColorOptionDesktop = ({
     );
 };
 
-const TextOptionDesktop = ({ title, isOpen, onToggle, value, onChange, colorSwatches, headerContent }) => {
+const TextOptionDesktop = ({ title, isOpen, onToggle, value, onChange, headerContent }) => {
     return (
         <AccordionOptionDesktop
             title={title}
@@ -334,8 +375,15 @@ const TextOptionDesktop = ({ title, isOpen, onToggle, value, onChange, colorSwat
                 <div>
                     <h3 className="text-sm font-semibold text-gray-400 mb-2">Font</h3>
                     <div className="grid grid-cols-2 gap-3">
-                        <button onClick={() => onChange({ ...value, font: 'SCRIPT' })} className={`py-3 rounded-md text-base font-bold focus:outline-none focus-visible:ring-4 focus-visible:ring-inset ${value.font === 'SCRIPT' ? 'bg-white text-black focus-visible:ring-blue-400' : 'bg-[#2a2a2a] hover:bg-[#333333] text-white focus-visible:ring-white'}`}>SCRIPT</button>
-                        <button onClick={() => onChange({ ...value, font: 'BLOCK' })} className={`py-3 rounded-md text-base font-bold focus:outline-none focus-visible:ring-4 focus-visible:ring-inset ${value.font === 'BLOCK' ? 'bg-white text-black focus-visible:ring-blue-400' : 'bg-[#2a2a2a] hover:bg-[#333333] text-white focus-visible:ring-white'}`}>BLOCK</button>
+                        {fontOptions.map(font => (
+                           <button
+                             key={font.id}
+                             onClick={() => onChange({ ...value, font: font.id })}
+                             className={`py-3 rounded-md text-base font-bold focus:outline-none focus-visible:ring-4 focus-visible:ring-inset ${value.font === font.id ? 'bg-white text-black focus-visible:ring-blue-400' : 'bg-[#2a2a2a] hover:bg-[#333333] text-white focus-visible:ring-white'}`}
+                           >
+                               {font.label}
+                           </button>
+                        ))}
                     </div>
                 </div>
                 <div>
@@ -354,20 +402,23 @@ const TextOptionDesktop = ({ title, isOpen, onToggle, value, onChange, colorSwat
 
 // --- Panel Components ---
 
-const OrderSummaryInfo = ({ configuration }) => {
+const OrderSummaryInfo = ({ configuration, dataSources }) => {
     const { build, thumb, index, middle, ring, pinky, thumbName, pinkyName } = configuration;
-    const buildDataMap = {
-        imageSelection: "Glove Leather",
-        position: "Position",
-        size: "Size",
-        handOpeningSize: "Hand Opening Size",
-        stiffness: "Stiffness",
-        throwingHand: "Throwing Hand"
+    const { buildOptions, leatherOptions: leatherSource } = dataSources;
+
+    const getBuildLabel = (key, value) => {
+        if (key === 'imageSelection') {
+            return leatherSource.find(opt => opt.id === value)?.title || value;
+        }
+        const group = buildOptions.find(g => g.id === key);
+        const option = group?.options.find(o => o.id === value);
+        return option?.label || value;
     };
-    const buildDataDisplay = {
-        imgOpt1: "Japanese Kip",
-        imgOpt2: "American Steerhide"
-    };
+    
+    const getBuildTitle = (key) => {
+        if (key === 'imageSelection') return "Glove Leather";
+        return buildOptions.find(g => g.id === key)?.title || key;
+    }
 
     return (
         <div className="text-base text-gray-300 space-y-4 p-1">
@@ -375,7 +426,7 @@ const OrderSummaryInfo = ({ configuration }) => {
                 <h3 className="text-lg font-semibold text-white mb-2">Glove Foundation</h3>
                 <div className="space-y-1 pl-2">
                     {Object.entries(build).map(([key, value]) => (
-                        <p key={key}><span className="font-semibold text-gray-400">{buildDataMap[key]}:</span> {buildDataDisplay[value] || value}</p>
+                        <p key={key}><span className="font-semibold text-gray-400">{getBuildTitle(key)}:</span> {getBuildLabel(key, value)}</p>
                     ))}
                 </div>
             </div>
@@ -401,14 +452,15 @@ const OrderSummaryInfo = ({ configuration }) => {
 };
 
 const OverviewMobile = ({ onClose, configuration }) => {
+    const dataSources = { buildOptions: buildOptionsData, leatherOptions: leatherOptions };
     return (
         <AccordionOptionMobile title="Order Summary" onClose={onClose}>
-            <OrderSummaryInfo configuration={configuration} />
+            <OrderSummaryInfo configuration={configuration} dataSources={dataSources} />
         </AccordionOptionMobile>
     );
 };
 
-const ColorOptionMobile = ({ editingColorContext, onClose, onColorSelect, colorSwatches, selectedColor }) => {
+const ColorOptionMobile = ({ editingColorContext, onClose, onColorSelect, selectedColor }) => {
   if (!editingColorContext) return null;
 
   return (
@@ -425,14 +477,6 @@ const ColorOptionMobile = ({ editingColorContext, onClose, onColorSelect, colorS
     </AccordionOptionMobile>
   );
 };
-
-const buildOptionsData = [
-    { id: 'position', title: 'Position', options: ['INFIELD', 'OUTFIELD', 'PITCHER', 'CATCHER', 'FIRST BASE'], layout: 'grid-cols-3' },
-    { id: 'size', title: 'Size', options: ['11"', '11.25"', '11.5"', '11.75"', '12"'], layout: 'grid-cols-3' },
-    { id: 'handOpeningSize', title: 'Hand Opening Size', options: ['ADULT', 'YOUTH'], layout: 'grid-cols-2' },
-    { id: 'stiffness', title: 'Stiffness', options: ['STIFF', 'STANDARD', 'SOFT'], layout: 'grid-cols-3' },
-    { id: 'throwingHand', title: 'Throwing Hand', options: ['RIGHT HAND', 'LEFT HAND'], layout: 'grid-cols-2' }
-];
 
 const BuildOptionMobile = ({ editingBuildContext, onClose, buildConfig, onBuildConfigChange }) => {
     if (!editingBuildContext) return null;
@@ -457,8 +501,15 @@ const BuildOptionMobile = ({ editingBuildContext, onClose, buildConfig, onBuildC
                 <div>
                     <h3 className="text-sm font-semibold text-gray-400 mb-2">Glove Leather</h3>
                     <div className="grid grid-cols-2 gap-3">
-                        <ImageOption id="imgOpt1" title="Japanese Kip" isSelected={buildConfig.imageSelection === 'imgOpt1'} onSelect={() => handleImageSelect('imgOpt1')}/>
-                        <ImageOption id="imgOpt2" title="American Steerhide" isSelected={buildConfig.imageSelection === 'imgOpt2'} onSelect={() => handleImageSelect('imgOpt2')}/>
+                       {leatherOptions.map(option => (
+                           <ImageOption
+                             key={option.id}
+                             id={option.id}
+                             title={option.title}
+                             isSelected={buildConfig.imageSelection === option.id}
+                             onSelect={() => handleImageSelect(option.id)}
+                           />
+                        ))}
                     </div>
                 </div>
 
@@ -477,11 +528,11 @@ const BuildOptionMobile = ({ editingBuildContext, onClose, buildConfig, onBuildC
     );
 };
 
-const TextOptionMobile = ({ editingTextContext, value, onChange, onClose, colorSwatches }) => {
+const TextOptionMobile = ({ editingTextContext, value, onChange, onClose }) => {
   if (!editingTextContext) return null;
 
   const handleTextChange = (e) => onChange({ ...value, text: e.target.value });
-  const handleFontChange = (font) => onChange({ ...value, font });
+  const handleFontChange = (fontId) => onChange({ ...value, font: fontId });
   const handleColorChange = (color) => onChange({ ...value, color });
 
   return (
@@ -498,8 +549,15 @@ const TextOptionMobile = ({ editingTextContext, value, onChange, onClose, colorS
         <div>
           <h3 className="text-sm font-semibold text-gray-400 mb-2">Font</h3>
           <div className="grid grid-cols-2 gap-3">
-            <button onClick={() => handleFontChange('SCRIPT')} className={`py-3 rounded-md text-base font-bold focus:outline-none focus-visible:ring-4 focus-visible:ring-inset ${value.font === 'SCRIPT' ? 'bg-white text-black focus-visible:ring-blue-400' : 'bg-[#2a2a2a] hover:bg-[#333333] text-white focus-visible:ring-white'}`}>SCRIPT</button>
-            <button onClick={() => handleFontChange('BLOCK')} className={`py-3 rounded-md text-base font-bold focus:outline-none focus-visible:ring-4 focus-visible:ring-inset ${value.font === 'BLOCK' ? 'bg-white text-black focus-visible:ring-blue-400' : 'bg-[#2a2a2a] hover:bg-[#333333] text-white focus-visible:ring-white'}`}>BLOCK</button>
+            {fontOptions.map(font => (
+                <button
+                  key={font.id}
+                  onClick={() => handleFontChange(font.id)}
+                  className={`py-3 rounded-md text-base font-bold focus:outline-none focus-visible:ring-4 focus-visible:ring-inset ${value.font === font.id ? 'bg-white text-black focus-visible:ring-blue-400' : 'bg-[#2a2a2a] hover:bg-[#333333] text-white focus-visible:ring-white'}`}
+                >
+                    {font.label}
+                </button>
+            ))}
           </div>
         </div>
         <div>
@@ -514,6 +572,43 @@ const TextOptionMobile = ({ editingTextContext, value, onChange, onClose, colorS
     </AccordionOptionMobile>
   );
 };
+
+const FooterMobile = ({ openPanelName, onApplyColorToAll, onClosePanel, onReviewClick, onCompleteOrder, isDesktop }) => {
+    const panelFooterMap = {
+        color: (
+            <div className="w-full grid grid-cols-[1fr_1.618fr] gap-[10px]">
+                <SecondaryButton label="Apply to All" onClick={onApplyColorToAll} variant="dark" icon="checkmark" />
+                <SecondaryButton label="Continue" onClick={onClosePanel} variant="light" icon="checkmark" />
+            </div>
+        ),
+        build: (
+            <SecondaryButton label="Continue" onClick={onClosePanel} variant="light" icon="checkmark" />
+        ),
+        text: (
+            <SecondaryButton label="Continue" onClick={onClosePanel} variant="light" icon="checkmark" />
+        ),
+        summary: (
+            <div className="w-full grid grid-cols-[1fr_1.618fr] gap-[10px]">
+                <SecondaryButton label="Back" onClick={onClosePanel} variant="dark" icon="backArrow" />
+                <OrderButtonController isSummaryVisible={true} onCompleteClick={onCompleteOrder} onReviewClick={() => {}} />
+            </div>
+        ),
+    };
+
+    const defaultFooter = (
+        <div className="w-full grid grid-cols-[1fr_1.618fr] gap-[10px]">
+            <OverviewButton onClick={onReviewClick} isDesktop={isDesktop} isOpen={false} />
+            <OrderButtonController isSummaryVisible={false} onReviewClick={onReviewClick} onCompleteClick={onCompleteOrder} />
+        </div>
+    );
+    
+    return (
+        <footer className="flex-shrink-0 bg-[#161616] flex items-center justify-start pb-[20px] px-[14px] pt-[10px]">
+            {openPanelName ? panelFooterMap[openPanelName] : defaultFooter}
+        </footer>
+    );
+};
+
 
 // --- Breakpoint Hook (Included directly in the file) ---
 const useBreakpoint = (breakpoint = '1024px') => {
@@ -540,6 +635,7 @@ const useBreakpoint = (breakpoint = '1024px') => {
 
 const OverviewDesktop = ({ configuration }) => {
     const [agnosticAccordionOpen, setAgnosticAccordionOpen] = useState(false);
+    const dataSources = { buildOptions: buildOptionsData, leatherOptions: leatherOptions };
 
     useEffect(() => {
         if (!agnosticAccordionOpen) return;
@@ -582,7 +678,7 @@ const OverviewDesktop = ({ configuration }) => {
                 <div className={`bg-[#222222] transition-[height] duration-300 ease-in ${agnosticAccordionOpen ? 'overflow-y-scroll h-auto lg:h-[calc(100vh-335px)]' : 'overflow-hidden h-0'}`}>
                     <div className="text-base py-3.5 px-6">
                         <div>
-                            <OrderSummaryInfo configuration={configuration} />
+                            <OrderSummaryInfo configuration={configuration} dataSources={dataSources} />
                         </div>
                     </div>
                 </div>
@@ -602,7 +698,6 @@ const OverviewDesktop = ({ configuration }) => {
 // --- NEW ABSTRACTION: AccordionDesktop ---
 const AccordionDesktop = ({
     configuration,
-    colorSwatches,
     handleBuildConfigChange,
     handleColorSelect,
     handleApplyColorToAll,
@@ -693,7 +788,6 @@ const AccordionDesktop = ({
                         isOpen={openAccordion === 'thumb'}
                         onToggle={() => handleAccordionToggle('thumb')}
                         colorValue={configuration.thumb}
-                        colorSwatches={colorSwatches}
                         onColorSelect={(color) => handleColorSelect(color, 'thumb')}
                         onApplyToAll={() => handleApplyColorToAll(configuration.thumb)}
                         headerAccessory={<span className="w-6 h-6 rounded-full border border-white/20" style={{ backgroundColor: configuration.thumb }}></span>}
@@ -703,7 +797,6 @@ const AccordionDesktop = ({
                         isOpen={openAccordion === 'index'}
                         onToggle={() => handleAccordionToggle('index')}
                         colorValue={configuration.index}
-                        colorSwatches={colorSwatches}
                         onColorSelect={(color) => handleColorSelect(color, 'index')}
                         onApplyToAll={() => handleApplyColorToAll(configuration.index)}
                         headerAccessory={<span className="w-6 h-6 rounded-full border border-white/20" style={{ backgroundColor: configuration.index }}></span>}
@@ -713,7 +806,6 @@ const AccordionDesktop = ({
                         isOpen={openAccordion === 'middle'}
                         onToggle={() => handleAccordionToggle('middle')}
                         colorValue={configuration.middle}
-                        colorSwatches={colorSwatches}
                         onColorSelect={(color) => handleColorSelect(color, 'middle')}
                         onApplyToAll={() => handleApplyColorToAll(configuration.middle)}
                         headerAccessory={<span className="w-6 h-6 rounded-full border border-white/20" style={{ backgroundColor: configuration.middle }}></span>}
@@ -723,7 +815,6 @@ const AccordionDesktop = ({
                         isOpen={openAccordion === 'ring'}
                         onToggle={() => handleAccordionToggle('ring')}
                         colorValue={configuration.ring}
-                        colorSwatches={colorSwatches}
                         onColorSelect={(color) => handleColorSelect(color, 'ring')}
                         onApplyToAll={() => handleApplyColorToAll(configuration.ring)}
                         headerAccessory={<span className="w-6 h-6 rounded-full border border-white/20" style={{ backgroundColor: configuration.ring }}></span>}
@@ -733,7 +824,6 @@ const AccordionDesktop = ({
                         isOpen={openAccordion === 'pinky'}
                         onToggle={() => handleAccordionToggle('pinky')}
                         colorValue={configuration.pinky}
-                        colorSwatches={colorSwatches}
                         onColorSelect={(color) => handleColorSelect(color, 'pinky')}
                         onApplyToAll={() => handleApplyColorToAll(configuration.pinky)}
                         headerAccessory={<span className="w-6 h-6 rounded-full border border-white/20" style={{ backgroundColor: configuration.pinky }}></span>}
@@ -745,7 +835,6 @@ const AccordionDesktop = ({
                         onToggle={() => handleAccordionToggle('thumbName')}
                         value={configuration.thumbName}
                         onChange={(newState) => handleTextOptionChange(newState, 'thumbName')}
-                        colorSwatches={colorSwatches}
                         headerContent={<span className="text-sm text-gray-400 truncate max-w-[100px]">{configuration.thumbName.text}</span>}
                     />
 
@@ -755,7 +844,6 @@ const AccordionDesktop = ({
                         onToggle={() => handleAccordionToggle('pinkyName')}
                         value={configuration.pinkyName}
                         onChange={(newState) => handleTextOptionChange(newState, 'pinkyName')}
-                        colorSwatches={colorSwatches}
                         headerContent={<span className="text-sm text-gray-400 truncate max-w-[100px]">{configuration.pinkyName.text}</span>}
                     />
                 </div>
@@ -895,13 +983,6 @@ const UI = () => {
         },
     });
 
-    const colorSwatches = [
-    '#C62828', '#AD1457', '#6A1B9A', '#4527A0', '#283593', '#1565C0',
-    '#0277BD', '#00838F', '#00695C', '#2E7D32', '#558B2F', '#9E9D24',
-    '#F9A825', '#FF8F00', '#EF6C00', '#D84315', '#4E342E', '#424242',
-    '#BDBDBD', '#37474F',
-    ];
-
     const handleOpenColorPicker = (optionId, optionTitle) => {
         setOpenAccordionOptionMobile({ name: 'color', context: { id: optionId, title: optionTitle } });
     };
@@ -1008,7 +1089,6 @@ const UI = () => {
                     <>
                         <AccordionDesktop
                             configuration={configuration}
-                            colorSwatches={colorSwatches}
                             handleBuildConfigChange={handleBuildConfigChange}
                             handleColorSelect={handleColorSelect}
                             handleApplyColorToAll={handleApplyColorToAll}
@@ -1018,10 +1098,8 @@ const UI = () => {
                     </>
                 ) : (
                     <div className="flex flex-col overflow-hidden bg-[#161616]" style={{ flexBasis: `${CONTROLS_PROPORTION * 100}%` }}>
-                        {/* This container now holds both the list and the trapped overlay */}
                         <div className="relative flex-grow overflow-hidden">
 
-                            {/* 1. The main list. This section is now an abstracted component. */}
                             <AccordionMobile
                                 configuration={configuration}
                                 handleOpenBuildOption={handleOpenBuildOption}
@@ -1030,64 +1108,33 @@ const UI = () => {
                                 openAccordionOptionMobile={openAccordionOptionMobile}
                             />
 
-                            {/* 2. The Focus-Trapped Overlay. This ONLY appears when a panel is active and only on mobile. */}
                             {openAccordionOptionMobile && (
-                                <div className="absolute inset-0 z-30 flex flex-col bg-[#161616] pt-[10px]"> {/* Wrapper for the trap */}
-
-                                    {/* The Panel Itself */}
+                                <div className="absolute inset-0 z-30 flex flex-col bg-[#161616] pt-[10px]">
                                     <div className="flex-grow relative overflow-hidden">
                                         {openAccordionOptionMobile.name === 'summary' && <OverviewMobile onClose={() => setOpenAccordionOptionMobile(null)} configuration={configuration} />}
-                                        {openAccordionOptionMobile.name === 'color' && <ColorOptionMobile onClose={() => setOpenAccordionOptionMobile(null)} editingColorContext={openAccordionOptionMobile.context} colorSwatches={colorSwatches} onColorSelect={(color) => handleColorSelect(color, openAccordionOptionMobile.context.id)} selectedColor={openAccordionOptionMobile.context ? configuration[openAccordionOptionMobile.context.id] : ''} />}
+                                        {openAccordionOptionMobile.name === 'color' && <ColorOptionMobile onClose={() => setOpenAccordionOptionMobile(null)} editingColorContext={openAccordionOptionMobile.context} selectedColor={openAccordionOptionMobile.context ? configuration[openAccordionOptionMobile.context.id] : ''} onColorSelect={(color) => handleColorSelect(color, openAccordionOptionMobile.context.id)} />}
                                         {openAccordionOptionMobile.name === 'build' && <BuildOptionMobile onClose={() => setOpenAccordionOptionMobile(null)} editingBuildContext={openAccordionOptionMobile.context} buildConfig={configuration.build} onBuildConfigChange={handleBuildConfigChange} />}
-                                        {openAccordionOptionMobile.name === 'text' && <TextOptionMobile onClose={() => setOpenAccordionOptionMobile(null)} editingTextContext={openAccordionOptionMobile.context} value={openAccordionOptionMobile.context ? configuration[openAccordionOptionMobile.context.id] : null} onChange={(newState) => handleTextOptionChange(newState, openAccordionOptionMobile.context.id)} colorSwatches={colorSwatches} />}
+                                        {openAccordionOptionMobile.name === 'text' && <TextOptionMobile onClose={() => setOpenAccordionOptionMobile(null)} editingTextContext={openAccordionOptionMobile.context} value={openAccordionOptionMobile.context ? configuration[openAccordionOptionMobile.context.id] : null} onChange={(newState) => handleTextOptionChange(newState, openAccordionOptionMobile.context.id)} />}
                                     </div>
-
-                                    {/* The Footer - Moved INSIDE the trap's wrapper */}
-                                    <footer className="flex-shrink-0 bg-[#161616] flex items-center justify-start pb-[20px] px-[14px]">
-                                         {openAccordionOptionMobile?.name === 'color' ? (
-                                             <div className="w-full grid grid-cols-[1fr_1.618fr] gap-[10px]">
-                                                 <SecondaryButton label="Apply to All" onClick={() => handleApplyColorToAll(null)} variant="dark" icon="checkmark" />
-                                                 <SecondaryButton label="Continue" onClick={() => setOpenAccordionOptionMobile(null)} variant="light" icon="checkmark" />
-                                             </div>
-                                         ) : openAccordionOptionMobile?.name === 'build' || openAccordionOptionMobile?.name === 'text' ? (
-                                             <SecondaryButton label="Continue" onClick={() => setOpenAccordionOptionMobile(null)} variant="light" icon="checkmark" />
-                                         ) : openAccordionOptionMobile?.name === 'summary' ? (
-                                             <div className="w-full grid grid-cols-[1fr_1.618fr] gap-[10px]">
-                                                 <SecondaryButton label="Back" onClick={() => setOpenAccordionOptionMobile(null)} variant="dark" icon="backArrow" />
-                                                 <OrderButtonController
-                                                     isSummaryVisible={true}
-                                                     onCompleteClick={() => alert('Complete Order clicked!')}
-                                                     onReviewClick={() => {}}
-                                                 />
-                                             </div>
-                                         ) : (
-                                             <></>
-                                         )}
-                                    </footer>
+                                    <FooterMobile
+                                        openPanelName={openAccordionOptionMobile?.name}
+                                        onApplyColorToAll={() => handleApplyColorToAll(null)}
+                                        onClosePanel={() => setOpenAccordionOptionMobile(null)}
+                                        onCompleteOrder={() => alert('Complete Order clicked!')}
+                                        onReviewClick={() => setOpenAccordionOptionMobile({ name: 'summary' })}
+                                        isDesktop={isDesktop}
+                                    />
                                 </div>
                             )}
                         </div>
 
-                        {/* 3. The Default Footer. This only appears when NO panel is active. */}
                         {!openAccordionOptionMobile && (
-                            <footer className="flex-shrink-0 bg-[#161616] flex items-center justify-start pt-[10px] pb-[20px] px-[14px]">
-                                <div className="w-full grid grid-cols-[1fr_1.618fr] gap-[10px]">
-                                    {openAccordionOptionMobile?.name === 'summary' ? (
-                                        <SecondaryButton label="Back to Design" onClick={() => setOpenAccordionOptionMobile(null)} variant="dark" icon="backArrow" />
-                                    ) : (
-                                        <OverviewButton
-                                            onClick={() => setOpenAccordionOptionMobile({ name: 'summary' })}
-                                            isDesktop={isDesktop}
-                                            isOpen={openAccordionOptionMobile?.name === 'summary'}
-                                        />
-                                    )}
-                                    <OrderButtonController
-                                        isSummaryVisible={openAccordionOptionMobile?.name === 'summary'}
-                                        onReviewClick={() => setOpenAccordionOptionMobile({ name: 'summary' })}
-                                        onCompleteClick={() => alert('Complete Order clicked!')}
-                                    />
-                                </div>
-                            </footer>
+                            <FooterMobile
+                                openPanelName={null}
+                                onReviewClick={() => setOpenAccordionOptionMobile({ name: 'summary' })}
+                                onCompleteOrder={() => alert('Complete Order clicked!')}
+                                isDesktop={isDesktop}
+                            />
                         )}
                     </div>
                 )
