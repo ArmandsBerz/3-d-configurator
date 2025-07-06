@@ -359,6 +359,60 @@ const ColorOptionDesktop = ({
     );
 };
 
+// --- NEW DUAL COLOR COMPONENT (DESKTOP) ---
+const ColorDualOptionDesktop = ({
+    title,
+    isOpen,
+    onToggle,
+    colorValue, // Expects { inner: 'color', outer: 'color' }
+    onColorSelect, // Expects (subPartId, color) => {}
+    onApplyToAll,
+    headerAccessory
+}) => {
+    const [lastEditedPart, setLastEditedPart] = useState(null);
+
+    const handleColorSelection = (subPart, color) => {
+        onColorSelect(subPart, color);
+        setLastEditedPart(subPart);
+    };
+
+    const handleApplyToAllClick = () => {
+        const colorToApply = lastEditedPart === 'outer' ? colorValue.outer : colorValue.inner;
+        onApplyToAll(colorToApply);
+    };
+
+    return (
+        <>
+            <AccordionOptionDesktop
+                title={title}
+                isOpen={isOpen}
+                onToggle={onToggle}
+                headerContent={headerAccessory}
+            >
+                <div className="space-y-4">
+                    <div>
+                        <h3 className="text-sm font-semibold text-gray-400 mb-2">Inner</h3>
+                        <ColorSwatchGrid
+                            swatches={colorSwatches}
+                            selectedColor={colorValue.inner}
+                            onColorSelect={(color) => handleColorSelection('inner', color)}
+                        />
+                    </div>
+                    <div>
+                        <h3 className="text-sm font-semibold text-gray-400 mb-2">Outer</h3>
+                        <ColorSwatchGrid
+                            swatches={colorSwatches}
+                            selectedColor={colorValue.outer}
+                            onColorSelect={(color) => handleColorSelection('outer', color)}
+                        />
+                    </div>
+                </div>
+            </AccordionOptionDesktop>
+            {isOpen && <SecondaryButton label="Apply to All" onClick={handleApplyToAllClick} variant="dark" icon="checkmark" />}
+        </>
+    );
+};
+
 const TextOptionDesktop = ({ title, isOpen, onToggle, value, onChange, headerContent }) => {
     return (
         <AccordionOptionDesktop
@@ -419,6 +473,13 @@ const OrderSummaryInfo = ({ configuration, dataSources }) => {
         if (key === 'imageSelection') return "Glove Leather";
         return buildOptions.find(g => g.id === key)?.title || key;
     }
+    
+    const renderColorValue = (value) => {
+        if (typeof value === 'object' && value !== null && value.inner && value.outer) {
+            return `Inner: ${value.inner}, Outer: ${value.outer}`;
+        }
+        return value;
+    };
 
     return (
         <div className="text-base text-gray-300 space-y-4 p-1">
@@ -433,11 +494,11 @@ const OrderSummaryInfo = ({ configuration, dataSources }) => {
             <div>
                 <h3 className="text-lg font-semibold text-white mb-2">Color Scheme</h3>
                 <div className="space-y-1 pl-2">
-                    <p><span className="font-semibold text-gray-400">Thumb:</span> {thumb}</p>
-                    <p><span className="font-semibold text-gray-400">Index:</span> {index}</p>
-                    <p><span className="font-semibold text-gray-400">Middle:</span> {middle}</p>
-                    <p><span className="font-semibold text-gray-400">Ring:</span> {ring}</p>
-                    <p><span className="font-semibold text-gray-400">Pinky:</span> {pinky}</p>
+                    <p><span className="font-semibold text-gray-400">Thumb:</span> {renderColorValue(thumb)}</p>
+                    <p><span className="font-semibold text-gray-400">Index:</span> {renderColorValue(index)}</p>
+                    <p><span className="font-semibold text-gray-400">Middle:</span> {renderColorValue(middle)}</p>
+                    <p><span className="font-semibold text-gray-400">Ring:</span> {renderColorValue(ring)}</p>
+                    <p><span className="font-semibold text-gray-400">Pinky:</span> {renderColorValue(pinky)}</p>
                 </div>
             </div>
             <div>
@@ -476,6 +537,48 @@ const ColorOptionMobile = ({ editingColorContext, onClose, onColorSelect, select
       />
     </AccordionOptionMobile>
   );
+};
+
+// --- NEW DUAL COLOR COMPONENT (MOBILE) ---
+const ColorDualOptionMobile = ({ editingColorContext, onClose, onColorSelect, colorValue, onSubPartEdit }) => {
+    if (!editingColorContext) return null;
+
+    const handleColorSelection = (subPart, color) => {
+        onColorSelect(subPart, color);
+        onSubPartEdit(subPart);
+    };
+
+    return (
+        <AccordionOptionMobile
+            title={editingColorContext.title || 'Color Picker'}
+            onClose={onClose}
+            headerAccessory={
+                <div className="flex items-center space-x-2">
+                    <span className="w-5 h-5 rounded-full border border-white/20" style={{ backgroundColor: colorValue.inner }}></span>
+                    <span className="w-5 h-5 rounded-full border border-white/20" style={{ backgroundColor: colorValue.outer }}></span>
+                </div>
+            }
+        >
+            <div className="space-y-6">
+                <div>
+                    <h3 className="text-sm font-semibold text-gray-400 mb-2">Inner</h3>
+                    <ColorSwatchGrid
+                        swatches={colorSwatches}
+                        selectedColor={colorValue.inner}
+                        onColorSelect={(color) => handleColorSelection('inner', color)}
+                    />
+                </div>
+                <div>
+                    <h3 className="text-sm font-semibold text-gray-400 mb-2">Outer</h3>
+                    <ColorSwatchGrid
+                        swatches={colorSwatches}
+                        selectedColor={colorValue.outer}
+                        onColorSelect={(color) => handleColorSelection('outer', color)}
+                    />
+                </div>
+            </div>
+        </AccordionOptionMobile>
+    );
 };
 
 const BuildOptionMobile = ({ editingBuildContext, onClose, buildConfig, onBuildConfigChange }) => {
@@ -577,6 +680,12 @@ const FooterMobile = ({ openPanelName, onApplyColorToAll, onClosePanel, onReview
     const panelFooterMap = {
         color: (
             <div className="w-full grid grid-cols-[1fr_1.618fr] gap-[10px]">
+                <SecondaryButton label="Apply to All" onClick={onApplyColorToAll} variant="dark" icon="checkmark" />
+                <SecondaryButton label="Continue" onClick={onClosePanel} variant="light" icon="checkmark" />
+            </div>
+        ),
+        'dual-color': (
+             <div className="w-full grid grid-cols-[1fr_1.618fr] gap-[10px]">
                 <SecondaryButton label="Apply to All" onClick={onApplyColorToAll} variant="dark" icon="checkmark" />
                 <SecondaryButton label="Continue" onClick={onClosePanel} variant="light" icon="checkmark" />
             </div>
@@ -700,6 +809,7 @@ const AccordionDesktop = ({
     configuration,
     handleBuildConfigChange,
     handleColorSelect,
+    handleDualColorSelect,
     handleApplyColorToAll,
     handleTextOptionChange,
 }) => {
@@ -767,6 +877,14 @@ const AccordionDesktop = ({
         };
     }, []);
 
+    const colorParts = [
+        { id: 'thumb', title: 'Thumb Color' },
+        { id: 'index', title: 'Index Color' },
+        { id: 'middle', title: 'Middle Color' },
+        { id: 'ring', title: 'Ring Color' },
+        { id: 'pinky', title: 'Pinky Color' },
+    ];
+
     return (
         <div className="absolute top-0 left-0 bottom-0 w-[400px] z-10 bg-[#161616] p-4 pointer-events-none">
             <div className="absolute w-[70px] h-[49px] bg-gray-300 bg-opacity-75 rounded flex items-center justify-center pointer-events-auto"><p className="font-bold text-xl text-gray-900">LOGO</p></div>
@@ -783,51 +901,41 @@ const AccordionDesktop = ({
                         headerContent={<span className="text-sm text-gray-400">Modify</span>}
                     />
 
-                    <ColorOptionDesktop
-                        title="Thumb Color"
-                        isOpen={openAccordion === 'thumb'}
-                        onToggle={() => handleAccordionToggle('thumb')}
-                        colorValue={configuration.thumb}
-                        onColorSelect={(color) => handleColorSelect(color, 'thumb')}
-                        onApplyToAll={() => handleApplyColorToAll(configuration.thumb)}
-                        headerAccessory={<span className="w-6 h-6 rounded-full border border-white/20" style={{ backgroundColor: configuration.thumb }}></span>}
-                    />
-                    <ColorOptionDesktop
-                        title="Index Color"
-                        isOpen={openAccordion === 'index'}
-                        onToggle={() => handleAccordionToggle('index')}
-                        colorValue={configuration.index}
-                        onColorSelect={(color) => handleColorSelect(color, 'index')}
-                        onApplyToAll={() => handleApplyColorToAll(configuration.index)}
-                        headerAccessory={<span className="w-6 h-6 rounded-full border border-white/20" style={{ backgroundColor: configuration.index }}></span>}
-                    />
-                    <ColorOptionDesktop
-                        title="Middle Color"
-                        isOpen={openAccordion === 'middle'}
-                        onToggle={() => handleAccordionToggle('middle')}
-                        colorValue={configuration.middle}
-                        onColorSelect={(color) => handleColorSelect(color, 'middle')}
-                        onApplyToAll={() => handleApplyColorToAll(configuration.middle)}
-                        headerAccessory={<span className="w-6 h-6 rounded-full border border-white/20" style={{ backgroundColor: configuration.middle }}></span>}
-                    />
-                    <ColorOptionDesktop
-                        title="Ring Color"
-                        isOpen={openAccordion === 'ring'}
-                        onToggle={() => handleAccordionToggle('ring')}
-                        colorValue={configuration.ring}
-                        onColorSelect={(color) => handleColorSelect(color, 'ring')}
-                        onApplyToAll={() => handleApplyColorToAll(configuration.ring)}
-                        headerAccessory={<span className="w-6 h-6 rounded-full border border-white/20" style={{ backgroundColor: configuration.ring }}></span>}
-                    />
-                    <ColorOptionDesktop
-                        title="Pinky Color"
-                        isOpen={openAccordion === 'pinky'}
-                        onToggle={() => handleAccordionToggle('pinky')}
-                        colorValue={configuration.pinky}
-                        onColorSelect={(color) => handleColorSelect(color, 'pinky')}
-                        onApplyToAll={() => handleApplyColorToAll(configuration.pinky)}
-                        headerAccessory={<span className="w-6 h-6 rounded-full border border-white/20" style={{ backgroundColor: configuration.pinky }}></span>}
-                    />
+                    {colorParts.map(part => {
+                        const isDual = typeof configuration[part.id] === 'object';
+                        if (isDual) {
+                            return (
+                                <ColorDualOptionDesktop
+                                    key={part.id}
+                                    title={part.title}
+                                    isOpen={openAccordion === part.id}
+                                    onToggle={() => handleAccordionToggle(part.id)}
+                                    colorValue={configuration[part.id]}
+                                    onColorSelect={(subPart, color) => handleDualColorSelect(part.id, subPart, color)}
+                                    onApplyToAll={handleApplyColorToAll}
+                                    headerAccessory={
+                                        <div className="flex items-center space-x-2">
+                                            <span className="w-6 h-6 rounded-full border border-white/20" style={{ backgroundColor: configuration[part.id].inner }}></span>
+                                            <span className="w-6 h-6 rounded-full border border-white/20" style={{ backgroundColor: configuration[part.id].outer }}></span>
+                                        </div>
+                                    }
+                                />
+                            );
+                        } else {
+                            return (
+                                <ColorOptionDesktop
+                                    key={part.id}
+                                    title={part.title}
+                                    isOpen={openAccordion === part.id}
+                                    onToggle={() => handleAccordionToggle(part.id)}
+                                    colorValue={configuration[part.id]}
+                                    onColorSelect={(color) => handleColorSelect(color, part.id)}
+                                    onApplyToAll={() => handleApplyColorToAll(configuration[part.id])}
+                                    headerAccessory={<span className="w-6 h-6 rounded-full border border-white/20" style={{ backgroundColor: configuration[part.id] }}></span>}
+                                />
+                            );
+                        }
+                    })}
 
                     <TextOptionDesktop
                         title="Thumb Name"
@@ -858,6 +966,7 @@ const AccordionMobile = ({
     configuration,
     handleOpenBuildOption,
     handleOpenColorPicker,
+    handleOpenDualColorPicker,
     handleOpenTextOption,
     openAccordionOptionMobile
 }) => {
@@ -898,6 +1007,17 @@ const AccordionMobile = ({
             }
         };
     }, [checkAndSetGradients]);
+    
+    const optionItems = [
+        { id: 'build', title: 'Build', type: 'build' },
+        { id: 'thumb', title: 'Thumb', type: 'color' },
+        { id: 'index', title: 'Index', type: 'color' },
+        { id: 'middle', title: 'Middle', type: 'color' },
+        { id: 'ring', title: 'Ring', type: 'color' },
+        { id: 'pinky', title: 'Pinky', type: 'color' },
+        { id: 'thumbName', title: 'Thumb Name', type: 'text' },
+        { id: 'pinkyName', title: 'Pinky Name', type: 'text' },
+    ];
 
     return (
         <section
@@ -906,44 +1026,54 @@ const AccordionMobile = ({
             tabIndex="-1"
         >
             <ScrollGradient position="top" isVisible={topGradientVisible} />
-            <button data-id="build" className="w-full h-[56px] bg-[#1C1C1C] flex items-center justify-between px-4 mb-[10px] cursor-pointer hover:bg-[#2A2A2A] rounded-md focus:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-white" onClick={() => handleOpenBuildOption('build', 'Build Options')}>
-                <div className="flex items-center"><svg viewBox="0 0 10 16" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-4 w-auto mr-3"><path d="M1 1L8 8L1.10769 15" stroke="white" strokeWidth={2}/></svg><span className="text-lg">Build</span></div>
-                <span className="text-sm text-gray-400">Modify</span>
-            </button>
-            <button data-id="thumb" className="w-full h-[56px] bg-[#1C1C1C] flex items-center justify-between px-4 mb-[10px] cursor-pointer hover:bg-[#2A2A2A] rounded-md focus:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-white" onClick={() => handleOpenColorPicker('thumb', 'Thumb Color')}>
-                <div className="flex items-center"><svg viewBox="0 0 10 16" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-4 w-auto mr-3"><path d="M1 1L8 8L1.10769 15" stroke="white" strokeWidth={2}/></svg><span className="text-lg">Thumb</span></div>
-                <span className="w-6 h-6 rounded-full" style={{ backgroundColor: configuration.thumb }}></span>
-            </button>
-            <button data-id="index" className="w-full h-[56px] bg-[#1C1C1C] flex items-center justify-between px-4 mb-[10px] cursor-pointer hover:bg-[#2A2A2A] rounded-md focus:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-white" onClick={() => handleOpenColorPicker('index', 'Index Color')}>
-                <div className="flex items-center"><svg viewBox="0 0 10 16" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-4 w-auto mr-3"><path d="M1 1L8 8L1.10769 15" stroke="white" strokeWidth={2}/></svg><span className="text-lg">Index</span></div>
-                <span className="w-6 h-6 rounded-full" style={{ backgroundColor: configuration.index }}></span>
-            </button>
-            <button data-id="middle" className="w-full h-[56px] bg-[#1C1C1C] flex items-center justify-between px-4 mb-[10px] cursor-pointer hover:bg-[#2A2A2A] rounded-md focus:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-white" onClick={() => handleOpenColorPicker('middle', 'Middle Color')}>
-                <div className="flex items-center"><svg viewBox="0 0 10 16" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-4 w-auto mr-3"><path d="M1 1L8 8L1.10769 15" stroke="white" strokeWidth={2}/></svg><span className="text-lg">Middle</span></div>
-                <span className="w-6 h-6 rounded-full" style={{ backgroundColor: configuration.middle }}></span>
-            </button>
-            <button data-id="ring" className="w-full h-[56px] bg-[#1C1C1C] flex items-center justify-between px-4 mb-[10px] cursor-pointer hover:bg-[#2A2A2A] rounded-md focus:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-white" onClick={() => handleOpenColorPicker('ring', 'Ring Color')}>
-                <div className="flex items-center"><svg viewBox="0 0 10 16" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-4 w-auto mr-3"><path d="M1 1L8 8L1.10769 15" stroke="white" strokeWidth={2}/></svg><span className="text-lg">Ring</span></div>
-                <span className="w-6 h-6 rounded-full" style={{ backgroundColor: configuration.ring }}></span>
-            </button>
-            <button data-id="pinky" className="w-full h-[56px] bg-[#1C1C1C] flex items-center justify-between px-4 mb-[10px] cursor-pointer hover:bg-[#2A2A2A] rounded-md focus:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-white" onClick={() => handleOpenColorPicker('pinky', 'Pinky Color')}>
-                <div className="flex items-center"><svg viewBox="0 0 10 16" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-4 w-auto mr-3"><path d="M1 1L8 8L1.10769 15" stroke="white" strokeWidth={2}/></svg><span className="text-lg">Pinky</span></div>
-                <span className="w-6 h-6 rounded-full" style={{ backgroundColor: configuration.pinky }}></span>
-            </button>
-            <button data-id="thumbName" className="w-full h-[56px] bg-[#1C1C1C] flex items-center justify-between px-4 mb-[10px] cursor-pointer hover:bg-[#2A2A2A] rounded-md focus:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-white" onClick={() => handleOpenTextOption('thumbName', 'Thumb Name')}>
-                <div className="flex items-center"><svg viewBox="0 0 10 16" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-4 w-auto mr-3"><path d="M1 1L8 8L1.10769 15" stroke="white" strokeWidth={2}/></svg><span className="text-lg">Thumb Name</span></div>
-                <div className="flex items-center space-x-3">
-                    <span className="text-sm text-gray-400 truncate max-w-[100px]">{configuration.thumbName.text}</span>
-                    <span className="w-6 h-6 rounded-full" style={{ backgroundColor: configuration.thumbName.color }}></span>
-                </div>
-            </button>
-            <button data-id="pinkyName" className="w-full h-[56px] bg-[#1C1C1C] flex items-center justify-between px-4 mb-[10px] cursor-pointer hover:bg-[#2A2A2A] rounded-md focus:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-white" onClick={() => handleOpenTextOption('pinkyName', 'Pinky Name')}>
-                <div className="flex items-center"><svg viewBox="0 0 10 16" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-4 w-auto mr-3"><path d="M1 1L8 8L1.10769 15" stroke="white" strokeWidth={2}/></svg><span className="text-lg">Pinky Name</span></div>
-                <div className="flex items-center space-x-3">
-                    <span className="text-sm text-gray-400 truncate max-w-[100px]">{configuration.pinkyName.text}</span>
-                    <span className="w-6 h-6 rounded-full" style={{ backgroundColor: configuration.pinkyName.color }}></span>
-                </div>
-            </button>
+
+            {optionItems.map(item => {
+                const isDual = typeof configuration[item.id] === 'object' && item.type === 'color';
+
+                if (item.type === 'build') {
+                    return (
+                        <button key={item.id} data-id={item.id} className="w-full h-[56px] bg-[#1C1C1C] flex items-center justify-between px-4 mb-[10px] cursor-pointer hover:bg-[#2A2A2A] rounded-md focus:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-white" onClick={() => handleOpenBuildOption('build', 'Build Options')}>
+                            <div className="flex items-center"><svg viewBox="0 0 10 16" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-4 w-auto mr-3"><path d="M1 1L8 8L1.10769 15" stroke="white" strokeWidth={2}/></svg><span className="text-lg">{item.title}</span></div>
+                            <span className="text-sm text-gray-400">Modify</span>
+                        </button>
+                    );
+                }
+
+                if (item.type === 'color') {
+                    if (isDual) {
+                         return (
+                            <button key={item.id} data-id={item.id} className="w-full h-[56px] bg-[#1C1C1C] flex items-center justify-between px-4 mb-[10px] cursor-pointer hover:bg-[#2A2A2A] rounded-md focus:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-white" onClick={() => handleOpenDualColorPicker(item.id, `${item.title} Color`)}>
+                                <div className="flex items-center"><svg viewBox="0 0 10 16" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-4 w-auto mr-3"><path d="M1 1L8 8L1.10769 15" stroke="white" strokeWidth={2}/></svg><span className="text-lg">{item.title}</span></div>
+                                <div className="flex items-center space-x-2">
+                                    <span className="w-6 h-6 rounded-full" style={{ backgroundColor: configuration[item.id].inner }}></span>
+                                    <span className="w-6 h-6 rounded-full" style={{ backgroundColor: configuration[item.id].outer }}></span>
+                                </div>
+                            </button>
+                        );
+                    } else {
+                        return (
+                             <button key={item.id} data-id={item.id} className="w-full h-[56px] bg-[#1C1C1C] flex items-center justify-between px-4 mb-[10px] cursor-pointer hover:bg-[#2A2A2A] rounded-md focus:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-white" onClick={() => handleOpenColorPicker(item.id, `${item.title} Color`)}>
+                                <div className="flex items-center"><svg viewBox="0 0 10 16" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-4 w-auto mr-3"><path d="M1 1L8 8L1.10769 15" stroke="white" strokeWidth={2}/></svg><span className="text-lg">{item.title}</span></div>
+                                <span className="w-6 h-6 rounded-full" style={{ backgroundColor: configuration[item.id] }}></span>
+                            </button>
+                        );
+                    }
+                }
+
+                if (item.type === 'text') {
+                    return (
+                        <button key={item.id} data-id={item.id} className="w-full h-[56px] bg-[#1C1C1C] flex items-center justify-between px-4 mb-[10px] cursor-pointer hover:bg-[#2A2A2A] rounded-md focus:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-white" onClick={() => handleOpenTextOption(item.id, item.title)}>
+                            <div className="flex items-center"><svg viewBox="0 0 10 16" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-4 w-auto mr-3"><path d="M1 1L8 8L1.10769 15" stroke="white" strokeWidth={2}/></svg><span className="text-lg">{item.title}</span></div>
+                            <div className="flex items-center space-x-3">
+                                <span className="text-sm text-gray-400 truncate max-w-[100px]">{configuration[item.id].text}</span>
+                                <span className="w-6 h-6 rounded-full" style={{ backgroundColor: configuration[item.id].color }}></span>
+                            </div>
+                        </button>
+                    );
+                }
+                return null;
+            })}
+            
             <ScrollGradient position="bottom" isVisible={bottomGradientVisible} />
         </section>
     );
@@ -956,6 +1086,7 @@ const UI = () => {
 
     const [isVisualizationExpanded, setIsVisualizationExpanded] = useState(false);
     const [openAccordionOptionMobile, setOpenAccordionOptionMobile] = useState(null);
+    const [mobileLastEditedSubPart, setMobileLastEditedSubPart] = useState(null);
 
     const [configuration, setConfiguration] = useState({
         build: {
@@ -966,11 +1097,11 @@ const UI = () => {
             stiffness: 'STANDARD',
             throwingHand: 'RIGHT HAND'
         },
-        thumb: '#C62828',
+        thumb: { inner: '#C62828', outer: '#2E7D32' },
         index: '#1565C0',
-        middle: '#2E7D32',
-        ring: '#F9A825',
-        pinky: '#6A1B9A',
+        middle: { inner: '#2E7D32', outer: '#C62828' },
+        ring: { inner: '#F9A825', outer: '#6A1B9A' },
+        pinky: { inner: '#6A1B9A', outer: '#F9A825' },
         thumbName: {
             text: 'Thumb',
             font: 'SCRIPT',
@@ -987,24 +1118,56 @@ const UI = () => {
         setOpenAccordionOptionMobile({ name: 'color', context: { id: optionId, title: optionTitle } });
     };
 
+    const handleOpenDualColorPicker = (optionId, optionTitle) => {
+        setMobileLastEditedSubPart(null); // Reset on open for default behavior
+        setOpenAccordionOptionMobile({ name: 'dual-color', context: { id: optionId, title: optionTitle } });
+    };
+
     const handleColorSelect = (color, contextId) => {
         if (contextId) {
             setConfiguration(prev => ({ ...prev, [contextId]: color }));
         }
     };
+    
+    const handleDualColorSelect = (partId, subPartId, newColor) => {
+        setConfiguration(prev => ({
+            ...prev,
+            [partId]: {
+                ...prev[partId],
+                [subPartId]: newColor
+            }
+        }));
+    };
 
     const handleApplyColorToAll = (colorToApply) => {
-        const aColorToApply = colorToApply || (openAccordionOptionMobile && openAccordionOptionMobile.name === 'color' && openAccordionOptionMobile.context ? configuration[openAccordionOptionMobile.context.id] : null);
+        let activeColor = colorToApply;
 
-        if (aColorToApply) {
-            setConfiguration(prev => ({
-                ...prev,
-                thumb: aColorToApply,
-                index: aColorToApply,
-                middle: aColorToApply,
-                ring: aColorToApply,
-                pinky: aColorToApply,
-            }));
+        if (!activeColor && openAccordionOptionMobile) {
+            const contextId = openAccordionOptionMobile.context.id;
+            const configValue = configuration[contextId];
+
+            if (openAccordionOptionMobile.name === 'color') {
+                activeColor = configValue;
+            } else if (openAccordionOptionMobile.name === 'dual-color') {
+                activeColor = mobileLastEditedSubPart === 'outer' ? configValue.outer : configValue.inner;
+            }
+        }
+        
+        if (activeColor) {
+             setConfiguration(prev => {
+                const newConfig = { ...prev };
+                ['thumb', 'index', 'middle', 'ring', 'pinky'].forEach(partId => {
+                    if (typeof newConfig[partId] === 'object') {
+                        newConfig[partId] = {
+                            inner: activeColor,
+                            outer: activeColor
+                        };
+                    } else {
+                        newConfig[partId] = activeColor;
+                    }
+                });
+                return newConfig;
+            });
         }
     };
 
@@ -1091,6 +1254,7 @@ const UI = () => {
                             configuration={configuration}
                             handleBuildConfigChange={handleBuildConfigChange}
                             handleColorSelect={handleColorSelect}
+                            handleDualColorSelect={handleDualColorSelect}
                             handleApplyColorToAll={handleApplyColorToAll}
                             handleTextOptionChange={handleTextOptionChange}
                         />
@@ -1104,6 +1268,7 @@ const UI = () => {
                                 configuration={configuration}
                                 handleOpenBuildOption={handleOpenBuildOption}
                                 handleOpenColorPicker={handleOpenColorPicker}
+                                handleOpenDualColorPicker={handleOpenDualColorPicker}
                                 handleOpenTextOption={handleOpenTextOption}
                                 openAccordionOptionMobile={openAccordionOptionMobile}
                             />
@@ -1113,6 +1278,7 @@ const UI = () => {
                                     <div className="flex-grow relative overflow-hidden">
                                         {openAccordionOptionMobile.name === 'summary' && <OverviewMobile onClose={() => setOpenAccordionOptionMobile(null)} configuration={configuration} />}
                                         {openAccordionOptionMobile.name === 'color' && <ColorOptionMobile onClose={() => setOpenAccordionOptionMobile(null)} editingColorContext={openAccordionOptionMobile.context} selectedColor={openAccordionOptionMobile.context ? configuration[openAccordionOptionMobile.context.id] : ''} onColorSelect={(color) => handleColorSelect(color, openAccordionOptionMobile.context.id)} />}
+                                        {openAccordionOptionMobile.name === 'dual-color' && <ColorDualOptionMobile onClose={() => setOpenAccordionOptionMobile(null)} editingColorContext={openAccordionOptionMobile.context} colorValue={openAccordionOptionMobile.context ? configuration[openAccordionOptionMobile.context.id] : {}} onColorSelect={(subPartId, color) => handleDualColorSelect(openAccordionOptionMobile.context.id, subPartId, color)} onSubPartEdit={setMobileLastEditedSubPart} />}
                                         {openAccordionOptionMobile.name === 'build' && <BuildOptionMobile onClose={() => setOpenAccordionOptionMobile(null)} editingBuildContext={openAccordionOptionMobile.context} buildConfig={configuration.build} onBuildConfigChange={handleBuildConfigChange} />}
                                         {openAccordionOptionMobile.name === 'text' && <TextOptionMobile onClose={() => setOpenAccordionOptionMobile(null)} editingTextContext={openAccordionOptionMobile.context} value={openAccordionOptionMobile.context ? configuration[openAccordionOptionMobile.context.id] : null} onChange={(newState) => handleTextOptionChange(newState, openAccordionOptionMobile.context.id)} />}
                                     </div>
