@@ -599,20 +599,275 @@ const OverviewDesktop = ({ configuration }) => {
     );
 };
 
+// --- NEW ABSTRACTION: AccordionDesktop ---
+const AccordionDesktop = ({
+    configuration,
+    colorSwatches,
+    handleBuildConfigChange,
+    handleColorSelect,
+    handleApplyColorToAll,
+    handleTextOptionChange,
+}) => {
+    const [openAccordion, setOpenAccordion] = useState('build');
+    const [isAccordionScrolled, setIsAccordionScrolled] = useState(false);
+    const accordionContainerRef = useRef(null);
+    const [isTopGradientVisibleDesktop, setTopGradientVisibleDesktop] = useState(false);
+    const [isBottomGradientVisibleDesktop, setBottomGradientVisibleDesktop] = useState(false);
+
+    const handleAccordionToggle = (accordionId) => {
+        setOpenAccordion(prev => (prev === accordionId ? null : accordionId));
+    };
+
+    const checkAndSetGradientsDesktop = useCallback(() => {
+        const element = accordionContainerRef.current;
+        if (!element) return;
+        const hasOverflow = element.scrollHeight > element.clientHeight;
+        if (hasOverflow) {
+            const isAtTop = element.scrollTop === 0;
+            const isAtBottom = Math.ceil(element.scrollTop) + element.clientHeight >= element.scrollHeight;
+            setTopGradientVisibleDesktop(!isAtTop);
+            setBottomGradientVisibleDesktop(!isAtBottom);
+        } else {
+            setTopGradientVisibleDesktop(false);
+            setBottomGradientVisibleDesktop(false);
+        }
+    }, []);
+
+    useEffect(() => {
+        checkAndSetGradientsDesktop();
+    }, [checkAndSetGradientsDesktop, openAccordion]);
+
+    useEffect(() => {
+        const desktopHandler = checkAndSetGradientsDesktop;
+        window.addEventListener('resize', desktopHandler);
+        const desktopElement = accordionContainerRef.current;
+        if (desktopElement) {
+            desktopElement.addEventListener('scroll', desktopHandler);
+        }
+        return () => {
+            window.removeEventListener('resize', desktopHandler);
+            if (desktopElement) {
+                desktopElement.removeEventListener('scroll', desktopHandler);
+            }
+        };
+    }, [checkAndSetGradientsDesktop]);
+
+    useEffect(() => {
+        const handleAccordionScroll = () => {
+            if (accordionContainerRef.current) {
+                const { scrollTop } = accordionContainerRef.current;
+                setIsAccordionScrolled(scrollTop > 0);
+            }
+        };
+
+        const element = accordionContainerRef.current;
+        if (element) {
+            element.addEventListener('scroll', handleAccordionScroll);
+        }
+
+        return () => {
+            if (element) {
+                element.removeEventListener('scroll', handleAccordionScroll);
+            }
+        };
+    }, []);
+
+    return (
+        <div className="absolute top-0 left-0 bottom-0 w-[400px] z-10 bg-[#161616] p-4 pointer-events-none">
+            <div className="absolute w-[70px] h-[49px] bg-gray-300 bg-opacity-75 rounded flex items-center justify-center pointer-events-auto"><p className="font-bold text-xl text-gray-900">LOGO</p></div>
+            <div
+                className={`absolute ${isAccordionScrolled ? 'top-[82px]' : 'top-[142px]'} bottom-4 left-4 right-4 pointer-events-auto pr-2 transition-all duration-30 ease-in-out overflow-hidden`}
+            >
+                <ScrollGradient position="top" isVisible={isTopGradientVisibleDesktop} />
+                <div ref={accordionContainerRef} className="h-full overflow-y-auto space-y-4">
+                    <BuildOptionDesktop
+                        isOpen={openAccordion === 'build'}
+                        onToggle={() => handleAccordionToggle('build')}
+                        buildConfig={configuration.build}
+                        onBuildConfigChange={handleBuildConfigChange}
+                        headerContent={<span className="text-sm text-gray-400">Modify</span>}
+                    />
+
+                    <ColorOptionDesktop
+                        title="Thumb Color"
+                        isOpen={openAccordion === 'thumb'}
+                        onToggle={() => handleAccordionToggle('thumb')}
+                        colorValue={configuration.thumb}
+                        colorSwatches={colorSwatches}
+                        onColorSelect={(color) => handleColorSelect(color, 'thumb')}
+                        onApplyToAll={() => handleApplyColorToAll(configuration.thumb)}
+                        headerAccessory={<span className="w-6 h-6 rounded-full border border-white/20" style={{ backgroundColor: configuration.thumb }}></span>}
+                    />
+                    <ColorOptionDesktop
+                        title="Index Color"
+                        isOpen={openAccordion === 'index'}
+                        onToggle={() => handleAccordionToggle('index')}
+                        colorValue={configuration.index}
+                        colorSwatches={colorSwatches}
+                        onColorSelect={(color) => handleColorSelect(color, 'index')}
+                        onApplyToAll={() => handleApplyColorToAll(configuration.index)}
+                        headerAccessory={<span className="w-6 h-6 rounded-full border border-white/20" style={{ backgroundColor: configuration.index }}></span>}
+                    />
+                    <ColorOptionDesktop
+                        title="Middle Color"
+                        isOpen={openAccordion === 'middle'}
+                        onToggle={() => handleAccordionToggle('middle')}
+                        colorValue={configuration.middle}
+                        colorSwatches={colorSwatches}
+                        onColorSelect={(color) => handleColorSelect(color, 'middle')}
+                        onApplyToAll={() => handleApplyColorToAll(configuration.middle)}
+                        headerAccessory={<span className="w-6 h-6 rounded-full border border-white/20" style={{ backgroundColor: configuration.middle }}></span>}
+                    />
+                    <ColorOptionDesktop
+                        title="Ring Color"
+                        isOpen={openAccordion === 'ring'}
+                        onToggle={() => handleAccordionToggle('ring')}
+                        colorValue={configuration.ring}
+                        colorSwatches={colorSwatches}
+                        onColorSelect={(color) => handleColorSelect(color, 'ring')}
+                        onApplyToAll={() => handleApplyColorToAll(configuration.ring)}
+                        headerAccessory={<span className="w-6 h-6 rounded-full border border-white/20" style={{ backgroundColor: configuration.ring }}></span>}
+                    />
+                    <ColorOptionDesktop
+                        title="Pinky Color"
+                        isOpen={openAccordion === 'pinky'}
+                        onToggle={() => handleAccordionToggle('pinky')}
+                        colorValue={configuration.pinky}
+                        colorSwatches={colorSwatches}
+                        onColorSelect={(color) => handleColorSelect(color, 'pinky')}
+                        onApplyToAll={() => handleApplyColorToAll(configuration.pinky)}
+                        headerAccessory={<span className="w-6 h-6 rounded-full border border-white/20" style={{ backgroundColor: configuration.pinky }}></span>}
+                    />
+
+                    <TextOptionDesktop
+                        title="Thumb Name"
+                        isOpen={openAccordion === 'thumbName'}
+                        onToggle={() => handleAccordionToggle('thumbName')}
+                        value={configuration.thumbName}
+                        onChange={(newState) => handleTextOptionChange(newState, 'thumbName')}
+                        colorSwatches={colorSwatches}
+                        headerContent={<span className="text-sm text-gray-400 truncate max-w-[100px]">{configuration.thumbName.text}</span>}
+                    />
+
+                    <TextOptionDesktop
+                        title="Pinky Name"
+                        isOpen={openAccordion === 'pinkyName'}
+                        onToggle={() => handleAccordionToggle('pinkyName')}
+                        value={configuration.pinkyName}
+                        onChange={(newState) => handleTextOptionChange(newState, 'pinkyName')}
+                        colorSwatches={colorSwatches}
+                        headerContent={<span className="text-sm text-gray-400 truncate max-w-[100px]">{configuration.pinkyName.text}</span>}
+                    />
+                </div>
+                <ScrollGradient position="bottom" isVisible={isBottomGradientVisibleDesktop} />
+            </div>
+        </div>
+    );
+};
+
+// --- NEW ABSTRACTION: AccordionMobile ---
+const AccordionMobile = ({
+    configuration,
+    handleOpenBuildOption,
+    handleOpenColorPicker,
+    handleOpenTextOption,
+    openAccordionOptionMobile
+}) => {
+    const listContainerRef = useRef(null);
+    const [topGradientVisible, setTopGradientVisible] = useState(false);
+    const [bottomGradientVisible, setBottomGradientVisible] = useState(false);
+
+    const checkAndSetGradients = useCallback(() => {
+        const listElement = listContainerRef.current;
+        if (!listElement) return;
+        const hasOverflow = listElement.scrollHeight > listElement.clientHeight;
+        if (hasOverflow) {
+            const isAtTop = listElement.scrollTop === 0;
+            const isAtBottom = Math.ceil(listElement.scrollTop) + listElement.clientHeight >= listElement.scrollHeight;
+            setTopGradientVisible(!isAtTop);
+            setBottomGradientVisible(!isAtBottom);
+        } else {
+            setTopGradientVisible(false);
+            setBottomGradientVisible(false);
+        }
+    }, []);
+
+    useEffect(() => {
+        checkAndSetGradients();
+    }, [checkAndSetGradients, openAccordionOptionMobile]);
+
+    useEffect(() => {
+        const mobileHandler = checkAndSetGradients;
+        window.addEventListener('resize', mobileHandler);
+        const mobileElement = listContainerRef.current;
+        if (mobileElement) {
+            mobileElement.addEventListener('scroll', mobileHandler);
+        }
+        return () => {
+            window.removeEventListener('resize', mobileHandler);
+            if (mobileElement) {
+                mobileElement.removeEventListener('scroll', mobileHandler);
+            }
+        };
+    }, [checkAndSetGradients]);
+
+    return (
+        <section
+            ref={listContainerRef}
+            className={`px-4 bg-[#161616] h-full overflow-y-auto ${openAccordionOptionMobile ? 'opacity-50 pointer-events-none' : ''}`}
+            tabIndex="-1"
+        >
+            <ScrollGradient position="top" isVisible={topGradientVisible} />
+            <button data-id="build" className="w-full h-[56px] bg-[#1C1C1C] flex items-center justify-between px-4 mb-[10px] cursor-pointer hover:bg-[#2A2A2A] rounded-md focus:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-white" onClick={() => handleOpenBuildOption('build', 'Build Options')}>
+                <div className="flex items-center"><svg viewBox="0 0 10 16" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-4 w-auto mr-3"><path d="M1 1L8 8L1.10769 15" stroke="white" strokeWidth={2}/></svg><span className="text-lg">Build</span></div>
+                <span className="text-sm text-gray-400">Modify</span>
+            </button>
+            <button data-id="thumb" className="w-full h-[56px] bg-[#1C1C1C] flex items-center justify-between px-4 mb-[10px] cursor-pointer hover:bg-[#2A2A2A] rounded-md focus:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-white" onClick={() => handleOpenColorPicker('thumb', 'Thumb Color')}>
+                <div className="flex items-center"><svg viewBox="0 0 10 16" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-4 w-auto mr-3"><path d="M1 1L8 8L1.10769 15" stroke="white" strokeWidth={2}/></svg><span className="text-lg">Thumb</span></div>
+                <span className="w-6 h-6 rounded-full" style={{ backgroundColor: configuration.thumb }}></span>
+            </button>
+            <button data-id="index" className="w-full h-[56px] bg-[#1C1C1C] flex items-center justify-between px-4 mb-[10px] cursor-pointer hover:bg-[#2A2A2A] rounded-md focus:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-white" onClick={() => handleOpenColorPicker('index', 'Index Color')}>
+                <div className="flex items-center"><svg viewBox="0 0 10 16" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-4 w-auto mr-3"><path d="M1 1L8 8L1.10769 15" stroke="white" strokeWidth={2}/></svg><span className="text-lg">Index</span></div>
+                <span className="w-6 h-6 rounded-full" style={{ backgroundColor: configuration.index }}></span>
+            </button>
+            <button data-id="middle" className="w-full h-[56px] bg-[#1C1C1C] flex items-center justify-between px-4 mb-[10px] cursor-pointer hover:bg-[#2A2A2A] rounded-md focus:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-white" onClick={() => handleOpenColorPicker('middle', 'Middle Color')}>
+                <div className="flex items-center"><svg viewBox="0 0 10 16" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-4 w-auto mr-3"><path d="M1 1L8 8L1.10769 15" stroke="white" strokeWidth={2}/></svg><span className="text-lg">Middle</span></div>
+                <span className="w-6 h-6 rounded-full" style={{ backgroundColor: configuration.middle }}></span>
+            </button>
+            <button data-id="ring" className="w-full h-[56px] bg-[#1C1C1C] flex items-center justify-between px-4 mb-[10px] cursor-pointer hover:bg-[#2A2A2A] rounded-md focus:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-white" onClick={() => handleOpenColorPicker('ring', 'Ring Color')}>
+                <div className="flex items-center"><svg viewBox="0 0 10 16" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-4 w-auto mr-3"><path d="M1 1L8 8L1.10769 15" stroke="white" strokeWidth={2}/></svg><span className="text-lg">Ring</span></div>
+                <span className="w-6 h-6 rounded-full" style={{ backgroundColor: configuration.ring }}></span>
+            </button>
+            <button data-id="pinky" className="w-full h-[56px] bg-[#1C1C1C] flex items-center justify-between px-4 mb-[10px] cursor-pointer hover:bg-[#2A2A2A] rounded-md focus:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-white" onClick={() => handleOpenColorPicker('pinky', 'Pinky Color')}>
+                <div className="flex items-center"><svg viewBox="0 0 10 16" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-4 w-auto mr-3"><path d="M1 1L8 8L1.10769 15" stroke="white" strokeWidth={2}/></svg><span className="text-lg">Pinky</span></div>
+                <span className="w-6 h-6 rounded-full" style={{ backgroundColor: configuration.pinky }}></span>
+            </button>
+            <button data-id="thumbName" className="w-full h-[56px] bg-[#1C1C1C] flex items-center justify-between px-4 mb-[10px] cursor-pointer hover:bg-[#2A2A2A] rounded-md focus:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-white" onClick={() => handleOpenTextOption('thumbName', 'Thumb Name')}>
+                <div className="flex items-center"><svg viewBox="0 0 10 16" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-4 w-auto mr-3"><path d="M1 1L8 8L1.10769 15" stroke="white" strokeWidth={2}/></svg><span className="text-lg">Thumb Name</span></div>
+                <div className="flex items-center space-x-3">
+                    <span className="text-sm text-gray-400 truncate max-w-[100px]">{configuration.thumbName.text}</span>
+                    <span className="w-6 h-6 rounded-full" style={{ backgroundColor: configuration.thumbName.color }}></span>
+                </div>
+            </button>
+            <button data-id="pinkyName" className="w-full h-[56px] bg-[#1C1C1C] flex items-center justify-between px-4 mb-[10px] cursor-pointer hover:bg-[#2A2A2A] rounded-md focus:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-white" onClick={() => handleOpenTextOption('pinkyName', 'Pinky Name')}>
+                <div className="flex items-center"><svg viewBox="0 0 10 16" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-4 w-auto mr-3"><path d="M1 1L8 8L1.10769 15" stroke="white" strokeWidth={2}/></svg><span className="text-lg">Pinky Name</span></div>
+                <div className="flex items-center space-x-3">
+                    <span className="text-sm text-gray-400 truncate max-w-[100px]">{configuration.pinkyName.text}</span>
+                    <span className="w-6 h-6 rounded-full" style={{ backgroundColor: configuration.pinkyName.color }}></span>
+                </div>
+            </button>
+            <ScrollGradient position="bottom" isVisible={bottomGradientVisible} />
+        </section>
+    );
+};
+
 
 // --- Main UI Component ---
 const UI = () => {
     const isDesktop = useBreakpoint();
 
     const [isVisualizationExpanded, setIsVisualizationExpanded] = useState(false);
-    const [openAccordion, setOpenAccordion] = useState('build');
     const [openAccordionOptionMobile, setOpenAccordionOptionMobile] = useState(null);
-
-    const [isAccordionScrolled, setIsAccordionScrolled] = useState(false);
-    const accordionContainerRef = useRef(null);
-    // State for desktop gradients
-    const [isTopGradientVisibleDesktop, setTopGradientVisibleDesktop] = useState(false);
-    const [isBottomGradientVisibleDesktop, setBottomGradientVisibleDesktop] = useState(false);
 
     const [configuration, setConfiguration] = useState({
         build: {
@@ -640,106 +895,12 @@ const UI = () => {
         },
     });
 
-    const listContainerRef = useRef(null);
-
-    const [topGradientVisible, setTopGradientVisible] = useState(false);
-    const [bottomGradientVisible, setBottomGradientVisible] = useState(false);
-
     const colorSwatches = [
     '#C62828', '#AD1457', '#6A1B9A', '#4527A0', '#283593', '#1565C0',
     '#0277BD', '#00838F', '#00695C', '#2E7D32', '#558B2F', '#9E9D24',
     '#F9A825', '#FF8F00', '#EF6C00', '#D84315', '#4E342E', '#424242',
     '#BDBDBD', '#37474F',
     ];
-
-    const checkAndSetGradients = useCallback(() => {
-        const listElement = listContainerRef.current;
-        if (!listElement) return;
-        const hasOverflow = listElement.scrollHeight > listElement.clientHeight;
-        if (hasOverflow) {
-            const isAtTop = listElement.scrollTop === 0;
-            const isAtBottom = Math.ceil(listElement.scrollTop) + listElement.clientHeight >= listElement.scrollHeight;
-            setTopGradientVisible(!isAtTop);
-            setBottomGradientVisible(!isAtBottom);
-        } else {
-            setTopGradientVisible(false);
-            setBottomGradientVisible(false);
-        }
-    }, []);
-
-    const checkAndSetGradientsDesktop = useCallback(() => {
-        const element = accordionContainerRef.current;
-        if (!element) return;
-        const hasOverflow = element.scrollHeight > element.clientHeight;
-        if (hasOverflow) {
-            const isAtTop = element.scrollTop === 0;
-            const isAtBottom = Math.ceil(element.scrollTop) + element.clientHeight >= element.scrollHeight;
-            setTopGradientVisibleDesktop(!isAtTop);
-            setBottomGradientVisibleDesktop(!isAtBottom);
-        } else {
-            setTopGradientVisibleDesktop(false);
-            setBottomGradientVisibleDesktop(false);
-        }
-    }, []);
-
-    useEffect(() => {
-        checkAndSetGradients();
-        checkAndSetGradientsDesktop();
-    }, [checkAndSetGradients, checkAndSetGradientsDesktop, openAccordionOptionMobile, openAccordion]);
-
-    useEffect(() => {
-        const mobileHandler = checkAndSetGradients;
-        const desktopHandler = checkAndSetGradientsDesktop;
-
-        window.addEventListener('resize', mobileHandler);
-        window.addEventListener('resize', desktopHandler);
-
-        const mobileElement = listContainerRef.current;
-        if (mobileElement) {
-            mobileElement.addEventListener('scroll', mobileHandler);
-        }
-
-        const desktopElement = accordionContainerRef.current;
-        if (desktopElement) {
-            desktopElement.addEventListener('scroll', desktopHandler);
-        }
-
-        return () => {
-            window.removeEventListener('resize', mobileHandler);
-            window.removeEventListener('resize', desktopHandler);
-            if (mobileElement) {
-                mobileElement.removeEventListener('scroll', mobileHandler);
-            }
-            if (desktopElement) {
-                desktopElement.removeEventListener('scroll', desktopHandler);
-            }
-        };
-    }, [checkAndSetGradients, checkAndSetGradientsDesktop]);
-
-    useEffect(() => {
-        const handleAccordionScroll = () => {
-            if (accordionContainerRef.current) {
-                const { scrollTop } = accordionContainerRef.current;
-                setIsAccordionScrolled(scrollTop > 0);
-            }
-        };
-
-        const element = accordionContainerRef.current;
-        // Only add the listener on desktop view
-        if (element && isDesktop) {
-            element.addEventListener('scroll', handleAccordionScroll);
-        }
-
-        return () => {
-            if (element) {
-                element.removeEventListener('scroll', handleAccordionScroll);
-            }
-        };
-    }, [isDesktop]);
-
-    const handleAccordionToggle = (accordionId) => {
-        setOpenAccordion(prev => (prev === accordionId ? null : accordionId));
-    };
 
     const handleOpenColorPicker = (optionId, optionTitle) => {
         setOpenAccordionOptionMobile({ name: 'color', context: { id: optionId, title: optionTitle } });
@@ -845,95 +1006,14 @@ const UI = () => {
             {!isVisualizationExpanded && (
                 isDesktop ? (
                     <>
-                        <div className="absolute top-0 left-0 bottom-0 w-[400px] z-10 bg-[#161616] p-4 pointer-events-none">
-                            <div className="absolute w-[70px] h-[49px] bg-gray-300 bg-opacity-75 rounded flex items-center justify-center pointer-events-auto"><p className="font-bold text-xl text-gray-900">LOGO</p></div>
-                            <div
-                                className={`absolute ${isAccordionScrolled ? 'top-[82px]' : 'top-[142px]'} bottom-4 left-4 right-4 pointer-events-auto pr-2 transition-all duration-30 ease-in-out overflow-hidden`}
-                            >
-                                <ScrollGradient position="top" isVisible={isTopGradientVisibleDesktop} />
-                                <div ref={accordionContainerRef} className="h-full overflow-y-auto space-y-4">
-                                    <BuildOptionDesktop
-                                        isOpen={openAccordion === 'build'}
-                                        onToggle={() => handleAccordionToggle('build')}
-                                        buildConfig={configuration.build}
-                                        onBuildConfigChange={handleBuildConfigChange}
-                                        headerContent={<span className="text-sm text-gray-400">Modify</span>}
-                                    />
-
-                                    <ColorOptionDesktop
-                                        title="Thumb Color"
-                                        isOpen={openAccordion === 'thumb'}
-                                        onToggle={() => handleAccordionToggle('thumb')}
-                                        colorValue={configuration.thumb}
-                                        colorSwatches={colorSwatches}
-                                        onColorSelect={(color) => handleColorSelect(color, 'thumb')}
-                                        onApplyToAll={() => handleApplyColorToAll(configuration.thumb)}
-                                        headerAccessory={<span className="w-6 h-6 rounded-full border border-white/20" style={{ backgroundColor: configuration.thumb }}></span>}
-                                    />
-                                    <ColorOptionDesktop
-                                        title="Index Color"
-                                        isOpen={openAccordion === 'index'}
-                                        onToggle={() => handleAccordionToggle('index')}
-                                        colorValue={configuration.index}
-                                        colorSwatches={colorSwatches}
-                                        onColorSelect={(color) => handleColorSelect(color, 'index')}
-                                        onApplyToAll={() => handleApplyColorToAll(configuration.index)}
-                                        headerAccessory={<span className="w-6 h-6 rounded-full border border-white/20" style={{ backgroundColor: configuration.index }}></span>}
-                                    />
-                                    <ColorOptionDesktop
-                                        title="Middle Color"
-                                        isOpen={openAccordion === 'middle'}
-                                        onToggle={() => handleAccordionToggle('middle')}
-                                        colorValue={configuration.middle}
-                                        colorSwatches={colorSwatches}
-                                        onColorSelect={(color) => handleColorSelect(color, 'middle')}
-                                        onApplyToAll={() => handleApplyColorToAll(configuration.middle)}
-                                        headerAccessory={<span className="w-6 h-6 rounded-full border border-white/20" style={{ backgroundColor: configuration.middle }}></span>}
-                                    />
-                                    <ColorOptionDesktop
-                                        title="Ring Color"
-                                        isOpen={openAccordion === 'ring'}
-                                        onToggle={() => handleAccordionToggle('ring')}
-                                        colorValue={configuration.ring}
-                                        colorSwatches={colorSwatches}
-                                        onColorSelect={(color) => handleColorSelect(color, 'ring')}
-                                        onApplyToAll={() => handleApplyColorToAll(configuration.ring)}
-                                        headerAccessory={<span className="w-6 h-6 rounded-full border border-white/20" style={{ backgroundColor: configuration.ring }}></span>}
-                                    />
-                                    <ColorOptionDesktop
-                                        title="Pinky Color"
-                                        isOpen={openAccordion === 'pinky'}
-                                        onToggle={() => handleAccordionToggle('pinky')}
-                                        colorValue={configuration.pinky}
-                                        colorSwatches={colorSwatches}
-                                        onColorSelect={(color) => handleColorSelect(color, 'pinky')}
-                                        onApplyToAll={() => handleApplyColorToAll(configuration.pinky)}
-                                        headerAccessory={<span className="w-6 h-6 rounded-full border border-white/20" style={{ backgroundColor: configuration.pinky }}></span>}
-                                    />
-
-                                    <TextOptionDesktop
-                                        title="Thumb Name"
-                                        isOpen={openAccordion === 'thumbName'}
-                                        onToggle={() => handleAccordionToggle('thumbName')}
-                                        value={configuration.thumbName}
-                                        onChange={(newState) => handleTextOptionChange(newState, 'thumbName')}
-                                        colorSwatches={colorSwatches}
-                                        headerContent={<span className="text-sm text-gray-400 truncate max-w-[100px]">{configuration.thumbName.text}</span>}
-                                    />
-
-                                    <TextOptionDesktop
-                                        title="Pinky Name"
-                                        isOpen={openAccordion === 'pinkyName'}
-                                        onToggle={() => handleAccordionToggle('pinkyName')}
-                                        value={configuration.pinkyName}
-                                        onChange={(newState) => handleTextOptionChange(newState, 'pinkyName')}
-                                        colorSwatches={colorSwatches}
-                                        headerContent={<span className="text-sm text-gray-400 truncate max-w-[100px]">{configuration.pinkyName.text}</span>}
-                                    />
-                                </div>
-                                <ScrollGradient position="bottom" isVisible={isBottomGradientVisibleDesktop} />
-                            </div>
-                        </div>
+                        <AccordionDesktop
+                            configuration={configuration}
+                            colorSwatches={colorSwatches}
+                            handleBuildConfigChange={handleBuildConfigChange}
+                            handleColorSelect={handleColorSelect}
+                            handleApplyColorToAll={handleApplyColorToAll}
+                            handleTextOptionChange={handleTextOptionChange}
+                        />
                         <OverviewDesktop configuration={configuration} />
                     </>
                 ) : (
@@ -941,53 +1021,14 @@ const UI = () => {
                         {/* This container now holds both the list and the trapped overlay */}
                         <div className="relative flex-grow overflow-hidden">
 
-                            {/* 1. The main list. This section is unchanged. It will be correctly hidden by your existing CSS. */}
-                            <section
-                                ref={listContainerRef}
-                                className={`px-4 bg-[#161616] h-full overflow-y-auto ${openAccordionOptionMobile ? 'opacity-50 pointer-events-none' : ''}`}
-                                tabIndex="-1"
-                            >
-                                <ScrollGradient position="top" isVisible={topGradientVisible} />
-                                <button data-id="build" className="w-full h-[56px] bg-[#1C1C1C] flex items-center justify-between px-4 mb-[10px] cursor-pointer hover:bg-[#2A2A2A] rounded-md focus:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-white" onClick={() => handleOpenBuildOption('build', 'Build Options')}>
-                                    <div className="flex items-center"><svg viewBox="0 0 10 16" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-4 w-auto mr-3"><path d="M1 1L8 8L1.10769 15" stroke="white" strokeWidth={2}/></svg><span className="text-lg">Build</span></div>
-                                    <span className="text-sm text-gray-400">Modify</span>
-                                </button>
-                                <button data-id="thumb" className="w-full h-[56px] bg-[#1C1C1C] flex items-center justify-between px-4 mb-[10px] cursor-pointer hover:bg-[#2A2A2A] rounded-md focus:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-white" onClick={() => handleOpenColorPicker('thumb', 'Thumb Color')}>
-                                    <div className="flex items-center"><svg viewBox="0 0 10 16" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-4 w-auto mr-3"><path d="M1 1L8 8L1.10769 15" stroke="white" strokeWidth={2}/></svg><span className="text-lg">Thumb</span></div>
-                                    <span className="w-6 h-6 rounded-full" style={{ backgroundColor: configuration.thumb }}></span>
-                                </button>
-                                <button data-id="index" className="w-full h-[56px] bg-[#1C1C1C] flex items-center justify-between px-4 mb-[10px] cursor-pointer hover:bg-[#2A2A2A] rounded-md focus:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-white" onClick={() => handleOpenColorPicker('index', 'Index Color')}>
-                                    <div className="flex items-center"><svg viewBox="0 0 10 16" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-4 w-auto mr-3"><path d="M1 1L8 8L1.10769 15" stroke="white" strokeWidth={2}/></svg><span className="text-lg">Index</span></div>
-                                    <span className="w-6 h-6 rounded-full" style={{ backgroundColor: configuration.index }}></span>
-                                </button>
-                                <button data-id="middle" className="w-full h-[56px] bg-[#1C1C1C] flex items-center justify-between px-4 mb-[10px] cursor-pointer hover:bg-[#2A2A2A] rounded-md focus:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-white" onClick={() => handleOpenColorPicker('middle', 'Middle Color')}>
-                                    <div className="flex items-center"><svg viewBox="0 0 10 16" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-4 w-auto mr-3"><path d="M1 1L8 8L1.10769 15" stroke="white" strokeWidth={2}/></svg><span className="text-lg">Middle</span></div>
-                                    <span className="w-6 h-6 rounded-full" style={{ backgroundColor: configuration.middle }}></span>
-                                </button>
-                                <button data-id="ring" className="w-full h-[56px] bg-[#1C1C1C] flex items-center justify-between px-4 mb-[10px] cursor-pointer hover:bg-[#2A2A2A] rounded-md focus:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-white" onClick={() => handleOpenColorPicker('ring', 'Ring Color')}>
-                                    <div className="flex items-center"><svg viewBox="0 0 10 16" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-4 w-auto mr-3"><path d="M1 1L8 8L1.10769 15" stroke="white" strokeWidth={2}/></svg><span className="text-lg">Ring</span></div>
-                                    <span className="w-6 h-6 rounded-full" style={{ backgroundColor: configuration.ring }}></span>
-                                </button>
-                                <button data-id="pinky" className="w-full h-[56px] bg-[#1C1C1C] flex items-center justify-between px-4 mb-[10px] cursor-pointer hover:bg-[#2A2A2A] rounded-md focus:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-white" onClick={() => handleOpenColorPicker('pinky', 'Pinky Color')}>
-                                    <div className="flex items-center"><svg viewBox="0 0 10 16" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-4 w-auto mr-3"><path d="M1 1L8 8L1.10769 15" stroke="white" strokeWidth={2}/></svg><span className="text-lg">Pinky</span></div>
-                                    <span className="w-6 h-6 rounded-full" style={{ backgroundColor: configuration.pinky }}></span>
-                                </button>
-                                <button data-id="thumbName" className="w-full h-[56px] bg-[#1C1C1C] flex items-center justify-between px-4 mb-[10px] cursor-pointer hover:bg-[#2A2A2A] rounded-md focus:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-white" onClick={() => handleOpenTextOption('thumbName', 'Thumb Name')}>
-                                    <div className="flex items-center"><svg viewBox="0 0 10 16" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-4 w-auto mr-3"><path d="M1 1L8 8L1.10769 15" stroke="white" strokeWidth={2}/></svg><span className="text-lg">Thumb Name</span></div>
-                                    <div className="flex items-center space-x-3">
-                                        <span className="text-sm text-gray-400 truncate max-w-[100px]">{configuration.thumbName.text}</span>
-                                        <span className="w-6 h-6 rounded-full" style={{ backgroundColor: configuration.thumbName.color }}></span>
-                                    </div>
-                                </button>
-                                <button data-id="pinkyName" className="w-full h-[56px] bg-[#1C1C1C] flex items-center justify-between px-4 mb-[10px] cursor-pointer hover:bg-[#2A2A2A] rounded-md focus:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-white" onClick={() => handleOpenTextOption('pinkyName', 'Pinky Name')}>
-                                    <div className="flex items-center"><svg viewBox="0 0 10 16" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-4 w-auto mr-3"><path d="M1 1L8 8L1.10769 15" stroke="white" strokeWidth={2}/></svg><span className="text-lg">Pinky Name</span></div>
-                                    <div className="flex items-center space-x-3">
-                                        <span className="text-sm text-gray-400 truncate max-w-[100px]">{configuration.pinkyName.text}</span>
-                                        <span className="w-6 h-6 rounded-full" style={{ backgroundColor: configuration.pinkyName.color }}></span>
-                                    </div>
-                                </button>
-                                <ScrollGradient position="bottom" isVisible={bottomGradientVisible} />
-                            </section>
+                            {/* 1. The main list. This section is now an abstracted component. */}
+                            <AccordionMobile
+                                configuration={configuration}
+                                handleOpenBuildOption={handleOpenBuildOption}
+                                handleOpenColorPicker={handleOpenColorPicker}
+                                handleOpenTextOption={handleOpenTextOption}
+                                openAccordionOptionMobile={openAccordionOptionMobile}
+                            />
 
                             {/* 2. The Focus-Trapped Overlay. This ONLY appears when a panel is active and only on mobile. */}
                             {openAccordionOptionMobile && (
@@ -1014,9 +1055,9 @@ const UI = () => {
                                              <div className="w-full grid grid-cols-[1fr_1.618fr] gap-[10px]">
                                                  <SecondaryButton label="Back" onClick={() => setOpenAccordionOptionMobile(null)} variant="dark" icon="backArrow" />
                                                  <OrderButtonController
-                                                      isSummaryVisible={true}
-                                                      onCompleteClick={() => alert('Complete Order clicked!')}
-                                                      onReviewClick={() => {}}
+                                                     isSummaryVisible={true}
+                                                     onCompleteClick={() => alert('Complete Order clicked!')}
+                                                     onReviewClick={() => {}}
                                                  />
                                              </div>
                                          ) : (
