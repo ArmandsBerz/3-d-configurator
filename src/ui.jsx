@@ -553,10 +553,11 @@ const ColorDualOptionMobile = ({ editingColorContext, onClose, onColorSelect, co
             title={editingColorContext.title || 'Color Picker'}
             onClose={onClose}
             headerAccessory={
-                <div className="flex items-center space-x-2">
-                    <span className="w-5 h-5 rounded-full border border-white/20" style={{ backgroundColor: colorValue.inner }}></span>
-                    <span className="w-5 h-5 rounded-full border border-white/20" style={{ backgroundColor: colorValue.outer }}></span>
-                </div>
+                // --- MODIFICATION START ---
+                <span className="text-sm text-gray-400 font-mono tracking-wider">
+                    {`${colorValue.inner} ${colorValue.outer}`}
+                </span>
+                // --- MODIFICATION END ---
             }
         >
             <div className="space-y-6">
@@ -903,21 +904,31 @@ const AccordionDesktop = ({
 
                     {colorParts.map(part => {
                         const isDual = typeof configuration[part.id] === 'object';
+                        const isAccordionOpen = openAccordion === part.id; // We'll use this
+
                         if (isDual) {
                             return (
                                 <ColorDualOptionDesktop
                                     key={part.id}
                                     title={part.title}
-                                    isOpen={openAccordion === part.id}
+                                    isOpen={isAccordionOpen}
                                     onToggle={() => handleAccordionToggle(part.id)}
                                     colorValue={configuration[part.id]}
                                     onColorSelect={(subPart, color) => handleDualColorSelect(part.id, subPart, color)}
                                     onApplyToAll={handleApplyColorToAll}
                                     headerAccessory={
-                                        <div className="flex items-center space-x-2">
-                                            <span className="w-6 h-6 rounded-full border border-white/20" style={{ backgroundColor: configuration[part.id].inner }}></span>
-                                            <span className="w-6 h-6 rounded-full border border-white/20" style={{ backgroundColor: configuration[part.id].outer }}></span>
-                                        </div>
+                                        // --- MODIFICATION START ---
+                                        isAccordionOpen ? (
+                                            <span className="text-sm text-gray-400 font-mono tracking-wider">
+                                                {`${configuration[part.id].inner} ${configuration[part.id].outer}`}
+                                            </span>
+                                        ) : (
+                                            <div className="flex items-center space-x-2">
+                                                <span className="w-6 h-6 rounded-full border border-white/20" style={{ backgroundColor: configuration[part.id].inner }}></span>
+                                                <span className="w-6 h-6 rounded-full border border-white/20" style={{ backgroundColor: configuration[part.id].outer }}></span>
+                                            </div>
+                                        )
+                                        // --- MODIFICATION END ---
                                     }
                                 />
                             );
@@ -926,12 +937,20 @@ const AccordionDesktop = ({
                                 <ColorOptionDesktop
                                     key={part.id}
                                     title={part.title}
-                                    isOpen={openAccordion === part.id}
+                                    isOpen={isAccordionOpen}
                                     onToggle={() => handleAccordionToggle(part.id)}
                                     colorValue={configuration[part.id]}
                                     onColorSelect={(color) => handleColorSelect(color, part.id)}
                                     onApplyToAll={() => handleApplyColorToAll(configuration[part.id])}
-                                    headerAccessory={<span className="w-6 h-6 rounded-full border border-white/20" style={{ backgroundColor: configuration[part.id] }}></span>}
+                                    headerAccessory={
+                                        // --- MODIFICATION START ---
+                                        isAccordionOpen ? (
+                                            <span className="text-sm text-gray-400 font-mono tracking-wider">{configuration[part.id]}</span>
+                                        ) : (
+                                            <span className="w-6 h-6 rounded-full border border-white/20" style={{ backgroundColor: configuration[part.id] }}></span>
+                                        )
+                                        // --- MODIFICATION END ---
+                                    }
                                 />
                             );
                         }
