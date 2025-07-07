@@ -914,7 +914,6 @@ const AccordionDesktop = ({
                         onToggle={() => handleAccordionToggle('build')}
                         buildConfig={configuration.build}
                         onBuildConfigChange={handleBuildConfigChange}
-                        headerContent={<span className="text-sm text-gray-400">Modify</span>}
                     />
 
                     {colorParts.map(part => {
@@ -1064,7 +1063,6 @@ const AccordionMobile = ({
                     return (
                         <button key={item.id} data-id={item.id} className="w-full h-[56px] bg-[#1C1C1C] flex items-center justify-between px-4 mb-[10px] cursor-pointer hover:bg-[#2A2A2A] focus:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-white" onClick={() => handleOpenBuildOption('build', 'Build Options')}>
                             <div className="flex items-center"><svg viewBox="0 0 10 16" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-4 w-auto mr-3"><path d="M1 1L8 8L1.10769 15" stroke="white" strokeWidth={2}/></svg><span className="text-lg">{item.title}</span></div>
-                            <span className="text-sm text-gray-400">Modify</span>
                         </button>
                     );
                 }
