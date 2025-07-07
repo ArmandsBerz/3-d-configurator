@@ -13,10 +13,26 @@ const fontOptions = [
 ];
 
 const colorSwatches = [
-    '#C62828', '#AD1457', '#6A1B9A', '#4527A0', '#283593', '#1565C0',
-    '#0277BD', '#00838F', '#00695C', '#2E7D32', '#558B2F', '#9E9D24',
-    '#F9A825', '#FF8F00', '#EF6C00', '#D84315', '#4E342E', '#424242',
-    '#BDBDBD', '#37474F',
+    { name: 'Red', hex: '#C62828' },
+    { name: 'Pink', hex: '#AD1457' },
+    { name: 'Purple', hex: '#6A1B9A' },
+    { name: 'Indigo', hex: '#4527A0' },
+    { name: 'Royal', hex: '#283593' },
+    { name: 'Blue', hex: '#1565C0' },
+    { name: 'Light Blue', hex: '#0277BD' },
+    { name: 'Teal', hex: '#00838F' },
+    { name: 'Green', hex: '#00695C' },
+    { name: 'Forest', hex: '#2E7D32' },
+    { name: 'Lime', hex: '#558B2F' },
+    { name: 'Olive', hex: '#9E9D24' },
+    { name: 'Gold', hex: '#F9A825' },
+    { name: 'Orange', hex: '#FF8F00' },
+    { name: 'Burnt Orange', hex: '#EF6C00' },
+    { name: 'Red Orange', hex: '#D84315' },
+    { name: 'Brown', hex: '#4E342E' },
+    { name: 'Charcoal', hex: '#424242' },
+    { name: 'Grey', hex: '#BDBDBD' },
+    { name: 'Slate', hex: '#37474F' },
 ];
 
 const buildOptionsData = [
@@ -109,9 +125,9 @@ const ColorSwatchGrid = ({ swatches, selectedColor, onColorSelect }) => (
     <div className="grid grid-cols-[repeat(auto-fit,minmax(42px,1fr))] gap-[10px] px-2 py-2">
         {swatches.map((color) => (
             <ColorSwatch
-                key={color}
-                color={color}
-                isSelected={selectedColor === color}
+                key={color.hex}
+                color={color.hex}
+                isSelected={selectedColor === color.hex}
                 onSelect={onColorSelect}
             />
         ))}
@@ -553,11 +569,9 @@ const ColorDualOptionMobile = ({ editingColorContext, onClose, onColorSelect, co
             title={editingColorContext.title || 'Color Picker'}
             onClose={onClose}
             headerAccessory={
-                // --- MODIFICATION START ---
-                <span className="text-sm text-gray-400 font-mono tracking-wider">
-                    {`${colorValue.inner} ${colorValue.outer}`}
+                <span className="text-sm text-gray-400 font-semibold">
+                    {`${colorSwatches.find(c => c.hex === colorValue.inner)?.name} ${colorSwatches.find(c => c.hex === colorValue.outer)?.name}`}
                 </span>
-                // --- MODIFICATION END ---
             }
         >
             <div className="space-y-6">
@@ -813,6 +827,7 @@ const AccordionDesktop = ({
     handleDualColorSelect,
     handleApplyColorToAll,
     handleTextOptionChange,
+    getColorName,
 }) => {
     const [openAccordion, setOpenAccordion] = useState('build');
     const [isAccordionScrolled, setIsAccordionScrolled] = useState(false);
@@ -917,10 +932,9 @@ const AccordionDesktop = ({
                                     onColorSelect={(subPart, color) => handleDualColorSelect(part.id, subPart, color)}
                                     onApplyToAll={handleApplyColorToAll}
                                     headerAccessory={
-                                        // --- MODIFICATION START ---
                                         isAccordionOpen ? (
-                                            <span className="text-sm text-gray-400 font-mono tracking-wider">
-                                                {`${configuration[part.id].inner} ${configuration[part.id].outer}`}
+                                            <span className="text-sm text-gray-400 font-semibold">
+                                                {`${getColorName(configuration[part.id].inner)} ${getColorName(configuration[part.id].outer)}`}
                                             </span>
                                         ) : (
                                             <div className="flex items-center space-x-2">
@@ -928,7 +942,6 @@ const AccordionDesktop = ({
                                                 <span className="w-6 h-6 rounded-full border border-white/20" style={{ backgroundColor: configuration[part.id].outer }}></span>
                                             </div>
                                         )
-                                        // --- MODIFICATION END ---
                                     }
                                 />
                             );
@@ -943,13 +956,11 @@ const AccordionDesktop = ({
                                     onColorSelect={(color) => handleColorSelect(color, part.id)}
                                     onApplyToAll={() => handleApplyColorToAll(configuration[part.id])}
                                     headerAccessory={
-                                        // --- MODIFICATION START ---
                                         isAccordionOpen ? (
-                                            <span className="text-sm text-gray-400 font-mono tracking-wider">{configuration[part.id]}</span>
+                                            <span className="text-sm text-gray-400 font-semibold">{getColorName(configuration[part.id])}</span>
                                         ) : (
                                             <span className="w-6 h-6 rounded-full border border-white/20" style={{ backgroundColor: configuration[part.id] }}></span>
                                         )
-                                        // --- MODIFICATION END ---
                                     }
                                 />
                             );
@@ -1236,6 +1247,11 @@ const UI = () => {
         }
     }, [configuration]);
 
+    const getColorName = (hexValue) => {
+        const color = colorSwatches.find(c => c.hex === hexValue);
+        return color ? color.name : hexValue; // Return name if found, otherwise the hex
+    };
+
     return (
         <div className="flex flex-col lg:relative h-[100dvh] bg-[#161616] text-white">
             <main className={`p-4 flex flex-col items-center justify-center relative bg-[#161616] overflow-auto h-full w-full ${ isVisualizationExpanded ? 'flex-grow' : 'lg:absolute lg:inset-0'}`} style={!isDesktop && !isVisualizationExpanded ? { flexBasis: `${VIZ_PROPORTION * 100}%` } : {}}>
@@ -1276,6 +1292,7 @@ const UI = () => {
                             handleDualColorSelect={handleDualColorSelect}
                             handleApplyColorToAll={handleApplyColorToAll}
                             handleTextOptionChange={handleTextOptionChange}
+                            getColorName={getColorName}
                         />
                         <OverviewDesktop configuration={configuration} />
                     </>
