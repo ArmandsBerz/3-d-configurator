@@ -43,6 +43,19 @@ const buildOptionsData = [
     { id: 'throwingHand', title: 'Throwing Hand', options: [{id: 'RIGHT HAND', label: 'RIGHT HAND'}, {id: 'LEFT HAND', label: 'LEFT HAND'}], layout: 'grid-cols-2' }
 ];
 
+const webTypeOptions = [
+  { id: 'MOD_TRAP', title: 'MOD TRAP' },
+  { id: 'ONE_PIECE', title: 'ONE PIECE' },
+  { id: 'TWO_PIECE', title: 'TWO PIECE' },
+  { id: 'DUAL_HINGE', title: 'DUAL HINGE' },
+  { id: 'FRAMED_MOD_TRAP', title: 'FRAMED MOD TRAP' },
+  { id: 'CLOSED_V', title: 'CLOSED V' },
+  { id: 'BASKET', title: 'BASKET' },
+  { id: 'BASKET_LACE', title: 'BASKET LACE' },
+  { id: 'SEALING', title: 'SEALING' },
+  { id: 'LACE_SEALING', title: 'LACE SEALING' }
+];
+
 // --- Helper Components ---
 const ScrollGradient = ({ position, isVisible }) => {
     const isTop = position === 'top';
@@ -232,6 +245,23 @@ const OptionGroup = ({ title, options, layout, selectedOption, onSelectOption })
     </div>
 );
 
+const ImageGroup = ({ title, options, layout, selectedOption, onSelectOption }) => (
+    <div>
+      <h3 className="text-sm font-semibold text-gray-400 mb-2">{title}</h3>
+      <div className={`grid ${layout} gap-[10px]`}>
+        {options.map((option) => (
+          <ImageOption
+            key={option.id}
+            id={option.id}
+            title={option.title}
+            isSelected={selectedOption === option.id}
+            onSelect={() => onSelectOption(option.id)}
+          />
+        ))}
+      </div>
+    </div>
+);
+
 const OverviewButton = ({ onClick, isDesktop, isOpen }) => (
     <button
         type="button"
@@ -377,7 +407,6 @@ const ColorOptionDesktop = ({
     );
 };
 
-// --- NEW DUAL COLOR COMPONENT (DESKTOP) ---
 const ColorDualOptionDesktop = ({
     title,
     isOpen,
@@ -471,12 +500,39 @@ const TextOptionDesktop = ({ title, isOpen, onToggle, value, onChange, headerCon
     );
 };
 
+const GalleryOptionDesktop = ({ title, isOpen, onToggle, config, onConfigChange, optionsData, headerAccessory }) => (
+    <AccordionOptionDesktop
+        title={title}
+        isOpen={isOpen}
+        onToggle={onToggle}
+        headerContent={headerAccessory}
+    >
+      <div className="space-y-6">
+        <ImageGroup
+          title="Type"
+          layout="grid-cols-3"
+          options={optionsData}
+          selectedOption={config.type}
+          onSelectOption={(optionId) => onConfigChange({ ...config, type: optionId })}
+        />
+        <div>
+            <h3 className="text-sm font-semibold text-gray-400 mb-2">Color</h3>
+            <ColorSwatchGrid
+                swatches={colorSwatches}
+                selectedColor={config.color}
+                onColorSelect={(color) => onConfigChange({ ...config, color: color })}
+            />
+        </div>
+      </div>
+    </AccordionOptionDesktop>
+);
+
 
 // --- Panel Components ---
 
 const OrderSummaryInfo = ({ configuration, dataSources }) => {
-    const { build, thumb, index, middle, ring, pinky, thumbName, pinkyName } = configuration;
-    const { buildOptions, leatherOptions: leatherSource } = dataSources;
+    const { build, web, thumb, index, middle, ring, pinky, thumbName, pinkyName } = configuration;
+    const { buildOptions, leatherOptions: leatherSource, webTypeOptions: webTypeSource } = dataSources;
 
     const getBuildLabel = (key, value) => {
         if (key === 'imageSelection') {
@@ -486,12 +542,16 @@ const OrderSummaryInfo = ({ configuration, dataSources }) => {
         const option = group?.options.find(o => o.id === value);
         return option?.label || value;
     };
-    
+
     const getBuildTitle = (key) => {
         if (key === 'imageSelection') return "Glove Leather";
         return buildOptions.find(g => g.id === key)?.title || key;
     }
-    
+
+    const getWebLabel = (value) => {
+        return webTypeSource.find(opt => opt.id === value)?.title || value;
+    }
+
     const renderColorValue = (value) => {
         if (typeof value === 'object' && value !== null && value.inner && value.outer) {
             return `Inner: ${value.inner}, Outer: ${value.outer}`;
@@ -507,6 +567,7 @@ const OrderSummaryInfo = ({ configuration, dataSources }) => {
                     {Object.entries(build).map(([key, value]) => (
                         <p key={key}><span className="font-semibold text-gray-400">{getBuildTitle(key)}:</span> {getBuildLabel(key, value)}</p>
                     ))}
+                    {web && <p><span className="font-semibold text-gray-400">Web:</span> {getWebLabel(web.type)}</p> }
                 </div>
             </div>
             <div>
@@ -517,6 +578,7 @@ const OrderSummaryInfo = ({ configuration, dataSources }) => {
                     <p><span className="font-semibold text-gray-400">Middle:</span> {renderColorValue(middle)}</p>
                     <p><span className="font-semibold text-gray-400">Ring:</span> {renderColorValue(ring)}</p>
                     <p><span className="font-semibold text-gray-400">Pinky:</span> {renderColorValue(pinky)}</p>
+                    {web && <p><span className="font-semibold text-gray-400">Web Color:</span> {web.color}</p>}
                 </div>
             </div>
             <div>
@@ -531,7 +593,7 @@ const OrderSummaryInfo = ({ configuration, dataSources }) => {
 };
 
 const OverviewMobile = ({ onClose, configuration }) => {
-    const dataSources = { buildOptions: buildOptionsData, leatherOptions: leatherOptions };
+    const dataSources = { buildOptions: buildOptionsData, leatherOptions: leatherOptions, webTypeOptions: webTypeOptions };
     return (
         <AccordionOptionMobile title="Order Summary" onClose={onClose}>
             <OrderSummaryInfo configuration={configuration} dataSources={dataSources} />
@@ -559,7 +621,6 @@ const ColorOptionMobile = ({ editingColorContext, onClose, onColorSelect, select
     );
 };
 
-// --- NEW DUAL COLOR COMPONENT (MOBILE) ---
 const ColorDualOptionMobile = ({ editingColorContext, onClose, onColorSelect, colorValue, onSubPartEdit }) => {
     if (!editingColorContext) return null;
 
@@ -695,6 +756,32 @@ const TextOptionMobile = ({ editingTextContext, value, onChange, onClose }) => {
   );
 };
 
+const GalleryOptionMobile = ({ onClose, editingContext, config, onConfigChange, optionsData }) => {
+    if (!editingContext) return null;
+    return (
+        <AccordionOptionMobile title={editingContext.title || 'Gallery'} onClose={onClose}>
+            <div className="space-y-6 pb-4">
+                <ImageGroup
+                    title="Type"
+                    layout="grid-cols-3"
+                    options={optionsData}
+                    selectedOption={config.type}
+                    onSelectOption={(optionId) => onConfigChange({ ...config, type: optionId })}
+                />
+                <div>
+                    <h3 className="text-sm font-semibold text-gray-400 mb-2">Color</h3>
+                    <ColorSwatchGrid
+                        swatches={colorSwatches}
+                        selectedColor={config.color}
+                        onColorSelect={(color) => onConfigChange({ ...config, color: color })}
+                    />
+                </div>
+            </div>
+        </AccordionOptionMobile>
+    );
+};
+
+
 const FooterMobile = ({ openPanelName, onApplyColorToAll, onClosePanel, onReviewClick, onCompleteOrder, isDesktop }) => {
     const panelFooterMap = {
         color: (
@@ -710,6 +797,9 @@ const FooterMobile = ({ openPanelName, onApplyColorToAll, onClosePanel, onReview
             </div>
         ),
         build: (
+            <SecondaryButton label="Continue" onClick={onClosePanel} variant="light" icon="checkmark" />
+        ),
+        gallery: (
             <SecondaryButton label="Continue" onClick={onClosePanel} variant="light" icon="checkmark" />
         ),
         text: (
@@ -729,10 +819,10 @@ const FooterMobile = ({ openPanelName, onApplyColorToAll, onClosePanel, onReview
             <OrderButtonController isSummaryVisible={false} onReviewClick={onReviewClick} onCompleteClick={onCompleteOrder} />
         </div>
     );
-    
+
     return (
         <footer className="flex-shrink-0 bg-[#161616] flex items-center justify-start pb-[20px] px-[14px] pt-[10px]">
-            {openPanelName ? panelFooterMap[openPanelName] : defaultFooter}
+            {openPanelName ? (panelFooterMap[openPanelName] || defaultFooter) : defaultFooter}
         </footer>
     );
 };
@@ -763,7 +853,7 @@ const useBreakpoint = (breakpoint = '1024px') => {
 
 const OverviewDesktop = ({ configuration }) => {
     const [agnosticAccordionOpen, setAgnosticAccordionOpen] = useState(false);
-    const dataSources = { buildOptions: buildOptionsData, leatherOptions: leatherOptions };
+    const dataSources = { buildOptions: buildOptionsData, leatherOptions: leatherOptions, webTypeOptions: webTypeOptions };
 
     useEffect(() => {
         if (!agnosticAccordionOpen) return;
@@ -831,6 +921,7 @@ const AccordionDesktop = ({
     handleDualColorSelect,
     handleApplyColorToAll,
     handleTextOptionChange,
+    handleGalleryConfigChange,
     getColorName,
 }) => {
     const [openAccordion, setOpenAccordion] = useState('build');
@@ -920,9 +1011,25 @@ const AccordionDesktop = ({
                         onBuildConfigChange={handleBuildConfigChange}
                     />
 
+                    <GalleryOptionDesktop
+                        title="Web"
+                        isOpen={openAccordion === 'web'}
+                        onToggle={() => handleAccordionToggle('web')}
+                        config={configuration.web}
+                        onConfigChange={handleGalleryConfigChange}
+                        optionsData={webTypeOptions}
+                        headerAccessory={
+                            openAccordion === 'web' ? (
+                                <span className="text-sm text-gray-400 font-semibold">{getColorName(configuration.web.color)}</span>
+                            ) : (
+                                <span className="w-6 h-6 rounded-full border border-white/20" style={{ backgroundColor: configuration.web.color }}></span>
+                            )
+                        }
+                    />
+
                     {colorParts.map(part => {
                         const isDual = typeof configuration[part.id] === 'object';
-                        const isAccordionOpen = openAccordion === part.id; // We'll use this
+                        const isAccordionOpen = openAccordion === part.id;
 
                         if (isDual) {
                             return (
@@ -1001,6 +1108,7 @@ const AccordionMobile = ({
     handleOpenColorPicker,
     handleOpenDualColorPicker,
     handleOpenTextOption,
+    handleOpenGalleryOption,
     openAccordionOptionMobile
 }) => {
     const listContainerRef = useRef(null);
@@ -1040,9 +1148,10 @@ const AccordionMobile = ({
             }
         };
     }, [checkAndSetGradients]);
-    
+
     const optionItems = [
         { id: 'build', title: 'Build', type: 'build' },
+        { id: 'web', title: 'Web', type: 'gallery'},
         { id: 'thumb', title: 'Thumb', type: 'color' },
         { id: 'index', title: 'Index', type: 'color' },
         { id: 'middle', title: 'Middle', type: 'color' },
@@ -1071,9 +1180,18 @@ const AccordionMobile = ({
                     );
                 }
 
+                if (item.type === 'gallery') {
+                    return (
+                        <button key={item.id} data-id={item.id} className="w-full h-[56px] bg-[#1C1C1C] flex items-center justify-between px-4 mb-[10px] cursor-pointer hover:bg-[#2A2A2A] focus:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-white" onClick={() => handleOpenGalleryOption(item.id, `${item.title}`)}>
+                            <div className="flex items-center"><svg viewBox="0 0 10 16" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-4 w-auto mr-3"><path d="M1 1L8 8L1.10769 15" stroke="white" strokeWidth={2}/></svg><span className="text-lg">{item.title}</span></div>
+                            <span className="w-6 h-6 rounded-full" style={{ backgroundColor: configuration[item.id].color }}></span>
+                        </button>
+                    )
+                }
+
                 if (item.type === 'color') {
                     if (isDual) {
-                         return (
+                       return (
                             <button key={item.id} data-id={item.id} className="w-full h-[56px] bg-[#1C1C1C] flex items-center justify-between px-4 mb-[10px] cursor-pointer hover:bg-[#2A2A2A] focus:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-white" onClick={() => handleOpenDualColorPicker(item.id, `${item.title} Color`)}>
                                 <div className="flex items-center"><svg viewBox="0 0 10 16" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-4 w-auto mr-3"><path d="M1 1L8 8L1.10769 15" stroke="white" strokeWidth={2}/></svg><span className="text-lg">{item.title}</span></div>
                                 <div className="flex items-center space-x-2">
@@ -1102,7 +1220,7 @@ const AccordionMobile = ({
                 }
                 return null;
             })}
-            
+
             <ScrollGradient position="bottom" isVisible={bottomGradientVisible} />
         </section>
     );
@@ -1125,6 +1243,10 @@ const UI = () => {
             handOpeningSize: 'ADULT',
             stiffness: 'STANDARD',
             throwingHand: 'RIGHT HAND'
+        },
+        web: {
+          type: 'MOD_TRAP',
+          color: '#C62828'
         },
         thumb: { inner: '#C62828', outer: '#2E7D32' },
         index: '#1565C0',
@@ -1157,7 +1279,7 @@ const UI = () => {
             setConfiguration(prev => ({ ...prev, [contextId]: color }));
         }
     };
-    
+
     const handleDualColorSelect = (partId, subPartId, newColor) => {
         setConfiguration(prev => ({
             ...prev,
@@ -1181,17 +1303,26 @@ const UI = () => {
                 activeColor = mobileLastEditedSubPart === 'outer' ? configValue.outer : configValue.inner;
             }
         }
-        
+
         if (activeColor) {
              setConfiguration(prev => {
                 const newConfig = { ...prev };
-                ['thumb', 'index', 'middle', 'ring', 'pinky'].forEach(partId => {
-                    if (typeof newConfig[partId] === 'object') {
+                ['thumb', 'index', 'middle', 'ring', 'pinky', 'web'].forEach(partId => {
+                    if (typeof newConfig[partId] === 'object' && newConfig[partId] !== null && 'inner' in newConfig[partId]) {
+                        // Dual color object
                         newConfig[partId] = {
+                            ...newConfig[partId],
                             inner: activeColor,
                             outer: activeColor
                         };
+                    } else if (typeof newConfig[partId] === 'object' && newConfig[partId] !== null && 'type' in newConfig[partId]) {
+                        // Gallery option object
+                        newConfig[partId] = {
+                            ...newConfig[partId],
+                            color: activeColor
+                        };
                     } else {
+                        // Single color string
                         newConfig[partId] = activeColor;
                     }
                 });
@@ -1217,6 +1348,14 @@ const UI = () => {
         if (contextId) {
             setConfiguration(prev => ({...prev, [contextId]: newTextData}));
         }
+    };
+
+    const handleOpenGalleryOption = (optionId, optionTitle) => {
+        setOpenAccordionOptionMobile({ name: 'gallery', context: { id: optionId, title: optionTitle } });
+    };
+
+    const handleGalleryConfigChange = (newConfig) => {
+        setConfiguration(prev => ({ ...prev, web: newConfig }));
     };
 
     const GOLDEN_RATIO_CONSTANT = 1.618;
@@ -1291,6 +1430,7 @@ const UI = () => {
                             handleDualColorSelect={handleDualColorSelect}
                             handleApplyColorToAll={handleApplyColorToAll}
                             handleTextOptionChange={handleTextOptionChange}
+                            handleGalleryConfigChange={handleGalleryConfigChange}
                             getColorName={getColorName}
                         />
                         <OverviewDesktop configuration={configuration} />
@@ -1305,6 +1445,7 @@ const UI = () => {
                                 handleOpenColorPicker={handleOpenColorPicker}
                                 handleOpenDualColorPicker={handleOpenDualColorPicker}
                                 handleOpenTextOption={handleOpenTextOption}
+                                handleOpenGalleryOption={handleOpenGalleryOption}
                                 openAccordionOptionMobile={openAccordionOptionMobile}
                             />
 
@@ -1315,6 +1456,7 @@ const UI = () => {
                                         {openAccordionOptionMobile.name === 'color' && <ColorOptionMobile onClose={() => setOpenAccordionOptionMobile(null)} editingColorContext={openAccordionOptionMobile.context} selectedColor={openAccordionOptionMobile.context ? configuration[openAccordionOptionMobile.context.id] : ''} onColorSelect={(color) => handleColorSelect(color, openAccordionOptionMobile.context.id)} />}
                                         {openAccordionOptionMobile.name === 'dual-color' && <ColorDualOptionMobile onClose={() => setOpenAccordionOptionMobile(null)} editingColorContext={openAccordionOptionMobile.context} colorValue={openAccordionOptionMobile.context ? configuration[openAccordionOptionMobile.context.id] : {}} onColorSelect={(subPartId, color) => handleDualColorSelect(openAccordionOptionMobile.context.id, subPartId, color)} onSubPartEdit={setMobileLastEditedSubPart} />}
                                         {openAccordionOptionMobile.name === 'build' && <BuildOptionMobile onClose={() => setOpenAccordionOptionMobile(null)} editingBuildContext={openAccordionOptionMobile.context} buildConfig={configuration.build} onBuildConfigChange={handleBuildConfigChange} />}
+                                        {openAccordionOptionMobile.name === 'gallery' && <GalleryOptionMobile onClose={() => setOpenAccordionOptionMobile(null)} editingContext={openAccordionOptionMobile.context} config={configuration.web} onConfigChange={handleGalleryConfigChange} optionsData={webTypeOptions} />}
                                         {openAccordionOptionMobile.name === 'text' && <TextOptionMobile onClose={() => setOpenAccordionOptionMobile(null)} editingTextContext={openAccordionOptionMobile.context} value={openAccordionOptionMobile.context ? configuration[openAccordionOptionMobile.context.id] : null} onChange={(newState) => handleTextOptionChange(newState, openAccordionOptionMobile.context.id)} />}
                                     </div>
                                     <FooterMobile
