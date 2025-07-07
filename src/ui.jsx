@@ -55,12 +55,14 @@ const ScrollGradient = ({ position, isVisible }) => {
 };
 
 const ImageOption = ({ id, title, isSelected, onSelect }) => (
-    <button className={`relative p-3 h-24 cursor-pointer flex flex-col justify-center items-center text-center bg-[#2a2a2a] ${isSelected ? 'border-4 border-white' : 'hover:bg-[#333333]'} focus:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-white`} onClick={onSelect}>
+    <button className={`relative h-[100px] cursor-pointer flex flex-col justify-center items-center text-center bg-[#2a2a2a] ${isSelected ? 'border-4 border-white' : 'hover:bg-[#333333]'} focus:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-white`} onClick={onSelect}>
         <h4 className="text-base font-semibold text-white">{title}</h4>
         {isSelected && (
-            <svg className="absolute top-2 right-2 w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"></path>
-            </svg>
+            <div className="absolute top-0 right-0 w-[28px] h-[28px] bg-white flex items-center justify-center">
+                <svg className="w-[14px] h-[14px] text-black" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"></path>
+                </svg>
+            </div>
         )}
     </button>
 );
@@ -320,7 +322,7 @@ const BuildOptionDesktop = ({ isOpen, onToggle, buildConfig, onBuildConfigChange
             <div className="space-y-6">
                 <div>
                     <h3 className="text-sm font-semibold text-gray-400 mb-2">Glove Leather</h3>
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-2 gap-[10px]">
                         {leatherOptions.map(option => (
                            <ImageOption
                              key={option.id}
@@ -620,7 +622,7 @@ const BuildOptionMobile = ({ editingBuildContext, onClose, buildConfig, onBuildC
             <div className="space-y-6 pb-4">
                 <div>
                     <h3 className="text-sm font-semibold text-gray-400 mb-2">Glove Leather</h3>
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-2 gap-[10px]">
                        {leatherOptions.map(option => (
                            <ImageOption
                              key={option.id}
