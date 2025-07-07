@@ -659,7 +659,7 @@ const TextOptionMobile = ({ editingTextContext, value, onChange, onClose }) => {
     <AccordionOptionMobile
       title={editingTextContext.title}
       onClose={onClose}
-      headerAccessory={<span className="text-sm text-gray-400">{value.color}</span>}
+      headerAccessory={<span className="text-sm text-gray-400 truncate max-w-[100px]">{value.text}</span>}
     >
       <div className="space-y-5">
         <div>
@@ -1094,10 +1094,7 @@ const AccordionMobile = ({
                     return (
                         <button key={item.id} data-id={item.id} className="w-full h-[56px] bg-[#1C1C1C] flex items-center justify-between px-4 mb-[10px] cursor-pointer hover:bg-[#2A2A2A] focus:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-white" onClick={() => handleOpenTextOption(item.id, item.title)}>
                             <div className="flex items-center"><svg viewBox="0 0 10 16" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-4 w-auto mr-3"><path d="M1 1L8 8L1.10769 15" stroke="white" strokeWidth={2}/></svg><span className="text-lg">{item.title}</span></div>
-                            <div className="flex items-center space-x-3">
-                                <span className="text-sm text-gray-400 truncate max-w-[100px]">{configuration[item.id].text}</span>
-                                <span className="w-6 h-6 rounded-full" style={{ backgroundColor: configuration[item.id].color }}></span>
-                            </div>
+                            <span className="text-sm text-gray-400 truncate max-w-[100px]">{configuration[item.id].text}</span>
                         </button>
                     );
                 }
