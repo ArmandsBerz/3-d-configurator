@@ -538,21 +538,23 @@ const OverviewMobile = ({ onClose, configuration }) => {
 };
 
 const ColorOptionMobile = ({ editingColorContext, onClose, onColorSelect, selectedColor }) => {
-  if (!editingColorContext) return null;
+    if (!editingColorContext) return null;
 
-  return (
-    <AccordionOptionMobile
-      title={editingColorContext.title || 'Color Picker'}
-      onClose={onClose}
-      headerAccessory={<span className="text-sm text-gray-400">{selectedColor}</span>}
-    >
-      <ColorSwatchGrid
-        swatches={colorSwatches}
-        selectedColor={selectedColor}
-        onColorSelect={onColorSelect}
-      />
-    </AccordionOptionMobile>
-  );
+    const colorName = colorSwatches.find(c => c.hex === selectedColor)?.name || selectedColor;
+
+    return (
+        <AccordionOptionMobile
+            title={editingColorContext.title || 'Color Picker'}
+            onClose={onClose}
+            headerAccessory={<span className="text-sm text-gray-400">{colorName}</span>}
+        >
+            <ColorSwatchGrid
+                swatches={colorSwatches}
+                selectedColor={selectedColor}
+                onColorSelect={onColorSelect}
+            />
+        </AccordionOptionMobile>
+    );
 };
 
 // --- NEW DUAL COLOR COMPONENT (MOBILE) ---
@@ -570,7 +572,7 @@ const ColorDualOptionMobile = ({ editingColorContext, onClose, onColorSelect, co
             onClose={onClose}
             headerAccessory={
                 <span className="text-sm text-gray-400 font-semibold">
-                    {`${colorSwatches.find(c => c.hex === colorValue.inner)?.name} ${colorSwatches.find(c => c.hex === colorValue.outer)?.name}`}
+                    {`${colorSwatches.find(c => c.hex === colorValue.inner)?.name || ''} · ${colorSwatches.find(c => c.hex === colorValue.outer)?.name || ''}`}
                 </span>
             }
         >
@@ -933,7 +935,7 @@ const AccordionDesktop = ({
                                     headerAccessory={
                                         isAccordionOpen ? (
                                             <span className="text-sm text-gray-400 font-semibold">
-                                                {`${getColorName(configuration[part.id].inner)} ${getColorName(configuration[part.id].outer)}`}
+                                                {`${getColorName(configuration[part.id].inner)} · ${getColorName(configuration[part.id].outer)}`}
                                             </span>
                                         ) : (
                                             <div className="flex items-center space-x-2">
