@@ -299,7 +299,7 @@ const AccordionOptionDesktop = ({ title, children, isOpen, onToggle, headerConte
         >
             <div className="overflow-hidden">
                 {isOpen && (
-                    <div className="p-4 border-t border-black/20">
+                    <div className="p-4">
                         {children}
                     </div>
                 )}
