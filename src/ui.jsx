@@ -355,11 +355,11 @@ const BuildOptionDesktop = ({ isOpen, onToggle, buildConfig, onBuildConfigChange
                     <div className="grid grid-cols-2 gap-[10px]">
                         {leatherOptions.map(option => (
                            <ImageOption
-                             key={option.id}
-                             id={option.id}
-                             title={option.title}
-                             isSelected={buildConfig.imageSelection === option.id}
-                             onSelect={() => onBuildConfigChange({...buildConfig, imageSelection: option.id})}
+                               key={option.id}
+                               id={option.id}
+                               title={option.title}
+                               isSelected={buildConfig.imageSelection === option.id}
+                               onSelect={() => onBuildConfigChange({...buildConfig, imageSelection: option.id})}
                            />
                         ))}
                     </div>
@@ -686,11 +686,11 @@ const BuildOptionMobile = ({ editingBuildContext, onClose, buildConfig, onBuildC
                     <div className="grid grid-cols-2 gap-[10px]">
                        {leatherOptions.map(option => (
                            <ImageOption
-                             key={option.id}
-                             id={option.id}
-                             title={option.title}
-                             isSelected={buildConfig.imageSelection === option.id}
-                             onSelect={() => handleImageSelect(option.id)}
+                               key={option.id}
+                               id={option.id}
+                               title={option.title}
+                               isSelected={buildConfig.imageSelection === option.id}
+                               onSelect={() => handleImageSelect(option.id)}
                            />
                         ))}
                     </div>
@@ -758,8 +758,20 @@ const TextOptionMobile = ({ editingTextContext, value, onChange, onClose }) => {
 
 const GalleryOptionMobile = ({ onClose, editingContext, config, onConfigChange, optionsData }) => {
     if (!editingContext) return null;
+
+    const webTypeTitle = optionsData.find(opt => opt.id === config.type)?.title || config.type;
+    const colorName = colorSwatches.find(c => c.hex === config.color)?.name || config.color;
+
     return (
-        <AccordionOptionMobile title={editingContext.title || 'Gallery'} onClose={onClose}>
+        <AccordionOptionMobile
+            title={editingContext.title || 'Gallery'}
+            onClose={onClose}
+            headerAccessory={
+                <span className="text-sm text-gray-400 font-semibold truncate max-w-[150px]">
+                    {`${webTypeTitle} · ${colorName}`}
+                </span>
+            }
+        >
             <div className="space-y-6 pb-4">
                 <ImageGroup
                     title="Type"
@@ -996,6 +1008,8 @@ const AccordionDesktop = ({
         { id: 'pinky', title: 'Pinky Color' },
     ];
 
+    const webTypeTitle = webTypeOptions.find(opt => opt.id === configuration.web.type)?.title || configuration.web.type;
+
     return (
         <div className="absolute top-0 left-0 bottom-0 w-[400px] z-10 bg-[#161616] p-4 pointer-events-none">
             <div className="absolute w-[70px] h-[49px] bg-gray-300 bg-opacity-75 flex items-center justify-center pointer-events-auto"><p className="font-bold text-xl text-gray-900">LOGO</p></div>
@@ -1019,11 +1033,14 @@ const AccordionDesktop = ({
                         onConfigChange={handleGalleryConfigChange}
                         optionsData={webTypeOptions}
                         headerAccessory={
-                            openAccordion === 'web' ? (
-                                <span className="text-sm text-gray-400 font-semibold">{getColorName(configuration.web.color)}</span>
-                            ) : (
-                                <span className="w-6 h-6 rounded-full border border-white/20" style={{ backgroundColor: configuration.web.color }}></span>
-                            )
+                            <div className="flex items-center space-x-2">
+                                <span className="text-sm text-gray-400 font-semibold truncate max-w-[100px]">{webTypeTitle}</span>
+                                {openAccordion === 'web' ? (
+                                    <span className="text-sm text-gray-400 font-semibold">{`· ${getColorName(configuration.web.color)}`}</span>
+                                ) : (
+                                    <span className="w-6 h-6 rounded-full border border-white/20" style={{ backgroundColor: configuration.web.color }}></span>
+                                )}
+                            </div>
                         }
                     />
 
@@ -1109,7 +1126,8 @@ const AccordionMobile = ({
     handleOpenDualColorPicker,
     handleOpenTextOption,
     handleOpenGalleryOption,
-    openAccordionOptionMobile
+    openAccordionOptionMobile,
+    webTypeOptions
 }) => {
     const listContainerRef = useRef(null);
     const [topGradientVisible, setTopGradientVisible] = useState(false);
@@ -1181,10 +1199,14 @@ const AccordionMobile = ({
                 }
 
                 if (item.type === 'gallery') {
+                    const webTypeTitle = webTypeOptions.find(opt => opt.id === configuration[item.id].type)?.title || configuration[item.id].type;
                     return (
                         <button key={item.id} data-id={item.id} className="w-full h-[56px] bg-[#1C1C1C] flex items-center justify-between px-4 mb-[10px] cursor-pointer hover:bg-[#2A2A2A] focus:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-white" onClick={() => handleOpenGalleryOption(item.id, `${item.title}`)}>
                             <div className="flex items-center"><svg viewBox="0 0 10 16" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-4 w-auto mr-3"><path d="M1 1L8 8L1.10769 15" stroke="white" strokeWidth={2}/></svg><span className="text-lg">{item.title}</span></div>
-                            <span className="w-6 h-6 rounded-full" style={{ backgroundColor: configuration[item.id].color }}></span>
+                            <div className="flex items-center space-x-2">
+                                <span className="text-sm text-gray-400 font-semibold truncate max-w-[100px]">{webTypeTitle}</span>
+                                <span className="w-6 h-6 rounded-full" style={{ backgroundColor: configuration[item.id].color }}></span>
+                            </div>
                         </button>
                     )
                 }
@@ -1447,6 +1469,7 @@ const UI = () => {
                                 handleOpenTextOption={handleOpenTextOption}
                                 handleOpenGalleryOption={handleOpenGalleryOption}
                                 openAccordionOptionMobile={openAccordionOptionMobile}
+                                webTypeOptions={webTypeOptions}
                             />
 
                             {openAccordionOptionMobile && (
