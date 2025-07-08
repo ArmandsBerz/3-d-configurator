@@ -478,9 +478,9 @@ const TextOptionDesktop = ({ title, isOpen, onToggle, value, onChange, headerCon
                     <div className="grid grid-cols-2 gap-3">
                         {fontOptions.map(font => (
                            <button
-                             key={font.id}
-                             onClick={() => onChange({ ...value, font: font.id })}
-                             className={`py-3 text-base font-bold focus:outline-none focus-visible:ring-4 focus-visible:ring-inset ${value.font === font.id ? 'bg-white text-black focus-visible:ring-blue-400' : 'bg-[#2a2a2a] hover:bg-[#333333] text-white focus-visible:ring-white'}`}
+                               key={font.id}
+                               onClick={() => onChange({ ...value, font: font.id })}
+                               className={`py-3 text-base font-bold focus:outline-none focus-visible:ring-4 focus-visible:ring-inset ${value.font === font.id ? 'bg-white text-black focus-visible:ring-blue-400' : 'bg-[#2a2a2a] hover:bg-[#333333] text-white focus-visible:ring-white'}`}
                            >
                                {font.label}
                            </button>
@@ -1011,7 +1011,7 @@ const AccordionDesktop = ({
     const webTypeTitle = webTypeOptions.find(opt => opt.id === configuration.web.type)?.title || configuration.web.type;
 
     return (
-        <div className="absolute top-0 left-0 bottom-0 w-[400px] z-10 bg-[#161616] p-4 pointer-events-none">
+        <div className="absolute top-0 left-0 bottom-0 w-[488px] z-10 bg-[#161616] p-10 pointer-events-none">
             <div className="absolute w-[70px] h-[49px] bg-gray-300 bg-opacity-75 flex items-center justify-center pointer-events-auto"><p className="font-bold text-xl text-gray-900">LOGO</p></div>
             <div
                 className={`absolute ${isAccordionScrolled ? 'top-[82px]' : 'top-[142px]'} bottom-4 left-4 right-4 pointer-events-auto pr-2 transition-all duration-30 ease-in-out overflow-hidden`}
