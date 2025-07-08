@@ -311,14 +311,16 @@ const AccordionOptionDesktop = ({ title, children, isOpen, onToggle, headerConte
             className="w-full flex justify-between items-center p-4 text-left hover:bg-[#2A2A2A] transition-colors focus:outline-none focus-visible:ring-4 focus-visible:ring-inset"
         >
             <div className="flex items-center space-x-3">
+                {/* --- THIS IS THE CORRECTED SVG --- */}
                 <svg
-                    className={`w-5 h-5 transform transition-transform duration-300 ${isOpen ? 'rotate-0' : '-rotate-90'}`}
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
+                    // Changed h-5 to h-[15px] to set a custom height of 15px.
+                    // Kept w-auto to maintain the original 10:16 aspect ratio.
+                    className={`h-[15px] w-auto transform transition-transform duration-300 ${isOpen ? 'rotate-90' : 'rotate-0'}`}
+                    viewBox="0 0 10 16" 
+                    fill="none" 
                     xmlns="http://www.w3.org/2000/svg"
                 >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path>
+                    <path d="M1 1L8 8L1.10769 15" stroke="white" strokeWidth={2}/>
                 </svg>
                 <h3 className="text-lg font-semibold">{title}</h3>
             </div>
