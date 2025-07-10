@@ -44,16 +44,16 @@ const buildOptionsData = [
 ];
 
 const webTypeOptions = [
-  { id: 'MOD_TRAP', title: 'MOD TRAP' },
-  { id: 'ONE_PIECE', title: 'ONE PIECE' },
-  { id: 'TWO_PIECE', title: 'TWO PIECE' },
-  { id: 'DUAL_HINGE', title: 'DUAL HINGE' },
-  { id: 'FRAMED_MOD_TRAP', title: 'FRAMED MOD TRAP' },
-  { id: 'CLOSED_V', title: 'CLOSED V' },
-  { id: 'BASKET', title: 'BASKET' },
-  { id: 'BASKET_LACE', title: 'BASKET LACE' },
-  { id: 'SEALING', title: 'SEALING' },
-  { id: 'LACE_SEALING', title: 'LACE SEALING' }
+    { id: 'MOD_TRAP', title: 'MOD TRAP' },
+    { id: 'ONE_PIECE', title: 'ONE PIECE' },
+    { id: 'TWO_PIECE', title: 'TWO PIECE' },
+    { id: 'DUAL_HINGE', title: 'DUAL HINGE' },
+    { id: 'FRAMED_MOD_TRAP', title: 'FRAMED MOD TRAP' },
+    { id: 'CLOSED_V', title: 'CLOSED V' },
+    { id: 'BASKET', title: 'BASKET' },
+    { id: 'BASKET_LACE', title: 'BASKET LACE' },
+    { id: 'SEALING', title: 'SEALING' },
+    { id: 'LACE_SEALING', title: 'LACE SEALING' }
 ];
 
 // --- Helper Components ---
@@ -93,34 +93,34 @@ const PrimaryCTAButton = ({ label, onClick, ariaLabel }) => (
 );
 
 const SecondaryButton = ({ label, onClick, variant = 'dark', icon = 'checkmark' }) => {
-  const baseClasses = "w-full flex items-center justify-center px-4 text-base font-semibold h-[56px] focus:outline-none";
+    const baseClasses = "w-full flex items-center justify-center px-4 text-base font-semibold h-[56px] focus:outline-none";
 
-  const variantClasses = variant === 'light'
-    ? 'bg-white hover:bg-gray-200 active:bg-gray-300 text-[#161616] focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-blue-400'
-    : 'bg-[#393939] hover:bg-[#727272] active:bg-[#222222] text-white focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-white';
+    const variantClasses = variant === 'light'
+        ? 'bg-white hover:bg-gray-200 active:bg-gray-300 text-[#161616] focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-blue-400'
+        : 'bg-[#393939] hover:bg-[#727272] active:bg-[#222222] text-white focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-white';
 
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`${baseClasses} ${variantClasses}`}
-      aria-label={label}
-    >
-      {icon === 'backArrow' && (
-        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg" className="mr-[5px]">
-            <path d="M13 7H1M1 7L7 1M1 7L7 13" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-        </svg>
-      )}
+    return (
+        <button
+            type="button"
+            onClick={onClick}
+            className={`${baseClasses} ${variantClasses}`}
+            aria-label={label}
+        >
+            {icon === 'backArrow' && (
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg" className="mr-[5px]">
+                    <path d="M13 7H1M1 7L7 1M1 7L7 13" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+            )}
 
-      <span>{label}</span>
+            <span>{label}</span>
 
-      {icon === 'checkmark' && (
-        <svg className="w-5 h-5 ml-[5px]" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
-        </svg>
-      )}
-    </button>
-  );
+            {icon === 'checkmark' && (
+                <svg className="w-5 h-5 ml-[5px]" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+                </svg>
+            )}
+        </button>
+    );
 };
 
 const ColorSwatch = ({ color, isSelected, onSelect }) => (
@@ -218,14 +218,14 @@ const AccordionOptionMobile = ({ title, onClose, headerAccessory = null, childre
 
 const Option = ({ label, isSelected, onSelect }) => (
     <button
-      className={`text-sm py-2 px-3 h-[36px] flex items-center justify-center font-medium transition-colors focus:outline-none focus-visible:ring-4 focus-visible:ring-inset ${
-        isSelected
-          ? 'bg-white text-[#222222] focus-visible:ring-blue-400'
-          : 'bg-[#383838] hover:bg-[#595959] active:bg-[#272727] focus-visible:ring-white'
-      }`}
-      onClick={onSelect}
+        className={`text-sm py-2 px-3 h-[36px] flex items-center justify-center font-medium transition-colors focus:outline-none focus-visible:ring-4 focus-visible:ring-inset ${
+            isSelected
+                ? 'bg-white text-[#222222] focus-visible:ring-blue-400'
+                : 'bg-[#383838] hover:bg-[#595959] active:bg-[#272727] focus-visible:ring-white'
+        }`}
+        onClick={onSelect}
     >
-      {label}
+        {label}
     </button>
 );
 
@@ -247,18 +247,18 @@ const OptionGroup = ({ title, options, layout, selectedOption, onSelectOption })
 
 const ImageGroup = ({ title, options, layout, selectedOption, onSelectOption }) => (
     <div>
-      <h3 className="text-sm font-semibold text-gray-400 mb-2">{title}</h3>
-      <div className={`grid ${layout} gap-[10px]`}>
-        {options.map((option) => (
-          <ImageOption
-            key={option.id}
-            id={option.id}
-            title={option.title}
-            isSelected={selectedOption === option.id}
-            onSelect={() => onSelectOption(option.id)}
-          />
-        ))}
-      </div>
+        <h3 className="text-sm font-semibold text-gray-400 mb-2">{title}</h3>
+        <div className={`grid ${layout} gap-[10px]`}>
+            {options.map((option) => (
+                <ImageOption
+                    key={option.id}
+                    id={option.id}
+                    title={option.title}
+                    isSelected={selectedOption === option.id}
+                    onSelect={() => onSelectOption(option.id)}
+                />
+            ))}
+        </div>
     </div>
 );
 
@@ -288,19 +288,19 @@ const OverviewButton = ({ onClick, isDesktop, isOpen }) => (
 );
 
 const OrderButtonController = ({ isSummaryVisible, onReviewClick, onCompleteClick }) => {
-  return isSummaryVisible ? (
-    <PrimaryCTAButton
-      label="Complete Order"
-      onClick={onCompleteClick}
-      ariaLabel="Complete Order"
-    />
-  ) : (
-    <PrimaryCTAButton
-      label="Review & Order"
-      onClick={onReviewClick}
-      ariaLabel="Review and Order"
-    />
-  );
+    return isSummaryVisible ? (
+        <PrimaryCTAButton
+            label="Complete Order"
+            onClick={onCompleteClick}
+            ariaLabel="Complete Order"
+        />
+    ) : (
+        <PrimaryCTAButton
+            label="Review & Order"
+            onClick={onReviewClick}
+            ariaLabel="Review and Order"
+        />
+    );
 };
 
 // --- Accordion Component for Desktop ---
@@ -342,45 +342,95 @@ const AccordionOptionDesktop = ({ title, children, isOpen, onToggle, headerConte
     </div>
 );
 
-// --- DESKTOP OPTION COMPONENTS ---
-const BuildOptionDesktop = ({ isOpen, onToggle, buildConfig, onBuildConfigChange, headerContent }) => {
-    return (
-        <AccordionOptionDesktop
-            title="Build Options"
-            isOpen={isOpen}
-            onToggle={onToggle}
-            headerContent={headerContent}
-        >
-            <div className="space-y-6">
-                <div>
-                    <h3 className="text-sm font-semibold text-gray-400 mb-2">Glove Leather</h3>
-                    <div className="grid grid-cols-2 gap-[10px]">
-                        {leatherOptions.map(option => (
-                           <ImageOption
-                                key={option.id}
-                                id={option.id}
-                                title={option.title}
-                                isSelected={buildConfig.imageSelection === option.id}
-                                onSelect={() => onBuildConfigChange({...buildConfig, imageSelection: option.id})}
-                           />
-                        ))}
-                    </div>
-                </div>
-                {buildOptionsData.map((group) => (
-                    <OptionGroup
-                        key={group.id}
-                        title={group.title}
-                        options={group.options}
-                        layout={group.layout}
-                        selectedOption={buildConfig[group.id]}
-                        onSelectOption={(value) => onBuildConfigChange({ ...buildConfig, [group.id]: value })}
+// --- UNIFIED OPTION COMPONENTS ---
+const BuildOption = ({ buildConfig, onBuildConfigChange, isDesktop }) => (
+    <div className={`space-y-6 ${!isDesktop ? 'pb-4' : ''}`}>
+        <div>
+            <h3 className="text-sm font-semibold text-gray-400 mb-2">Glove Leather</h3>
+            <div className="grid grid-cols-2 gap-[10px]">
+                {leatherOptions.map(option => (
+                    <ImageOption
+                        key={option.id}
+                        id={option.id}
+                        title={option.title}
+                        isSelected={buildConfig.imageSelection === option.id}
+                        onSelect={() => onBuildConfigChange({ ...buildConfig, imageSelection: option.id })}
                     />
                 ))}
             </div>
-        </AccordionOptionDesktop>
-    );
-};
+        </div>
+        {buildOptionsData.map((group) => (
+            <OptionGroup
+                key={group.id}
+                title={group.title}
+                options={group.options}
+                layout={group.layout}
+                selectedOption={buildConfig[group.id]}
+                onSelectOption={(value) => onBuildConfigChange({ ...buildConfig, [group.id]: value })}
+            />
+        ))}
+    </div>
+);
 
+const TextOption = ({ value, onChange }) => (
+    <div className="space-y-5">
+        <div>
+            <h3 className="text-sm font-semibold text-gray-400 mb-2">Text</h3>
+            <input
+                type="text"
+                className="w-full p-3 bg-[#2A2A2A] text-white placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                value={value.text}
+                onChange={(e) => onChange({ ...value, text: e.target.value })}
+                placeholder="ENTER YOUR TEXT..."
+            />
+        </div>
+        <div>
+            <h3 className="text-sm font-semibold text-gray-400 mb-2">Font</h3>
+            <div className="grid grid-cols-2 gap-3">
+                {fontOptions.map(font => (
+                    <button
+                        key={font.id}
+                        onClick={() => onChange({ ...value, font: font.id })}
+                        className={`py-3 text-base font-bold focus:outline-none focus-visible:ring-4 focus-visible:ring-inset ${value.font === font.id ? 'bg-white text-black focus-visible:ring-blue-400' : 'bg-[#2a2a2a] hover:bg-[#333333] text-white focus-visible:ring-white'}`}
+                    >
+                        {font.label}
+                    </button>
+                ))}
+            </div>
+        </div>
+        <div>
+            <h3 className="text-sm font-semibold text-gray-400 mb-2">Color</h3>
+            <ColorSwatchGrid
+                swatches={colorSwatches}
+                selectedColor={value.color}
+                onColorSelect={(color) => onChange({ ...value, color: color })}
+            />
+        </div>
+    </div>
+);
+
+const GalleryOption = ({ config, onConfigChange, optionsData, isDesktop }) => (
+    <div className={`space-y-6 ${!isDesktop ? 'pb-4' : ''}`}>
+        <ImageGroup
+            title="Type"
+            layout="grid-cols-3"
+            options={optionsData}
+            selectedOption={config.type}
+            onSelectOption={(optionId) => onConfigChange({ ...config, type: optionId })}
+        />
+        <div>
+            <h3 className="text-sm font-semibold text-gray-400 mb-2">Color</h3>
+            <ColorSwatchGrid
+                swatches={colorSwatches}
+                selectedColor={config.color}
+                onColorSelect={(color) => onConfigChange({ ...config, color: color })}
+            />
+        </div>
+    </div>
+);
+
+
+// --- DESKTOP-SPECIFIC WRAPPER COMPONENTS ---
 const ColorOptionDesktop = ({
     title,
     isOpen,
@@ -461,73 +511,6 @@ const ColorDualOptionDesktop = ({
         </>
     );
 };
-
-const TextOptionDesktop = ({ title, isOpen, onToggle, value, onChange, headerContent }) => {
-    return (
-        <AccordionOptionDesktop
-            title={title}
-            isOpen={isOpen}
-            onToggle={onToggle}
-            headerContent={headerContent}
-        >
-            <div className="space-y-5">
-                <div>
-                    <h3 className="text-sm font-semibold text-gray-400 mb-2">Text</h3>
-                    <input type="text" className="w-full p-3 bg-[#2A2A2A] text-white placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:outline-none" value={value.text} onChange={(e) => onChange({ ...value, text: e.target.value })} placeholder="ENTER YOUR TEXT..."/>
-                </div>
-                <div>
-                    <h3 className="text-sm font-semibold text-gray-400 mb-2">Font</h3>
-                    <div className="grid grid-cols-2 gap-3">
-                        {fontOptions.map(font => (
-                           <button
-                                key={font.id}
-                                onClick={() => onChange({ ...value, font: font.id })}
-                                className={`py-3 text-base font-bold focus:outline-none focus-visible:ring-4 focus-visible:ring-inset ${value.font === font.id ? 'bg-white text-black focus-visible:ring-blue-400' : 'bg-[#2a2a2a] hover:bg-[#333333] text-white focus-visible:ring-white'}`}
-                           >
-                                {font.label}
-                           </button>
-                        ))}
-                    </div>
-                </div>
-                <div>
-                    <h3 className="text-sm font-semibold text-gray-400 mb-2">Color</h3>
-                    <ColorSwatchGrid
-                        swatches={colorSwatches}
-                        selectedColor={value.color}
-                        onColorSelect={(color) => onChange({ ...value, color: color })}
-                    />
-                </div>
-            </div>
-        </AccordionOptionDesktop>
-    );
-};
-
-const GalleryOptionDesktop = ({ title, isOpen, onToggle, config, onConfigChange, optionsData, headerAccessory }) => (
-    <AccordionOptionDesktop
-        title={title}
-        isOpen={isOpen}
-        onToggle={onToggle}
-        headerContent={headerAccessory}
-    >
-      <div className="space-y-6">
-        <ImageGroup
-          title="Type"
-          layout="grid-cols-3"
-          options={optionsData}
-          selectedOption={config.type}
-          onSelectOption={(optionId) => onConfigChange({ ...config, type: optionId })}
-        />
-        <div>
-            <h3 className="text-sm font-semibold text-gray-400 mb-2">Color</h3>
-            <ColorSwatchGrid
-                swatches={colorSwatches}
-                selectedColor={config.color}
-                onColorSelect={(color) => onConfigChange({ ...config, color: color })}
-            />
-        </div>
-      </div>
-    </AccordionOptionDesktop>
-);
 
 
 // --- Panel Components ---
@@ -663,139 +646,6 @@ const ColorDualOptionMobile = ({ editingColorContext, onClose, onColorSelect, co
     );
 };
 
-const BuildOptionMobile = ({ editingBuildContext, onClose, buildConfig, onBuildConfigChange }) => {
-    if (!editingBuildContext) return null;
-
-    const handleSelectOption = (groupId, optionValue) => {
-        onBuildConfigChange({
-            ...buildConfig,
-            [groupId]: optionValue
-        });
-    };
-
-    const handleImageSelect = (selection) => {
-        onBuildConfigChange({
-            ...buildConfig,
-            imageSelection: selection
-        });
-    };
-
-    return (
-        <AccordionOptionMobile title={editingBuildContext.title || 'Build Options'} onClose={onClose}>
-            <div className="space-y-6 pb-4">
-                <div>
-                    <h3 className="text-sm font-semibold text-gray-400 mb-2">Glove Leather</h3>
-                    <div className="grid grid-cols-2 gap-[10px]">
-                       {leatherOptions.map(option => (
-                           <ImageOption
-                                key={option.id}
-                                id={option.id}
-                                title={option.title}
-                                isSelected={buildConfig.imageSelection === option.id}
-                                onSelect={() => handleImageSelect(option.id)}
-                           />
-                        ))}
-                    </div>
-                </div>
-
-                {buildOptionsData.map((group) => (
-                    <OptionGroup
-                        key={group.id}
-                        title={group.title}
-                        options={group.options}
-                        layout={group.layout}
-                        selectedOption={buildConfig[group.id]}
-                        onSelectOption={(value) => handleSelectOption(group.id, value)}
-                    />
-                ))}
-            </div>
-        </AccordionOptionMobile>
-    );
-};
-
-const TextOptionMobile = ({ editingTextContext, value, onChange, onClose }) => {
-  if (!editingTextContext) return null;
-
-  const handleTextChange = (e) => onChange({ ...value, text: e.target.value });
-  const handleFontChange = (fontId) => onChange({ ...value, font: fontId });
-  const handleColorChange = (color) => onChange({ ...value, color });
-
-  return (
-    <AccordionOptionMobile
-      title={editingTextContext.title}
-      onClose={onClose}
-      headerAccessory={<span className="text-sm text-gray-400 truncate max-w-[100px]">{value.text}</span>}
-    >
-      <div className="space-y-5">
-        <div>
-          <h3 className="text-sm font-semibold text-gray-400 mb-2">Text</h3>
-          <input type="text" className="w-full p-3 bg-[#2A2A2A] text-white placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:outline-none" value={value.text} onChange={handleTextChange} placeholder="ENTER YOUR TEXT..."/>
-        </div>
-        <div>
-          <h3 className="text-sm font-semibold text-gray-400 mb-2">Font</h3>
-          <div className="grid grid-cols-2 gap-3">
-            {fontOptions.map(font => (
-                <button
-                  key={font.id}
-                  onClick={() => handleFontChange(font.id)}
-                  className={`py-3 text-base font-bold focus:outline-none focus-visible:ring-4 focus-visible:ring-inset ${value.font === font.id ? 'bg-white text-black focus-visible:ring-blue-400' : 'bg-[#2a2a2a] hover:bg-[#333333] text-white focus-visible:ring-white'}`}
-                >
-                    {font.label}
-                </button>
-            ))}
-          </div>
-        </div>
-        <div>
-          <h3 className="text-sm font-semibold text-gray-400 mb-2">Color</h3>
-          <ColorSwatchGrid
-            swatches={colorSwatches}
-            selectedColor={value.color}
-            onColorSelect={handleColorChange}
-          />
-        </div>
-      </div>
-    </AccordionOptionMobile>
-  );
-};
-
-const GalleryOptionMobile = ({ onClose, editingContext, config, onConfigChange, optionsData }) => {
-    if (!editingContext) return null;
-
-    const webTypeTitle = optionsData.find(opt => opt.id === config.type)?.title || config.type;
-    const colorName = colorSwatches.find(c => c.hex === config.color)?.name || config.color;
-
-    return (
-        <AccordionOptionMobile
-            title={editingContext.title || 'Gallery'}
-            onClose={onClose}
-            headerAccessory={
-                <span className="text-sm text-gray-400 font-semibold truncate max-w-[150px]">
-                    {`${webTypeTitle} · ${colorName}`}
-                </span>
-            }
-        >
-            <div className="space-y-6 pb-4">
-                <ImageGroup
-                    title="Type"
-                    layout="grid-cols-3"
-                    options={optionsData}
-                    selectedOption={config.type}
-                    onSelectOption={(optionId) => onConfigChange({ ...config, type: optionId })}
-                />
-                <div>
-                    <h3 className="text-sm font-semibold text-gray-400 mb-2">Color</h3>
-                    <ColorSwatchGrid
-                        swatches={colorSwatches}
-                        selectedColor={config.color}
-                        onColorSelect={(color) => onConfigChange({ ...config, color: color })}
-                    />
-                </div>
-            </div>
-        </AccordionOptionMobile>
-    );
-};
-
-
 const FooterMobile = ({ openPanelName, onApplyColorToAll, onClosePanel, onReviewClick, onCompleteOrder, isDesktop }) => {
     const panelFooterMap = {
         color: (
@@ -805,7 +655,7 @@ const FooterMobile = ({ openPanelName, onApplyColorToAll, onClosePanel, onReview
             </div>
         ),
         'dual-color': (
-             <div className="w-full grid grid-cols-[1fr_1.618fr] gap-[10px]">
+            <div className="w-full grid grid-cols-[1fr_1.618fr] gap-[10px]">
                 <SecondaryButton label="Apply to All" onClick={onApplyColorToAll} variant="dark" icon="checkmark" />
                 <SecondaryButton label="Continue" onClick={onClosePanel} variant="light" icon="checkmark" />
             </div>
@@ -1020,20 +870,22 @@ const AccordionDesktop = ({
             >
                 <ScrollGradient position="top" isVisible={isTopGradientVisibleDesktop} />
                 <div ref={accordionContainerRef} className="h-full overflow-y-auto space-y-4">
-                    <BuildOptionDesktop
+                    <AccordionOptionDesktop
+                        title="Build Options"
                         isOpen={openAccordion === 'build'}
                         onToggle={() => handleAccordionToggle('build')}
-                        buildConfig={configuration.build}
-                        onBuildConfigChange={handleBuildConfigChange}
-                    />
+                    >
+                        <BuildOption
+                            buildConfig={configuration.build}
+                            onBuildConfigChange={handleBuildConfigChange}
+                            isDesktop={true}
+                        />
+                    </AccordionOptionDesktop>
 
-                    <GalleryOptionDesktop
+                    <AccordionOptionDesktop
                         title="Web"
                         isOpen={openAccordion === 'web'}
                         onToggle={() => handleAccordionToggle('web')}
-                        config={configuration.web}
-                        onConfigChange={handleGalleryConfigChange}
-                        optionsData={webTypeOptions}
                         headerAccessory={
                             <div className="flex items-center space-x-2">
                                 <span className="text-sm text-gray-400 font-semibold truncate max-w-[100px]">{webTypeTitle}</span>
@@ -1044,7 +896,14 @@ const AccordionDesktop = ({
                                 )}
                             </div>
                         }
-                    />
+                    >
+                        <GalleryOption
+                            config={configuration.web}
+                            onConfigChange={handleGalleryConfigChange}
+                            optionsData={webTypeOptions}
+                            isDesktop={true}
+                        />
+                    </AccordionOptionDesktop>
 
                     {colorParts.map(part => {
                         const isDual = typeof configuration[part.id] === 'object';
@@ -1095,24 +954,30 @@ const AccordionDesktop = ({
                             );
                         }
                     })}
-
-                    <TextOptionDesktop
+                    
+                    <AccordionOptionDesktop
                         title="Thumb Name"
                         isOpen={openAccordion === 'thumbName'}
                         onToggle={() => handleAccordionToggle('thumbName')}
-                        value={configuration.thumbName}
-                        onChange={(newState) => handleTextOptionChange(newState, 'thumbName')}
                         headerContent={<span className="text-sm text-gray-400 truncate max-w-[100px]">{configuration.thumbName.text}</span>}
-                    />
+                    >
+                        <TextOption
+                            value={configuration.thumbName}
+                            onChange={(newState) => handleTextOptionChange(newState, 'thumbName')}
+                        />
+                    </AccordionOptionDesktop>
 
-                    <TextOptionDesktop
+                    <AccordionOptionDesktop
                         title="Pinky Name"
                         isOpen={openAccordion === 'pinkyName'}
                         onToggle={() => handleAccordionToggle('pinkyName')}
-                        value={configuration.pinkyName}
-                        onChange={(newState) => handleTextOptionChange(newState, 'pinkyName')}
                         headerContent={<span className="text-sm text-gray-400 truncate max-w-[100px]">{configuration.pinkyName.text}</span>}
-                    />
+                    >
+                        <TextOption
+                            value={configuration.pinkyName}
+                            onChange={(newState) => handleTextOptionChange(newState, 'pinkyName')}
+                        />
+                    </AccordionOptionDesktop>
                 </div>
                 <ScrollGradient position="bottom" isVisible={isBottomGradientVisibleDesktop} />
             </div>
@@ -1269,8 +1134,8 @@ const UI = () => {
             throwingHand: 'RIGHT HAND'
         },
         web: {
-          type: 'MOD_TRAP',
-          color: '#C62828'
+            type: 'MOD_TRAP',
+            color: '#C62828'
         },
         thumb: { inner: '#C62828', outer: '#2E7D32' },
         index: '#1565C0',
@@ -1480,9 +1345,46 @@ const UI = () => {
                                         {openAccordionOptionMobile.name === 'summary' && <OverviewMobile onClose={() => setOpenAccordionOptionMobile(null)} configuration={configuration} />}
                                         {openAccordionOptionMobile.name === 'color' && <ColorOptionMobile onClose={() => setOpenAccordionOptionMobile(null)} editingColorContext={openAccordionOptionMobile.context} selectedColor={openAccordionOptionMobile.context ? configuration[openAccordionOptionMobile.context.id] : ''} onColorSelect={(color) => handleColorSelect(color, openAccordionOptionMobile.context.id)} />}
                                         {openAccordionOptionMobile.name === 'dual-color' && <ColorDualOptionMobile onClose={() => setOpenAccordionOptionMobile(null)} editingColorContext={openAccordionOptionMobile.context} colorValue={openAccordionOptionMobile.context ? configuration[openAccordionOptionMobile.context.id] : {}} onColorSelect={(subPartId, color) => handleDualColorSelect(openAccordionOptionMobile.context.id, subPartId, color)} onSubPartEdit={setMobileLastEditedSubPart} />}
-                                        {openAccordionOptionMobile.name === 'build' && <BuildOptionMobile onClose={() => setOpenAccordionOptionMobile(null)} editingBuildContext={openAccordionOptionMobile.context} buildConfig={configuration.build} onBuildConfigChange={handleBuildConfigChange} />}
-                                        {openAccordionOptionMobile.name === 'gallery' && <GalleryOptionMobile onClose={() => setOpenAccordionOptionMobile(null)} editingContext={openAccordionOptionMobile.context} config={configuration.web} onConfigChange={handleGalleryConfigChange} optionsData={webTypeOptions} />}
-                                        {openAccordionOptionMobile.name === 'text' && <TextOptionMobile onClose={() => setOpenAccordionOptionMobile(null)} editingTextContext={openAccordionOptionMobile.context} value={openAccordionOptionMobile.context ? configuration[openAccordionOptionMobile.context.id] : null} onChange={(newState) => handleTextOptionChange(newState, openAccordionOptionMobile.context.id)} />}
+                                        
+                                        {openAccordionOptionMobile.name === 'build' && (
+                                            <AccordionOptionMobile title={openAccordionOptionMobile.context.title || 'Build Options'} onClose={() => setOpenAccordionOptionMobile(null)}>
+                                                <BuildOption
+                                                    buildConfig={configuration.build}
+                                                    onBuildConfigChange={handleBuildConfigChange}
+                                                    isDesktop={false}
+                                                />
+                                            </AccordionOptionMobile>
+                                        )}
+                                        {openAccordionOptionMobile.name === 'gallery' && (
+                                            <AccordionOptionMobile
+                                                title={openAccordionOptionMobile.context.title || 'Gallery'}
+                                                onClose={() => setOpenAccordionOptionMobile(null)}
+                                                headerAccessory={
+                                                    <span className="text-sm text-gray-400 font-semibold truncate max-w-[150px]">
+                                                        {`${webTypeOptions.find(opt => opt.id === configuration.web.type)?.title || ''} · ${getColorName(configuration.web.color)}`}
+                                                    </span>
+                                                }
+                                            >
+                                                <GalleryOption
+                                                    config={configuration.web}
+                                                    onConfigChange={handleGalleryConfigChange}
+                                                    optionsData={webTypeOptions}
+                                                    isDesktop={false}
+                                                />
+                                            </AccordionOptionMobile>
+                                        )}
+                                        {openAccordionOptionMobile.name === 'text' && (
+                                            <AccordionOptionMobile
+                                                title={openAccordionOptionMobile.context.title}
+                                                onClose={() => setOpenAccordionOptionMobile(null)}
+                                                headerAccessory={<span className="text-sm text-gray-400 truncate max-w-[100px]">{configuration[openAccordionOptionMobile.context.id].text}</span>}
+                                            >
+                                                <TextOption
+                                                    value={configuration[openAccordionOptionMobile.context.id]}
+                                                    onChange={(newState) => handleTextOptionChange(newState, openAccordionOptionMobile.context.id)}
+                                                />
+                                            </AccordionOptionMobile>
+                                        )}
                                     </div>
                                     <FooterMobile
                                         openPanelName={openAccordionOptionMobile?.name}
