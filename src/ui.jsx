@@ -151,7 +151,7 @@ const ColorSwatchGrid = ({ swatches, selectedColor, onColorSelect }) => (
 
 // --- START OF REFACTORED CODE ---
 
-// 1. AccordionOptionHeader (The New Unified Visual Part)
+// 1. AccordionOptionHeader (Unified Visual Part)
 const AccordionOptionHeader = ({ title, onClick, accessoryContent, icon, isOpen, variant }) => {
     const baseClasses = "w-full flex justify-between items-center text-left focus:outline-none focus-visible:ring-4 focus-visible:ring-inset";
 
@@ -190,8 +190,8 @@ const AccordionOptionHeader = ({ title, onClick, accessoryContent, icon, isOpen,
 };
 
 
-// 2. AccordionOptionDesktop (The Remaining Desktop Container)
-const AccordionOptionDesktop = ({ title, children, isOpen, onToggle, headerContent }) => (
+// 2. AccordionOptionDesktop (ENHANCED CONTAINER)
+const AccordionOptionDesktop = ({ title, children, isOpen, onToggle, headerContent, actionButton }) => (
     <div className="bg-[#1C1C1C] overflow-hidden pointer-events-auto">
         <AccordionOptionHeader
             variant="desktop"
@@ -208,6 +208,8 @@ const AccordionOptionDesktop = ({ title, children, isOpen, onToggle, headerConte
                 {isOpen && (
                     <div className="p-4">
                         {children}
+                        {/* Renders the button passed from the parent */}
+                        {actionButton && <div className="mt-4">{actionButton}</div>}
                     </div>
                 )}
             </div>
@@ -215,7 +217,7 @@ const AccordionOptionDesktop = ({ title, children, isOpen, onToggle, headerConte
     </div>
 );
 
-// 3. AccordionOptionMobile (The Remaining Mobile Container)
+// 3. AccordionOptionMobile (Mobile Container)
 const AccordionOptionMobile = ({ title, onClose, headerAccessory = null, children }) => {
     const scrollContainerRef = useRef(null);
     const [isTopGradientVisible, setIsTopGradientVisible] = useState(false);
@@ -277,6 +279,37 @@ const AccordionOptionMobile = ({ title, onClose, headerAccessory = null, childre
         </div>
     );
 };
+
+// --- NEW PURE CONTENT COMPONENTS ---
+const ColorContent = ({ value, onChange }) => (
+    <ColorSwatchGrid
+        swatches={colorSwatches}
+        selectedColor={value}
+        onColorSelect={onChange}
+    />
+);
+
+const DualColorContent = ({ value, onChange, labels = { inner: "Inner", outer: "Outer" } }) => (
+    <div className="space-y-4">
+        <div>
+            <h3 className="text-sm font-semibold text-gray-400 mb-2">{labels.inner}</h3>
+            <ColorSwatchGrid
+                swatches={colorSwatches}
+                selectedColor={value.inner}
+                onColorSelect={(color) => onChange('inner', color)}
+            />
+        </div>
+        <div>
+            <h3 className="text-sm font-semibold text-gray-400 mb-2">{labels.outer}</h3>
+            <ColorSwatchGrid
+                swatches={colorSwatches}
+                selectedColor={value.outer}
+                onColorSelect={(color) => onChange('outer', color)}
+            />
+        </div>
+    </div>
+);
+
 
 // --- END OF REFACTORED CODE ---
 
@@ -454,155 +487,6 @@ const GalleryOption = ({ config, onConfigChange, optionsData, isDesktop }) => (
         </div>
     </div>
 );
-
-// --- UNIFIED COLOR COMPONENTS ---
-const ColorOption = ({
-    isDesktop,
-    title,
-    isOpen,
-    onToggle,
-    colorValue,
-    onColorSelect,
-    onApplyToAll,
-    headerAccessory,
-    onClose,
-    editingColorContext
-}) => {
-    if (isDesktop) {
-        return (
-            <>
-                <AccordionOptionDesktop
-                    title={title}
-                    isOpen={isOpen}
-                    onToggle={onToggle}
-                    headerContent={headerAccessory}
-                >
-                    <ColorSwatchGrid
-                        swatches={colorSwatches}
-                        selectedColor={colorValue}
-                        onColorSelect={onColorSelect}
-                    />
-                </AccordionOptionDesktop>
-                {isOpen && <SecondaryButton label="Apply to All" onClick={onApplyToAll} variant="dark" icon="checkmark" />}
-            </>
-        );
-    }
-
-    // Mobile Logic
-    if (!editingColorContext) return null;
-    const colorName = colorSwatches.find(c => c.hex === colorValue)?.name || colorValue;
-    return (
-        <AccordionOptionMobile
-            title={editingColorContext.title || 'Color Picker'}
-            onClose={onClose}
-            headerAccessory={<span className="text-sm text-gray-400">{colorName}</span>}
-        >
-            <ColorSwatchGrid
-                swatches={colorSwatches}
-                selectedColor={colorValue}
-                onColorSelect={onColorSelect}
-            />
-        </AccordionOptionMobile>
-    );
-};
-
-const ColorDualOption = ({
-    isDesktop,
-    title,
-    isOpen,
-    onToggle,
-    colorValue,
-    onColorSelect,
-    onApplyToAll,
-    headerAccessory,
-    onClose,
-    editingColorContext,
-    onSubPartEdit
-}) => {
-    const [lastEditedPart, setLastEditedPart] = useState(null);
-
-    const handleDesktopColorSelection = (subPart, color) => {
-        onColorSelect(subPart, color);
-        setLastEditedPart(subPart);
-    };
-
-    const handleDesktopApplyToAllClick = () => {
-        const colorToApply = lastEditedPart === 'outer' ? colorValue.outer : colorValue.inner;
-        onApplyToAll(colorToApply);
-    };
-
-    const handleMobileColorSelection = (subPart, color) => {
-        onColorSelect(subPart, color);
-        onSubPartEdit(subPart);
-    };
-
-    if (isDesktop) {
-        return (
-            <>
-                <AccordionOptionDesktop
-                    title={title}
-                    isOpen={isOpen}
-                    onToggle={onToggle}
-                    headerContent={headerAccessory}
-                >
-                    <div className="space-y-4">
-                        <div>
-                            <h3 className="text-sm font-semibold text-gray-400 mb-2">Inner</h3>
-                            <ColorSwatchGrid
-                                swatches={colorSwatches}
-                                selectedColor={colorValue.inner}
-                                onColorSelect={(color) => handleDesktopColorSelection('inner', color)}
-                            />
-                        </div>
-                        <div>
-                            <h3 className="text-sm font-semibold text-gray-400 mb-2">Outer</h3>
-                            <ColorSwatchGrid
-                                swatches={colorSwatches}
-                                selectedColor={colorValue.outer}
-                                onColorSelect={(color) => handleDesktopColorSelection('outer', color)}
-                            />
-                        </div>
-                    </div>
-                </AccordionOptionDesktop>
-                {isOpen && <SecondaryButton label="Apply to All" onClick={handleDesktopApplyToAllClick} variant="dark" icon="checkmark" />}
-            </>
-        );
-    }
-
-    // Mobile Logic
-    if (!editingColorContext) return null;
-    return (
-        <AccordionOptionMobile
-            title={editingColorContext.title || 'Color Picker'}
-            onClose={onClose}
-            headerAccessory={
-                <span className="text-sm text-gray-400 font-semibold">
-                    {`${colorSwatches.find(c => c.hex === colorValue.inner)?.name || ''} · ${colorSwatches.find(c => c.hex === colorValue.outer)?.name || ''}`}
-                </span>
-            }
-        >
-            <div className="space-y-6">
-                <div>
-                    <h3 className="text-sm font-semibold text-gray-400 mb-2">Inner</h3>
-                    <ColorSwatchGrid
-                        swatches={colorSwatches}
-                        selectedColor={colorValue.inner}
-                        onColorSelect={(color) => handleMobileColorSelection('inner', color)}
-                    />
-                </div>
-                <div>
-                    <h3 className="text-sm font-semibold text-gray-400 mb-2">Outer</h3>
-                    <ColorSwatchGrid
-                        swatches={colorSwatches}
-                        selectedColor={colorValue.outer}
-                        onColorSelect={(color) => handleMobileColorSelection('outer', color)}
-                    />
-                </div>
-            </div>
-        </AccordionOptionMobile>
-    );
-};
-
 
 // --- Panel Components ---
 
@@ -808,7 +692,7 @@ const OverviewDesktop = ({ configuration }) => {
     );
 };
 
-// --- NEW ABSTRACTION: AccordionDesktop ---
+// --- Main Desktop Accordion Component ---
 const AccordionDesktop = ({
     configuration,
     handleBuildConfigChange,
@@ -939,53 +823,52 @@ const AccordionDesktop = ({
                     {colorParts.map(part => {
                         const isDual = typeof configuration[part.id] === 'object' && configuration[part.id] !== null && 'inner' in configuration[part.id];
                         const isAccordionOpen = openAccordion === part.id;
+                        const headerAccessory = isDual ? (
+                            isAccordionOpen ? (
+                                <span className="text-sm text-gray-400 font-semibold">
+                                    {`${getColorName(configuration[part.id].inner)} · ${getColorName(configuration[part.id].outer)}`}
+                                </span>
+                            ) : (
+                                <div className="flex items-center space-x-2">
+                                    <span className="w-6 h-6 rounded-full border border-white/20" style={{ backgroundColor: configuration[part.id].inner }}></span>
+                                    <span className="w-6 h-6 rounded-full border border-white/20" style={{ backgroundColor: configuration[part.id].outer }}></span>
+                                </div>
+                            )
+                        ) : (
+                             isAccordionOpen ? (
+                                <span className="text-sm text-gray-400 font-semibold">{getColorName(configuration[part.id])}</span>
+                            ) : (
+                                <span className="w-6 h-6 rounded-full border border-white/20" style={{ backgroundColor: configuration[part.id] }}></span>
+                            )
+                        );
 
-                        if (isDual) {
-                            return (
-                                <ColorDualOption
-                                    isDesktop={true}
-                                    key={part.id}
-                                    title={part.title}
-                                    isOpen={isAccordionOpen}
-                                    onToggle={() => handleAccordionToggle(part.id)}
-                                    colorValue={configuration[part.id]}
-                                    onColorSelect={(subPart, color) => handleDualColorSelect(part.id, subPart, color)}
-                                    onApplyToAll={handleApplyColorToAll}
-                                    headerAccessory={
-                                        isAccordionOpen ? (
-                                            <span className="text-sm text-gray-400 font-semibold">
-                                                {`${getColorName(configuration[part.id].inner)} · ${getColorName(configuration[part.id].outer)}`}
-                                            </span>
-                                        ) : (
-                                            <div className="flex items-center space-x-2">
-                                                <span className="w-6 h-6 rounded-full border border-white/20" style={{ backgroundColor: configuration[part.id].inner }}></span>
-                                                <span className="w-6 h-6 rounded-full border border-white/20" style={{ backgroundColor: configuration[part.id].outer }}></span>
-                                            </div>
-                                        )
-                                    }
-                                />
-                            );
-                        } else {
-                            return (
-                                <ColorOption
-                                    isDesktop={true}
-                                    key={part.id}
-                                    title={part.title}
-                                    isOpen={isAccordionOpen}
-                                    onToggle={() => handleAccordionToggle(part.id)}
-                                    colorValue={configuration[part.id]}
-                                    onColorSelect={(color) => handleColorSelect(color, part.id)}
-                                    onApplyToAll={() => handleApplyColorToAll(configuration[part.id])}
-                                    headerAccessory={
-                                        isAccordionOpen ? (
-                                            <span className="text-sm text-gray-400 font-semibold">{getColorName(configuration[part.id])}</span>
-                                        ) : (
-                                            <span className="w-6 h-6 rounded-full border border-white/20" style={{ backgroundColor: configuration[part.id] }}></span>
-                                        )
-                                    }
-                                />
-                            );
-                        }
+                        return (
+                            <AccordionOptionDesktop
+                                key={part.id}
+                                title={part.title}
+                                isOpen={isAccordionOpen}
+                                onToggle={() => handleAccordionToggle(part.id)}
+                                headerContent={headerAccessory}
+                                actionButton={
+                                    <SecondaryButton
+                                        label="Apply to All"
+                                        onClick={() => handleApplyColorToAll(configuration[part.id])}
+                                    />
+                                }
+                            >
+                                {isDual ? (
+                                    <DualColorContent
+                                        value={configuration[part.id]}
+                                        onChange={(subPart, color) => handleDualColorSelect(part.id, subPart, color)}
+                                    />
+                                ) : (
+                                    <ColorContent
+                                        value={configuration[part.id]}
+                                        onChange={(color) => handleColorSelect(color, part.id)}
+                                    />
+                                )}
+                            </AccordionOptionDesktop>
+                        );
                     })}
                     
                     <AccordionOptionDesktop
@@ -1018,7 +901,7 @@ const AccordionDesktop = ({
     );
 };
 
-// --- NEW ABSTRACTION: AccordionMobile ---
+// --- Main Mobile Accordion Component ---
 const AccordionMobile = ({
     configuration,
     handleOpenBuildOption,
@@ -1215,6 +1098,10 @@ const UI = () => {
     const handleApplyColorToAll = (colorToApply) => {
         let activeColor = colorToApply;
 
+        if (typeof activeColor === 'object' && activeColor !== null) {
+            activeColor = activeColor.inner; // Default to inner color if an object is passed
+        }
+        
         if (!activeColor && openAccordionOptionMobile) {
             const contextId = openAccordionOptionMobile.context.id;
             const configValue = configuration[contextId];
@@ -1376,26 +1263,43 @@ const UI = () => {
                                 <div className="absolute inset-0 z-30 flex flex-col bg-[#161616]">
                                     <div className="flex-grow relative overflow-hidden pt-[10px]">
                                         {openAccordionOptionMobile.name === 'summary' && <OverviewMobile onClose={() => setOpenAccordionOptionMobile(null)} configuration={configuration} />}
-                                        {openAccordionOptionMobile.name === 'color' && (
-                                            <ColorOption
-                                                isDesktop={false}
-                                                onClose={() => setOpenAccordionOptionMobile(null)}
-                                                editingColorContext={openAccordionOptionMobile.context}
-                                                colorValue={openAccordionOptionMobile.context ? configuration[openAccordionOptionMobile.context.id] : ''}
-                                                onColorSelect={(color) => handleColorSelect(color, openAccordionOptionMobile.context.id)}
-                                            />
-                                        )}
-                                        {openAccordionOptionMobile.name === 'dual-color' && (
-                                            <ColorDualOption
-                                                isDesktop={false}
-                                                onClose={() => setOpenAccordionOptionMobile(null)}
-                                                editingColorContext={openAccordionOptionMobile.context}
-                                                colorValue={openAccordionOptionMobile.context ? configuration[openAccordionOptionMobile.context.id] : {}}
-                                                onColorSelect={(subPartId, color) => handleDualColorSelect(openAccordionOptionMobile.context.id, subPartId, color)}
-                                                onSubPartEdit={setMobileLastEditedSubPart}
-                                            />
-                                        )}
                                         
+                                        {(openAccordionOptionMobile.name === 'color' || openAccordionOptionMobile.name === 'dual-color') && (() => {
+                                            const { id, title } = openAccordionOptionMobile.context;
+                                            const isDual = openAccordionOptionMobile.name === 'dual-color';
+                                            const colorValue = configuration[id];
+                                            const headerAccessory = isDual ? (
+                                                <span className="text-sm text-gray-400 font-semibold">
+                                                    {`${colorSwatches.find(c => c.hex === colorValue.inner)?.name || ''} · ${colorSwatches.find(c => c.hex === colorValue.outer)?.name || ''}`}
+                                                </span>
+                                            ) : (
+                                                <span className="text-sm text-gray-400">{colorSwatches.find(c => c.hex === colorValue)?.name || colorValue}</span>
+                                            );
+
+                                            return (
+                                                <AccordionOptionMobile
+                                                    title={title}
+                                                    onClose={() => setOpenAccordionOptionMobile(null)}
+                                                    headerAccessory={headerAccessory}
+                                                >
+                                                    {isDual ? (
+                                                        <DualColorContent
+                                                            value={colorValue}
+                                                            onChange={(subPart, color) => {
+                                                                handleDualColorSelect(id, subPart, color);
+                                                                setMobileLastEditedSubPart(subPart);
+                                                            }}
+                                                        />
+                                                    ) : (
+                                                        <ColorContent
+                                                            value={colorValue}
+                                                            onChange={(color) => handleColorSelect(color, id)}
+                                                        />
+                                                    )}
+                                                </AccordionOptionMobile>
+                                            );
+                                        })()}
+
                                         {openAccordionOptionMobile.name === 'build' && (
                                             <AccordionOptionMobile title={openAccordionOptionMobile.context.title || 'Build Options'} onClose={() => setOpenAccordionOptionMobile(null)}>
                                                 <BuildOption
