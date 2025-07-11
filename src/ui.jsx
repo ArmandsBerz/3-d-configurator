@@ -565,13 +565,13 @@ const FooterMobile = ({ openPanelName, onApplyColorToAll, onClosePanel, onReview
     const panelFooterMap = {
         color: (
             <div className="w-full grid grid-cols-[1fr_1.618fr] gap-[10px]">
-                <SecondaryButton label="Apply to All" onClick={onApplyColorToAll} variant="dark" icon="checkmark" />
+                <SecondaryButton label="Apply to All" onClick={() => onApplyColorToAll(null)} variant="dark" icon="checkmark" />
                 <SecondaryButton label="Continue" onClick={onClosePanel} variant="light" icon="checkmark" />
             </div>
         ),
         'dual-color': (
             <div className="w-full grid grid-cols-[1fr_1.618fr] gap-[10px]">
-                <SecondaryButton label="Apply to All" onClick={onApplyColorToAll} variant="dark" icon="checkmark" />
+                <SecondaryButton label="Apply to All" onClick={() => onApplyColorToAll(null)} variant="dark" icon="checkmark" />
                 <SecondaryButton label="Continue" onClick={onClosePanel} variant="light" icon="checkmark" />
             </div>
         ),
@@ -1038,7 +1038,7 @@ const UI = () => {
 
     const [isVisualizationExpanded, setIsVisualizationExpanded] = useState(false);
     const [openAccordionOptionMobile, setOpenAccordionOptionMobile] = useState(null);
-    const [mobileLastEditedSubPart, setMobileLastEditedSubPart] = useState(null);
+    const [activeDualColorPart, setActiveDualColorPart] = useState('inner');
 
     const [configuration, setConfiguration] = useState({
         build: {
@@ -1075,7 +1075,6 @@ const UI = () => {
     };
 
     const handleOpenDualColorPicker = (optionId, optionTitle) => {
-        setMobileLastEditedSubPart(null); // Reset on open for default behavior
         setOpenAccordionOptionMobile({ name: 'dual-color', context: { id: optionId, title: optionTitle } });
     };
 
@@ -1086,6 +1085,7 @@ const UI = () => {
     };
 
     const handleDualColorSelect = (partId, subPartId, newColor) => {
+        setActiveDualColorPart(subPartId); // Set the active part for the whole app
         setConfiguration(prev => ({
             ...prev,
             [partId]: {
@@ -1095,44 +1095,43 @@ const UI = () => {
         }));
     };
 
-    const handleApplyColorToAll = (colorToApply) => {
-        let activeColor = colorToApply;
+    const handleApplyColorToAll = (colorObject) => {
+        let colorToApply;
 
-        if (typeof activeColor === 'object' && activeColor !== null) {
-            activeColor = activeColor.inner; // Default to inner color if an object is passed
-        }
-        
-        if (!activeColor && openAccordionOptionMobile) {
-            const contextId = openAccordionOptionMobile.context.id;
-            const configValue = configuration[contextId];
-
-            if (openAccordionOptionMobile.name === 'color') {
-                activeColor = configValue;
-            } else if (openAccordionOptionMobile.name === 'dual-color') {
-                activeColor = mobileLastEditedSubPart === 'outer' ? configValue.outer : configValue.inner;
+        // This block determines the correct color string to apply.
+        // It's called with `null` from mobile and an object/string from desktop.
+        if (colorObject === null) {
+            // --- MOBILE PATH ---
+            // On mobile, find the currently open dual-color panel's value
+            if (openAccordionOptionMobile && openAccordionOptionMobile.name === 'dual-color') {
+                const contextId = openAccordionOptionMobile.context.id;
+                const configValue = configuration[contextId];
+                // Use the unified state to pick the correct color
+                colorToApply = activeDualColorPart === 'outer' ? configValue.outer : configValue.inner;
+            } else if (openAccordionOptionMobile && openAccordionOptionMobile.name === 'color') {
+                colorToApply = configuration[openAccordionOptionMobile.context.id];
             }
+        } else if (typeof colorObject === 'object' && colorObject !== null && 'inner' in colorObject) {
+            // --- DESKTOP DUAL-COLOR PATH ---
+            // It's a dual-color object, so use the unified state to resolve it
+            colorToApply = activeDualColorPart === 'outer' ? colorObject.outer : colorObject.inner;
+        } else {
+            // --- DESKTOP SINGLE-COLOR PATH ---
+            // It's already a single color string, so just use it
+            colorToApply = colorObject;
         }
 
-        if (activeColor) {
+        // This block applies the resolved color; it remains unchanged.
+        if (colorToApply) {
              setConfiguration(prev => {
                  const newConfig = { ...prev };
                  ['thumb', 'index', 'middle', 'ring', 'pinky', 'web'].forEach(partId => {
                      if (typeof newConfig[partId] === 'object' && newConfig[partId] !== null && 'inner' in newConfig[partId]) {
-                         // Dual color object
-                         newConfig[partId] = {
-                             ...newConfig[partId],
-                             inner: activeColor,
-                             outer: activeColor
-                         };
+                         newConfig[partId] = { ...newConfig[partId], inner: colorToApply, outer: colorToApply };
                      } else if (typeof newConfig[partId] === 'object' && newConfig[partId] !== null && 'type' in newConfig[partId]) {
-                         // Gallery option object
-                         newConfig[partId] = {
-                             ...newConfig[partId],
-                             color: activeColor
-                         };
+                         newConfig[partId] = { ...newConfig[partId], color: colorToApply };
                      } else {
-                         // Single color string
-                         newConfig[partId] = activeColor;
+                         newConfig[partId] = colorToApply;
                      }
                  });
                  return newConfig;
@@ -1287,7 +1286,6 @@ const UI = () => {
                                                             value={colorValue}
                                                             onChange={(subPart, color) => {
                                                                 handleDualColorSelect(id, subPart, color);
-                                                                setMobileLastEditedSubPart(subPart);
                                                             }}
                                                         />
                                                     ) : (
