@@ -1373,8 +1373,8 @@ const UI = () => {
                             />
 
                             {openAccordionOptionMobile && (
-                                <div className="absolute inset-0 z-30 flex flex-col bg-[#161616] pt-[10px]">
-                                    <div className="flex-grow relative overflow-hidden">
+                                <div className="absolute inset-0 z-30 flex flex-col bg-[#161616]">
+                                    <div className="flex-grow relative overflow-hidden pt-[10px]">
                                         {openAccordionOptionMobile.name === 'summary' && <OverviewMobile onClose={() => setOpenAccordionOptionMobile(null)} configuration={configuration} />}
                                         {openAccordionOptionMobile.name === 'color' && (
                                             <ColorOption
@@ -1436,26 +1436,17 @@ const UI = () => {
                                             </AccordionOptionMobile>
                                         )}
                                     </div>
-                                    <FooterMobile
-                                        openPanelName={openAccordionOptionMobile?.name}
-                                        onApplyColorToAll={() => handleApplyColorToAll(null)}
-                                        onClosePanel={() => setOpenAccordionOptionMobile(null)}
-                                        onCompleteOrder={() => alert('Complete Order clicked!')}
-                                        onReviewClick={() => setOpenAccordionOptionMobile({ name: 'summary' })}
-                                        isDesktop={isDesktop}
-                                    />
                                 </div>
                             )}
                         </div>
-
-                        {!openAccordionOptionMobile && (
-                            <FooterMobile
-                                openPanelName={null}
-                                onReviewClick={() => setOpenAccordionOptionMobile({ name: 'summary' })}
-                                onCompleteOrder={() => alert('Complete Order clicked!')}
-                                isDesktop={isDesktop}
-                            />
-                        )}
+                        <FooterMobile
+                            openPanelName={openAccordionOptionMobile?.name}
+                            onApplyColorToAll={() => handleApplyColorToAll(null)}
+                            onClosePanel={() => setOpenAccordionOptionMobile(null)}
+                            onCompleteOrder={() => alert('Complete Order clicked!')}
+                            onReviewClick={() => setOpenAccordionOptionMobile({ name: 'summary' })}
+                            isDesktop={isDesktop}
+                        />
                     </div>
                 )
             )}
