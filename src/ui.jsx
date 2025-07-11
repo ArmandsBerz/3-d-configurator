@@ -149,6 +149,73 @@ const ColorSwatchGrid = ({ swatches, selectedColor, onColorSelect }) => (
     </div>
 );
 
+// --- START OF REFACTORED CODE ---
+
+// 1. AccordionOptionHeader (The New Unified Visual Part)
+const AccordionOptionHeader = ({ title, onClick, accessoryContent, icon, isOpen, variant }) => {
+    const baseClasses = "w-full flex justify-between items-center text-left focus:outline-none focus-visible:ring-4 focus-visible:ring-inset";
+
+    const variantClasses = variant === 'desktop'
+        ? "p-4 hover:bg-[#2A2A2A] transition-colors focus-visible:ring-white"
+        : "py-3 h-[56px] mb-3 text-white focus-visible:ring-white/50";
+
+    return (
+        <button
+            onClick={onClick}
+            className={`${baseClasses} ${variantClasses}`}
+        >
+            <div className="flex items-center space-x-3">
+                {icon === 'desktop' && (
+                    <svg
+                        className={`h-[15px] w-auto transform transition-transform duration-300 ${isOpen ? 'rotate-90' : 'rotate-0'}`}
+                        viewBox="0 0 10 16"
+                        fill="none"
+                        xmlns="http://www.w3.org/2000/svg"
+                    >
+                        <path d="M1 1L8 8L1.10769 15" stroke="white" strokeWidth={2}/>
+                    </svg>
+                )}
+                {icon === 'mobile' && (
+                    <svg className="w-5 h-5 mr-2 transform rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path>
+                    </svg>
+                )}
+                <h3 className="text-lg font-semibold">{title}</h3>
+            </div>
+            <div className="flex items-center">
+                {accessoryContent}
+            </div>
+        </button>
+    );
+};
+
+
+// 2. AccordionOptionDesktop (The Remaining Desktop Container)
+const AccordionOptionDesktop = ({ title, children, isOpen, onToggle, headerContent }) => (
+    <div className="bg-[#1C1C1C] overflow-hidden pointer-events-auto">
+        <AccordionOptionHeader
+            variant="desktop"
+            title={title}
+            onClick={onToggle}
+            accessoryContent={headerContent}
+            icon="desktop"
+            isOpen={isOpen}
+        />
+        <div
+            className={`transition-all duration-500 ease-in-out grid ${isOpen ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'}`}
+        >
+            <div className="overflow-hidden">
+                {isOpen && (
+                    <div className="p-4">
+                        {children}
+                    </div>
+                )}
+            </div>
+        </div>
+    </div>
+);
+
+// 3. AccordionOptionMobile (The Remaining Mobile Container)
 const AccordionOptionMobile = ({ title, onClose, headerAccessory = null, children }) => {
     const scrollContainerRef = useRef(null);
     const [isTopGradientVisible, setIsTopGradientVisible] = useState(false);
@@ -193,18 +260,13 @@ const AccordionOptionMobile = ({ title, onClose, headerAccessory = null, childre
 
     return (
         <div className="absolute inset-0 bg-[#161616] z-20 h-full flex flex-col px-[23px]">
-            <button
-                className="flex items-center justify-between text-white py-3 h-[56px] w-full text-left mb-3 focus:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-white/50"
+            <AccordionOptionHeader
+                variant="mobile"
+                title={title}
                 onClick={onClose}
-            >
-                <div className="flex items-center">
-                    <svg className="w-5 h-5 mr-2 transform rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path>
-                    </svg>
-                    <span className="text-lg">{title}</span>
-                </div>
-                {headerAccessory}
-            </button>
+                accessoryContent={headerAccessory}
+                icon="mobile"
+            />
             <div className="flex-grow relative overflow-hidden">
                 <ScrollGradient position="top" isVisible={isTopGradientVisible} />
                 <div className="h-full overflow-y-auto" ref={scrollContainerRef}>
@@ -215,6 +277,9 @@ const AccordionOptionMobile = ({ title, onClose, headerAccessory = null, childre
         </div>
     );
 };
+
+// --- END OF REFACTORED CODE ---
+
 
 const Option = ({ label, isSelected, onSelect }) => (
     <button
@@ -302,45 +367,6 @@ const OrderButtonController = ({ isSummaryVisible, onReviewClick, onCompleteClic
         />
     );
 };
-
-// --- Accordion Component for Desktop ---
-const AccordionOptionDesktop = ({ title, children, isOpen, onToggle, headerContent }) => (
-    <div className="bg-[#1C1C1C] overflow-hidden pointer-events-auto">
-        <button
-            onClick={onToggle}
-            className="w-full flex justify-between items-center p-4 text-left hover:bg-[#2A2A2A] transition-colors focus:outline-none focus-visible:ring-4 focus-visible:ring-inset"
-        >
-            <div className="flex items-center space-x-3">
-                {/* --- THIS IS THE CORRECTED SVG --- */}
-                <svg
-                    // Changed h-5 to h-[15px] to set a custom height of 15px.
-                    // Kept w-auto to maintain the original 10:16 aspect ratio.
-                    className={`h-[15px] w-auto transform transition-transform duration-300 ${isOpen ? 'rotate-90' : 'rotate-0'}`}
-                    viewBox="0 0 10 16" 
-                    fill="none" 
-                    xmlns="http://www.w3.org/2000/svg"
-                >
-                    <path d="M1 1L8 8L1.10769 15" stroke="white" strokeWidth={2}/>
-                </svg>
-                <h3 className="text-lg font-semibold">{title}</h3>
-            </div>
-            <div className="flex items-center">
-                {headerContent}
-            </div>
-        </button>
-        <div
-            className={`transition-all duration-500 ease-in-out grid ${isOpen ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'}`}
-        >
-            <div className="overflow-hidden">
-                {isOpen && (
-                    <div className="p-4">
-                        {children}
-                    </div>
-                )}
-            </div>
-        </div>
-    </div>
-);
 
 // --- UNIFIED OPTION COMPONENTS ---
 const BuildOption = ({ buildConfig, onBuildConfigChange, isDesktop }) => (
@@ -891,7 +917,7 @@ const AccordionDesktop = ({
                         title="Web"
                         isOpen={openAccordion === 'web'}
                         onToggle={() => handleAccordionToggle('web')}
-                        headerAccessory={
+                        headerContent={
                             <div className="flex items-center space-x-2">
                                 <span className="text-sm text-gray-400 font-semibold truncate max-w-[100px]">{webTypeTitle}</span>
                                 {openAccordion === 'web' ? (
