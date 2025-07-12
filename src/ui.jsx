@@ -92,8 +92,9 @@ const PrimaryCTAButton = ({ label, onClick, ariaLabel }) => (
     </button>
 );
 
-const SecondaryButton = ({ label, onClick, variant = 'dark', icon = 'checkmark' }) => {
-    const baseClasses = "w-full flex items-center justify-center px-4 text-base font-semibold h-[56px] focus:outline-none";
+const SecondaryButton = ({ label, onClick, variant = 'dark', icon = 'checkmark', disabled = false }) => {
+    const baseClasses = "w-full flex items-center justify-center px-4 text-base font-semibold h-[56px] focus:outline-none transition-opacity";
+    const disabledClasses = "disabled:opacity-50 disabled:cursor-not-allowed";
 
     const variantClasses = variant === 'light'
         ? 'bg-white hover:bg-gray-200 active:bg-gray-300 text-[#161616] focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-blue-400'
@@ -103,7 +104,8 @@ const SecondaryButton = ({ label, onClick, variant = 'dark', icon = 'checkmark' 
         <button
             type="button"
             onClick={onClick}
-            className={`${baseClasses} ${variantClasses}`}
+            disabled={disabled}
+            className={`${baseClasses} ${variantClasses} ${disabledClasses}`}
             aria-label={label}
         >
             {icon === 'backArrow' && (
@@ -122,6 +124,7 @@ const SecondaryButton = ({ label, onClick, variant = 'dark', icon = 'checkmark' 
         </button>
     );
 };
+
 
 const ColorSwatch = ({ color, isSelected, onSelect }) => (
     <button
@@ -561,17 +564,28 @@ const OverviewMobile = ({ onClose, configuration }) => {
     );
 };
 
-const FooterMobile = ({ openPanelName, onApplyColorToAll, onClosePanel, onReviewClick, onCompleteOrder, isDesktop }) => {
+const FooterMobile = ({ openPanelName, onApplyColorToAll, onClosePanel, onReviewClick, onCompleteOrder, isDesktop, configuration, openAccordionOptionMobile, getActiveColor }) => {
+    
+    const getApplyAllColor = () => {
+        if (!openAccordionOptionMobile || !openAccordionOptionMobile.context) return null;
+        
+        const contextId = openAccordionOptionMobile.context.id;
+        const colorValue = configuration[contextId];
+        return getActiveColor(colorValue);
+    };
+
+    const colorToApply = getApplyAllColor();
+    
     const panelFooterMap = {
         color: (
             <div className="w-full grid grid-cols-[1fr_1.618fr] gap-[10px]">
-                <SecondaryButton label="Apply to All" onClick={() => onApplyColorToAll(null)} variant="dark" icon="checkmark" />
+                <SecondaryButton label="Apply to All" onClick={() => onApplyColorToAll(colorToApply)} variant="dark" icon="checkmark" disabled={!colorToApply} />
                 <SecondaryButton label="Continue" onClick={onClosePanel} variant="light" icon="checkmark" />
             </div>
         ),
         'dual-color': (
             <div className="w-full grid grid-cols-[1fr_1.618fr] gap-[10px]">
-                <SecondaryButton label="Apply to All" onClick={() => onApplyColorToAll(null)} variant="dark" icon="checkmark" />
+                <SecondaryButton label="Apply to All" onClick={() => onApplyColorToAll(colorToApply)} variant="dark" icon="checkmark" disabled={!colorToApply} />
                 <SecondaryButton label="Continue" onClick={onClosePanel} variant="light" icon="checkmark" />
             </div>
         ),
@@ -702,6 +716,7 @@ const AccordionDesktop = ({
     handleTextOptionChange,
     handleGalleryConfigChange,
     getColorName,
+    getActiveColor,
 }) => {
     const [openAccordion, setOpenAccordion] = useState('build');
     const [isAccordionScrolled, setIsAccordionScrolled] = useState(false);
@@ -852,7 +867,10 @@ const AccordionDesktop = ({
                                 actionButton={
                                     <SecondaryButton
                                         label="Apply to All"
-                                        onClick={() => handleApplyColorToAll(configuration[part.id])}
+                                        onClick={() => {
+                                            const colorString = getActiveColor(configuration[part.id]);
+                                            handleApplyColorToAll(colorString);
+                                        }}
                                     />
                                 }
                             >
@@ -1070,6 +1088,13 @@ const UI = () => {
         },
     });
 
+    const getActiveColor = (colorValue) => {
+        if (typeof colorValue === 'object' && colorValue !== null && 'inner' in colorValue) {
+            return colorValue[activeDualColorPart];
+        }
+        return colorValue;
+    };
+
     const handleOpenColorPicker = (optionId, optionTitle) => {
         setOpenAccordionOptionMobile({ name: 'color', context: { id: optionId, title: optionTitle } });
     };
@@ -1085,7 +1110,7 @@ const UI = () => {
     };
 
     const handleDualColorSelect = (partId, subPartId, newColor) => {
-        setActiveDualColorPart(subPartId); // Set the active part for the whole app
+        setActiveDualColorPart(subPartId);
         setConfiguration(prev => ({
             ...prev,
             [partId]: {
@@ -1095,48 +1120,22 @@ const UI = () => {
         }));
     };
 
-    const handleApplyColorToAll = (colorObject) => {
-        let colorToApply;
-
-        // This block determines the correct color string to apply.
-        // It's called with `null` from mobile and an object/string from desktop.
-        if (colorObject === null) {
-            // --- MOBILE PATH ---
-            // On mobile, find the currently open dual-color panel's value
-            if (openAccordionOptionMobile && openAccordionOptionMobile.name === 'dual-color') {
-                const contextId = openAccordionOptionMobile.context.id;
-                const configValue = configuration[contextId];
-                // Use the unified state to pick the correct color
-                colorToApply = activeDualColorPart === 'outer' ? configValue.outer : configValue.inner;
-            } else if (openAccordionOptionMobile && openAccordionOptionMobile.name === 'color') {
-                colorToApply = configuration[openAccordionOptionMobile.context.id];
-            }
-        } else if (typeof colorObject === 'object' && colorObject !== null && 'inner' in colorObject) {
-            // --- DESKTOP DUAL-COLOR PATH ---
-            // It's a dual-color object, so use the unified state to resolve it
-            colorToApply = activeDualColorPart === 'outer' ? colorObject.outer : colorObject.inner;
-        } else {
-            // --- DESKTOP SINGLE-COLOR PATH ---
-            // It's already a single color string, so just use it
-            colorToApply = colorObject;
-        }
-
-        // This block applies the resolved color; it remains unchanged.
-        if (colorToApply) {
-             setConfiguration(prev => {
-                 const newConfig = { ...prev };
-                 ['thumb', 'index', 'middle', 'ring', 'pinky', 'web'].forEach(partId => {
-                     if (typeof newConfig[partId] === 'object' && newConfig[partId] !== null && 'inner' in newConfig[partId]) {
-                         newConfig[partId] = { ...newConfig[partId], inner: colorToApply, outer: colorToApply };
-                     } else if (typeof newConfig[partId] === 'object' && newConfig[partId] !== null && 'type' in newConfig[partId]) {
-                         newConfig[partId] = { ...newConfig[partId], color: colorToApply };
-                     } else {
-                         newConfig[partId] = colorToApply;
-                     }
-                 });
-                 return newConfig;
-             });
-        }
+    const handleApplyColorToAll = (colorString) => {
+        if (!colorString) return;
+    
+        setConfiguration(prev => {
+            const newConfig = { ...prev };
+            ['thumb', 'index', 'middle', 'ring', 'pinky', 'web'].forEach(partId => {
+                if (typeof newConfig[partId] === 'object' && newConfig[partId] !== null && 'inner' in newConfig[partId]) {
+                    newConfig[partId] = { ...newConfig[partId], inner: colorString, outer: colorString };
+                } else if (typeof newConfig[partId] === 'object' && newConfig[partId] !== null && 'type' in newConfig[partId]) {
+                    newConfig[partId] = { ...newConfig[partId], color: colorString };
+                } else {
+                    newConfig[partId] = colorString;
+                }
+            });
+            return newConfig;
+        });
     };
 
 
@@ -1240,6 +1239,7 @@ const UI = () => {
                             handleTextOptionChange={handleTextOptionChange}
                             handleGalleryConfigChange={handleGalleryConfigChange}
                             getColorName={getColorName}
+                            getActiveColor={getActiveColor}
                         />
                         <OverviewDesktop configuration={configuration} />
                     </>
@@ -1343,11 +1343,14 @@ const UI = () => {
                         </div>
                         <FooterMobile
                             openPanelName={openAccordionOptionMobile?.name}
-                            onApplyColorToAll={() => handleApplyColorToAll(null)}
+                            onApplyColorToAll={handleApplyColorToAll}
                             onClosePanel={() => setOpenAccordionOptionMobile(null)}
                             onCompleteOrder={() => alert('Complete Order clicked!')}
                             onReviewClick={() => setOpenAccordionOptionMobile({ name: 'summary' })}
                             isDesktop={isDesktop}
+                            configuration={configuration}
+                            openAccordionOptionMobile={openAccordionOptionMobile}
+                            getActiveColor={getActiveColor}
                         />
                     </div>
                 )
