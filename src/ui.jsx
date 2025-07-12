@@ -56,6 +56,19 @@ const webTypeOptions = [
     { id: 'LACE_SEALING', title: 'LACE SEALING' }
 ];
 
+// --- NEW: Centralized UI Structure Configuration ---
+const optionsConfig = [
+    { id: 'build', title: 'Build Options', contentType: 'build' },
+    { id: 'web', title: 'Web', contentType: 'gallery' },
+    { id: 'thumb', title: 'Thumb Color', contentType: 'dual-color' },
+    { id: 'index', title: 'Index Color', contentType: 'color' },
+    { id: 'middle', title: 'Middle Color', contentType: 'dual-color' },
+    { id: 'ring', title: 'Ring Color', contentType: 'dual-color' },
+    { id: 'pinky', title: 'Pinky Color', contentType: 'dual-color' },
+    { id: 'thumbName', title: 'Thumb Name', contentType: 'text' },
+    { id: 'pinkyName', title: 'Pinky Name', contentType: 'text' },
+];
+
 // --- Helper Components ---
 const ScrollGradient = ({ position, isVisible }) => {
     const isTop = position === 'top';
@@ -709,7 +722,7 @@ const OverviewDesktop = ({ configuration }) => {
     );
 };
 
-// --- Main Desktop Accordion Component ---
+// --- REFACTORED: Main Desktop Accordion Component ---
 const AccordionDesktop = ({
     configuration,
     handleBuildConfigChange,
@@ -722,10 +735,10 @@ const AccordionDesktop = ({
     getActiveColor,
 }) => {
     const [openAccordion, setOpenAccordion] = useState('build');
-    const [isAccordionScrolled, setIsAccordionScrolled] = useState(false);
     const accordionContainerRef = useRef(null);
     const [isTopGradientVisibleDesktop, setTopGradientVisibleDesktop] = useState(false);
     const [isBottomGradientVisibleDesktop, setBottomGradientVisibleDesktop] = useState(false);
+    const [isAccordionScrolled, setIsAccordionScrolled] = useState(false);
 
     const handleAccordionToggle = (accordionId) => {
         setOpenAccordion(prev => (prev === accordionId ? null : accordionId));
@@ -785,15 +798,63 @@ const AccordionDesktop = ({
         };
     }, []);
 
-    const colorParts = [
-        { id: 'thumb', title: 'Thumb Color' },
-        { id: 'index', title: 'Index Color' },
-        { id: 'middle', title: 'Middle Color' },
-        { id: 'ring', title: 'Ring Color' },
-        { id: 'pinky', title: 'Pinky Color' },
-    ];
+    const renderContent = (item) => {
+        switch (item.contentType) {
+            case 'build':
+                return <BuildOption buildConfig={configuration.build} onBuildConfigChange={handleBuildConfigChange} isDesktop={true} />;
+            case 'gallery':
+                return <GalleryOption config={configuration.web} onConfigChange={handleGalleryConfigChange} optionsData={webTypeOptions} isDesktop={true} />;
+            case 'color':
+                return <ColorContent value={configuration[item.id]} onChange={(color) => handleColorSelect(color, item.id)} />;
+            case 'dual-color':
+                return <DualColorContent value={configuration[item.id]} onChange={(subPart, color) => handleDualColorSelect(item.id, subPart, color)} />;
+            case 'text':
+                return <TextOption value={configuration[item.id]} onChange={(newState) => handleTextOptionChange(newState, item.id)} />;
+            default:
+                return null;
+        }
+    };
 
-    const webTypeTitle = webTypeOptions.find(opt => opt.id === configuration.web.type)?.title || configuration.web.type;
+    const renderHeaderAccessory = (item) => {
+        const isAccordionOpen = openAccordion === item.id;
+        const configValue = configuration[item.id];
+        
+        switch (item.contentType) {
+            case 'gallery':
+                const webTypeTitle = webTypeOptions.find(opt => opt.id === configValue.type)?.title || configValue.type;
+                return (
+                    <div className="flex items-center space-x-2">
+                        <span className="text-sm text-gray-400 font-semibold truncate max-w-[100px]">{webTypeTitle}</span>
+                        {isAccordionOpen ? (
+                            <span className="text-sm text-gray-400 font-semibold">{`· ${getColorName(configValue.color)}`}</span>
+                        ) : (
+                            <span className="w-6 h-6 rounded-full border border-white/20" style={{ backgroundColor: configValue.color }}></span>
+                        )}
+                    </div>
+                );
+            case 'dual-color':
+                return isAccordionOpen ? (
+                    <span className="text-sm text-gray-400 font-semibold">
+                        {`${getColorName(configValue.inner)} · ${getColorName(configValue.outer)}`}
+                    </span>
+                ) : (
+                    <div className="flex items-center space-x-2">
+                        <span className="w-6 h-6 rounded-full border border-white/20" style={{ backgroundColor: configValue.inner }}></span>
+                        <span className="w-6 h-6 rounded-full border border-white/20" style={{ backgroundColor: configValue.outer }}></span>
+                    </div>
+                );
+            case 'color':
+                return isAccordionOpen ? (
+                     <span className="text-sm text-gray-400 font-semibold">{getColorName(configValue)}</span>
+                ) : (
+                     <span className="w-6 h-6 rounded-full border border-white/20" style={{ backgroundColor: configValue }}></span>
+                );
+            case 'text':
+                return <span className="text-sm text-gray-400 truncate max-w-[100px]">{configValue.text}</span>;
+            default:
+                return null;
+        }
+    };
 
     return (
         <div className="absolute top-0 left-0 bottom-0 w-[488px] z-10 bg-[#161616] p-10 pointer-events-none">
@@ -803,124 +864,28 @@ const AccordionDesktop = ({
             >
                 <ScrollGradient position="top" isVisible={isTopGradientVisibleDesktop} />
                 <div ref={accordionContainerRef} className="h-full overflow-y-auto space-y-4">
-                    <AccordionOptionDesktop
-                        title="Build Options"
-                        isOpen={openAccordion === 'build'}
-                        onToggle={() => handleAccordionToggle('build')}
-                    >
-                        <BuildOption
-                            buildConfig={configuration.build}
-                            onBuildConfigChange={handleBuildConfigChange}
-                            isDesktop={true}
-                        />
-                    </AccordionOptionDesktop>
-
-                    <AccordionOptionDesktop
-                        title="Web"
-                        isOpen={openAccordion === 'web'}
-                        onToggle={() => handleAccordionToggle('web')}
-                        headerContent={
-                            <div className="flex items-center space-x-2">
-                                <span className="text-sm text-gray-400 font-semibold truncate max-w-[100px]">{webTypeTitle}</span>
-                                {openAccordion === 'web' ? (
-                                    <span className="text-sm text-gray-400 font-semibold">{`· ${getColorName(configuration.web.color)}`}</span>
-                                ) : (
-                                    <span className="w-6 h-6 rounded-full border border-white/20" style={{ backgroundColor: configuration.web.color }}></span>
-                                )}
-                            </div>
-                        }
-                        actionButton={
-                            <SecondaryButton
-                                label="Apply to All"
-                                onClick={() => handleApplyColorToAll(configuration.web.color)}
-                            />
-                        }
-                    >
-                        <GalleryOption
-                            config={configuration.web}
-                            onConfigChange={handleGalleryConfigChange}
-                            optionsData={webTypeOptions}
-                            isDesktop={true}
-                        />
-                    </AccordionOptionDesktop>
-
-                    {colorParts.map(part => {
-                        const isDual = typeof configuration[part.id] === 'object' && configuration[part.id] !== null && 'inner' in configuration[part.id];
-                        const isAccordionOpen = openAccordion === part.id;
-                        const headerAccessory = isDual ? (
-                            isAccordionOpen ? (
-                                <span className="text-sm text-gray-400 font-semibold">
-                                    {`${getColorName(configuration[part.id].inner)} · ${getColorName(configuration[part.id].outer)}`}
-                                </span>
-                            ) : (
-                                <div className="flex items-center space-x-2">
-                                    <span className="w-6 h-6 rounded-full border border-white/20" style={{ backgroundColor: configuration[part.id].inner }}></span>
-                                    <span className="w-6 h-6 rounded-full border border-white/20" style={{ backgroundColor: configuration[part.id].outer }}></span>
-                                </div>
-                            )
-                        ) : (
-                             isAccordionOpen ? (
-                                <span className="text-sm text-gray-400 font-semibold">{getColorName(configuration[part.id])}</span>
-                            ) : (
-                                <span className="w-6 h-6 rounded-full border border-white/20" style={{ backgroundColor: configuration[part.id] }}></span>
-                            )
-                        );
-
-                        return (
-                            <AccordionOptionDesktop
-                                key={part.id}
-                                title={part.title}
-                                isOpen={isAccordionOpen}
-                                onToggle={() => handleAccordionToggle(part.id)}
-                                headerContent={headerAccessory}
-                                actionButton={
+                    {optionsConfig.map(item => (
+                        <AccordionOptionDesktop
+                            key={item.id}
+                            title={item.title}
+                            isOpen={openAccordion === item.id}
+                            onToggle={() => handleAccordionToggle(item.id)}
+                            headerContent={renderHeaderAccessory(item)}
+                            actionButton={
+                                (item.contentType === 'color' || item.contentType === 'dual-color' || item.contentType === 'gallery') && (
                                     <SecondaryButton
                                         label="Apply to All"
                                         onClick={() => {
-                                            const colorString = getActiveColor(configuration[part.id]);
+                                            const colorString = getActiveColor(configuration[item.id]);
                                             handleApplyColorToAll(colorString);
                                         }}
                                     />
-                                }
-                            >
-                                {isDual ? (
-                                    <DualColorContent
-                                        value={configuration[part.id]}
-                                        onChange={(subPart, color) => handleDualColorSelect(part.id, subPart, color)}
-                                    />
-                                ) : (
-                                    <ColorContent
-                                        value={configuration[part.id]}
-                                        onChange={(color) => handleColorSelect(color, part.id)}
-                                    />
-                                )}
-                            </AccordionOptionDesktop>
-                        );
-                    })}
-                    
-                    <AccordionOptionDesktop
-                        title="Thumb Name"
-                        isOpen={openAccordion === 'thumbName'}
-                        onToggle={() => handleAccordionToggle('thumbName')}
-                        headerContent={<span className="text-sm text-gray-400 truncate max-w-[100px]">{configuration.thumbName.text}</span>}
-                    >
-                        <TextOption
-                            value={configuration.thumbName}
-                            onChange={(newState) => handleTextOptionChange(newState, 'thumbName')}
-                        />
-                    </AccordionOptionDesktop>
-
-                    <AccordionOptionDesktop
-                        title="Pinky Name"
-                        isOpen={openAccordion === 'pinkyName'}
-                        onToggle={() => handleAccordionToggle('pinkyName')}
-                        headerContent={<span className="text-sm text-gray-400 truncate max-w-[100px]">{configuration.pinkyName.text}</span>}
-                    >
-                        <TextOption
-                            value={configuration.pinkyName}
-                            onChange={(newState) => handleTextOptionChange(newState, 'pinkyName')}
-                        />
-                    </AccordionOptionDesktop>
+                                )
+                            }
+                        >
+                           {renderContent(item)}
+                        </AccordionOptionDesktop>
+                    ))}
                 </div>
                 <ScrollGradient position="bottom" isVisible={isBottomGradientVisibleDesktop} />
             </div>
@@ -928,21 +893,18 @@ const AccordionDesktop = ({
     );
 };
 
-// --- Main Mobile Accordion Component ---
+// --- REFACTORED: Main Mobile Accordion Component ---
 const AccordionMobile = ({
     configuration,
-    handleOpenBuildOption,
-    handleOpenColorPicker,
-    handleOpenDualColorPicker,
-    handleOpenTextOption,
-    handleOpenGalleryOption,
+    onOpenPanel, // Simplified handler
     openAccordionOptionMobile,
-    webTypeOptions
+    webTypeOptions,
+    getColorName,
 }) => {
     const listContainerRef = useRef(null);
     const [topGradientVisible, setTopGradientVisible] = useState(false);
     const [bottomGradientVisible, setBottomGradientVisible] = useState(false);
-
+    
     const checkAndSetGradients = useCallback(() => {
         const listElement = listContainerRef.current;
         if (!listElement) return;
@@ -977,17 +939,33 @@ const AccordionMobile = ({
         };
     }, [checkAndSetGradients]);
 
-    const optionItems = [
-        { id: 'build', title: 'Build', type: 'build' },
-        { id: 'web', title: 'Web', type: 'gallery'},
-        { id: 'thumb', title: 'Thumb', type: 'color' },
-        { id: 'index', title: 'Index', type: 'color' },
-        { id: 'middle', title: 'Middle', type: 'color' },
-        { id: 'ring', title: 'Ring', type: 'color' },
-        { id: 'pinky', title: 'Pinky', type: 'color' },
-        { id: 'thumbName', title: 'Thumb Name', type: 'text' },
-        { id: 'pinkyName', title: 'Pinky Name', type: 'text' },
-    ];
+    const renderAccessory = (item) => {
+        const configValue = configuration[item.id];
+        
+        switch (item.contentType) {
+            case 'gallery':
+                const webTypeTitle = webTypeOptions.find(opt => opt.id === configValue.type)?.title || configValue.type;
+                return (
+                    <div className="flex items-center space-x-2">
+                        <span className="text-sm text-gray-400 font-semibold truncate max-w-[100px]">{webTypeTitle}</span>
+                        <span className="w-6 h-6 rounded-full" style={{ backgroundColor: configValue.color }}></span>
+                    </div>
+                );
+            case 'dual-color':
+                 return (
+                    <div className="flex items-center space-x-2">
+                        <span className="w-6 h-6 rounded-full" style={{ backgroundColor: configValue.inner }}></span>
+                        <span className="w-6 h-6 rounded-full" style={{ backgroundColor: configValue.outer }}></span>
+                    </div>
+                );
+            case 'color':
+                return <span className="w-6 h-6 rounded-full" style={{ backgroundColor: configValue }}></span>;
+            case 'text':
+                return <span className="text-sm text-gray-400 truncate max-w-[100px]">{configValue.text}</span>;
+            default:
+                return null;
+        }
+    };
 
     return (
         <section
@@ -997,61 +975,22 @@ const AccordionMobile = ({
         >
             <ScrollGradient position="top" isVisible={topGradientVisible} />
 
-            {optionItems.map(item => {
-                const isDual = typeof configuration[item.id] === 'object' && configuration[item.id] !== null && 'inner' in configuration[item.id];
-
-                if (item.type === 'build') {
-                    return (
-                        <button key={item.id} data-id={item.id} className="w-full h-[56px] bg-[#1C1C1C] flex items-center justify-between px-4 mb-[10px] cursor-pointer hover:bg-[#2A2A2A] focus:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-white" onClick={() => handleOpenBuildOption('build', 'Build Options')}>
-                            <div className="flex items-center"><svg viewBox="0 0 10 16" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-4 w-auto mr-3"><path d="M1 1L8 8L1.10769 15" stroke="white" strokeWidth={2}/></svg><span className="text-lg">{item.title}</span></div>
-                        </button>
-                    );
-                }
-
-                if (item.type === 'gallery') {
-                    const webTypeTitle = webTypeOptions.find(opt => opt.id === configuration[item.id].type)?.title || configuration[item.id].type;
-                    return (
-                        <button key={item.id} data-id={item.id} className="w-full h-[56px] bg-[#1C1C1C] flex items-center justify-between px-4 mb-[10px] cursor-pointer hover:bg-[#2A2A2A] focus:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-white" onClick={() => handleOpenGalleryOption(item.id, `${item.title}`)}>
-                            <div className="flex items-center"><svg viewBox="0 0 10 16" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-4 w-auto mr-3"><path d="M1 1L8 8L1.10769 15" stroke="white" strokeWidth={2}/></svg><span className="text-lg">{item.title}</span></div>
-                            <div className="flex items-center space-x-2">
-                                <span className="text-sm text-gray-400 font-semibold truncate max-w-[100px]">{webTypeTitle}</span>
-                                <span className="w-6 h-6 rounded-full" style={{ backgroundColor: configuration[item.id].color }}></span>
-                            </div>
-                        </button>
-                    )
-                }
-
-                if (item.type === 'color') {
-                    if (isDual) {
-                       return (
-                            <button key={item.id} data-id={item.id} className="w-full h-[56px] bg-[#1C1C1C] flex items-center justify-between px-4 mb-[10px] cursor-pointer hover:bg-[#2A2A2A] focus:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-white" onClick={() => handleOpenDualColorPicker(item.id, `${item.title} Color`)}>
-                                <div className="flex items-center"><svg viewBox="0 0 10 16" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-4 w-auto mr-3"><path d="M1 1L8 8L1.10769 15" stroke="white" strokeWidth={2}/></svg><span className="text-lg">{item.title}</span></div>
-                                <div className="flex items-center space-x-2">
-                                    <span className="w-6 h-6 rounded-full" style={{ backgroundColor: configuration[item.id].inner }}></span>
-                                    <span className="w-6 h-6 rounded-full" style={{ backgroundColor: configuration[item.id].outer }}></span>
-                                </div>
-                            </button>
-                        );
-                    } else {
-                        return (
-                             <button key={item.id} data-id={item.id} className="w-full h-[56px] bg-[#1C1C1C] flex items-center justify-between px-4 mb-[10px] cursor-pointer hover:bg-[#2A2A2A] focus:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-white" onClick={() => handleOpenColorPicker(item.id, `${item.title} Color`)}>
-                                <div className="flex items-center"><svg viewBox="0 0 10 16" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-4 w-auto mr-3"><path d="M1 1L8 8L1.10769 15" stroke="white" strokeWidth={2}/></svg><span className="text-lg">{item.title}</span></div>
-                                <span className="w-6 h-6 rounded-full" style={{ backgroundColor: configuration[item.id] }}></span>
-                            </button>
-                        );
-                    }
-                }
-
-                if (item.type === 'text') {
-                    return (
-                        <button key={item.id} data-id={item.id} className="w-full h-[56px] bg-[#1C1C1C] flex items-center justify-between px-4 mb-[10px] cursor-pointer hover:bg-[#2A2A2A] focus:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-white" onClick={() => handleOpenTextOption(item.id, item.title)}>
-                            <div className="flex items-center"><svg viewBox="0 0 10 16" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-4 w-auto mr-3"><path d="M1 1L8 8L1.10769 15" stroke="white" strokeWidth={2}/></svg><span className="text-lg">{item.title}</span></div>
-                            <span className="text-sm text-gray-400 truncate max-w-[100px]">{configuration[item.id].text}</span>
-                        </button>
-                    );
-                }
-                return null;
-            })}
+            {optionsConfig.map(item => (
+                <button 
+                    key={item.id} 
+                    data-id={item.id} 
+                    className="w-full h-[56px] bg-[#1C1C1C] flex items-center justify-between px-4 mb-[10px] cursor-pointer hover:bg-[#2A2A2A] focus:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-white" 
+                    onClick={() => onOpenPanel(item)}
+                >
+                    <div className="flex items-center">
+                        <svg viewBox="0 0 10 16" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-4 w-auto mr-3">
+                            <path d="M1 1L8 8L1.10769 15" stroke="white" strokeWidth={2}/>
+                        </svg>
+                        <span className="text-lg">{item.title}</span>
+                    </div>
+                    {renderAccessory(item)}
+                </button>
+            ))}
 
             <ScrollGradient position="bottom" isVisible={bottomGradientVisible} />
         </section>
@@ -1059,7 +998,7 @@ const AccordionMobile = ({
 };
 
 
-// --- Main UI Component ---
+// --- UPDATED: Main UI Component ---
 const UI = () => {
     const isDesktop = useBreakpoint();
 
@@ -1110,14 +1049,6 @@ const UI = () => {
         return colorValue;
     };
 
-    const handleOpenColorPicker = (optionId, optionTitle) => {
-        setOpenAccordionOptionMobile({ name: 'color', context: { id: optionId, title: optionTitle } });
-    };
-
-    const handleOpenDualColorPicker = (optionId, optionTitle) => {
-        setOpenAccordionOptionMobile({ name: 'dual-color', context: { id: optionId, title: optionTitle } });
-    };
-
     const handleColorSelect = (color, contextId) => {
         if (contextId) {
             setConfiguration(prev => ({ ...prev, [contextId]: color }));
@@ -1153,17 +1084,8 @@ const UI = () => {
         });
     };
 
-
-    const handleOpenBuildOption = (optionId, optionTitle) => {
-        setOpenAccordionOptionMobile({ name: 'build', context: { id: optionId, title: optionTitle } });
-    };
-
     const handleBuildConfigChange = (newBuildData) => {
         setConfiguration(prev => ({...prev, build: newBuildData}));
-    };
-
-    const handleOpenTextOption = (optionId, optionTitle) => {
-        setOpenAccordionOptionMobile({ name: 'text', context: { id: optionId, title: optionTitle } });
     };
 
     const handleTextOptionChange = (newTextData, contextId) => {
@@ -1172,12 +1094,21 @@ const UI = () => {
         }
     };
 
-    const handleOpenGalleryOption = (optionId, optionTitle) => {
-        setOpenAccordionOptionMobile({ name: 'gallery', context: { id: optionId, title: optionTitle } });
-    };
-
     const handleGalleryConfigChange = (newConfig) => {
         setConfiguration(prev => ({ ...prev, web: newConfig }));
+    };
+    
+    const handleOpenPanel = (item) => {
+        // Map the contentType to the panel name used by the mobile footer
+        const panelNameMap = {
+            'build': 'build',
+            'gallery': 'gallery',
+            'color': 'color',
+            'dual-color': 'dual-color',
+            'text': 'text'
+        };
+        const panelName = panelNameMap[item.contentType];
+        setOpenAccordionOptionMobile({ name: panelName, context: { id: item.id, title: item.title } });
     };
 
     const GOLDEN_RATIO_CONSTANT = 1.618;
@@ -1264,13 +1195,10 @@ const UI = () => {
 
                             <AccordionMobile
                                 configuration={configuration}
-                                handleOpenBuildOption={handleOpenBuildOption}
-                                handleOpenColorPicker={handleOpenColorPicker}
-                                handleOpenDualColorPicker={handleOpenDualColorPicker}
-                                handleOpenTextOption={handleOpenTextOption}
-                                handleOpenGalleryOption={handleOpenGalleryOption}
+                                onOpenPanel={handleOpenPanel}
                                 openAccordionOptionMobile={openAccordionOptionMobile}
                                 webTypeOptions={webTypeOptions}
+                                getColorName={getColorName}
                             />
 
                             {openAccordionOptionMobile && (
