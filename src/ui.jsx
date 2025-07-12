@@ -593,7 +593,10 @@ const FooterMobile = ({ openPanelName, onApplyColorToAll, onClosePanel, onReview
             <SecondaryButton label="Continue" onClick={onClosePanel} variant="light" icon="checkmark" />
         ),
         gallery: (
-            <SecondaryButton label="Continue" onClick={onClosePanel} variant="light" icon="checkmark" />
+            <div className="w-full grid grid-cols-[1fr_1.618fr] gap-[10px]">
+                <SecondaryButton label="Apply to All" onClick={() => onApplyColorToAll(colorToApply)} variant="dark" icon="checkmark" disabled={!colorToApply} />
+                <SecondaryButton label="Continue" onClick={onClosePanel} variant="light" icon="checkmark" />
+            </div>
         ),
         text: (
             <SecondaryButton label="Continue" onClick={onClosePanel} variant="light" icon="checkmark" />
@@ -825,6 +828,12 @@ const AccordionDesktop = ({
                                     <span className="w-6 h-6 rounded-full border border-white/20" style={{ backgroundColor: configuration.web.color }}></span>
                                 )}
                             </div>
+                        }
+                        actionButton={
+                            <SecondaryButton
+                                label="Apply to All"
+                                onClick={() => handleApplyColorToAll(configuration.web.color)}
+                            />
                         }
                     >
                         <GalleryOption
@@ -1089,9 +1098,15 @@ const UI = () => {
     });
 
     const getActiveColor = (colorValue) => {
+        // ADDED: Specifically handle the 'web' (gallery) object structure
+        if (typeof colorValue === 'object' && colorValue !== null && 'color' in colorValue && 'type' in colorValue) {
+            return colorValue.color;
+        }
+        // Handle dual-color objects
         if (typeof colorValue === 'object' && colorValue !== null && 'inner' in colorValue) {
             return colorValue[activeDualColorPart];
         }
+        // Handle simple color strings
         return colorValue;
     };
 
