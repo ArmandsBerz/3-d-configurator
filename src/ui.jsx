@@ -77,6 +77,36 @@ const PANEL_NAME_MAP = {
     'text': 'text'
 };
 
+// --- NEW: Centralized Display Utility ---
+const getColorDisplay = (colorValue, options = {}) => {
+    const { format = 'default' } = options;
+
+    const getColorName = (hex) => {
+        const swatch = colorSwatches.find(c => c.hex === hex);
+        return swatch ? swatch.name : hex;
+    };
+
+    const isDual = typeof colorValue === 'object' && colorValue !== null && 'inner' in colorValue;
+    const isGallery = typeof colorValue === 'object' && colorValue !== null && 'type' in colorValue;
+
+    switch (format) {
+        case 'header':
+            if (isDual) return `${getColorName(colorValue.inner)} · ${getColorName(colorValue.outer)}`;
+            if (isGallery) return getColorName(colorValue.color);
+            return getColorName(colorValue);
+
+        case 'summary':
+             if (isDual) return `Inner: ${getColorName(colorValue.inner)}, Outer: ${getColorName(colorValue.outer)}`;
+             if (isGallery) return `Color: ${getColorName(colorValue.color)}`;
+             return getColorName(colorValue);
+
+        default:
+            if (typeof colorValue === 'object' && colorValue !== null) return JSON.stringify(colorValue);
+            return colorValue;
+    }
+};
+
+
 // --- Helper Components ---
 const ScrollGradient = ({ position, isVisible }) => {
     const isTop = position === 'top';
@@ -536,13 +566,6 @@ const OrderSummaryInfo = ({ configuration, dataSources }) => {
         return webTypeSource.find(opt => opt.id === value)?.title || value;
     }
 
-    const renderColorValue = (value) => {
-        if (typeof value === 'object' && value !== null && value.inner && value.outer) {
-            return `Inner: ${value.inner}, Outer: ${value.outer}`;
-        }
-        return value;
-    };
-
     return (
         <div className="text-base text-gray-300 space-y-4 p-1">
             <div>
@@ -557,19 +580,19 @@ const OrderSummaryInfo = ({ configuration, dataSources }) => {
             <div>
                 <h3 className="text-lg font-semibold text-white mb-2">Color Scheme</h3>
                 <div className="space-y-1 pl-2">
-                    <p><span className="font-semibold text-gray-400">Thumb:</span> {renderColorValue(thumb)}</p>
-                    <p><span className="font-semibold text-gray-400">Index:</span> {renderColorValue(index)}</p>
-                    <p><span className="font-semibold text-gray-400">Middle:</span> {renderColorValue(middle)}</p>
-                    <p><span className="font-semibold text-gray-400">Ring:</span> {renderColorValue(ring)}</p>
-                    <p><span className="font-semibold text-gray-400">Pinky:</span> {renderColorValue(pinky)}</p>
-                    {web && <p><span className="font-semibold text-gray-400">Web Color:</span> {web.color}</p>}
+                    <p><span className="font-semibold text-gray-400">Thumb:</span> {getColorDisplay(thumb, { format: 'summary' })}</p>
+                    <p><span className="font-semibold text-gray-400">Index:</span> {getColorDisplay(index, { format: 'summary' })}</p>
+                    <p><span className="font-semibold text-gray-400">Middle:</span> {getColorDisplay(middle, { format: 'summary' })}</p>
+                    <p><span className="font-semibold text-gray-400">Ring:</span> {getColorDisplay(ring, { format: 'summary' })}</p>
+                    <p><span className="font-semibold text-gray-400">Pinky:</span> {getColorDisplay(pinky, { format: 'summary' })}</p>
+                    {web && <p><span className="font-semibold text-gray-400">Web Color:</span> {getColorDisplay(web.color, { format: 'summary' })}</p>}
                 </div>
             </div>
             <div>
                 <h3 className="text-lg font-semibold text-white mb-2">Personalization</h3>
                 <div className="space-y-1 pl-2">
-                    <p><span className="font-semibold text-gray-400">Thumb Name:</span> "{thumbName.text}" ({thumbName.font}, {thumbName.color})</p>
-                    <p><span className="font-semibold text-gray-400">Pinky Name:</span> "{pinkyName.text}" ({pinkyName.font}, {pinkyName.color})</p>
+                    <p><span className="font-semibold text-gray-400">Thumb Name:</span> "{thumbName.text}" ({thumbName.font}, {getColorDisplay(thumbName.color, { format: 'summary' })})</p>
+                    <p><span className="font-semibold text-gray-400">Pinky Name:</span> "{pinkyName.text}" ({pinkyName.font}, {getColorDisplay(pinkyName.color, { format: 'summary' })})</p>
                 </div>
             </div>
         </div>
@@ -739,7 +762,6 @@ const AccordionDesktop = ({
     handleApplyColorToAll,
     handleTextOptionChange,
     handleGalleryConfigChange,
-    getColorName,
     getActiveColor,
 }) => {
     const [openAccordion, setOpenAccordion] = useState('build');
@@ -834,7 +856,7 @@ const AccordionDesktop = ({
                     <div className="flex items-center space-x-2">
                         <span className="text-sm text-gray-400 font-semibold truncate max-w-[100px]">{webTypeTitle}</span>
                         {isAccordionOpen ? (
-                            <span className="text-sm text-gray-400 font-semibold">{`· ${getColorName(configValue.color)}`}</span>
+                            <span className="text-sm text-gray-400 font-semibold">{`· ${getColorDisplay(configValue, { format: 'header' })}`}</span>
                         ) : (
                             <span className="w-6 h-6 rounded-full border border-white/20" style={{ backgroundColor: configValue.color }}></span>
                         )}
@@ -843,7 +865,7 @@ const AccordionDesktop = ({
             case 'dual-color':
                 return isAccordionOpen ? (
                     <span className="text-sm text-gray-400 font-semibold">
-                        {`${getColorName(configValue.inner)} · ${getColorName(configValue.outer)}`}
+                        {getColorDisplay(configValue, { format: 'header' })}
                     </span>
                 ) : (
                     <div className="flex items-center space-x-2">
@@ -853,7 +875,7 @@ const AccordionDesktop = ({
                 );
             case 'color':
                 return isAccordionOpen ? (
-                        <span className="text-sm text-gray-400 font-semibold">{getColorName(configValue)}</span>
+                        <span className="text-sm text-gray-400 font-semibold">{getColorDisplay(configValue, { format: 'header' })}</span>
                 ) : (
                         <span className="w-6 h-6 rounded-full border border-white/20" style={{ backgroundColor: configValue }}></span>
                 );
@@ -907,7 +929,6 @@ const AccordionMobile = ({
     onOpenPanel, // Simplified handler
     openAccordionOptionMobile,
     webTypeOptions,
-    getColorName,
 }) => {
     const listContainerRef = useRef(null);
     const [topGradientVisible, setTopGradientVisible] = useState(false);
@@ -1138,11 +1159,6 @@ const UI = () => {
         }
     }, [configuration]);
 
-    const getColorName = (hexValue) => {
-        const color = colorSwatches.find(c => c.hex === hexValue);
-        return color ? color.name : hexValue; // Return name if found, otherwise the hex
-    };
-
     return (
         <div className="flex flex-col lg:relative h-[100dvh] bg-[#161616] text-white">
             <main className={`p-4 flex flex-col items-center justify-center relative bg-[#161616] overflow-auto h-full w-full ${ isVisualizationExpanded ? 'flex-grow' : 'lg:absolute lg:inset-0'}`} style={!isDesktop && !isVisualizationExpanded ? { flexBasis: `${VIZ_PROPORTION * 100}%` } : {}}>
@@ -1184,7 +1200,6 @@ const UI = () => {
                             handleApplyColorToAll={handleApplyColorToAll}
                             handleTextOptionChange={handleTextOptionChange}
                             handleGalleryConfigChange={handleGalleryConfigChange}
-                            getColorName={getColorName}
                             getActiveColor={getActiveColor}
                         />
                         <OverviewDesktop configuration={configuration} />
@@ -1198,7 +1213,6 @@ const UI = () => {
                                 onOpenPanel={handleOpenPanel}
                                 openAccordionOptionMobile={openAccordionOptionMobile}
                                 webTypeOptions={webTypeOptions}
-                                getColorName={getColorName}
                             />
 
                             {openAccordionOptionMobile && (
@@ -1210,12 +1224,10 @@ const UI = () => {
                                             const { id, title } = openAccordionOptionMobile.context;
                                             const isDual = openAccordionOptionMobile.name === 'dual-color';
                                             const colorValue = configuration[id];
-                                            const headerAccessory = isDual ? (
+                                            const headerAccessory = (
                                                 <span className="text-sm text-gray-400 font-semibold">
-                                                    {`${colorSwatches.find(c => c.hex === colorValue.inner)?.name || ''} · ${colorSwatches.find(c => c.hex === colorValue.outer)?.name || ''}`}
+                                                    {getColorDisplay(colorValue, { format: 'header' })}
                                                 </span>
-                                            ) : (
-                                                <span className="text-sm text-gray-400">{colorSwatches.find(c => c.hex === colorValue)?.name || colorValue}</span>
                                             );
 
                                             return (
@@ -1256,7 +1268,7 @@ const UI = () => {
                                                 onClose={() => setOpenAccordionOptionMobile(null)}
                                                 headerAccessory={
                                                     <span className="text-sm text-gray-400 font-semibold truncate max-w-[150px]">
-                                                        {`${webTypeOptions.find(opt => opt.id === configuration.web.type)?.title || ''} · ${getColorName(configuration.web.color)}`}
+                                                        {`${webTypeOptions.find(opt => opt.id === configuration.web.type)?.title || ''} · ${getColorDisplay(configuration.web, {format: 'header'})}`}
                                                     </span>
                                                 }
                                             >
