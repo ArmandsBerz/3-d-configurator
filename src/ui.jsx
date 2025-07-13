@@ -69,6 +69,14 @@ const optionsConfig = [
     { id: 'pinkyName', title: 'Pinky Name', contentType: 'text' },
 ];
 
+const PANEL_NAME_MAP = {
+    'build': 'build',
+    'gallery': 'gallery',
+    'color': 'color',
+    'dual-color': 'dual-color',
+    'text': 'text'
+};
+
 // --- Helper Components ---
 const ScrollGradient = ({ position, isVisible }) => {
     const isTop = position === 'top';
@@ -845,9 +853,9 @@ const AccordionDesktop = ({
                 );
             case 'color':
                 return isAccordionOpen ? (
-                     <span className="text-sm text-gray-400 font-semibold">{getColorName(configValue)}</span>
+                        <span className="text-sm text-gray-400 font-semibold">{getColorName(configValue)}</span>
                 ) : (
-                     <span className="w-6 h-6 rounded-full border border-white/20" style={{ backgroundColor: configValue }}></span>
+                        <span className="w-6 h-6 rounded-full border border-white/20" style={{ backgroundColor: configValue }}></span>
                 );
             case 'text':
                 return <span className="text-sm text-gray-400 truncate max-w-[100px]">{configValue.text}</span>;
@@ -1099,15 +1107,7 @@ const UI = () => {
     };
     
     const handleOpenPanel = (item) => {
-        // Map the contentType to the panel name used by the mobile footer
-        const panelNameMap = {
-            'build': 'build',
-            'gallery': 'gallery',
-            'color': 'color',
-            'dual-color': 'dual-color',
-            'text': 'text'
-        };
-        const panelName = panelNameMap[item.contentType];
+        const panelName = PANEL_NAME_MAP[item.contentType];
         setOpenAccordionOptionMobile({ name: panelName, context: { id: item.id, title: item.title } });
     };
 
