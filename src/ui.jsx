@@ -786,6 +786,22 @@ const UI = () => {
     const { state } = useGloveConfigurator();
     const { configuration } = state;
     const [isVisualizationExpanded, setIsVisualizationExpanded] = useState(false);
+    
+    /**
+     * This JSDoc block defines all possible valid shapes for the state.
+     * It "teaches" the code editor the rules.
+     * @typedef {
+     * | { name: 'summary' }
+     * | { name: 'build', context: { id: 'build', title: string } }
+     * | { name: 'gallery', context: { id: 'web', title: string } }
+     * | { name: 'text', context: { id: string, title: string } }
+     * | { name: 'color', context: { id: string, title: string } }
+     * | { name: 'dual-color', context: { id: string, title: string } }
+     * | null
+     * } OpenPanelState
+     */
+
+    /** @type {[OpenPanelState, React.Dispatch<React.SetStateAction<OpenPanelState>>]} */
     const [openAccordionOptionMobile, setOpenAccordionOptionMobile] = useState(null);
 
     const handleOpenPanel = (item) => {
