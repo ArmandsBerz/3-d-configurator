@@ -136,18 +136,24 @@ const gloveConfigReducer = (state, action) => {
         case 'APPLY_COLOR_TO_ALL': {
             const { color } = action.payload;
             if (!color) return state;
-            const newConfig = { ...state.configuration };
-            ['thumb', 'index', 'middle', 'ring', 'pinky', 'web'].forEach(partId => {
-                const part = newConfig[partId];
-                if (typeof part === 'object' && part !== null && 'inner' in part) {
-                    newConfig[partId] = { ...part, inner: color, outer: color };
-                } else if (typeof part === 'object' && part !== null && 'type' in part) {
-                    newConfig[partId] = { ...part, color: color };
-                } else {
-                    newConfig[partId] = color;
-                }
-            });
-            return { ...state, configuration: newConfig };
+
+            return {
+                ...state,
+                configuration: {
+                    ...state.configuration,
+                    // Dual-color parts
+                    thumb:  { ...state.configuration.thumb, inner: color, outer: color },
+                    middle: { ...state.configuration.middle, inner: color, outer: color },
+                    ring:   { ...state.configuration.ring, inner: color, outer: color },
+                    pinky:  { ...state.configuration.pinky, inner: color, outer: color },
+                    
+                    // Single color part
+                    index: color,
+                    
+                    // Gallery part
+                    web: { ...state.configuration.web, color: color },
+                },
+            };
         }
         default:
             throw new Error(`Unhandled action type: ${action.type}`);
