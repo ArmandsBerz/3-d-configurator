@@ -68,15 +68,6 @@ const optionsConfig = [
     { id: 'pinkyName', title: 'Pinky Name', contentType: 'text' },
 ];
 
-const PANEL_NAME_MAP = {
-    'build': 'build',
-    'gallery': 'gallery',
-    'color': 'color',
-    'dual-color': 'dual-color',
-    'text': 'text',
-    'summary': 'summary'
-};
-
 const getColorDisplay = (colorValue, options = {}) => {
     const { format = 'default' } = options;
     const getColorName = (hex) => colorSwatches.find(c => c.hex === hex)?.name || hex;
@@ -805,20 +796,34 @@ const UI = () => {
     const [openAccordionOptionMobile, setOpenAccordionOptionMobile] = useState(null);
 
     const handleOpenPanel = (item) => {
-        const panelName = PANEL_NAME_MAP[item.contentType];
-        const { id, title } = item;
-        switch (panelName) {
+        const { id, title, contentType } = item;
+
+        switch (contentType) {
             case 'build':
+                setOpenAccordionOptionMobile({ name: 'build', context: { id: 'build', title } });
+                break;
+            
             case 'gallery':
+                setOpenAccordionOptionMobile({ name: 'gallery', context: { id: 'web', title } });
+                break;
+
             case 'color':
             case 'dual-color':
+                setOpenAccordionOptionMobile({ 
+                    name: contentType,
+                    context: { id: id, title } 
+                });
+                break;
+                
             case 'text':
-                setOpenAccordionOptionMobile({ name: panelName, context: { id, title } });
+                setOpenAccordionOptionMobile({ 
+                    name: 'text', 
+                    context: { id: id, title } 
+                });
                 break;
+                
             default:
-                // FAIL LOUDLY in the developer console
-                console.error(`Unsupported panel type encountered: "${panelName}". Please add it to the switch statement in handleOpenPanel.`);
-                break;
+                console.error(`Unsupported content type: ${contentType}`);
         }
     };
 
