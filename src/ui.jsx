@@ -790,7 +790,20 @@ const UI = () => {
 
     const handleOpenPanel = (item) => {
         const panelName = PANEL_NAME_MAP[item.contentType];
-        setOpenAccordionOptionMobile({ name: panelName, context: { id: item.id, title: item.title } });
+        const { id, title } = item;
+        switch (panelName) {
+            case 'build':
+            case 'gallery':
+            case 'color':
+            case 'dual-color':
+            case 'text':
+                setOpenAccordionOptionMobile({ name: panelName, context: { id, title } });
+                break;
+            default:
+                // FAIL LOUDLY in the developer console
+                console.error(`Unsupported panel type encountered: "${panelName}". Please add it to the switch statement in handleOpenPanel.`);
+                break;
+        }
     };
 
     const GOLDEN_RATIO_CONSTANT = 1.618;
@@ -811,24 +824,21 @@ const UI = () => {
     const renderMobilePanel = () => {
         if (!openAccordionOptionMobile) return null;
 
-        const commonProps = {
-            context: openAccordionOptionMobile.context,
-            onClose: () => setOpenAccordionOptionMobile(null),
-        };
+        const onClose = () => setOpenAccordionOptionMobile(null);
 
         const renderPanelContent = () => {
             switch (openAccordionOptionMobile.name) {
                 case 'summary':
-                    return <SummaryPanel onClose={commonProps.onClose} />;
+                    return <SummaryPanel onClose={onClose} />;
                 case 'build':
-                    return <BuildPanel {...commonProps} />;
+                    return <BuildPanel context={openAccordionOptionMobile.context} onClose={onClose} />;
                 case 'gallery':
-                    return <GalleryPanel {...commonProps} />;
+                    return <GalleryPanel context={openAccordionOptionMobile.context} onClose={onClose} />;
                 case 'color':
                 case 'dual-color':
-                    return <ColorPanel {...commonProps} />;
+                    return <ColorPanel context={openAccordionOptionMobile.context} onClose={onClose} />;
                 case 'text':
-                    return <TextPanel {...commonProps} />;
+                    return <TextPanel context={openAccordionOptionMobile.context} onClose={onClose} />;
                 default:
                     return null;
             }
