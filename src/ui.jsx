@@ -373,15 +373,7 @@ const GalleryOption = ({ isDesktop }) => {
     );
 };
 
-// --- START: NEW COMPONENT RENDERER MAPS ---
-
-const ContentRendererMap = {
-    'build': BuildOption,
-    'gallery': GalleryOption,
-    'color': ColorContent,
-    'dual-color': DualColorContent,
-    'text': TextOption,
-};
+// --- START: REFACTORED COMPONENT RENDERERS ---
 
 const SummaryPanel = ({ onClose }) => <OverviewMobile onClose={onClose} />;
 
@@ -420,27 +412,31 @@ const ColorPanel = ({ context, onClose }) => {
     const { id, title } = context;
     const colorValue = state.configuration[id];
     const isDual = typeof colorValue === 'object' && colorValue !== null && 'inner' in colorValue;
-    const ContentComponent = isDual ? DualColorContent : ColorContent;
+
     const handleColorChange = (color) => dispatch({ type: 'UPDATE_COLOR', payload: { id, color } });
     const handleDualColorChange = (subPart, color) => dispatch({ type: 'UPDATE_DUAL_COLOR', payload: { id, subPartId: subPart, color } });
+    
     const headerAccessory = <span className="text-sm text-gray-400 font-semibold">{getColorDisplay(colorValue, { format: 'header' })}</span>;
+
     return (
         <AccordionOptionMobile title={title} onClose={onClose} headerAccessory={headerAccessory}>
-            <ContentComponent value={colorValue} onChange={isDual ? handleDualColorChange : handleColorChange} />
+            {isDual ? (
+                <DualColorContent 
+                    value={colorValue} 
+                    onChange={handleDualColorChange} 
+                />
+            ) : (
+                <ColorContent 
+                    value={colorValue} 
+                    onChange={handleColorChange} 
+                />
+            )}
         </AccordionOptionMobile>
     );
 };
 
-const MobilePanelRendererMap = {
-    'summary': SummaryPanel,
-    'build': BuildPanel,
-    'gallery': GalleryPanel,
-    'color': ColorPanel,
-    'dual-color': ColorPanel,
-    'text': TextPanel,
-};
+// --- END: REFACTORED COMPONENT RENDERERS ---
 
-// --- END: NEW COMPONENT RENDERER MAPS ---
 
 const OrderSummaryInfo = () => {
     const { state } = useGloveConfigurator();
@@ -632,52 +628,58 @@ const AccordionDesktop = () => {
         }
     };
 
+    const renderContent = (item) => {
+        switch (item.contentType) {
+            case 'build':
+                return <BuildOption isDesktop={true} />;
+            case 'gallery':
+                return <GalleryOption isDesktop={true} />;
+            case 'color':
+                return (
+                    <ColorContent
+                        value={configuration[item.id]}
+                        onChange={(color) => dispatch({ type: 'UPDATE_COLOR', payload: { id: item.id, color: color } })}
+                    />
+                );
+            case 'dual-color':
+                return (
+                    <DualColorContent
+                        value={configuration[item.id]}
+                        onChange={(subPart, color) => dispatch({ type: 'UPDATE_DUAL_COLOR', payload: { id: item.id, subPartId: subPart, color: color } })}
+                    />
+                );
+            case 'text':
+                return <TextOption contextId={item.id} />;
+            default:
+                return null;
+        }
+    };
+
     return (
         <div className="absolute top-0 left-0 bottom-0 w-[488px] z-10 bg-[#161616] p-10 pointer-events-none">
             <div className="absolute z-20 w-[70px] h-[49px] bg-gray-300 bg-opacity-75 flex items-center justify-center pointer-events-auto"><p className="font-bold text-xl text-gray-900">LOGO</p></div>
             <div className={`absolute ${isScrolled ? 'top-[82px]' : 'top-[142px]'} bottom-4 left-[40px] w-[400px] pointer-events-auto transition-all duration-30 ease-in-out overflow-hidden`}>
                 <ScrollGradient position="top" isVisible={isTopGradientVisible} />
                 <div ref={accordionContainerRef} className="h-full overflow-y-auto space-y-4">
-                    {optionsConfig.map(item => {
-                        const ContentComponent = ContentRendererMap[item.contentType];
-                        if (!ContentComponent) return null;
-
-                        // Prepare props for the content component
-                        const contentProps = {};
-                        if (item.contentType === 'color' || item.contentType === 'dual-color') {
-                            contentProps.value = configuration[item.id];
-                            contentProps.onChange = (subPartOrColor, color) => {
-                                if (item.contentType === 'dual-color') {
-                                    dispatch({ type: 'UPDATE_DUAL_COLOR', payload: { id: item.id, subPartId: subPartOrColor, color } });
-                                } else {
-                                    dispatch({ type: 'UPDATE_COLOR', payload: { id: item.id, color: subPartOrColor } });
-                                }
-                            };
-                        } else if (item.contentType === 'text') {
-                            contentProps.contextId = item.id;
-                        }
-                        contentProps.isDesktop = true;
-
-                        return (
-                            <AccordionOptionDesktop
-                                key={item.id}
-                                title={item.title}
-                                isOpen={openAccordion === item.id}
-                                onToggle={() => handleAccordionToggle(item.id)}
-                                headerContent={renderHeaderAccessory(item)}
-                                actionButton={
-                                    (item.contentType === 'color' || item.contentType === 'dual-color' || item.contentType === 'gallery') && (
-                                        <SecondaryButton
-                                            label="Apply to All"
-                                            onClick={() => handleApplyColorToAll(getActiveColor(configuration[item.id]))}
-                                        />
-                                    )
-                                }
-                            >
-                                <ContentComponent {...contentProps} />
-                            </AccordionOptionDesktop>
-                        );
-                    })}
+                    {optionsConfig.map(item => (
+                        <AccordionOptionDesktop
+                            key={item.id}
+                            title={item.title}
+                            isOpen={openAccordion === item.id}
+                            onToggle={() => handleAccordionToggle(item.id)}
+                            headerContent={renderHeaderAccessory(item)}
+                            actionButton={
+                                (item.contentType === 'color' || item.contentType === 'dual-color' || item.contentType === 'gallery') && (
+                                    <SecondaryButton
+                                        label="Apply to All"
+                                        onClick={() => handleApplyColorToAll(getActiveColor(configuration[item.id]))}
+                                    />
+                                )
+                            }
+                        >
+                            {renderContent(item)}
+                        </AccordionOptionDesktop>
+                    ))}
                 </div>
                 <ScrollGradient position="bottom" isVisible={isBottomGradientVisible} />
             </div>
@@ -776,15 +778,34 @@ const UI = () => {
     // RENDER MOBILE PANEL DYNAMICALLY
     const renderMobilePanel = () => {
         if (!openAccordionOptionMobile) return null;
-        const PanelComponent = MobilePanelRendererMap[openAccordionOptionMobile.name];
-        if (!PanelComponent) return null;
+
+        const commonProps = {
+            context: openAccordionOptionMobile.context,
+            onClose: () => setOpenAccordionOptionMobile(null),
+        };
+
+        const renderPanelContent = () => {
+            switch (openAccordionOptionMobile.name) {
+                case 'summary':
+                    return <SummaryPanel onClose={commonProps.onClose} />;
+                case 'build':
+                    return <BuildPanel {...commonProps} />;
+                case 'gallery':
+                    return <GalleryPanel {...commonProps} />;
+                case 'color':
+                case 'dual-color':
+                    return <ColorPanel {...commonProps} />;
+                case 'text':
+                    return <TextPanel {...commonProps} />;
+                default:
+                    return null;
+            }
+        };
+
         return (
             <div className="absolute inset-0 z-30 flex flex-col bg-[#161616]">
                 <div className="flex-grow relative overflow-hidden pt-[10px]">
-                    <PanelComponent
-                        context={openAccordionOptionMobile.context}
-                        onClose={() => setOpenAccordionOptionMobile(null)}
-                    />
+                    {renderPanelContent()}
                 </div>
             </div>
         );
