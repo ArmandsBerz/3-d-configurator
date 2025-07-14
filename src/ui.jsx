@@ -80,19 +80,29 @@ const PANEL_NAME_MAP = {
 const getColorDisplay = (colorValue, options = {}) => {
     const { format = 'default' } = options;
     const getColorName = (hex) => colorSwatches.find(c => c.hex === hex)?.name || hex;
-    const isDual = typeof colorValue === 'object' && colorValue !== null && 'inner' in colorValue;
-    const isGallery = typeof colorValue === 'object' && colorValue !== null && 'type' in colorValue;
+
+    // New discriminated union checks
+    const isDual = typeof colorValue === 'object' && colorValue !== null && colorValue.type === 'dual';
+    const isSingle = typeof colorValue === 'object' && colorValue !== null && colorValue.type === 'single';
+
+    // Legacy/other object checks
+    const isGallery = typeof colorValue === 'object' && colorValue !== null && 'type' in colorValue && !('value' in colorValue);
 
     switch (format) {
         case 'header':
-            if (isDual) return `${getColorName(colorValue.inner)} · ${getColorName(colorValue.outer)}`;
+            if (isDual) return `${getColorName(colorValue.value.inner)} · ${getColorName(colorValue.value.outer)}`;
+            if (isSingle) return getColorName(colorValue.value);
             if (isGallery) return getColorName(colorValue.color);
-            return getColorName(colorValue);
+            return getColorName(colorValue); // For text customization colors
+
         case 'summary':
-            if (isDual) return `Inner: ${getColorName(colorValue.inner)}, Outer: ${getColorName(colorValue.outer)}`;
+            if (isDual) return `Inner: ${getColorName(colorValue.value.inner)}, Outer: ${getColorName(colorValue.value.outer)}`;
+            if (isSingle) return getColorName(colorValue.value);
             if (isGallery) return `Color: ${getColorName(colorValue.color)}`;
-            return getColorName(colorValue);
+            return getColorName(colorValue); // For text customization colors
+
         default:
+            if (isDual || isSingle) return JSON.stringify(colorValue.value);
             return typeof colorValue === 'object' && colorValue !== null ? JSON.stringify(colorValue) : colorValue;
     }
 };
@@ -103,11 +113,11 @@ const initialState = {
     configuration: {
         build: { imageSelection: 'imgOpt1', position: 'OUTFIELD', size: '11"', handOpeningSize: 'ADULT', stiffness: 'STANDARD', throwingHand: 'RIGHT HAND' },
         web: { type: 'MOD_TRAP', color: '#C62828' },
-        thumb: { inner: '#C62828', outer: '#2E7D32' },
-        index: '#1565C0',
-        middle: { inner: '#2E7D32', outer: '#C62828' },
-        ring: { inner: '#F9A825', outer: '#6A1B9A' },
-        pinky: { inner: '#6A1B9A', outer: '#F9A825' },
+        thumb: { type: 'dual', value: { inner: '#C62828', outer: '#2E7D32' } },
+        index: { type: 'single', value: '#1565C0' },
+        middle: { type: 'dual', value: { inner: '#2E7D32', outer: '#C62828' } },
+        ring: { type: 'dual', value: { inner: '#F9A825', outer: '#6A1B9A' } },
+        pinky: { type: 'dual', value: { inner: '#6A1B9A', outer: '#F9A825' } },
         thumbName: { text: 'Thumb', font: 'SCRIPT', color: '#BDBDBD' },
         pinkyName: { text: 'Pinky', font: 'BLOCK', color: '#FFFFFF' },
     },
@@ -119,13 +129,19 @@ const gloveConfigReducer = (state, action) => {
         case 'UPDATE_BUILD':
             return { ...state, configuration: { ...state.configuration, build: action.payload } };
         case 'UPDATE_COLOR':
-            return { ...state, configuration: { ...state.configuration, [action.payload.id]: action.payload.color } };
+            return { ...state, configuration: { ...state.configuration, [action.payload.id]: { type: 'single', value: action.payload.color } } };
         case 'UPDATE_DUAL_COLOR':
             return {
                 ...state,
                 configuration: {
                     ...state.configuration,
-                    [action.payload.id]: { ...state.configuration[action.payload.id], [action.payload.subPartId]: action.payload.color },
+                    [action.payload.id]: {
+                        ...state.configuration[action.payload.id],
+                        value: {
+                            ...state.configuration[action.payload.id].value,
+                            [action.payload.subPartId]: action.payload.color
+                        }
+                    },
                 },
                 activeDualColorPart: action.payload.subPartId,
             };
@@ -136,22 +152,23 @@ const gloveConfigReducer = (state, action) => {
         case 'APPLY_COLOR_TO_ALL': {
             const { color } = action.payload;
             if (!color) return state;
+            const config = state.configuration;
 
             return {
                 ...state,
                 configuration: {
-                    ...state.configuration,
+                    ...config,
                     // Dual-color parts
-                    thumb:  { ...state.configuration.thumb, inner: color, outer: color },
-                    middle: { ...state.configuration.middle, inner: color, outer: color },
-                    ring:   { ...state.configuration.ring, inner: color, outer: color },
-                    pinky:  { ...state.configuration.pinky, inner: color, outer: color },
+                    thumb:  { ...config.thumb,  value: { inner: color, outer: color } },
+                    middle: { ...config.middle, value: { inner: color, outer: color } },
+                    ring:   { ...config.ring,   value: { inner: color, outer: color } },
+                    pinky:  { ...config.pinky,  value: { inner: color, outer: color } },
                     
                     // Single color part
-                    index: color,
+                    index: { ...config.index, value: color },
                     
-                    // Gallery part
-                    web: { ...state.configuration.web, color: color },
+                    // Gallery part (structure unchanged)
+                    web: { ...config.web, color: color },
                 },
             };
         }
@@ -410,24 +427,23 @@ const TextPanel = ({ context, onClose }) => {
 const ColorPanel = ({ context, onClose }) => {
     const { state, dispatch } = useGloveConfigurator();
     const { id, title } = context;
-    const colorValue = state.configuration[id];
-    const isDual = typeof colorValue === 'object' && colorValue !== null && 'inner' in colorValue;
+    const colorConfig = state.configuration[id];
 
     const handleColorChange = (color) => dispatch({ type: 'UPDATE_COLOR', payload: { id, color } });
     const handleDualColorChange = (subPart, color) => dispatch({ type: 'UPDATE_DUAL_COLOR', payload: { id, subPartId: subPart, color } });
     
-    const headerAccessory = <span className="text-sm text-gray-400 font-semibold">{getColorDisplay(colorValue, { format: 'header' })}</span>;
+    const headerAccessory = <span className="text-sm text-gray-400 font-semibold">{getColorDisplay(colorConfig, { format: 'header' })}</span>;
 
     return (
         <AccordionOptionMobile title={title} onClose={onClose} headerAccessory={headerAccessory}>
-            {isDual ? (
+            {colorConfig.type === 'dual' ? (
                 <DualColorContent 
-                    value={colorValue} 
+                    value={colorConfig.value} 
                     onChange={handleDualColorChange} 
                 />
             ) : (
                 <ColorContent 
-                    value={colorValue} 
+                    value={colorConfig.value} 
                     onChange={handleColorChange} 
                 />
             )}
@@ -502,15 +518,23 @@ const OrderButtonController = ({ isSummaryVisible, onReviewClick, onCompleteClic
 
 const FooterMobile = ({ openPanelName, onClosePanel, onReviewClick, onCompleteOrder, isDesktop, openAccordionOptionMobile }) => {
     const { state, dispatch } = useGloveConfigurator();
-    const getActiveColor = (colorValue) => {
-        if (typeof colorValue === 'object' && colorValue !== null && 'color' in colorValue && 'type' in colorValue) return colorValue.color;
-        if (typeof colorValue === 'object' && colorValue !== null && 'inner' in colorValue) return colorValue[state.activeDualColorPart];
-        return colorValue;
+    const getActiveColor = (colorConfig) => {
+        if (colorConfig?.type === 'dual') {
+            return colorConfig.value[state.activeDualColorPart];
+        }
+        if (colorConfig?.type === 'single') {
+            return colorConfig.value;
+        }
+        // Handle gallery or other types
+        if (typeof colorConfig === 'object' && colorConfig !== null && 'color' in colorConfig) {
+            return colorConfig.color;
+        }
+        return colorConfig;
     };
     const getApplyAllColor = () => {
         if (!openAccordionOptionMobile?.context) return null;
-        const colorValue = state.configuration[openAccordionOptionMobile.context.id];
-        return getActiveColor(colorValue);
+        const colorConfig = state.configuration[openAccordionOptionMobile.context.id];
+        return getActiveColor(colorConfig);
     };
     const onApplyColorToAll = (color) => dispatch({ type: 'APPLY_COLOR_TO_ALL', payload: { color } });
     const colorToApply = getApplyAllColor();
@@ -575,10 +599,18 @@ const AccordionDesktop = () => {
     const [isScrolled, setIsScrolled] = useState(false);
 
     const handleAccordionToggle = (accordionId) => setOpenAccordion(prev => (prev === accordionId ? null : accordionId));
-    const getActiveColor = (colorValue) => {
-        if (typeof colorValue === 'object' && colorValue !== null && 'color' in colorValue) return colorValue.color;
-        if (typeof colorValue === 'object' && colorValue !== null && 'inner' in colorValue) return colorValue[activeDualColorPart];
-        return colorValue;
+    const getActiveColor = (colorConfig) => {
+        if (colorConfig?.type === 'dual') {
+            return colorConfig.value[activeDualColorPart];
+        }
+        if (colorConfig?.type === 'single') {
+            return colorConfig.value;
+        }
+        // Handle gallery or other types
+        if (typeof colorConfig === 'object' && colorConfig !== null && 'color' in colorConfig) {
+            return colorConfig.color;
+        }
+        return colorConfig;
     };
     const handleApplyColorToAll = (colorString) => {
         if (colorString) dispatch({ type: 'APPLY_COLOR_TO_ALL', payload: { color: colorString } });
@@ -618,9 +650,9 @@ const AccordionDesktop = () => {
                     </div>
                 );
             case 'dual-color':
-                return isAccordionOpen ? <span className="text-sm text-gray-400 font-semibold">{getColorDisplay(configValue, { format: 'header' })}</span> : <div className="flex items-center space-x-2"><span className="w-6 h-6 rounded-full border border-white/20" style={{ backgroundColor: configValue.inner }}></span><span className="w-6 h-6 rounded-full border border-white/20" style={{ backgroundColor: configValue.outer }}></span></div>;
+                return isAccordionOpen ? <span className="text-sm text-gray-400 font-semibold">{getColorDisplay(configValue, { format: 'header' })}</span> : <div className="flex items-center space-x-2"><span className="w-6 h-6 rounded-full border border-white/20" style={{ backgroundColor: configValue.value.inner }}></span><span className="w-6 h-6 rounded-full border border-white/20" style={{ backgroundColor: configValue.value.outer }}></span></div>;
             case 'color':
-                return isAccordionOpen ? <span className="text-sm text-gray-400 font-semibold">{getColorDisplay(configValue, { format: 'header' })}</span> : <span className="w-6 h-6 rounded-full border border-white/20" style={{ backgroundColor: configValue }}></span>;
+                return isAccordionOpen ? <span className="text-sm text-gray-400 font-semibold">{getColorDisplay(configValue, { format: 'header' })}</span> : <span className="w-6 h-6 rounded-full border border-white/20" style={{ backgroundColor: configValue.value }}></span>;
             case 'text':
                 return <span className="text-sm text-gray-400 truncate max-w-[100px]">{configValue.text}</span>;
             default:
@@ -637,14 +669,14 @@ const AccordionDesktop = () => {
             case 'color':
                 return (
                     <ColorContent
-                        value={configuration[item.id]}
+                        value={configuration[item.id].value}
                         onChange={(color) => dispatch({ type: 'UPDATE_COLOR', payload: { id: item.id, color: color } })}
                     />
                 );
             case 'dual-color':
                 return (
                     <DualColorContent
-                        value={configuration[item.id]}
+                        value={configuration[item.id].value}
                         onChange={(subPart, color) => dispatch({ type: 'UPDATE_DUAL_COLOR', payload: { id: item.id, subPartId: subPart, color: color } })}
                     />
                 );
@@ -722,9 +754,9 @@ const AccordionMobile = ({ onOpenPanel, openAccordionOptionMobile }) => {
                 const webTypeTitle = webTypeOptions.find(opt => opt.id === configValue.type)?.title || configValue.type;
                 return <div className="flex items-center space-x-2"><span className="text-sm text-gray-400 font-semibold truncate max-w-[100px]">{webTypeTitle}</span><span className="w-6 h-6 rounded-full" style={{ backgroundColor: configValue.color }}></span></div>;
             case 'dual-color':
-                return <div className="flex items-center space-x-2"><span className="w-6 h-6 rounded-full" style={{ backgroundColor: configValue.inner }}></span><span className="w-6 h-6 rounded-full" style={{ backgroundColor: configValue.outer }}></span></div>;
+                return <div className="flex items-center space-x-2"><span className="w-6 h-6 rounded-full" style={{ backgroundColor: configValue.value.inner }}></span><span className="w-6 h-6 rounded-full" style={{ backgroundColor: configValue.value.outer }}></span></div>;
             case 'color':
-                return <span className="w-6 h-6 rounded-full" style={{ backgroundColor: configValue }}></span>;
+                return <span className="w-6 h-6 rounded-full" style={{ backgroundColor: configValue.value }}></span>;
             case 'text':
                 return <span className="text-sm text-gray-400 truncate max-w-[100px]">{configValue.text}</span>;
             default: return null;
