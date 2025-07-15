@@ -46,44 +46,111 @@ interface GloveConfiguration {
 // The complete state managed by the reducer
 interface AppState {
     configuration: GloveConfiguration;
-    activeDualColorPart: 'inner' | 'outer';
+    activeDualColorPart: (typeof DUAL_COLOR_SUB_PARTS)[keyof typeof DUAL_COLOR_SUB_PARTS];
 }
 
 // All possible actions your reducer can handle
 type GloveAction =
-    | { type: 'UPDATE_BUILD'; payload: BuildConfig }
-    | { type: 'UPDATE_COLOR'; payload: { id: 'index'; color: HexColor } }
-    | { type: 'UPDATE_DUAL_COLOR'; payload: { id: 'thumb' | 'middle' | 'ring' | 'pinky'; subPartId: 'inner' | 'outer'; color: HexColor } }
-    | { type: 'UPDATE_GALLERY'; payload: WebConfig }
-    | { type: 'UPDATE_TEXT'; payload: { id: 'thumbName' | 'pinkyName'; data: TextConfig } }
-    | { type: 'APPLY_COLOR_TO_ALL'; payload: { color: HexColor } };
+    | { type: typeof ACTION_TYPES.UPDATE_BUILD; payload: BuildConfig }
+    | { type: typeof ACTION_TYPES.UPDATE_COLOR; payload: { id: 'index'; color: HexColor } }
+    | { type: typeof ACTION_TYPES.UPDATE_DUAL_COLOR; payload: { id: 'thumb' | 'middle' | 'ring' | 'pinky'; subPartId: (typeof DUAL_COLOR_SUB_PARTS)[keyof typeof DUAL_COLOR_SUB_PARTS]; color: HexColor } }
+    | { type: typeof ACTION_TYPES.UPDATE_GALLERY; payload: WebConfig }
+    | { type: typeof ACTION_TYPES.UPDATE_TEXT; payload: { id: 'thumbName' | 'pinkyName'; data: TextConfig } }
+    | { type: typeof ACTION_TYPES.APPLY_COLOR_TO_ALL; payload: { color: HexColor } };
 
 // --- END: Core Type Definitions ---
 
 // --- START: ADD NEW PANEL PROP TYPES ---
 // Define the specific IDs each panel type will handle
-type ColorPartId = 'thumb' | 'index' | 'middle' | 'ring' | 'pinky';
-type TextPartId = 'thumbName' | 'pinkyName';
-type GalleryPartId = 'web';
+type ColorPartId = typeof PART_IDS.COLOR[number];
+type TextPartId = typeof PART_IDS.TEXT[number];
+type GalleryPartId = typeof PART_IDS.GALLERY[number];
 
 // Define the exact props for each panel component
 interface BuildPanelProps {
-  context: { title: string };
-  onClose: () => void;
+    context: { title: string };
+    onClose: () => void;
 }
 interface ColorPanelProps {
-  context: { id: ColorPartId; title: string };
-  onClose: () => void;
+    context: { id: ColorPartId; title: string };
+    onClose: () => void;
 }
 interface TextPanelProps {
-  context: { id: TextPartId; title: string };
-  onClose: () => void;
+    context: { id: TextPartId; title: string };
+    onClose: () => void;
 }
 interface GalleryPanelProps {
-  context: { id: GalleryPartId; title: string };
-  onClose: () => void;
+    context: { id: GalleryPartId; title: string };
+    onClose: () => void;
 }
 // --- END: ADD NEW PANEL PROP TYPES ---
+
+// --- START: Application-Wide Constants ---
+
+export const CONTENT_TYPES = {
+  BUILD: 'build',
+  GALLERY: 'gallery',
+  COLOR: 'color',
+  DUAL_COLOR: 'dual-color',
+  TEXT: 'text',
+  SUMMARY: 'summary',
+} as const;
+
+export const ACTION_TYPES = {
+  UPDATE_BUILD: 'UPDATE_BUILD',
+  UPDATE_COLOR: 'UPDATE_COLOR',
+  UPDATE_DUAL_COLOR: 'UPDATE_DUAL_COLOR',
+  UPDATE_GALLERY: 'UPDATE_GALLERY',
+  UPDATE_TEXT: 'UPDATE_TEXT',
+  APPLY_COLOR_TO_ALL: 'APPLY_COLOR_TO_ALL',
+} as const;
+
+export const PART_IDS = {
+    COLOR: ['thumb', 'index', 'middle', 'ring', 'pinky'],
+    TEXT: ['thumbName', 'pinkyName'],
+    GALLERY: ['web'],
+} as const;
+
+export const DUAL_COLOR_SUB_PARTS = {
+    INNER: 'inner',
+    OUTER: 'outer',
+} as const;
+
+export const POSITIONS = {
+    TOP: 'top',
+    BOTTOM: 'bottom',
+} as const;
+
+export const VARIANTS = {
+    THEME: {
+        DARK: 'dark',
+        LIGHT: 'light',
+    },
+    LAYOUT: {
+        DESKTOP: 'desktop',
+        MOBILE: 'mobile',
+    },
+} as const;
+
+export const ICONS = {
+    CHECKMARK: 'checkmark',
+    BACK_ARROW: 'backArrow',
+    DESKTOP: 'desktop',
+    MOBILE: 'mobile',
+} as const;
+
+export const FORMAT_TYPES = {
+    DEFAULT: 'default',
+    HEADER: 'header',
+    SUMMARY: 'summary',
+} as const;
+
+export const NUMERIC_CONSTANTS = {
+    SCROLL_THRESHOLD: 1,
+    DESKTOP_BREAKPOINT: '1024px',
+} as const;
+
+// --- END: Application-Wide Constants ---
 
 // --- Constants (Decoupled Data Sources) ---
 
@@ -141,43 +208,43 @@ const webTypeOptions = [
     { id: 'LACE_SEALING', title: 'LACE SEALING' }
 ];
 
-const optionsConfig: { id: keyof GloveConfiguration | 'build'; title: string; contentType: 'build' | 'gallery' | 'dual-color' | 'color' | 'text'; }[] = [
-    { id: 'build', title: 'Build Options', contentType: 'build' },
-    { id: 'web', title: 'Web', contentType: 'gallery' },
-    { id: 'thumb', title: 'Thumb Color', contentType: 'dual-color' },
-    { id: 'index', title: 'Index Color', contentType: 'color' },
-    { id: 'middle', title: 'Middle Color', contentType: 'dual-color' },
-    { id: 'ring', title: 'Ring Color', contentType: 'dual-color' },
-    { id: 'pinky', title: 'Pinky Color', contentType: 'dual-color' },
-    { id: 'thumbName', title: 'Thumb Name', contentType: 'text' },
-    { id: 'pinkyName', title: 'Pinky Name', contentType: 'text' },
+const optionsConfig: { id: keyof GloveConfiguration | 'build'; title: string; contentType: (typeof CONTENT_TYPES)[keyof Omit<typeof CONTENT_TYPES, 'SUMMARY'>]; }[] = [
+    { id: 'build', title: 'Build Options', contentType: CONTENT_TYPES.BUILD },
+    { id: 'web', title: 'Web', contentType: CONTENT_TYPES.GALLERY },
+    { id: 'thumb', title: 'Thumb Color', contentType: CONTENT_TYPES.DUAL_COLOR },
+    { id: 'index', title: 'Index Color', contentType: CONTENT_TYPES.COLOR },
+    { id: 'middle', title: 'Middle Color', contentType: CONTENT_TYPES.DUAL_COLOR },
+    { id: 'ring', title: 'Ring Color', contentType: CONTENT_TYPES.DUAL_COLOR },
+    { id: 'pinky', title: 'Pinky Color', contentType: CONTENT_TYPES.DUAL_COLOR },
+    { id: 'thumbName', title: 'Thumb Name', contentType: CONTENT_TYPES.TEXT },
+    { id: 'pinkyName', title: 'Pinky Name', contentType: CONTENT_TYPES.TEXT },
 ];
 
 const PANEL_NAME_MAP: { [key: string]: string } = {
-    'build': 'build',
-    'gallery': 'gallery',
-    'color': 'color',
-    'dual-color': 'dual-color',
-    'text': 'text',
-    'summary': 'summary'
+    [CONTENT_TYPES.BUILD]: 'build',
+    [CONTENT_TYPES.GALLERY]: 'gallery',
+    [CONTENT_TYPES.COLOR]: 'color',
+    [CONTENT_TYPES.DUAL_COLOR]: 'dual-color',
+    [CONTENT_TYPES.TEXT]: 'text',
+    [CONTENT_TYPES.SUMMARY]: 'summary'
 };
 
 interface GetColorDisplayOptions {
-    format?: 'default' | 'header' | 'summary';
+    format?: (typeof FORMAT_TYPES)[keyof typeof FORMAT_TYPES];
 }
 
 const getColorDisplay = (colorValue: HexColor | DualColor | WebConfig, options: GetColorDisplayOptions = {}): string => {
-    const { format = 'default' } = options;
+    const { format = FORMAT_TYPES.DEFAULT } = options;
     const getColorName = (hex: HexColor) => colorSwatches.find(c => c.hex === hex)?.name || hex;
     const isDual = typeof colorValue === 'object' && colorValue !== null && 'inner' in colorValue;
     const isGallery = typeof colorValue === 'object' && colorValue !== null && 'type' in colorValue;
 
     switch (format) {
-        case 'header':
+        case FORMAT_TYPES.HEADER:
             if (isDual) return `${getColorName(colorValue.inner)} · ${getColorName(colorValue.outer)}`;
             if (isGallery) return getColorName(colorValue.color);
             return getColorName(colorValue as HexColor);
-        case 'summary':
+        case FORMAT_TYPES.SUMMARY:
             if (isDual) return `Inner: ${getColorName(colorValue.inner)}, Outer: ${getColorName(colorValue.outer)}`;
             if (isGallery) return `Color: ${getColorName(colorValue.color)}`;
             return getColorName(colorValue as HexColor);
@@ -200,16 +267,16 @@ const initialState: AppState = {
         thumbName: { text: 'Thumb', font: 'SCRIPT', color: '#BDBDBD' },
         pinkyName: { text: 'Pinky', font: 'BLOCK', color: '#FFFFFF' },
     },
-    activeDualColorPart: 'inner',
+    activeDualColorPart: DUAL_COLOR_SUB_PARTS.INNER,
 };
 
 const gloveConfigReducer = (state: AppState, action: GloveAction): AppState => {
     switch (action.type) {
-        case 'UPDATE_BUILD':
+        case ACTION_TYPES.UPDATE_BUILD:
             return { ...state, configuration: { ...state.configuration, build: action.payload } };
-        case 'UPDATE_COLOR':
+        case ACTION_TYPES.UPDATE_COLOR:
             return { ...state, configuration: { ...state.configuration, [action.payload.id]: action.payload.color } };
-        case 'UPDATE_DUAL_COLOR':
+        case ACTION_TYPES.UPDATE_DUAL_COLOR:
             return {
                 ...state,
                 configuration: {
@@ -218,11 +285,11 @@ const gloveConfigReducer = (state: AppState, action: GloveAction): AppState => {
                 },
                 activeDualColorPart: action.payload.subPartId,
             };
-        case 'UPDATE_GALLERY':
+        case ACTION_TYPES.UPDATE_GALLERY:
             return { ...state, configuration: { ...state.configuration, web: action.payload } };
-        case 'UPDATE_TEXT':
+        case ACTION_TYPES.UPDATE_TEXT:
             return { ...state, configuration: { ...state.configuration, [action.payload.id]: action.payload.data } };
-        case 'APPLY_COLOR_TO_ALL': {
+        case ACTION_TYPES.APPLY_COLOR_TO_ALL: {
             const { color } = action.payload;
             if (!color) return state;
 
@@ -264,11 +331,11 @@ const useGloveConfigurator = () => {
 // --- Helper Components (Unchanged) ---
 
 interface ScrollGradientProps {
-    position: 'top' | 'bottom';
+    position: (typeof POSITIONS)[keyof typeof POSITIONS];
     isVisible: boolean;
 }
 const ScrollGradient = ({ position, isVisible }: ScrollGradientProps) => {
-    const isTop = position === 'top';
+    const isTop = position === POSITIONS.TOP;
     return <div className={`absolute left-0 right-0 h-[63px] ${isTop ? 'top-0 bg-gradient-to-b' : 'bottom-0 bg-gradient-to-t'} from-[#161616] to-transparent pointer-events-none z-10 transition-opacity duration-200 ${isVisible ? 'opacity-100' : 'opacity-0'}`} aria-hidden="true" />;
 };
 
@@ -300,19 +367,19 @@ const PrimaryCTAButton = ({ label, onClick, ariaLabel }: PrimaryCTAButtonProps) 
 interface SecondaryButtonProps {
     label: string;
     onClick: (event: React.MouseEvent<HTMLButtonElement>) => void;
-    variant?: 'dark' | 'light';
-    icon?: 'checkmark' | 'backArrow';
+    variant?: (typeof VARIANTS.THEME)[keyof typeof VARIANTS.THEME];
+    icon?: (typeof ICONS)[keyof typeof ICONS];
     disabled?: boolean;
 }
-const SecondaryButton = ({ label, onClick, variant = 'dark', icon = 'checkmark', disabled = false }: SecondaryButtonProps) => {
+const SecondaryButton = ({ label, onClick, variant = VARIANTS.THEME.DARK, icon = ICONS.CHECKMARK, disabled = false }: SecondaryButtonProps) => {
     const baseClasses = "w-full flex items-center justify-center px-4 text-base font-semibold h-[56px] focus:outline-none transition-opacity";
     const disabledClasses = "disabled:opacity-50 disabled:cursor-not-allowed";
-    const variantClasses = variant === 'light' ? 'bg-white hover:bg-gray-200 active:bg-gray-300 text-[#161616] focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-blue-400' : 'bg-[#393939] hover:bg-[#727272] active:bg-[#222222] text-white focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-white';
+    const variantClasses = variant === VARIANTS.THEME.LIGHT ? 'bg-white hover:bg-gray-200 active:bg-gray-300 text-[#161616] focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-blue-400' : 'bg-[#393939] hover:bg-[#727272] active:bg-[#222222] text-white focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-white';
     return (
         <button type="button" onClick={onClick} disabled={disabled} className={`${baseClasses} ${variantClasses} ${disabledClasses}`} aria-label={label}>
-            {icon === 'backArrow' && <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg" className="mr-[5px]"><path d="M13 7H1M1 7L7 1M1 7L7 13" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+            {icon === ICONS.BACK_ARROW && <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg" className="mr-[5px]"><path d="M13 7H1M1 7L7 1M1 7L7 13" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>}
             <span>{label}</span>
-            {icon === 'checkmark' && <svg className="w-5 h-5 ml-[5px]" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg>}
+            {icon === ICONS.CHECKMARK && <svg className="w-5 h-5 ml-[5px]" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg>}
         </button>
     );
 };
@@ -343,18 +410,18 @@ interface AccordionOptionHeaderProps {
     title: string;
     onClick: () => void;
     accessoryContent: ReactNode;
-    icon: 'desktop' | 'mobile';
+    icon: (typeof ICONS.DESKTOP) | (typeof ICONS.MOBILE);
     isOpen?: boolean;
-    variant: 'desktop' | 'mobile';
+    variant: (typeof VARIANTS.LAYOUT)[keyof typeof VARIANTS.LAYOUT];
 }
 const AccordionOptionHeader = ({ title, onClick, accessoryContent, icon, isOpen, variant }: AccordionOptionHeaderProps) => {
     const baseClasses = "w-full flex justify-between items-center text-left focus:outline-none focus-visible:ring-4 focus-visible:ring-inset";
-    const variantClasses = variant === 'desktop' ? "p-4 hover:bg-[#2A2A2A] transition-colors focus-visible:ring-white" : "py-3 h-[56px] mb-3 text-white focus-visible:ring-white/50";
+    const variantClasses = variant === VARIANTS.LAYOUT.DESKTOP ? "p-4 hover:bg-[#2A2A2A] transition-colors focus-visible:ring-white" : "py-3 h-[56px] mb-3 text-white focus-visible:ring-white/50";
     return (
         <button onClick={onClick} className={`${baseClasses} ${variantClasses}`}>
             <div className="flex items-center space-x-3">
-                {icon === 'desktop' && <svg className={`h-[15px] w-auto transform transition-transform duration-300 ${isOpen ? 'rotate-90' : 'rotate-0'}`} viewBox="0 0 10 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M1 1L8 8L1.10769 15" stroke="white" strokeWidth={2}/></svg>}
-                {icon === 'mobile' && <svg className="w-5 h-5 mr-2 transform rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>}
+                {icon === ICONS.DESKTOP && <svg className={`h-[15px] w-auto transform transition-transform duration-300 ${isOpen ? 'rotate-90' : 'rotate-0'}`} viewBox="0 0 10 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M1 1L8 8L1.10769 15" stroke="white" strokeWidth={2}/></svg>}
+                {icon === ICONS.MOBILE && <svg className="w-5 h-5 mr-2 transform rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>}
                 <h3 className="text-lg font-semibold">{title}</h3>
             </div>
             <div className="flex items-center">{accessoryContent}</div>
@@ -372,7 +439,7 @@ interface AccordionOptionDesktopProps {
 }
 const AccordionOptionDesktop = ({ title, children, isOpen, onToggle, headerContent, actionButton }: AccordionOptionDesktopProps) => (
     <div className="bg-[#1C1C1C] overflow-hidden pointer-events-auto">
-        <AccordionOptionHeader variant="desktop" title={title} onClick={onToggle} accessoryContent={headerContent} icon="desktop" isOpen={isOpen} />
+        <AccordionOptionHeader variant={VARIANTS.LAYOUT.DESKTOP} title={title} onClick={onToggle} accessoryContent={headerContent} icon={ICONS.DESKTOP} isOpen={isOpen} />
         <div className={`transition-all duration-500 ease-in-out grid ${isOpen ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'}`}>
             <div className="overflow-hidden">{isOpen && <div className="p-4">{children}{actionButton && <div className="mt-4">{actionButton}</div>}</div>}</div>
         </div>
@@ -394,7 +461,7 @@ const AccordionOptionMobile = ({ title, onClose, headerAccessory = null, childre
         if (!element) return;
         const hasOverflow = element.scrollHeight > element.clientHeight;
         setIsTopGradientVisible(hasOverflow && element.scrollTop > 0);
-        setIsBottomGradientVisible(hasOverflow && Math.abs(element.scrollHeight - element.clientHeight - element.scrollTop) >= 1);
+        setIsBottomGradientVisible(hasOverflow && Math.abs(element.scrollHeight - element.clientHeight - element.scrollTop) >= NUMERIC_CONSTANTS.SCROLL_THRESHOLD);
     }, []);
     useLayoutEffect(() => { checkAndSetGradients(); }, [children, checkAndSetGradients]);
     useEffect(() => {
@@ -409,11 +476,11 @@ const AccordionOptionMobile = ({ title, onClose, headerAccessory = null, childre
     }, [checkAndSetGradients]);
     return (
         <div className="absolute inset-0 bg-[#161616] z-20 h-full flex flex-col px-[23px]">
-            <AccordionOptionHeader variant="mobile" title={title} onClick={onClose} accessoryContent={headerAccessory} icon="mobile" />
+            <AccordionOptionHeader variant={VARIANTS.LAYOUT.MOBILE} title={title} onClick={onClose} accessoryContent={headerAccessory} icon={ICONS.MOBILE} />
             <div className="flex-grow relative overflow-hidden">
-                <ScrollGradient position="top" isVisible={isTopGradientVisible} />
+                <ScrollGradient position={POSITIONS.TOP} isVisible={isTopGradientVisible} />
                 <div className="h-full overflow-y-auto" ref={scrollContainerRef}>{children}</div>
-                <ScrollGradient position="bottom" isVisible={isBottomGradientVisible} />
+                <ScrollGradient position={POSITIONS.BOTTOM} isVisible={isBottomGradientVisible} />
             </div>
         </div>
     );
@@ -429,18 +496,18 @@ const ColorContent = ({ value, onChange }: ColorContentProps) => <ColorSwatchGri
 
 interface DualColorContentProps {
     value: DualColor;
-    onChange: (subPart: 'inner' | 'outer', color: HexColor) => void;
+    onChange: (subPart: (typeof DUAL_COLOR_SUB_PARTS)[keyof typeof DUAL_COLOR_SUB_PARTS], color: HexColor) => void;
     labels?: { inner: string; outer: string };
 }
 const DualColorContent = ({ value, onChange, labels = { inner: "Inner", outer: "Outer" } }: DualColorContentProps) => (
     <div className="space-y-4">
         <div>
             <h3 className="text-sm font-semibold text-gray-400 mb-2">{labels.inner}</h3>
-            <ColorSwatchGrid swatches={colorSwatches} selectedColor={value.inner} onColorSelect={(color) => onChange('inner', color)} />
+            <ColorSwatchGrid swatches={colorSwatches} selectedColor={value.inner} onColorSelect={(color) => onChange(DUAL_COLOR_SUB_PARTS.INNER, color)} />
         </div>
         <div>
             <h3 className="text-sm font-semibold text-gray-400 mb-2">{labels.outer}</h3>
-            <ColorSwatchGrid swatches={colorSwatches} selectedColor={value.outer} onColorSelect={(color) => onChange('outer', color)} />
+            <ColorSwatchGrid swatches={colorSwatches} selectedColor={value.outer} onColorSelect={(color) => onChange(DUAL_COLOR_SUB_PARTS.OUTER, color)} />
         </div>
     </div>
 );
@@ -494,7 +561,7 @@ interface BuildOptionProps {
 const BuildOption = ({ isDesktop }: BuildOptionProps) => {
     const { state, dispatch } = useGloveConfigurator();
     const { build: buildConfig } = state.configuration;
-    const onBuildConfigChange = (newConfig: BuildConfig) => dispatch({ type: 'UPDATE_BUILD', payload: newConfig });
+    const onBuildConfigChange = (newConfig: BuildConfig) => dispatch({ type: ACTION_TYPES.UPDATE_BUILD, payload: newConfig });
     return (
         <div className={`space-y-6 ${!isDesktop ? 'pb-4' : ''}`}>
             <div>
@@ -514,7 +581,7 @@ interface TextOptionProps {
 const TextOption = ({ contextId }: TextOptionProps) => {
     const { state, dispatch } = useGloveConfigurator();
     const value = state.configuration[contextId];
-    const onChange = (newValue: TextConfig) => dispatch({ type: 'UPDATE_TEXT', payload: { id: contextId, data: newValue } });
+    const onChange = (newValue: TextConfig) => dispatch({ type: ACTION_TYPES.UPDATE_TEXT, payload: { id: contextId, data: newValue } });
     return (
         <div className="space-y-5">
             <div>
@@ -541,7 +608,7 @@ interface GalleryOptionProps {
 const GalleryOption = ({ isDesktop }: GalleryOptionProps) => {
     const { state, dispatch } = useGloveConfigurator();
     const { web: config } = state.configuration;
-    const onConfigChange = (newConfig: WebConfig) => dispatch({ type: 'UPDATE_GALLERY', payload: newConfig });
+    const onConfigChange = (newConfig: WebConfig) => dispatch({ type: ACTION_TYPES.UPDATE_GALLERY, payload: newConfig });
     return (
         <div className={`space-y-6 ${!isDesktop ? 'pb-4' : ''}`}>
             <ImageGroup title="Type" layout="grid-cols-3" options={webTypeOptions} selectedOption={config.type} onSelectOption={(optionId) => onConfigChange({ ...config, type: optionId })} />
@@ -567,7 +634,7 @@ const GalleryPanel = ({ context, onClose }: GalleryPanelProps) => {
     const { state } = useGloveConfigurator();
     const headerAccessory = (
         <span className="text-sm text-gray-400 font-semibold truncate max-w-[150px]">
-            {`${webTypeOptions.find(opt => opt.id === state.configuration.web.type)?.title || ''} · ${getColorDisplay(state.configuration.web, {format: 'header'})}`}
+            {`${webTypeOptions.find(opt => opt.id === state.configuration.web.type)?.title || ''} · ${getColorDisplay(state.configuration.web, {format: FORMAT_TYPES.HEADER})}`}
         </span>
     );
     return (
@@ -599,7 +666,7 @@ const ColorPanel = ({ context, onClose }: ColorPanelProps) => {
 
     const headerAccessory = (
         <span className="text-sm text-gray-400 font-semibold">
-            {getColorDisplay(colorValue, { format: 'header' })}
+            {getColorDisplay(colorValue, { format: FORMAT_TYPES.HEADER })}
         </span>
     );
 
@@ -611,7 +678,7 @@ const ColorPanel = ({ context, onClose }: ColorPanelProps) => {
                     value={colorValue}
                     onChange={(subPart, color) =>
                         dispatch({
-                            type: 'UPDATE_DUAL_COLOR',
+                            type: ACTION_TYPES.UPDATE_DUAL_COLOR,
                             payload: { id: id as 'thumb' | 'middle' | 'ring' | 'pinky', subPartId: subPart, color }
                         })
                     }
@@ -622,7 +689,7 @@ const ColorPanel = ({ context, onClose }: ColorPanelProps) => {
                     value={colorValue}
                     onChange={(color) =>
                         dispatch({
-                            type: 'UPDATE_COLOR',
+                            type: ACTION_TYPES.UPDATE_COLOR,
                             payload: { id: id as 'index', color }
                         })
                     }
@@ -657,19 +724,19 @@ const OrderSummaryInfo = () => {
             <div>
                 <h3 className="text-lg font-semibold text-white mb-2">Color Scheme</h3>
                 <div className="space-y-1 pl-2">
-                    <p><span className="font-semibold text-gray-400">Thumb:</span> {getColorDisplay(thumb, { format: 'summary' })}</p>
-                    <p><span className="font-semibold text-gray-400">Index:</span> {getColorDisplay(index, { format: 'summary' })}</p>
-                    <p><span className="font-semibold text-gray-400">Middle:</span> {getColorDisplay(middle, { format: 'summary' })}</p>
-                    <p><span className="font-semibold text-gray-400">Ring:</span> {getColorDisplay(ring, { format: 'summary' })}</p>
-                    <p><span className="font-semibold text-gray-400">Pinky:</span> {getColorDisplay(pinky, { format: 'summary' })}</p>
-                    {web && <p><span className="font-semibold text-gray-400">Web Color:</span> {getColorDisplay(web.color, { format: 'summary' })}</p>}
+                    <p><span className="font-semibold text-gray-400">Thumb:</span> {getColorDisplay(thumb, { format: FORMAT_TYPES.SUMMARY })}</p>
+                    <p><span className="font-semibold text-gray-400">Index:</span> {getColorDisplay(index, { format: FORMAT_TYPES.SUMMARY })}</p>
+                    <p><span className="font-semibold text-gray-400">Middle:</span> {getColorDisplay(middle, { format: FORMAT_TYPES.SUMMARY })}</p>
+                    <p><span className="font-semibold text-gray-400">Ring:</span> {getColorDisplay(ring, { format: FORMAT_TYPES.SUMMARY })}</p>
+                    <p><span className="font-semibold text-gray-400">Pinky:</span> {getColorDisplay(pinky, { format: FORMAT_TYPES.SUMMARY })}</p>
+                    {web && <p><span className="font-semibold text-gray-400">Web Color:</span> {getColorDisplay(web.color, { format: FORMAT_TYPES.SUMMARY })}</p>}
                 </div>
             </div>
             <div>
                 <h3 className="text-lg font-semibold text-white mb-2">Personalization</h3>
                 <div className="space-y-1 pl-2">
-                    <p><span className="font-semibold text-gray-400">Thumb Name:</span> "{thumbName.text}" ({thumbName.font}, {getColorDisplay(thumbName.color, { format: 'summary' })})</p>
-                    <p><span className="font-semibold text-gray-400">Pinky Name:</span> "{pinkyName.text}" ({pinkyName.font}, {getColorDisplay(pinkyName.color, { format: 'summary' })})</p>
+                    <p><span className="font-semibold text-gray-400">Thumb Name:</span> "{thumbName.text}" ({thumbName.font}, {getColorDisplay(thumbName.color, { format: FORMAT_TYPES.SUMMARY })})</p>
+                    <p><span className="font-semibold text-gray-400">Pinky Name:</span> "{pinkyName.text}" ({pinkyName.font}, {getColorDisplay(pinkyName.color, { format: FORMAT_TYPES.SUMMARY })})</p>
                 </div>
             </div>
         </div>
@@ -707,11 +774,11 @@ const OrderButtonController = ({ isSummaryVisible, onReviewClick, onCompleteClic
 };
 
 type MobileAccordionState =
-  | { name: 'summary' }
-  | { name: 'build', context: BuildPanelProps['context'] }
-  | { name: 'gallery', context: GalleryPanelProps['context'] }
-  | { name: 'color' | 'dual-color', context: ColorPanelProps['context'] }
-  | { name: 'text', context: TextPanelProps['context'] }
+  | { name: typeof CONTENT_TYPES.SUMMARY }
+  | { name: typeof CONTENT_TYPES.BUILD, context: BuildPanelProps['context'] }
+  | { name: typeof CONTENT_TYPES.GALLERY, context: GalleryPanelProps['context'] }
+  | { name: typeof CONTENT_TYPES.COLOR | typeof CONTENT_TYPES.DUAL_COLOR, context: ColorPanelProps['context'] }
+  | { name: typeof CONTENT_TYPES.TEXT, context: TextPanelProps['context'] }
   | null;
 
 interface FooterMobileProps {
@@ -736,9 +803,9 @@ const FooterMobile = ({ openPanelName, onClosePanel, onReviewClick, onCompleteOr
         }
 
         switch (openAccordionOptionMobile.name) {
-            case 'color':
-            case 'dual-color':
-            case 'gallery': {
+            case CONTENT_TYPES.COLOR:
+            case CONTENT_TYPES.DUAL_COLOR:
+            case CONTENT_TYPES.GALLERY: {
                 // Type safety: In these cases, context and context.id are guaranteed to exist.
                 const { context } = openAccordionOptionMobile;
                 const colorValue = state.configuration[context.id];
@@ -750,22 +817,22 @@ const FooterMobile = ({ openPanelName, onClosePanel, onReviewClick, onCompleteOr
         }
     };
     const onApplyColorToAll = (color?: HexColor) => {
-        if (color) dispatch({ type: 'APPLY_COLOR_TO_ALL', payload: { color } });
+        if (color) dispatch({ type: ACTION_TYPES.APPLY_COLOR_TO_ALL, payload: { color } });
     };
     const colorToApply = getApplyAllColor();
     const panelFooterMap: { [key: string]: ReactElement } = {
-        color: <div className="w-full grid grid-cols-[1fr_1.618fr] gap-[10px]"><SecondaryButton label="Apply to All" onClick={() => onApplyColorToAll(colorToApply)} variant="dark" icon="checkmark" disabled={!colorToApply} /><SecondaryButton label="Continue" onClick={onClosePanel} variant="light" icon="checkmark" /></div>,
-        'dual-color': <div className="w-full grid grid-cols-[1fr_1.618fr] gap-[10px]"><SecondaryButton label="Apply to All" onClick={() => onApplyColorToAll(colorToApply)} variant="dark" icon="checkmark" disabled={!colorToApply} /><SecondaryButton label="Continue" onClick={onClosePanel} variant="light" icon="checkmark" /></div>,
-        build: <SecondaryButton label="Continue" onClick={onClosePanel} variant="light" icon="checkmark" />,
-        gallery: <div className="w-full grid grid-cols-[1fr_1.618fr] gap-[10px]"><SecondaryButton label="Apply to All" onClick={() => onApplyColorToAll(colorToApply)} variant="dark" icon="checkmark" disabled={!colorToApply} /><SecondaryButton label="Continue" onClick={onClosePanel} variant="light" icon="checkmark" /></div>,
-        text: <SecondaryButton label="Continue" onClick={onClosePanel} variant="light" icon="checkmark" />,
-        summary: <div className="w-full grid grid-cols-[1fr_1.618fr] gap-[10px]"><SecondaryButton label="Back" onClick={onClosePanel} variant="dark" icon="backArrow" /><OrderButtonController isSummaryVisible={true} onCompleteClick={onCompleteOrder} onReviewClick={() => {}} /></div>,
+        [PANEL_NAME_MAP[CONTENT_TYPES.COLOR]]: <div className="w-full grid grid-cols-[1fr_1.618fr] gap-[10px]"><SecondaryButton label="Apply to All" onClick={() => onApplyColorToAll(colorToApply)} variant={VARIANTS.THEME.DARK} icon={ICONS.CHECKMARK} disabled={!colorToApply} /><SecondaryButton label="Continue" onClick={onClosePanel} variant={VARIANTS.THEME.LIGHT} icon={ICONS.CHECKMARK} /></div>,
+        [PANEL_NAME_MAP[CONTENT_TYPES.DUAL_COLOR]]: <div className="w-full grid grid-cols-[1fr_1.618fr] gap-[10px]"><SecondaryButton label="Apply to All" onClick={() => onApplyColorToAll(colorToApply)} variant={VARIANTS.THEME.DARK} icon={ICONS.CHECKMARK} disabled={!colorToApply} /><SecondaryButton label="Continue" onClick={onClosePanel} variant={VARIANTS.THEME.LIGHT} icon={ICONS.CHECKMARK} /></div>,
+        [PANEL_NAME_MAP[CONTENT_TYPES.BUILD]]: <SecondaryButton label="Continue" onClick={onClosePanel} variant={VARIANTS.THEME.LIGHT} icon={ICONS.CHECKMARK} />,
+        [PANEL_NAME_MAP[CONTENT_TYPES.GALLERY]]: <div className="w-full grid grid-cols-[1fr_1.618fr] gap-[10px]"><SecondaryButton label="Apply to All" onClick={() => onApplyColorToAll(colorToApply)} variant={VARIANTS.THEME.DARK} icon={ICONS.CHECKMARK} disabled={!colorToApply} /><SecondaryButton label="Continue" onClick={onClosePanel} variant={VARIANTS.THEME.LIGHT} icon={ICONS.CHECKMARK} /></div>,
+        [PANEL_NAME_MAP[CONTENT_TYPES.TEXT]]: <SecondaryButton label="Continue" onClick={onClosePanel} variant={VARIANTS.THEME.LIGHT} icon={ICONS.CHECKMARK} />,
+        [PANEL_NAME_MAP[CONTENT_TYPES.SUMMARY]]: <div className="w-full grid grid-cols-[1fr_1.618fr] gap-[10px]"><SecondaryButton label="Back" onClick={onClosePanel} variant={VARIANTS.THEME.DARK} icon={ICONS.BACK_ARROW} /><OrderButtonController isSummaryVisible={true} onCompleteClick={onCompleteOrder} onReviewClick={() => {}} /></div>,
     };
     const defaultFooter = <div className="w-full grid grid-cols-[1fr_1.618fr] gap-[10px]"><OverviewButton onClick={onReviewClick} isDesktop={isDesktop} isOpen={false} /><OrderButtonController isSummaryVisible={false} onReviewClick={onReviewClick} onCompleteClick={onCompleteOrder} /></div>;
     return <footer className="flex-shrink-0 bg-[#161616] flex items-center justify-start pb-[20px] px-[14px] pt-[10px]">{openPanelName ? (panelFooterMap[openPanelName] || defaultFooter) : defaultFooter}</footer>;
 };
 
-const useBreakpoint = (breakpoint: string = '1024px'): boolean => {
+const useBreakpoint = (breakpoint: string = NUMERIC_CONSTANTS.DESKTOP_BREAKPOINT): boolean => {
     const query = `(min-width: ${breakpoint})`;
     const getInitialState = () => typeof window !== 'undefined' ? window.matchMedia(query).matches : false;
     const [isMatch, setIsMatch] = useState(getInitialState);
@@ -807,7 +874,7 @@ const OverviewDesktop = () => {
 const AccordionDesktop = () => {
     const { state, dispatch } = useGloveConfigurator();
     const { configuration, activeDualColorPart } = state;
-    const [openAccordion, setOpenAccordion] = useState<string | null>('build');
+    const [openAccordion, setOpenAccordion] = useState<string | null>(CONTENT_TYPES.BUILD);
     const accordionContainerRef = useRef<HTMLDivElement>(null);
     const [isTopGradientVisible, setTopGradientVisible] = useState(false);
     const [isBottomGradientVisible, setBottomGradientVisible] = useState(false);
@@ -821,7 +888,7 @@ const AccordionDesktop = () => {
         return undefined;
     };
     const handleApplyColorToAll = (colorString?: HexColor) => {
-        if (colorString) dispatch({ type: 'APPLY_COLOR_TO_ALL', payload: { color: colorString } });
+        if (colorString) dispatch({ type: ACTION_TYPES.APPLY_COLOR_TO_ALL, payload: { color: colorString } });
     };
 
     const checkAndSetGradients = useCallback(() => {
@@ -829,7 +896,7 @@ const AccordionDesktop = () => {
         if (!element) return;
         const hasOverflow = element.scrollHeight > element.clientHeight;
         setTopGradientVisible(hasOverflow && element.scrollTop > 0);
-        setBottomGradientVisible(hasOverflow && Math.abs(element.scrollHeight - element.clientHeight - element.scrollTop) >= 1);
+        setBottomGradientVisible(hasOverflow && Math.abs(element.scrollHeight - element.clientHeight - element.scrollTop) >= NUMERIC_CONSTANTS.SCROLL_THRESHOLD);
         setIsScrolled(element.scrollTop > 0);
     }, []);
 
@@ -850,22 +917,22 @@ const AccordionDesktop = () => {
         const isAccordionOpen = openAccordion === item.id;
         const configValue = configuration[item.id as keyof GloveConfiguration];
         switch (item.contentType) {
-            case 'gallery':
+            case CONTENT_TYPES.GALLERY:
                 const webConfig = configValue as WebConfig;
                 const webTypeTitle = webTypeOptions.find(opt => opt.id === webConfig.type)?.title || webConfig.type;
                 return (
                     <div className="flex items-center space-x-2">
                         <span className="text-sm text-gray-400 font-semibold truncate max-w-[100px]">{webTypeTitle}</span>
-                        {isAccordionOpen ? <span className="text-sm text-gray-400 font-semibold">{`· ${getColorDisplay(webConfig, { format: 'header' })}`}</span> : <span className="w-6 h-6 rounded-full border border-white/20" style={{ backgroundColor: webConfig.color }}></span>}
+                        {isAccordionOpen ? <span className="text-sm text-gray-400 font-semibold">{`· ${getColorDisplay(webConfig, { format: FORMAT_TYPES.HEADER })}`}</span> : <span className="w-6 h-6 rounded-full border border-white/20" style={{ backgroundColor: webConfig.color }}></span>}
                     </div>
                 );
-            case 'dual-color':
+            case CONTENT_TYPES.DUAL_COLOR:
                 const dualColorConfig = configValue as DualColor;
-                return isAccordionOpen ? <span className="text-sm text-gray-400 font-semibold">{getColorDisplay(dualColorConfig, { format: 'header' })}</span> : <div className="flex items-center space-x-2"><span className="w-6 h-6 rounded-full border border-white/20" style={{ backgroundColor: dualColorConfig.inner }}></span><span className="w-6 h-6 rounded-full border border-white/20" style={{ backgroundColor: dualColorConfig.outer }}></span></div>;
-            case 'color':
+                return isAccordionOpen ? <span className="text-sm text-gray-400 font-semibold">{getColorDisplay(dualColorConfig, { format: FORMAT_TYPES.HEADER })}</span> : <div className="flex items-center space-x-2"><span className="w-6 h-6 rounded-full border border-white/20" style={{ backgroundColor: dualColorConfig.inner }}></span><span className="w-6 h-6 rounded-full border border-white/20" style={{ backgroundColor: dualColorConfig.outer }}></span></div>;
+            case CONTENT_TYPES.COLOR:
                 const colorConfig = configValue as HexColor;
-                return isAccordionOpen ? <span className="text-sm text-gray-400 font-semibold">{getColorDisplay(colorConfig, { format: 'header' })}</span> : <span className="w-6 h-6 rounded-full border border-white/20" style={{ backgroundColor: colorConfig }}></span>;
-            case 'text':
+                return isAccordionOpen ? <span className="text-sm text-gray-400 font-semibold">{getColorDisplay(colorConfig, { format: FORMAT_TYPES.HEADER })}</span> : <span className="w-6 h-6 rounded-full border border-white/20" style={{ backgroundColor: colorConfig }}></span>;
+            case CONTENT_TYPES.TEXT:
                 const textConfig = configValue as TextConfig;
                 return <span className="text-sm text-gray-400 truncate max-w-[100px]">{textConfig.text}</span>;
             default:
@@ -877,7 +944,7 @@ const AccordionDesktop = () => {
         <div className="absolute top-0 left-0 bottom-0 w-[488px] z-10 bg-[#161616] p-10 pointer-events-none">
             <div className="absolute z-20 w-[70px] h-[49px] bg-gray-300 bg-opacity-75 flex items-center justify-center pointer-events-auto"><p className="font-bold text-xl text-gray-900">LOGO</p></div>
             <div className={`absolute ${isScrolled ? 'top-[82px]' : 'top-[142px]'} bottom-4 left-[40px] w-[400px] pointer-events-auto transition-all duration-30 ease-in-out overflow-hidden`}>
-                <ScrollGradient position="top" isVisible={isTopGradientVisible} />
+                <ScrollGradient position={POSITIONS.TOP} isVisible={isTopGradientVisible} />
                 <div ref={accordionContainerRef} className="h-full overflow-y-auto space-y-4">
                     {optionsConfig.map(item => (
                         <AccordionOptionDesktop
@@ -887,7 +954,7 @@ const AccordionDesktop = () => {
                             onToggle={() => handleAccordionToggle(item.id)}
                             headerContent={renderHeaderAccessory(item as any)}
                             actionButton={
-                                (item.contentType === 'color' || item.contentType === 'dual-color' || item.contentType === 'gallery') && (
+                                (item.contentType === CONTENT_TYPES.COLOR || item.contentType === CONTENT_TYPES.DUAL_COLOR || item.contentType === CONTENT_TYPES.GALLERY) && (
                                     <SecondaryButton
                                         label="Apply to All"
                                         onClick={() => handleApplyColorToAll(getActiveColor(configuration[item.id as keyof GloveConfiguration]))}
@@ -898,27 +965,27 @@ const AccordionDesktop = () => {
                             {(() => {
                                 // Use an Immediately Invoked Function Expression (IIFE) to handle conditional logic cleanly
                                 switch (item.contentType) {
-                                    case 'color':
+                                    case CONTENT_TYPES.COLOR:
                                         const colorValue = configuration[item.id as 'index'];
                                         return <ColorContent
                                             value={colorValue}
-                                            onChange={(color) => dispatch({ type: 'UPDATE_COLOR', payload: { id: 'index', color } })}
+                                            onChange={(color) => dispatch({ type: ACTION_TYPES.UPDATE_COLOR, payload: { id: 'index', color } })}
                                         />;
 
-                                    case 'dual-color':
+                                    case CONTENT_TYPES.DUAL_COLOR:
                                         const dualColorValue = configuration[item.id as 'thumb' | 'middle' | 'ring' | 'pinky'];
                                         return <DualColorContent
                                             value={dualColorValue}
-                                            onChange={(subPart, color) => dispatch({ type: 'UPDATE_DUAL_COLOR', payload: { id: item.id as 'thumb' | 'middle' | 'ring' | 'pinky', subPartId: subPart, color } })}
+                                            onChange={(subPart, color) => dispatch({ type: ACTION_TYPES.UPDATE_DUAL_COLOR, payload: { id: item.id as 'thumb' | 'middle' | 'ring' | 'pinky', subPartId: subPart, color } })}
                                         />;
 
-                                    case 'text':
+                                    case CONTENT_TYPES.TEXT:
                                         return <TextOption contextId={item.id as 'thumbName' | 'pinkyName'} />;
 
-                                    case 'gallery':
+                                    case CONTENT_TYPES.GALLERY:
                                         return <GalleryOption isDesktop={true} />;
 
-                                    case 'build':
+                                    case CONTENT_TYPES.BUILD:
                                         return <BuildOption isDesktop={true} />;
 
                                     default:
@@ -928,7 +995,7 @@ const AccordionDesktop = () => {
                         </AccordionOptionDesktop>
                     ))}
                 </div>
-                <ScrollGradient position="bottom" isVisible={isBottomGradientVisible} />
+                <ScrollGradient position={POSITIONS.BOTTOM} isVisible={isBottomGradientVisible} />
             </div>
         </div>
     );
@@ -951,7 +1018,7 @@ const AccordionMobile = ({ onOpenPanel, openAccordionOptionMobile }: AccordionMo
         if (!listElement) return;
         const hasOverflow = listElement.scrollHeight > listElement.clientHeight;
         setTopGradientVisible(hasOverflow && listElement.scrollTop > 0);
-        setBottomGradientVisible(hasOverflow && Math.abs(listElement.scrollHeight - listElement.clientHeight - listElement.scrollTop) >= 1);
+        setBottomGradientVisible(hasOverflow && Math.abs(listElement.scrollHeight - listElement.clientHeight - listElement.scrollTop) >= NUMERIC_CONSTANTS.SCROLL_THRESHOLD);
     }, []);
 
     useEffect(() => { checkAndSetGradients(); }, [checkAndSetGradients, openAccordionOptionMobile]);
@@ -970,17 +1037,17 @@ const AccordionMobile = ({ onOpenPanel, openAccordionOptionMobile }: AccordionMo
         if (item.id === 'build') return null;
         const configValue = configuration[item.id as keyof GloveConfiguration];
         switch (item.contentType) {
-            case 'gallery':
+            case CONTENT_TYPES.GALLERY:
                 const webConfig = configValue as WebConfig;
                 const webTypeTitle = webTypeOptions.find(opt => opt.id === webConfig.type)?.title || webConfig.type;
                 return <div className="flex items-center space-x-2"><span className="text-sm text-gray-400 font-semibold truncate max-w-[100px]">{webTypeTitle}</span><span className="w-6 h-6 rounded-full" style={{ backgroundColor: webConfig.color }}></span></div>;
-            case 'dual-color':
+            case CONTENT_TYPES.DUAL_COLOR:
                 const dualColorConfig = configValue as DualColor;
                 return <div className="flex items-center space-x-2"><span className="w-6 h-6 rounded-full" style={{ backgroundColor: dualColorConfig.inner }}></span><span className="w-6 h-6 rounded-full" style={{ backgroundColor: dualColorConfig.outer }}></span></div>;
-            case 'color':
+            case CONTENT_TYPES.COLOR:
                 const colorConfig = configValue as HexColor;
                 return <span className="w-6 h-6 rounded-full" style={{ backgroundColor: colorConfig }}></span>;
-            case 'text':
+            case CONTENT_TYPES.TEXT:
                 const textConfig = configValue as TextConfig;
                 return <span className="text-sm text-gray-400 truncate max-w-[100px]">{textConfig.text}</span>;
             default: return null;
@@ -989,7 +1056,7 @@ const AccordionMobile = ({ onOpenPanel, openAccordionOptionMobile }: AccordionMo
 
     return (
         <section ref={listContainerRef} className={`px-4 bg-[#161616] h-full overflow-y-auto ${openAccordionOptionMobile ? 'opacity-50 pointer-events-none' : ''}`} tabIndex={-1}>
-            <ScrollGradient position="top" isVisible={topGradientVisible} />
+            <ScrollGradient position={POSITIONS.TOP} isVisible={topGradientVisible} />
             {optionsConfig.map(item => (
                 <button key={item.id} data-id={item.id} className="w-full h-[56px] bg-[#1C1C1C] flex items-center justify-between px-4 mb-[10px] cursor-pointer hover:bg-[#2A2A2A] focus:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-white" onClick={() => onOpenPanel(item as any)}>
                     <div className="flex items-center">
@@ -999,7 +1066,7 @@ const AccordionMobile = ({ onOpenPanel, openAccordionOptionMobile }: AccordionMo
                     {renderAccessory(item as any)}
                 </button>
             ))}
-            <ScrollGradient position="bottom" isVisible={bottomGradientVisible} />
+            <ScrollGradient position={POSITIONS.BOTTOM} isVisible={bottomGradientVisible} />
         </section>
     );
 };
@@ -1040,21 +1107,21 @@ const UI = () => {
 
         // The switch statement leverages the discriminated union for full type safety
         switch (openAccordionOptionMobile.name) {
-            case 'summary':
+            case CONTENT_TYPES.SUMMARY:
                 return <SummaryPanel onClose={() => setOpenAccordionOptionMobile(null)} />;
 
-            case 'build':
+            case CONTENT_TYPES.BUILD:
                 return <BuildPanel context={openAccordionOptionMobile.context} onClose={() => setOpenAccordionOptionMobile(null)} />;
 
-            case 'gallery':
+            case CONTENT_TYPES.GALLERY:
                 return <GalleryPanel context={openAccordionOptionMobile.context} onClose={() => setOpenAccordionOptionMobile(null)} />;
 
-            case 'color':
-            case 'dual-color':
+            case CONTENT_TYPES.COLOR:
+            case CONTENT_TYPES.DUAL_COLOR:
                 // ✅ TypeScript knows the context is correct for ColorPanel here!
                 return <ColorPanel context={openAccordionOptionMobile.context} onClose={() => setOpenAccordionOptionMobile(null)} />;
 
-            case 'text':
+            case CONTENT_TYPES.TEXT:
                 return <TextPanel context={openAccordionOptionMobile.context} onClose={() => setOpenAccordionOptionMobile(null)} />;
 
             default:
@@ -1075,7 +1142,7 @@ const UI = () => {
                         {isVisualizationExpanded ? <svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-7 h-7"><path d="M17.3176 3.39899C16.9681 3.39899 16.6330 3.53795 16.3856 3.78514C16.1386 4.03232 15.9997 4.3675 15.9997 4.71725V10.3042C15.9997 10.9906 16.5561 11.547 17.2424 11.547L22.8324 11.547C23.1819 11.547 23.5173 11.408 23.7644 11.1609C24.0116 10.9139 24.1505 10.5785 24.1505 10.229C24.1505 9.87922 24.0116 9.54402 23.7644 9.29685C23.5173 9.04967 23.1819 8.9107 22.8324 8.9107H20.501L27.167 2.24612C27.4123 1.99854 27.5496 1.66397 27.5488 1.31541C27.5482 0.966682 27.4093 0.632697 27.1629 0.386154C26.9164 0.139575 26.5824 0.000809714 26.2337 1.87161e-06C25.8852 -0.000604998 25.5505 0.136743 25.3029 0.382111L18.6359 7.04824V4.71693C18.6359 4.36719 18.4969 4.03199 18.2498 3.78482C18.0026 3.53764 17.6673 3.39899 17.3176 3.39899Z" fill="white"/><path d="M24.1489 17.3166C24.1489 16.9671 24.0099 16.632 23.7627 16.3846C23.5155 16.1377 23.1804 15.9987 22.8306 15.9987H17.2437C16.5573 15.9987 16.0008 16.5551 16.0008 17.2414V22.8314C16.0008 23.1809 16.1398 23.5163 16.387 23.7634C16.634 24.0106 16.9694 24.1496 17.3189 24.1496C17.6686 24.1496 18.0038 24.0106 18.251 23.7634C18.4982 23.5163 18.6372 23.1809 18.6372 22.8314V20.5L25.3017 27.166C25.5493 27.4113 25.8839 27.5487 26.2324 27.5478C26.5812 27.5472 26.9152 27.4083 27.1617 27.1619C27.4083 26.9154 27.547 26.5814 27.5478 26.2328C27.5485 25.8843 27.4111 25.5495 27.1657 25.3019L20.4996 18.6349H22.8309C23.1807 18.6349 23.5159 18.496 23.763 18.2488C24.0102 18.0016 24.1489 17.6664 24.1489 17.3166Z" fill="white"/><path d="M10.2312 24.1479C10.5807 24.1479 10.9159 24.0089 11.1632 23.7617C11.4102 23.5146 11.5491 23.1794 11.5491 22.8296V17.2427C11.5491 16.5563 10.9928 15.9999 10.3064 15.9999H4.71642C4.36691 15.9999 4.03154 16.1388 3.7844 16.386C3.53724 16.633 3.39829 16.9684 3.39829 17.3179C3.39829 17.6677 3.53724 18.0029 3.7844 18.25C4.03156 18.4972 4.36691 18.6362 4.71642 18.6362H7.04786L0.381872 25.3008C0.136529 25.5483 -0.0008042 25.8829 3.54305e-06 26.2315C0.000610281 26.5802 0.139565 26.9142 0.385917 27.1607C0.632472 27.4073 0.966407 27.5461 1.31508 27.5469C1.66358 27.5475 1.9983 27.4101 2.24591 27.1648L8.91293 20.4986V22.8299C8.91293 23.1797 9.05189 23.5149 9.29905 23.7621C9.54621 24.0092 9.88149 24.1479 10.2312 24.1479Z" fill="white"/><path d="M3.39996 10.2302C3.39996 10.5797 3.53893 10.9149 3.78612 11.1622C4.0333 11.4092 4.36848 11.5482 4.71822 11.5482L10.3052 11.5482C10.9916 11.5482 11.548 10.9918 11.548 10.3055L11.548 4.71544C11.548 4.36594 11.409 4.03057 11.1618 3.78343C10.9149 3.53627 10.5795 3.39731 10.2299 3.39731C9.88019 3.39731 9.54499 3.53627 9.29783 3.78343C9.05064 4.03059 8.91168 4.36594 8.91168 4.71544V7.04688L2.2471 0.380895C1.99951 0.135552 1.66495 -0.00178075 1.31639 -0.00097302C0.967659 -0.000366296 0.633674 0.138588 0.387132 0.384941C0.140553 0.631495 0.00178728 0.96543 0.00097943 1.31411C0.000372556 1.6626 0.137721 1.99733 0.383088 2.24493L7.04922 8.91195H4.71791C4.36817 8.91195 4.03296 9.05091 3.7858 9.29807C3.53861 9.54523 3.39996 9.88052 3.39996 10.2302Z" fill="white"/></svg> : <svg viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-7 h-7"><path d="M28 1.24271C28 0.556382 27.4436 0 26.7572 0H21.1692C20.8195 0 20.4843 0.138953 20.2371 0.386114C19.9899 0.633274 19.851 0.968417 19.851 1.31792C19.851 1.66763 19.9899 2.0028 20.2371 2.24994C20.4843 2.4971 20.8195 2.63605 21.1692 2.63605H23.4991L16.8345 9.30049C16.5891 9.54805 16.4518 9.88279 16.4524 10.2313C16.4532 10.58 16.5920 10.914 16.8385 11.1605C17.0851 11.4068 17.4191 11.5456 17.7678 11.5464C18.1163 11.5472 18.4509 11.4099 18.6985 11.1645L25.3636 4.49957V6.83184C25.3636 7.18135 25.5024 7.51672 25.7498 7.76386C25.9969 8.01102 26.3321 8.14997 26.6819 8.14997C27.0314 8.14997 27.3666 8.01102 27.6138 7.76386C27.861 7.5167 27.9999 7.18135 27.9999 6.83184L28 1.24271Z" fill="white"/><path d="M11.1656 16.8327C10.9184 16.5856 10.5831 16.4468 10.2335 16.4468C9.88397 16.4468 9.54857 16.5856 9.30141 16.8327L2.63631 23.4992V21.167C2.63631 20.8175 2.49735 20.4821 2.25016 20.235C2.00298 19.9878 1.6678 19.8488 1.31805 19.8488C0.968513 19.8488 0.633316 19.9878 0.386152 20.235C0.138967 20.4821 0 20.8175 0 21.167V26.7565C0 27.4428 0.556426 27.9992 1.24281 27.9992H6.82977C7.17931 27.9992 7.51471 27.8602 7.76187 27.6133C8.00906 27.3661 8.14803 27.0307 8.14803 26.6812C8.14803 26.3315 8.00906 25.9964 7.76187 25.7492C7.51469 25.5021 7.17931 25.3631 6.82977 25.3631H4.49929L11.1654 18.6966C11.4126 18.4492 11.5514 18.1141 11.5514 17.7646C11.5514 17.4151 11.4126 17.0797 11.1654 16.8326L11.1656 16.8327Z" fill="white"/><path d="M19.8508 26.6821C19.8508 27.0316 19.9898 27.3667 20.237 27.6141C20.4841 27.861 20.8193 28 21.1691 28H26.756C27.4424 28 27.9988 27.4436 27.9988 26.7573V21.1673C27.9988 20.8178 27.8599 20.4824 27.6127 20.2353C27.3657 19.9881 27.0303 19.8492 26.6808 19.8492C26.331 19.8492 25.9958 19.8881 25.7487 20.2353C25.5015 20.4824 25.3625 20.8178 25.3625 21.1673V23.4987L18.6979 16.8327C18.4503 16.5874 18.1158 16.4501 17.7672 16.4509C17.4185 16.4515 17.0845 16.5904 16.838 16.8368C16.5914 17.0833 16.4526 17.4173 16.4518 17.7659C16.4512 18.1144 16.5886 18.4492 16.8339 18.6968L23.5001 25.3638H21.1687C20.819 25.3638 20.4838 25.5027 20.2366 25.7499C19.9895 25.9971 19.8505 26.3322 19.8505 26.6819L19.8508 26.6821Z" fill="white"/><path d="M11.1656 9.30049L4.50001 2.63605H6.82987C7.17941 2.63605 7.51481 2.4971 7.76198 2.24994C8.00916 2.00278 8.14813 1.66764 8.14813 1.31792C8.14813 0.968417 8.00916 0.633253 7.76198 0.386114C7.51479 0.138953 7.17941 0 6.82987 0H1.24292C0.55653 0 0.000103511 0.55637 0.000103511 1.24269V6.8322C0.000103511 7.1817 0.139071 7.51707 0.386255 7.76421C0.63344 8.01137 0.968616 8.15033 1.31816 8.15033C1.6679 8.15033 2.0031 8.01137 2.25027 7.76421C2.49745 7.51705 2.63642 7.1817 2.63642 6.8322V4.49993L9.30151 11.1649C9.5491 11.4102 9.88387 11.5476 10.2324 11.5467C10.5812 11.5459 10.9151 11.4072 11.1617 11.1608C11.4081 10.9143 11.5468 10.5803 11.5476 10.2317C11.5484 9.88317 11.4111 9.54845 11.1657 9.30084L11.1656 9.30049Z" fill="white"/> </svg>}
                     </button>}
                     <div className="flex items-center space-x-4">
-                        <div className="flex items-center space-x-1.5 text-gray-400"><svg viewBox="0 0 28 28" xmlns="http://www.w3.org/2000/svg" className="w-7 h-7"><path fillRule="evenodd" clipRule="evenodd" d="M13.9645 16.8222L11.6787 19.1079C11.3445 19.4429 11.3445 19.9857 11.6787 20.3204L13.9645 22.6062C14.2994 22.9404 14.8423 22.9404 15.177 22.6062C15.5112 22.2712 15.5112 21.7284 15.177 21.3937L13.4968 19.7143L15.177 18.0349C15.5112 17.7 15.5112 17.1572 15.177 16.8225C14.842 16.4883 14.2992 16.4883 13.9645 16.8225V16.8222Z" fill="currentColor"/><path fillRule="evenodd" clipRule="evenodd" d="M16.8217 14.0355L19.1074 16.3213C19.4424 16.6555 19.9852 16.6555 20.3199 16.3213L22.6057 14.0355C22.9399 13.7006 22.9399 13.1577 22.6057 12.823C22.2707 12.4888 21.7279 12.4888 21.3932 12.823L19.7138 14.5032L18.0344 12.823C17.6995 12.4888 17.1566 12.4888 16.8219 12.823C16.4877 13.158 16.4877 13.7008 16.8219 14.0355H16.8217Z" fill="currentColor"/><path fillRule="evenodd" clipRule="evenodd" d="M8.91752 18.3994C6.3032 17.9039 4.15009 17.0485 2.85341 15.9501C2.1539 15.3575 1.71386 14.7118 1.71386 14.0003C1.71386 12.9901 2.55339 12.1214 3.83099 11.3638C6.12361 10.0044 9.82882 9.14309 14 9.14309C18.171 9.14309 21.8761 10.0044 24.169 11.3638C25.4468 12.1215 26.2861 12.9901 26.2861 14.0003C26.2861 15.0106 25.4466 15.8792 24.169 16.6369C21.8764 17.9963 18.1712 18.8576 14 18.8576H12.2857C11.8125 18.8576 11.4285 19.2415 11.4285 19.7147C11.4285 20.1879 11.8125 20.5719 12.2857 20.5719H14C18.5338 20.5719 22.5507 19.5895 25.0428 18.1114C26.9561 16.9772 28 15.5136 28 14.0003C28 12.487 26.9561 11.0237 25.0428 9.88929C22.5507 8.41093 18.5335 7.42878 14 7.42878C9.4665 7.42878 5.44931 8.41119 2.95718 9.88929C1.04387 11.0235 0 12.487 0 14.0003C0 15.1644 0.600521 16.2884 1.74567 17.2581C3.21534 18.5027 5.6355 19.5221 8.59902 20.0839C9.06357 20.1719 9.5128 19.8663 9.60083 19.401C9.68885 18.9364 9.38323 18.4872 8.91791 18.3992L8.91752 18.3994Z" fill="currentColor"/><path fillRule="evenodd" clipRule="evenodd" d="M18.3988 19.0825C17.9034 21.6968 17.048 23.8499 15.9496 25.1466C15.3569 25.8461 14.7113 26.2861 13.9998 26.2861C12.9896 26.2861 12.1209 25.4466 11.3633 24.169C10.0038 21.8764 9.14257 18.1712 9.14257 14C9.14257 9.82902 10.0038 6.12393 11.3633 3.83099C12.121 2.55319 12.9896 1.71386 13.9998 1.71386C15.01 1.71386 15.8787 2.55339 16.6363 3.83099C17.9958 6.12361 18.857 9.82882 18.857 14V15.7143C18.857 16.1875 19.241 16.5715 19.7142 16.5715C20.1874 16.5715 20.5714 16.1875 20.5714 15.7143V14C20.5714 9.46623 19.5889 5.44931 18.1108 2.95718C16.9766 1.04387 15.5131 0 13.9998 0C12.4865 0 11.0232 1.04387 9.88877 2.95718C8.41041 5.44931 7.42825 9.4665 7.42825 14C7.42825 18.5335 8.41067 22.5507 9.88877 25.0428C11.023 26.9561 12.4865 28 13.9998 28C15.1638 28 16.2878 27.3995 17.2575 26.2543C18.5022 24.7847 19.5216 22.3645 20.0834 19.401C20.1714 18.9364 19.8658 18.4872 19.4005 18.3992C18.9359 18.3112 18.4867 18.6168 18.3986 19.0821L18.3988 19.0825Z" fill="currentColor"/></svg><span>Drag to Rotate</span></div>
+                        <div className="flex items-center space-x-1.5 text-gray-400"><svg viewBox="0 0 28 28" xmlns="http://www.w3.org/2000/svg" className="w-7 h-7"><path fillRule="evenodd" clipRule="evenodd" d="M13.9645 16.8222L11.6787 19.1079C11.3445 19.4429 11.3445 19.9857 11.6787 20.3204L13.9645 22.6062C14.2994 22.9404 14.8423 22.9404 15.177 22.6062C15.5112 22.2712 15.5112 21.7284 15.177 21.3937L13.4968 19.7143L15.177 18.0349C15.5112 17.7 15.5112 17.1572 15.177 16.8225C14.842 16.4883 14.2992 16.4883 13.9645 16.8225V16.8222Z" fill="currentColor"/><path fillRule="evenodd" clipRule="evenodd" d="M16.8217 14.0355L19.1074 16.3213C19.4424 16.6555 19.9852 16.6555 20.3199 16.3213L22.6057 14.0355C22.9399 13.7006 22.9399 13.1577 22.6057 12.823C22.2707 12.4888 21.7279 12.4888 21.3932 12.823L19.7138 14.5032L18.0344 12.823C17.6995 12.4888 17.1566 12.4888 16.8219 12.823C16.4877 13.158 16.4877 13.7008 16.8219 14.0355H16.8217Z" fill="currentColor"/><path fillRule="evenodd" clipRule="evenodd" d="M8.91752 18.3994C6.3032 17.9039 4.15009 17.0485 2.85341 15.9501C2.1539 15.3575 1.71386 14.7118 1.71386 14.0003C1.71386 12.9901 2.55339 12.1214 3.83099 11.3638C6.12361 10.0044 9.82882 9.14309 14 9.14309C18.171 9.14309 21.8761 10.0044 24.169 11.3638C25.4468 12.1215 26.2861 12.9901 26.2861 14.0003C26.2861 15.0106 25.4466 15.8792 24.169 16.6369C21.8764 17.9963 18.1712 18.8576 14 18.8576H12.2857C11.8125 18.8576 11.4285 19.2415 11.4285 19.7147C11.4285 20.1879 11.8125 20.5719 12.2857 20.5719H14C18.5338 20.5719 22.5507 19.5889 25.0428 18.1114C26.9561 16.9772 28 15.5136 28 14.0003C28 12.487 26.9561 11.0237 25.0428 9.88929C22.5507 8.41093 18.5335 7.42878 14 7.42878C9.4665 7.42878 5.44931 8.41119 2.95718 9.88929C1.04387 11.0235 0 12.487 0 14.0003C0 15.1644 0.600521 16.2884 1.74567 17.2581C3.21534 18.5027 5.6355 19.5221 8.59902 20.0839C9.06357 20.1719 9.5128 19.8663 9.60083 19.401C9.68885 18.9364 9.38323 18.4872 8.91791 18.3992L8.91752 18.3994Z" fill="currentColor"/><path fillRule="evenodd" clipRule="evenodd" d="M18.3988 19.0825C17.9034 21.6968 17.048 23.8499 15.9496 25.1466C15.3569 25.8461 14.7113 26.2861 13.9998 26.2861C12.9896 26.2861 12.1209 25.4466 11.3633 24.169C10.0038 21.8764 9.14257 18.1712 9.14257 14C9.14257 9.82902 10.0038 6.12393 11.3633 3.83099C12.121 2.55319 12.9896 1.71386 13.9998 1.71386C15.01 1.71386 15.8787 2.55339 16.6363 3.83099C17.9958 6.12361 18.857 9.82882 18.857 14V15.7143C18.857 16.1875 19.241 16.5715 19.7142 16.5715C20.1874 16.5715 20.5714 16.1875 20.5714 15.7143V14C20.5714 9.46623 19.5889 5.44931 18.1108 2.95718C16.9766 1.04387 15.5131 0 13.9998 0C12.4865 0 11.0232 1.04387 9.88877 2.95718C8.41041 5.44931 7.42825 9.4665 7.42825 14C7.42825 18.5335 8.41067 22.5507 9.88877 25.0428C11.023 26.9561 12.4865 28 13.9998 28C15.1638 28 16.2878 27.3995 17.2575 26.2543C18.5022 24.7847 19.5216 22.3645 20.0834 19.401C20.1714 18.9364 19.8658 18.4872 19.4005 18.3992C18.9359 18.3112 18.4867 18.6168 18.3986 19.0821L18.3988 19.0825Z" fill="currentColor"/></svg><span>Drag to Rotate</span></div>
                         <div className="flex items-center space-x-1.5 text-gray-400"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" className="w-7 h-7"><path d="M17.7074 0.622701C13.7678 -0.849719 9.19902 0.35492 6.54529 3.54063C3.34439 7.42228 4.00108 12.4284 6.79166 15.7212C4.60296 17.8895 2.41426 20.0312 0.225712 22.1728C-0.0752372 22.4673 -0.0752372 22.976 0.225712 23.2705L0.745564 23.7791C1.04651 24.0736 1.56636 24.0736 1.8673 23.7791C4.08325 21.6108 6.27195 19.4691 8.48796 17.3007C10.4851 18.7731 13.0568 19.5226 15.902 19.0407C20.6076 18.2375 23.8906 14.1952 24 9.59073C23.8905 5.62857 21.5102 2.06825 17.7076 0.622653L17.7074 0.622701ZM14.1783 17.6219C9.69157 17.6219 5.97086 13.9544 5.97086 9.59078C5.97086 5.20044 9.71888 1.53289 14.1783 1.55966C18.7471 1.55966 22.3037 5.20044 22.3857 9.59078C22.2762 13.9811 18.7471 17.6219 14.1783 17.6219Z" fill="currentColor"/><path d="M14.7527 4.2367H13.3848V8.92152H8.81601V10.26H13.3848V14.9449H14.7527V10.26H19.7593V8.92152H14.7527V4.2367Z" fill="currentColor"/></svg><span>Pinch to Zoom</span></div>
                     </div>
                     <div className="p-1 w-7 h-7" aria-hidden="true"></div>
@@ -1101,7 +1168,7 @@ const UI = () => {
                             openPanelName={openAccordionOptionMobile?.name}
                             onClosePanel={() => setOpenAccordionOptionMobile(null)}
                             onCompleteOrder={() => alert('Complete Order clicked!')}
-                            onReviewClick={() => setOpenAccordionOptionMobile({ name: 'summary' })}
+                            onReviewClick={() => setOpenAccordionOptionMobile({ name: CONTENT_TYPES.SUMMARY })}
                             isDesktop={isDesktop}
                             openAccordionOptionMobile={openAccordionOptionMobile}
                         />
