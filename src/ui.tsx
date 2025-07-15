@@ -60,6 +60,31 @@ type GloveAction =
 
 // --- END: Core Type Definitions ---
 
+// --- START: ADD NEW PANEL PROP TYPES ---
+// Define the specific IDs each panel type will handle
+type ColorPartId = 'thumb' | 'index' | 'middle' | 'ring' | 'pinky';
+type TextPartId = 'thumbName' | 'pinkyName';
+type GalleryPartId = 'web';
+
+// Define the exact props for each panel component
+interface BuildPanelProps {
+  context: { title: string };
+  onClose: () => void;
+}
+interface ColorPanelProps {
+  context: { id: ColorPartId; title: string };
+  onClose: () => void;
+}
+interface TextPanelProps {
+  context: { id: TextPartId; title: string };
+  onClose: () => void;
+}
+interface GalleryPanelProps {
+  context: { id: GalleryPartId; title: string };
+  onClose: () => void;
+}
+// --- END: ADD NEW PANEL PROP TYPES ---
+
 // --- Constants (Decoupled Data Sources) ---
 
 const leatherOptions = [
@@ -530,20 +555,15 @@ const GalleryOption = ({ isDesktop }: GalleryOptionProps) => {
 
 // --- START: NEW COMPONENT RENDERER MAPS ---
 
-interface PanelProps {
-    context: { id: keyof GloveConfiguration, title: string };
-    onClose: () => void;
-}
-
 const SummaryPanel = ({ onClose }: { onClose: () => void }) => <OverviewMobile onClose={onClose} />;
 
-const BuildPanel = ({ context, onClose }: { context: { title: string }, onClose: () => void }) => (
+const BuildPanel = ({ context, onClose }: BuildPanelProps) => (
     <AccordionOptionMobile title={context.title} onClose={onClose}>
         <BuildOption isDesktop={false} />
     </AccordionOptionMobile>
 );
 
-const GalleryPanel = ({ context, onClose }: PanelProps) => {
+const GalleryPanel = ({ context, onClose }: GalleryPanelProps) => {
     const { state } = useGloveConfigurator();
     const headerAccessory = (
         <span className="text-sm text-gray-400 font-semibold truncate max-w-[150px]">
@@ -557,21 +577,20 @@ const GalleryPanel = ({ context, onClose }: PanelProps) => {
     );
 };
 
-const TextPanel = ({ context, onClose }: PanelProps) => {
+const TextPanel = ({ context, onClose }: TextPanelProps) => {
     const { state } = useGloveConfigurator();
-    const headerAccessory = <span className="text-sm text-gray-400 truncate max-w-[100px]">{state.configuration[context.id as 'thumbName' | 'pinkyName'].text}</span>;
+    const headerAccessory = <span className="text-sm text-gray-400 truncate max-w-[100px]">{state.configuration[context.id].text}</span>;
     return (
         <AccordionOptionMobile title={context.title} onClose={onClose} headerAccessory={headerAccessory}>
-            <TextOption contextId={context.id as 'thumbName' | 'pinkyName'} />
+            <TextOption contextId={context.id} />
         </AccordionOptionMobile>
     );
 };
 
-const ColorPanel = ({ context, onClose }: PanelProps) => {
+const ColorPanel = ({ context, onClose }: ColorPanelProps) => {
     const { state, dispatch } = useGloveConfigurator();
     const { id, title } = context;
-    // `colorValue` is currently of a broad type, but we know its possibilities here.
-    const colorValue = state.configuration[id] as HexColor | DualColor;
+    const colorValue = state.configuration[id];
 
     // This is the improved, more explicit type guard.
     const isDual = (value: HexColor | DualColor): value is DualColor => {
@@ -611,15 +630,6 @@ const ColorPanel = ({ context, onClose }: PanelProps) => {
             )}
         </AccordionOptionMobile>
     );
-};
-
-const MobilePanelRendererMap: { [key: string]: React.ComponentType<any> } = {
-    'summary': SummaryPanel,
-    'build': BuildPanel,
-    'gallery': GalleryPanel,
-    'color': ColorPanel,
-    'dual-color': ColorPanel,
-    'text': TextPanel,
 };
 
 // --- END: NEW COMPONENT RENDERER MAPS ---
@@ -696,7 +706,14 @@ const OrderButtonController = ({ isSummaryVisible, onReviewClick, onCompleteClic
     return isSummaryVisible ? <PrimaryCTAButton label="Complete Order" onClick={onCompleteClick} ariaLabel="Complete Order" /> : <PrimaryCTAButton label="Review & Order" onClick={onReviewClick} ariaLabel="Review and Order" />;
 };
 
-type MobileAccordionState = { name: string; context: { id: keyof GloveConfiguration, title: string } } | { name: 'summary' | 'build' } | null;
+type MobileAccordionState =
+  | { name: 'summary' }
+  | { name: 'build', context: BuildPanelProps['context'] }
+  | { name: 'gallery', context: GalleryPanelProps['context'] }
+  | { name: 'color' | 'dual-color', context: ColorPanelProps['context'] }
+  | { name: 'text', context: TextPanelProps['context'] }
+  | null;
+
 interface FooterMobileProps {
     openPanelName?: string | null;
     onClosePanel: () => void;
@@ -714,9 +731,23 @@ const FooterMobile = ({ openPanelName, onClosePanel, onReviewClick, onCompleteOr
         return undefined;
     };
     const getApplyAllColor = (): HexColor | undefined => {
-        if (!openAccordionOptionMobile || !('context' in openAccordionOptionMobile) || !openAccordionOptionMobile.context) return undefined;
-        const colorValue = state.configuration[openAccordionOptionMobile.context.id];
-        return getActiveColor(colorValue);
+        if (!openAccordionOptionMobile) {
+            return undefined;
+        }
+
+        switch (openAccordionOptionMobile.name) {
+            case 'color':
+            case 'dual-color':
+            case 'gallery': {
+                // Type safety: In these cases, context and context.id are guaranteed to exist.
+                const { context } = openAccordionOptionMobile;
+                const colorValue = state.configuration[context.id];
+                return getActiveColor(colorValue);
+            }
+            // Handle all other panel types where "Apply to All" is not applicable.
+            default:
+                return undefined;
+        }
     };
     const onApplyColorToAll = (color?: HexColor) => {
         if (color) dispatch({ type: 'APPLY_COLOR_TO_ALL', payload: { color } });
@@ -983,7 +1014,10 @@ const UI = () => {
 
     const handleOpenPanel = (item: typeof optionsConfig[0]) => {
         const panelName = PANEL_NAME_MAP[item.contentType];
-        setOpenAccordionOptionMobile({ name: panelName, context: { id: item.id, title: item.title } } as any);
+        // The `as any` here is a single, contained concession that bridges our
+        // data array (`optionsConfig`) to our strictly-typed state.
+        // It's acceptable because it happens at the "entry point" of the logic.
+        setOpenAccordionOptionMobile({ name: panelName, context: item } as any);
     };
 
     const GOLDEN_RATIO_CONSTANT = 1.618;
@@ -1003,18 +1037,29 @@ const UI = () => {
     // RENDER MOBILE PANEL DYNAMICALLY
     const renderMobilePanel = () => {
         if (!openAccordionOptionMobile) return null;
-        const PanelComponent = MobilePanelRendererMap[openAccordionOptionMobile.name];
-        if (!PanelComponent) return null;
-        return (
-            <div className="absolute inset-0 z-30 flex flex-col bg-[#161616]">
-                <div className="flex-grow relative overflow-hidden pt-[10px]">
-                    <PanelComponent
-                        context={'context' in openAccordionOptionMobile ? openAccordionOptionMobile.context : undefined}
-                        onClose={() => setOpenAccordionOptionMobile(null)}
-                    />
-                </div>
-            </div>
-        );
+
+        // The switch statement leverages the discriminated union for full type safety
+        switch (openAccordionOptionMobile.name) {
+            case 'summary':
+                return <SummaryPanel onClose={() => setOpenAccordionOptionMobile(null)} />;
+
+            case 'build':
+                return <BuildPanel context={openAccordionOptionMobile.context} onClose={() => setOpenAccordionOptionMobile(null)} />;
+
+            case 'gallery':
+                return <GalleryPanel context={openAccordionOptionMobile.context} onClose={() => setOpenAccordionOptionMobile(null)} />;
+
+            case 'color':
+            case 'dual-color':
+                // ✅ TypeScript knows the context is correct for ColorPanel here!
+                return <ColorPanel context={openAccordionOptionMobile.context} onClose={() => setOpenAccordionOptionMobile(null)} />;
+
+            case 'text':
+                return <TextPanel context={openAccordionOptionMobile.context} onClose={() => setOpenAccordionOptionMobile(null)} />;
+
+            default:
+                return null;
+        }
     };
 
     return (
