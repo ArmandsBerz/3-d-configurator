@@ -5,16 +5,12 @@ import React, { useState, useRef, useLayoutEffect, useCallback, useEffect, creat
 type HexColor = string;
 type Font = 'SCRIPT' | 'BLOCK';
 
-interface DualColor {
-    inner: HexColor;
-    outer: HexColor;
-}
-
-interface TextConfig {
-    text: string;
-    font: Font;
-    color: HexColor;
-}
+// --- REFACTORED: Standardized Part Shapes ---
+type SingleColorPart = { type: 'single'; color: HexColor };
+type DualColorPart = { type: 'dual'; inner: HexColor; outer: HexColor };
+type WebPart = { type: 'web'; webType: string; color: HexColor };
+type TextPart = { type: 'text'; text: string; font: Font; color: HexColor };
+type ColorablePart = SingleColorPart | DualColorPart | WebPart | TextPart;
 
 interface BuildConfig {
     imageSelection: 'imgOpt1' | 'imgOpt2';
@@ -25,22 +21,17 @@ interface BuildConfig {
     throwingHand: 'RIGHT HAND' | 'LEFT HAND';
 }
 
-interface WebConfig {
-    type: string; // Or a specific union type of all web IDs
-    color: HexColor;
-}
-
 // The shape of your main configuration object
 interface GloveConfiguration {
     build: BuildConfig;
-    web: WebConfig;
-    thumb: DualColor;
-    index: HexColor;
-    middle: DualColor;
-    ring: DualColor;
-    pinky: DualColor;
-    thumbName: TextConfig;
-    pinkyName: TextConfig;
+    web: WebPart;
+    thumb: DualColorPart;
+    index: SingleColorPart;
+    middle: DualColorPart;
+    ring: DualColorPart;
+    pinky: DualColorPart;
+    thumbName: TextPart;
+    pinkyName: TextPart;
 }
 
 // The complete state managed by the reducer
@@ -54,8 +45,8 @@ type GloveAction =
     | { type: typeof ACTION_TYPES.UPDATE_BUILD; payload: BuildConfig }
     | { type: typeof ACTION_TYPES.UPDATE_COLOR; payload: { id: 'index'; color: HexColor } }
     | { type: typeof ACTION_TYPES.UPDATE_DUAL_COLOR; payload: { id: 'thumb' | 'middle' | 'ring' | 'pinky'; subPartId: (typeof DUAL_COLOR_SUB_PARTS)[keyof typeof DUAL_COLOR_SUB_PARTS]; color: HexColor } }
-    | { type: typeof ACTION_TYPES.UPDATE_GALLERY; payload: WebConfig }
-    | { type: typeof ACTION_TYPES.UPDATE_TEXT; payload: { id: 'thumbName' | 'pinkyName'; data: TextConfig } }
+    | { type: typeof ACTION_TYPES.UPDATE_GALLERY; payload: WebPart }
+    | { type: typeof ACTION_TYPES.UPDATE_TEXT; payload: { id: 'thumbName' | 'pinkyName'; data: TextPart } }
     | { type: typeof ACTION_TYPES.APPLY_COLOR_TO_ALL; payload: { color: HexColor } };
 
 // --- END: Core Type Definitions ---
@@ -233,23 +224,28 @@ interface GetColorDisplayOptions {
     format?: (typeof FORMAT_TYPES)[keyof typeof FORMAT_TYPES];
 }
 
-const getColorDisplay = (colorValue: HexColor | DualColor | WebConfig, options: GetColorDisplayOptions = {}): string => {
+const getColorDisplay = (colorValue: SingleColorPart | DualColorPart | WebPart | TextPart | HexColor, options: GetColorDisplayOptions = {}): string => {
     const { format = FORMAT_TYPES.DEFAULT } = options;
     const getColorName = (hex: HexColor) => colorSwatches.find(c => c.hex === hex)?.name || hex;
-    const isDual = typeof colorValue === 'object' && colorValue !== null && 'inner' in colorValue;
-    const isGallery = typeof colorValue === 'object' && colorValue !== null && 'type' in colorValue;
+    
+    // Handle the case where a raw hex string is passed for simplicity (e.g., from text config)
+    if (typeof colorValue === 'string') {
+        return getColorName(colorValue);
+    }
 
     switch (format) {
         case FORMAT_TYPES.HEADER:
-            if (isDual) return `${getColorName(colorValue.inner)} · ${getColorName(colorValue.outer)}`;
-            if (isGallery) return getColorName(colorValue.color);
-            return getColorName(colorValue as HexColor);
+            if (colorValue.type === 'dual') return `${getColorName(colorValue.inner)} · ${getColorName(colorValue.outer)}`;
+            if (colorValue.type === 'web') return getColorName(colorValue.color);
+            if (colorValue.type === 'single') return getColorName(colorValue.color);
+            return getColorName(colorValue.color);
         case FORMAT_TYPES.SUMMARY:
-            if (isDual) return `Inner: ${getColorName(colorValue.inner)}, Outer: ${getColorName(colorValue.outer)}`;
-            if (isGallery) return `Color: ${getColorName(colorValue.color)}`;
-            return getColorName(colorValue as HexColor);
+            if (colorValue.type === 'dual') return `Inner: ${getColorName(colorValue.inner)}, Outer: ${getColorName(colorValue.outer)}`;
+            if (colorValue.type === 'web') return `Color: ${getColorName(colorValue.color)}`;
+            if (colorValue.type === 'single') return getColorName(colorValue.color);
+            return getColorName(colorValue.color);
         default:
-            return typeof colorValue === 'object' && colorValue !== null ? JSON.stringify(colorValue) : colorValue;
+            return JSON.stringify(colorValue);
     }
 };
 
@@ -258,14 +254,14 @@ const getColorDisplay = (colorValue: HexColor | DualColor | WebConfig, options: 
 const initialState: AppState = {
     configuration: {
         build: { imageSelection: 'imgOpt1', position: 'OUTFIELD', size: '11"', handOpeningSize: 'ADULT', stiffness: 'STANDARD', throwingHand: 'RIGHT HAND' },
-        web: { type: 'MOD_TRAP', color: '#C62828' },
-        thumb: { inner: '#C62828', outer: '#2E7D32' },
-        index: '#1565C0',
-        middle: { inner: '#2E7D32', outer: '#C62828' },
-        ring: { inner: '#F9A825', outer: '#6A1B9A' },
-        pinky: { inner: '#6A1B9A', outer: '#F9A825' },
-        thumbName: { text: 'Thumb', font: 'SCRIPT', color: '#BDBDBD' },
-        pinkyName: { text: 'Pinky', font: 'BLOCK', color: '#FFFFFF' },
+        web: { type: 'web', webType: 'MOD_TRAP', color: '#C62828' },
+        thumb: { type: 'dual', inner: '#C62828', outer: '#2E7D32' },
+        index: { type: 'single', color: '#1565C0' },
+        middle: { type: 'dual', inner: '#2E7D32', outer: '#C62828' },
+        ring: { type: 'dual', inner: '#F9A825', outer: '#6A1B9A' },
+        pinky: { type: 'dual', inner: '#6A1B9A', outer: '#F9A825' },
+        thumbName: { type: 'text', text: 'Thumb', font: 'SCRIPT', color: '#BDBDBD' },
+        pinkyName: { type: 'text', text: 'Pinky', font: 'BLOCK', color: '#FFFFFF' },
     },
     activeDualColorPart: DUAL_COLOR_SUB_PARTS.INNER,
 };
@@ -275,13 +271,13 @@ const gloveConfigReducer = (state: AppState, action: GloveAction): AppState => {
         case ACTION_TYPES.UPDATE_BUILD:
             return { ...state, configuration: { ...state.configuration, build: action.payload } };
         case ACTION_TYPES.UPDATE_COLOR:
-            return { ...state, configuration: { ...state.configuration, [action.payload.id]: action.payload.color } };
+            return { ...state, configuration: { ...state.configuration, [action.payload.id]: { type: 'single', color: action.payload.color } } };
         case ACTION_TYPES.UPDATE_DUAL_COLOR:
             return {
                 ...state,
                 configuration: {
                     ...state.configuration,
-                    [action.payload.id]: { ...(state.configuration[action.payload.id] as DualColor), [action.payload.subPartId]: action.payload.color },
+                    [action.payload.id]: { ...state.configuration[action.payload.id], [action.payload.subPartId]: action.payload.color },
                 },
                 activeDualColorPart: action.payload.subPartId,
             };
@@ -297,12 +293,12 @@ const gloveConfigReducer = (state: AppState, action: GloveAction): AppState => {
             const newConfig = { ...state.configuration };
 
             // Explicitly update each color-related property for type safety
-            newConfig.index = color;
+            newConfig.index = { type: 'single', color: color };
             newConfig.web = { ...newConfig.web, color: color };
-            newConfig.thumb = { inner: color, outer: color };
-            newConfig.middle = { inner: color, outer: color };
-            newConfig.ring = { inner: color, outer: color };
-            newConfig.pinky = { inner: color, outer: color };
+            newConfig.thumb = { type: 'dual', inner: color, outer: color };
+            newConfig.middle = { type: 'dual', inner: color, outer: color };
+            newConfig.ring = { type: 'dual', inner: color, outer: color };
+            newConfig.pinky = { type: 'dual', inner: color, outer: color };
 
             return { ...state, configuration: newConfig };
         }
@@ -495,7 +491,7 @@ interface ColorContentProps {
 const ColorContent = ({ value, onChange }: ColorContentProps) => <ColorSwatchGrid swatches={colorSwatches} selectedColor={value} onColorSelect={onChange} />;
 
 interface DualColorContentProps {
-    value: DualColor;
+    value: { inner: HexColor; outer: HexColor };
     onChange: (subPart: (typeof DUAL_COLOR_SUB_PARTS)[keyof typeof DUAL_COLOR_SUB_PARTS], color: HexColor) => void;
     labels?: { inner: string; outer: string };
 }
@@ -581,7 +577,7 @@ interface TextOptionProps {
 const TextOption = ({ contextId }: TextOptionProps) => {
     const { state, dispatch } = useGloveConfigurator();
     const value = state.configuration[contextId];
-    const onChange = (newValue: TextConfig) => dispatch({ type: ACTION_TYPES.UPDATE_TEXT, payload: { id: contextId, data: newValue } });
+    const onChange = (newValue: TextPart) => dispatch({ type: ACTION_TYPES.UPDATE_TEXT, payload: { id: contextId, data: newValue } });
     return (
         <div className="space-y-5">
             <div>
@@ -608,10 +604,10 @@ interface GalleryOptionProps {
 const GalleryOption = ({ isDesktop }: GalleryOptionProps) => {
     const { state, dispatch } = useGloveConfigurator();
     const { web: config } = state.configuration;
-    const onConfigChange = (newConfig: WebConfig) => dispatch({ type: ACTION_TYPES.UPDATE_GALLERY, payload: newConfig });
+    const onConfigChange = (newConfig: WebPart) => dispatch({ type: ACTION_TYPES.UPDATE_GALLERY, payload: newConfig });
     return (
         <div className={`space-y-6 ${!isDesktop ? 'pb-4' : ''}`}>
-            <ImageGroup title="Type" layout="grid-cols-3" options={webTypeOptions} selectedOption={config.type} onSelectOption={(optionId) => onConfigChange({ ...config, type: optionId })} />
+            <ImageGroup title="Type" layout="grid-cols-3" options={webTypeOptions} selectedOption={config.webType} onSelectOption={(optionId) => onConfigChange({ ...config, webType: optionId })} />
             <div>
                 <h3 className="text-sm font-semibold text-gray-400 mb-2">Color</h3>
                 <ColorSwatchGrid swatches={colorSwatches} selectedColor={config.color} onColorSelect={(color) => onConfigChange({ ...config, color: color })} />
@@ -634,7 +630,7 @@ const GalleryPanel = ({ context, onClose }: GalleryPanelProps) => {
     const { state } = useGloveConfigurator();
     const headerAccessory = (
         <span className="text-sm text-gray-400 font-semibold truncate max-w-[150px]">
-            {`${webTypeOptions.find(opt => opt.id === state.configuration.web.type)?.title || ''} · ${getColorDisplay(state.configuration.web, {format: FORMAT_TYPES.HEADER})}`}
+            {`${webTypeOptions.find(opt => opt.id === state.configuration.web.webType)?.title || ''} · ${getColorDisplay(state.configuration.web, {format: FORMAT_TYPES.HEADER})}`}
         </span>
     );
     return (
@@ -659,11 +655,6 @@ const ColorPanel = ({ context, onClose }: ColorPanelProps) => {
     const { id, title } = context;
     const colorValue = state.configuration[id];
 
-    // This is the improved, more explicit type guard.
-    const isDual = (value: HexColor | DualColor): value is DualColor => {
-        return typeof value === 'object' && value !== null && 'inner' in value;
-    };
-
     const headerAccessory = (
         <span className="text-sm text-gray-400 font-semibold">
             {getColorDisplay(colorValue, { format: FORMAT_TYPES.HEADER })}
@@ -672,8 +663,8 @@ const ColorPanel = ({ context, onClose }: ColorPanelProps) => {
 
     return (
         <AccordionOptionMobile title={title} onClose={onClose} headerAccessory={headerAccessory}>
-            {isDual(colorValue) ? (
-                // --- TypeScript now knows `colorValue` is `DualColor` ---
+            {colorValue.type === 'dual' ? (
+                // --- TypeScript now knows `colorValue` is `DualColorPart` ---
                 <DualColorContent
                     value={colorValue}
                     onChange={(subPart, color) =>
@@ -684,9 +675,9 @@ const ColorPanel = ({ context, onClose }: ColorPanelProps) => {
                     }
                 />
             ) : (
-                // --- TypeScript now knows `colorValue` is `HexColor` ---
+                // --- TypeScript now knows `colorValue` is `SingleColorPart` ---
                 <ColorContent
-                    value={colorValue}
+                    value={colorValue.color}
                     onChange={(color) =>
                         dispatch({
                             type: ACTION_TYPES.UPDATE_COLOR,
@@ -718,7 +709,7 @@ const OrderSummaryInfo = () => {
                 <h3 className="text-lg font-semibold text-white mb-2">Glove Foundation</h3>
                 <div className="space-y-1 pl-2">
                     {Object.entries(build).map(([key, value]) => <p key={key}><span className="font-semibold text-gray-400">{getBuildTitle(key)}:</span> {getBuildLabel(key, value)}</p>)}
-                    {web && <p><span className="font-semibold text-gray-400">Web:</span> {getWebLabel(web.type)}</p> }
+                    {web && <p><span className="font-semibold text-gray-400">Web:</span> {getWebLabel(web.webType)}</p> }
                 </div>
             </div>
             <div>
@@ -791,11 +782,19 @@ interface FooterMobileProps {
 }
 const FooterMobile = ({ openPanelName, onClosePanel, onReviewClick, onCompleteOrder, isDesktop, openAccordionOptionMobile }: FooterMobileProps) => {
     const { state, dispatch } = useGloveConfigurator();
-    const getActiveColor = (colorValue: GloveConfiguration[keyof GloveConfiguration]): HexColor | undefined => {
-        if (typeof colorValue === 'object' && colorValue !== null && 'color' in colorValue && 'type' in colorValue) return colorValue.color;
-        if (typeof colorValue === 'object' && colorValue !== null && 'inner' in colorValue) return colorValue[state.activeDualColorPart];
-        if (typeof colorValue === 'string') return colorValue;
-        return undefined;
+    const getActiveColor = (colorValue: ColorablePart): HexColor | undefined => {
+        if (typeof colorValue !== 'object' || colorValue === null) return undefined;
+        
+        switch (colorValue.type) {
+            case 'web':
+                return colorValue.color;
+            case 'dual':
+                return colorValue[state.activeDualColorPart];
+            case 'single':
+                return colorValue.color;
+            default:
+                return undefined;
+        }
     };
     const getApplyAllColor = (): HexColor | undefined => {
         if (!openAccordionOptionMobile) {
@@ -881,11 +880,18 @@ const AccordionDesktop = () => {
     const [isScrolled, setIsScrolled] = useState(false);
 
     const handleAccordionToggle = (accordionId: string) => setOpenAccordion(prev => (prev === accordionId ? null : accordionId));
-    const getActiveColor = (colorValue: GloveConfiguration[keyof GloveConfiguration]): HexColor | undefined => {
-        if (typeof colorValue === 'object' && colorValue !== null && 'color' in colorValue && 'type' in colorValue) return colorValue.color;
-        if (typeof colorValue === 'object' && colorValue !== null && 'inner' in colorValue) return colorValue[activeDualColorPart];
-        if (typeof colorValue === 'string') return colorValue;
-        return undefined;
+    const getActiveColor = (colorValue: ColorablePart): HexColor | undefined => {
+        if (typeof colorValue !== 'object' || colorValue === null) return undefined;
+        switch (colorValue.type) {
+            case 'web':
+                return colorValue.color;
+            case 'dual':
+                return colorValue[activeDualColorPart];
+            case 'single':
+                return colorValue.color;
+            default:
+                return undefined;
+        }
     };
     const handleApplyColorToAll = (colorString?: HexColor) => {
         if (colorString) dispatch({ type: ACTION_TYPES.APPLY_COLOR_TO_ALL, payload: { color: colorString } });
@@ -915,26 +921,22 @@ const AccordionDesktop = () => {
     const renderHeaderAccessory = (item: typeof optionsConfig[0]) => {
         if (item.id === 'build') return null;
         const isAccordionOpen = openAccordion === item.id;
-        const configValue = configuration[item.id as keyof GloveConfiguration];
-        switch (item.contentType) {
-            case CONTENT_TYPES.GALLERY:
-                const webConfig = configValue as WebConfig;
-                const webTypeTitle = webTypeOptions.find(opt => opt.id === webConfig.type)?.title || webConfig.type;
+        const configValue = configuration[item.id as keyof Omit<GloveConfiguration, 'build'>];
+        switch (configValue.type) {
+            case 'web':
+                const webTypeTitle = webTypeOptions.find(opt => opt.id === configValue.webType)?.title || configValue.webType;
                 return (
                     <div className="flex items-center space-x-2">
                         <span className="text-sm text-gray-400 font-semibold truncate max-w-[100px]">{webTypeTitle}</span>
-                        {isAccordionOpen ? <span className="text-sm text-gray-400 font-semibold">{`· ${getColorDisplay(webConfig, { format: FORMAT_TYPES.HEADER })}`}</span> : <span className="w-6 h-6 rounded-full border border-white/20" style={{ backgroundColor: webConfig.color }}></span>}
+                        {isAccordionOpen ? <span className="text-sm text-gray-400 font-semibold">{`· ${getColorDisplay(configValue, { format: FORMAT_TYPES.HEADER })}`}</span> : <span className="w-6 h-6 rounded-full border border-white/20" style={{ backgroundColor: configValue.color }}></span>}
                     </div>
                 );
-            case CONTENT_TYPES.DUAL_COLOR:
-                const dualColorConfig = configValue as DualColor;
-                return isAccordionOpen ? <span className="text-sm text-gray-400 font-semibold">{getColorDisplay(dualColorConfig, { format: FORMAT_TYPES.HEADER })}</span> : <div className="flex items-center space-x-2"><span className="w-6 h-6 rounded-full border border-white/20" style={{ backgroundColor: dualColorConfig.inner }}></span><span className="w-6 h-6 rounded-full border border-white/20" style={{ backgroundColor: dualColorConfig.outer }}></span></div>;
-            case CONTENT_TYPES.COLOR:
-                const colorConfig = configValue as HexColor;
-                return isAccordionOpen ? <span className="text-sm text-gray-400 font-semibold">{getColorDisplay(colorConfig, { format: FORMAT_TYPES.HEADER })}</span> : <span className="w-6 h-6 rounded-full border border-white/20" style={{ backgroundColor: colorConfig }}></span>;
-            case CONTENT_TYPES.TEXT:
-                const textConfig = configValue as TextConfig;
-                return <span className="text-sm text-gray-400 truncate max-w-[100px]">{textConfig.text}</span>;
+            case 'dual':
+                return isAccordionOpen ? <span className="text-sm text-gray-400 font-semibold">{getColorDisplay(configValue, { format: FORMAT_TYPES.HEADER })}</span> : <div className="flex items-center space-x-2"><span className="w-6 h-6 rounded-full border border-white/20" style={{ backgroundColor: configValue.inner }}></span><span className="w-6 h-6 rounded-full border border-white/20" style={{ backgroundColor: configValue.outer }}></span></div>;
+            case 'single':
+                return isAccordionOpen ? <span className="text-sm text-gray-400 font-semibold">{getColorDisplay(configValue, { format: FORMAT_TYPES.HEADER })}</span> : <span className="w-6 h-6 rounded-full border border-white/20" style={{ backgroundColor: configValue.color }}></span>;
+            case 'text':
+                return <span className="text-sm text-gray-400 truncate max-w-[100px]">{configValue.text}</span>;
             default:
                 return null;
         }
@@ -957,7 +959,7 @@ const AccordionDesktop = () => {
                                 (item.contentType === CONTENT_TYPES.COLOR || item.contentType === CONTENT_TYPES.DUAL_COLOR || item.contentType === CONTENT_TYPES.GALLERY) && (
                                     <SecondaryButton
                                         label="Apply to All"
-                                        onClick={() => handleApplyColorToAll(getActiveColor(configuration[item.id as keyof GloveConfiguration]))}
+                                        onClick={() => handleApplyColorToAll(getActiveColor(configuration[item.id as keyof Omit<GloveConfiguration, 'build'>]))}
                                     />
                                 )
                             }
@@ -968,7 +970,7 @@ const AccordionDesktop = () => {
                                     case CONTENT_TYPES.COLOR:
                                         const colorValue = configuration[item.id as 'index'];
                                         return <ColorContent
-                                            value={colorValue}
+                                            value={colorValue.color}
                                             onChange={(color) => dispatch({ type: ACTION_TYPES.UPDATE_COLOR, payload: { id: 'index', color } })}
                                         />;
 
@@ -1035,21 +1037,17 @@ const AccordionMobile = ({ onOpenPanel, openAccordionOptionMobile }: AccordionMo
 
     const renderAccessory = (item: typeof optionsConfig[0]) => {
         if (item.id === 'build') return null;
-        const configValue = configuration[item.id as keyof GloveConfiguration];
-        switch (item.contentType) {
-            case CONTENT_TYPES.GALLERY:
-                const webConfig = configValue as WebConfig;
-                const webTypeTitle = webTypeOptions.find(opt => opt.id === webConfig.type)?.title || webConfig.type;
-                return <div className="flex items-center space-x-2"><span className="text-sm text-gray-400 font-semibold truncate max-w-[100px]">{webTypeTitle}</span><span className="w-6 h-6 rounded-full" style={{ backgroundColor: webConfig.color }}></span></div>;
-            case CONTENT_TYPES.DUAL_COLOR:
-                const dualColorConfig = configValue as DualColor;
-                return <div className="flex items-center space-x-2"><span className="w-6 h-6 rounded-full" style={{ backgroundColor: dualColorConfig.inner }}></span><span className="w-6 h-6 rounded-full" style={{ backgroundColor: dualColorConfig.outer }}></span></div>;
-            case CONTENT_TYPES.COLOR:
-                const colorConfig = configValue as HexColor;
-                return <span className="w-6 h-6 rounded-full" style={{ backgroundColor: colorConfig }}></span>;
-            case CONTENT_TYPES.TEXT:
-                const textConfig = configValue as TextConfig;
-                return <span className="text-sm text-gray-400 truncate max-w-[100px]">{textConfig.text}</span>;
+        const configValue = configuration[item.id as keyof Omit<GloveConfiguration, 'build'>];
+        switch (configValue.type) {
+            case 'web':
+                const webTypeTitle = webTypeOptions.find(opt => opt.id === configValue.webType)?.title || configValue.webType;
+                return <div className="flex items-center space-x-2"><span className="text-sm text-gray-400 font-semibold truncate max-w-[100px]">{webTypeTitle}</span><span className="w-6 h-6 rounded-full" style={{ backgroundColor: configValue.color }}></span></div>;
+            case 'dual':
+                return <div className="flex items-center space-x-2"><span className="w-6 h-6 rounded-full" style={{ backgroundColor: configValue.inner }}></span><span className="w-6 h-6 rounded-full" style={{ backgroundColor: configValue.outer }}></span></div>;
+            case 'single':
+                return <span className="w-6 h-6 rounded-full" style={{ backgroundColor: configValue.color }}></span>;
+            case 'text':
+                return <span className="text-sm text-gray-400 truncate max-w-[100px]">{configValue.text}</span>;
             default: return null;
         }
     };
