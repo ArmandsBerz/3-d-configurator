@@ -60,7 +60,7 @@ type GloveAction =
 
 // --- END: Core Type Definitions ---
 
-// --- Constants (Decoupled Data Sources) ---  
+// --- Constants (Decoupled Data Sources) ---
 
 const leatherOptions = [
     { id: 'imgOpt1', title: 'Japanese Kip' },
@@ -161,7 +161,7 @@ const getColorDisplay = (colorValue: HexColor | DualColor | WebConfig, options: 
     }
 };
 
-// --- Centralized State Management ---   
+// --- Centralized State Management ---
 
 const initialState: AppState = {
     configuration: {
@@ -200,7 +200,7 @@ const gloveConfigReducer = (state: AppState, action: GloveAction): AppState => {
         case 'APPLY_COLOR_TO_ALL': {
             const { color } = action.payload;
             if (!color) return state;
-            
+
             // Create a mutable copy of the configuration
             const newConfig = { ...state.configuration };
 
@@ -236,7 +236,7 @@ const useGloveConfigurator = () => {
     return context;
 };
 
-// --- Helper Components (Unchanged) ---   
+// --- Helper Components (Unchanged) ---
 
 interface ScrollGradientProps {
     position: 'top' | 'bottom';
@@ -312,7 +312,7 @@ const ColorSwatchGrid = ({ swatches, selectedColor, onColorSelect }: ColorSwatch
     </div>
 );
 
-// --- Accordion Containers (Unchanged) ---   
+// --- Accordion Containers (Unchanged) ---
 
 interface AccordionOptionHeaderProps {
     title: string;
@@ -394,7 +394,7 @@ const AccordionOptionMobile = ({ title, onClose, headerAccessory = null, childre
     );
 };
 
-// --- Pure Content Components (Unchanged) ---   
+// --- Pure Content Components (Unchanged) ---
 
 interface ColorContentProps {
     value: HexColor;
@@ -528,15 +528,7 @@ const GalleryOption = ({ isDesktop }: GalleryOptionProps) => {
     );
 };
 
-// --- START: NEW COMPONENT RENDERER MAPS ---   
-
-const ContentRendererMap = {
-    'build': BuildOption,
-    'gallery': GalleryOption,
-    'color': ColorContent,
-    'dual-color': DualColorContent,
-    'text': TextOption,
-};
+// --- START: NEW COMPONENT RENDERER MAPS ---
 
 interface PanelProps {
     context: { id: keyof GloveConfiguration, title: string };
@@ -578,17 +570,45 @@ const TextPanel = ({ context, onClose }: PanelProps) => {
 const ColorPanel = ({ context, onClose }: PanelProps) => {
     const { state, dispatch } = useGloveConfigurator();
     const { id, title } = context;
-    const colorValue = state.configuration[id];
-    const isDual = typeof colorValue === 'object' && colorValue !== null && 'inner' in colorValue;
-    const ContentComponent = isDual ? DualColorContent : ColorContent;
-    const handleColorChange = (color: HexColor) => dispatch({ type: 'UPDATE_COLOR', payload: { id: id as 'index', color } });
-    const handleDualColorChange = (subPart: 'inner' | 'outer', color: HexColor) => dispatch({ type: 'UPDATE_DUAL_COLOR', payload: { id: id as 'thumb' | 'middle' | 'ring' | 'pinky', subPartId: subPart, color } });
-    // FIX: Assert the type of `colorValue` because we know `ColorPanel` only handles color-related types.
-    const headerAccessory = <span className="text-sm text-gray-400 font-semibold">{getColorDisplay(colorValue as HexColor | DualColor | WebConfig, { format: 'header' })}</span>;
+    // `colorValue` is currently of a broad type, but we know its possibilities here.
+    const colorValue = state.configuration[id] as HexColor | DualColor;
+
+    // This is the improved, more explicit type guard.
+    const isDual = (value: HexColor | DualColor): value is DualColor => {
+        return typeof value === 'object' && value !== null && 'inner' in value;
+    };
+
+    const headerAccessory = (
+        <span className="text-sm text-gray-400 font-semibold">
+            {getColorDisplay(colorValue, { format: 'header' })}
+        </span>
+    );
+
     return (
         <AccordionOptionMobile title={title} onClose={onClose} headerAccessory={headerAccessory}>
-            {/* FIX: Use 'as any' on the onChange handler to resolve the dynamic component prop mismatch. */}
-            <ContentComponent value={colorValue as any} onChange={(isDual ? handleDualColorChange : handleColorChange) as any} />
+            {isDual(colorValue) ? (
+                // --- TypeScript now knows `colorValue` is `DualColor` ---
+                <DualColorContent
+                    value={colorValue}
+                    onChange={(subPart, color) =>
+                        dispatch({
+                            type: 'UPDATE_DUAL_COLOR',
+                            payload: { id: id as 'thumb' | 'middle' | 'ring' | 'pinky', subPartId: subPart, color }
+                        })
+                    }
+                />
+            ) : (
+                // --- TypeScript now knows `colorValue` is `HexColor` ---
+                <ColorContent
+                    value={colorValue}
+                    onChange={(color) =>
+                        dispatch({
+                            type: 'UPDATE_COLOR',
+                            payload: { id: id as 'index', color }
+                        })
+                    }
+                />
+            )}
         </AccordionOptionMobile>
     );
 };
@@ -602,7 +622,7 @@ const MobilePanelRendererMap: { [key: string]: React.ComponentType<any> } = {
     'text': TextPanel,
 };
 
-// --- END: NEW COMPONENT RENDERER MAPS ---   
+// --- END: NEW COMPONENT RENDERER MAPS ---
 
 const OrderSummaryInfo = () => {
     const { state } = useGloveConfigurator();
@@ -752,7 +772,7 @@ const OverviewDesktop = () => {
     );
 };
 
-// --- REFACTORED: Main Desktop Accordion Component ---   
+// --- REFACTORED: Main Desktop Accordion Component ---
 const AccordionDesktop = () => {
     const { state, dispatch } = useGloveConfigurator();
     const { configuration, activeDualColorPart } = state;
@@ -828,50 +848,54 @@ const AccordionDesktop = () => {
             <div className={`absolute ${isScrolled ? 'top-[82px]' : 'top-[142px]'} bottom-4 left-[40px] w-[400px] pointer-events-auto transition-all duration-30 ease-in-out overflow-hidden`}>
                 <ScrollGradient position="top" isVisible={isTopGradientVisible} />
                 <div ref={accordionContainerRef} className="h-full overflow-y-auto space-y-4">
-                    {optionsConfig.map(item => {
-                        const ContentComponent = ContentRendererMap[item.contentType];
-                        if (!ContentComponent) return null;
+                    {optionsConfig.map(item => (
+                        <AccordionOptionDesktop
+                            key={item.id}
+                            title={item.title}
+                            isOpen={openAccordion === item.id}
+                            onToggle={() => handleAccordionToggle(item.id)}
+                            headerContent={renderHeaderAccessory(item as any)}
+                            actionButton={
+                                (item.contentType === 'color' || item.contentType === 'dual-color' || item.contentType === 'gallery') && (
+                                    <SecondaryButton
+                                        label="Apply to All"
+                                        onClick={() => handleApplyColorToAll(getActiveColor(configuration[item.id as keyof GloveConfiguration]))}
+                                    />
+                                )
+                            }
+                        >
+                            {(() => {
+                                // Use an Immediately Invoked Function Expression (IIFE) to handle conditional logic cleanly
+                                switch (item.contentType) {
+                                    case 'color':
+                                        const colorValue = configuration[item.id as 'index'];
+                                        return <ColorContent
+                                            value={colorValue}
+                                            onChange={(color) => dispatch({ type: 'UPDATE_COLOR', payload: { id: 'index', color } })}
+                                        />;
 
-                        // Prepare props for the content component   
-                        const contentProps: any = {};
-                        if (item.contentType === 'color' || item.contentType === 'dual-color') {
-                            contentProps.value = configuration[item.id as 'index' | 'thumb' | 'middle' | 'ring' | 'pinky'];
-                            contentProps.onChange = (subPartOrColor: any, color: any) => {
-                                if (item.contentType === 'dual-color') {
-                                    dispatch({ type: 'UPDATE_DUAL_COLOR', payload: { id: item.id as any, subPartId: subPartOrColor, color } });
-                                } else {
-                                    dispatch({ type: 'UPDATE_COLOR', payload: { id: item.id as 'index', color: subPartOrColor } });
-                                }
-                            };
-                        } else if (item.contentType === 'text') {
-                            contentProps.contextId = item.id;
-                        } else if (item.contentType === 'gallery') {
-                             // GalleryOption uses context, not direct props
-                        } else if (item.contentType === 'build') {
-                            // BuildOption uses context, not direct props
-                        }
-                        contentProps.isDesktop = true;
+                                    case 'dual-color':
+                                        const dualColorValue = configuration[item.id as 'thumb' | 'middle' | 'ring' | 'pinky'];
+                                        return <DualColorContent
+                                            value={dualColorValue}
+                                            onChange={(subPart, color) => dispatch({ type: 'UPDATE_DUAL_COLOR', payload: { id: item.id as 'thumb' | 'middle' | 'ring' | 'pinky', subPartId: subPart, color } })}
+                                        />;
 
-                        return (
-                            <AccordionOptionDesktop
-                                key={item.id}
-                                title={item.title}
-                                isOpen={openAccordion === item.id}
-                                onToggle={() => handleAccordionToggle(item.id)}
-                                headerContent={renderHeaderAccessory(item as any)}
-                                actionButton={
-                                    (item.contentType === 'color' || item.contentType === 'dual-color' || item.contentType === 'gallery') && (
-                                        <SecondaryButton
-                                            label="Apply to All"
-                                            onClick={() => handleApplyColorToAll(getActiveColor(configuration[item.id as keyof GloveConfiguration]))}
-                                        />
-                                    )
+                                    case 'text':
+                                        return <TextOption contextId={item.id as 'thumbName' | 'pinkyName'} />;
+
+                                    case 'gallery':
+                                        return <GalleryOption isDesktop={true} />;
+
+                                    case 'build':
+                                        return <BuildOption isDesktop={true} />;
+
+                                    default:
+                                        return null;
                                 }
-                            >
-                                <ContentComponent {...contentProps} />
-                            </AccordionOptionDesktop>
-                        );
-                    })}
+                            })()}
+                        </AccordionOptionDesktop>
+                    ))}
                 </div>
                 <ScrollGradient position="bottom" isVisible={isBottomGradientVisible} />
             </div>
@@ -879,7 +903,7 @@ const AccordionDesktop = () => {
     );
 };
 
-// --- REFACTORED: Main Mobile Accordion Component ---   
+// --- REFACTORED: Main Mobile Accordion Component ---
 interface AccordionMobileProps {
     onOpenPanel: (item: typeof optionsConfig[0]) => void;
     openAccordionOptionMobile: MobileAccordionState;
@@ -949,7 +973,7 @@ const AccordionMobile = ({ onOpenPanel, openAccordionOptionMobile }: AccordionMo
     );
 };
 
-// --- REFACTORED: Main UI Component ---   
+// --- REFACTORED: Main UI Component ---
 const UI = () => {
     const isDesktop = useBreakpoint();
     const { state } = useGloveConfigurator();
@@ -975,8 +999,8 @@ const UI = () => {
             try { await navigator.clipboard.writeText(configUrl); alert('Sharable link copied to clipboard!'); } catch (err) { alert('Failed to copy link.'); }
         }
     }, [configuration]);
-        
-    // RENDER MOBILE PANEL DYNAMICALLY   
+
+    // RENDER MOBILE PANEL DYNAMICALLY
     const renderMobilePanel = () => {
         if (!openAccordionOptionMobile) return null;
         const PanelComponent = MobilePanelRendererMap[openAccordionOptionMobile.name];
