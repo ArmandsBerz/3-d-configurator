@@ -797,23 +797,13 @@ const FooterMobile = ({ openPanelName, onClosePanel, onReviewClick, onCompleteOr
         }
     };
     const getApplyAllColor = (): HexColor | undefined => {
-        if (!openAccordionOptionMobile) {
+        if (!openAccordionOptionMobile || openAccordionOptionMobile.name === CONTENT_TYPES.SUMMARY || openAccordionOptionMobile.name === CONTENT_TYPES.BUILD || openAccordionOptionMobile.name === CONTENT_TYPES.TEXT) {
             return undefined;
         }
-
-        switch (openAccordionOptionMobile.name) {
-            case CONTENT_TYPES.COLOR:
-            case CONTENT_TYPES.DUAL_COLOR:
-            case CONTENT_TYPES.GALLERY: {
-                // Type safety: In these cases, context and context.id are guaranteed to exist.
-                const { context } = openAccordionOptionMobile;
-                const colorValue = state.configuration[context.id];
-                return getActiveColor(colorValue);
-            }
-            // Handle all other panel types where "Apply to All" is not applicable.
-            default:
-                return undefined;
-        }
+        
+        const { context } = openAccordionOptionMobile;
+        const colorValue = state.configuration[context.id];
+        return getActiveColor(colorValue);
     };
     const onApplyColorToAll = (color?: HexColor) => {
         if (color) dispatch({ type: ACTION_TYPES.APPLY_COLOR_TO_ALL, payload: { color } });
@@ -870,6 +860,48 @@ const OverviewDesktop = () => {
 };
 
 // --- REFACTORED: Main Desktop Accordion Component ---
+
+const DESKTOP_CONTENT_MAP = {
+  [CONTENT_TYPES.BUILD]: BuildOption,
+  [CONTENT_TYPES.GALLERY]: GalleryOption,
+  [CONTENT_TYPES.COLOR]: ColorContent,
+  [CONTENT_TYPES.DUAL_COLOR]: DualColorContent,
+  [CONTENT_TYPES.TEXT]: TextOption,
+};
+
+const getContentProps = (item: typeof optionsConfig[0], configuration: GloveConfiguration, dispatch: React.Dispatch<GloveAction>) => {
+  const { id } = item;
+  // This type assertion is safe because 'build' is handled separately and other keys align with ColorablePart types.
+  const configValue = configuration[id as keyof Omit<GloveConfiguration, 'build'>];
+
+  switch (configValue.type) {
+    case 'single':
+      return {
+        value: configValue.color,
+        onChange: (color: HexColor) => dispatch({ type: ACTION_TYPES.UPDATE_COLOR, payload: { id: 'index', color } }),
+      };
+    
+    case 'dual':
+      return {
+        value: configValue,
+        onChange: (subPart: any, color: any) => dispatch({ type: ACTION_TYPES.UPDATE_DUAL_COLOR, payload: { id: id as 'thumb' | 'middle' | 'ring' | 'pinky', subPartId: subPart, color } }),
+      };
+
+    case 'text':
+       return {
+         contextId: id as 'thumbName' | 'pinkyName',
+       };
+
+    case 'web':
+        return { isDesktop: true }; // GalleryOption doesn't need specific props here
+
+    default:
+      // For 'build', which doesn't have a 'type', or any other case.
+      return { isDesktop: true };
+  }
+};
+
+
 const AccordionDesktop = () => {
     const { state, dispatch } = useGloveConfigurator();
     const { configuration, activeDualColorPart } = state;
@@ -948,54 +980,30 @@ const AccordionDesktop = () => {
             <div className={`absolute ${isScrolled ? 'top-[82px]' : 'top-[142px]'} bottom-4 left-[40px] w-[400px] pointer-events-auto transition-all duration-30 ease-in-out overflow-hidden`}>
                 <ScrollGradient position={POSITIONS.TOP} isVisible={isTopGradientVisible} />
                 <div ref={accordionContainerRef} className="h-full overflow-y-auto space-y-4">
-                    {optionsConfig.map(item => (
-                        <AccordionOptionDesktop
-                            key={item.id}
-                            title={item.title}
-                            isOpen={openAccordion === item.id}
-                            onToggle={() => handleAccordionToggle(item.id)}
-                            headerContent={renderHeaderAccessory(item as any)}
-                            actionButton={
-                                (item.contentType === CONTENT_TYPES.COLOR || item.contentType === CONTENT_TYPES.DUAL_COLOR || item.contentType === CONTENT_TYPES.GALLERY) && (
-                                    <SecondaryButton
-                                        label="Apply to All"
-                                        onClick={() => handleApplyColorToAll(getActiveColor(configuration[item.id as keyof Omit<GloveConfiguration, 'build'>]))}
-                                    />
-                                )
-                            }
-                        >
-                            {(() => {
-                                // Use an Immediately Invoked Function Expression (IIFE) to handle conditional logic cleanly
-                                switch (item.contentType) {
-                                    case CONTENT_TYPES.COLOR:
-                                        const colorValue = configuration[item.id as 'index'];
-                                        return <ColorContent
-                                            value={colorValue.color}
-                                            onChange={(color) => dispatch({ type: ACTION_TYPES.UPDATE_COLOR, payload: { id: 'index', color } })}
-                                        />;
+                    {optionsConfig.map(item => {
+                        const ContentComponent = DESKTOP_CONTENT_MAP[item.contentType];
+                        const contentProps = getContentProps(item, configuration, dispatch);
 
-                                    case CONTENT_TYPES.DUAL_COLOR:
-                                        const dualColorValue = configuration[item.id as 'thumb' | 'middle' | 'ring' | 'pinky'];
-                                        return <DualColorContent
-                                            value={dualColorValue}
-                                            onChange={(subPart, color) => dispatch({ type: ACTION_TYPES.UPDATE_DUAL_COLOR, payload: { id: item.id as 'thumb' | 'middle' | 'ring' | 'pinky', subPartId: subPart, color } })}
-                                        />;
-
-                                    case CONTENT_TYPES.TEXT:
-                                        return <TextOption contextId={item.id as 'thumbName' | 'pinkyName'} />;
-
-                                    case CONTENT_TYPES.GALLERY:
-                                        return <GalleryOption isDesktop={true} />;
-
-                                    case CONTENT_TYPES.BUILD:
-                                        return <BuildOption isDesktop={true} />;
-
-                                    default:
-                                        return null;
+                        return (
+                            <AccordionOptionDesktop
+                                key={item.id}
+                                title={item.title}
+                                isOpen={openAccordion === item.id}
+                                onToggle={() => handleAccordionToggle(item.id)}
+                                headerContent={renderHeaderAccessory(item as any)}
+                                actionButton={
+                                    (item.contentType === CONTENT_TYPES.COLOR || item.contentType === CONTENT_TYPES.DUAL_COLOR || item.contentType === CONTENT_TYPES.GALLERY) && (
+                                        <SecondaryButton
+                                            label="Apply to All"
+                                            onClick={() => handleApplyColorToAll(getActiveColor(configuration[item.id as keyof Omit<GloveConfiguration, 'build'>]))}
+                                        />
+                                    )
                                 }
-                            })()}
-                        </AccordionOptionDesktop>
-                    ))}
+                            >
+                                {ContentComponent && <ContentComponent {...contentProps as any} />}
+                            </AccordionOptionDesktop>
+                        );
+                    })}
                 </div>
                 <ScrollGradient position={POSITIONS.BOTTOM} isVisible={isBottomGradientVisible} />
             </div>
@@ -1070,6 +1078,16 @@ const AccordionMobile = ({ onOpenPanel, openAccordionOptionMobile }: AccordionMo
 };
 
 // --- REFACTORED: Main UI Component ---
+
+const MOBILE_PANEL_MAP = {
+  [CONTENT_TYPES.SUMMARY]: ({ onClose }: { onClose: () => void; }) => <SummaryPanel onClose={onClose} />,
+  [CONTENT_TYPES.BUILD]: ({ context, onClose }: { context: any, onClose: () => void; }) => <BuildPanel context={context} onClose={onClose} />,
+  [CONTENT_TYPES.GALLERY]: ({ context, onClose }: { context: any, onClose: () => void; }) => <GalleryPanel context={context} onClose={onClose} />,
+  [CONTENT_TYPES.COLOR]: ({ context, onClose }: { context: any, onClose: () => void; }) => <ColorPanel context={context} onClose={onClose} />,
+  [CONTENT_TYPES.DUAL_COLOR]: ({ context, onClose }: { context: any, onClose: () => void; }) => <ColorPanel context={context} onClose={onClose} />,
+  [CONTENT_TYPES.TEXT]: ({ context, onClose }: { context: any, onClose: () => void; }) => <TextPanel context={context} onClose={onClose} />,
+};
+
 const UI = () => {
     const isDesktop = useBreakpoint();
     const { state } = useGloveConfigurator();
@@ -1103,28 +1121,15 @@ const UI = () => {
     const renderMobilePanel = () => {
         if (!openAccordionOptionMobile) return null;
 
-        // The switch statement leverages the discriminated union for full type safety
-        switch (openAccordionOptionMobile.name) {
-            case CONTENT_TYPES.SUMMARY:
-                return <SummaryPanel onClose={() => setOpenAccordionOptionMobile(null)} />;
+        const PanelRenderer = MOBILE_PANEL_MAP[openAccordionOptionMobile.name as keyof typeof MOBILE_PANEL_MAP];
 
-            case CONTENT_TYPES.BUILD:
-                return <BuildPanel context={openAccordionOptionMobile.context} onClose={() => setOpenAccordionOptionMobile(null)} />;
+        if (!PanelRenderer) return null;
 
-            case CONTENT_TYPES.GALLERY:
-                return <GalleryPanel context={openAccordionOptionMobile.context} onClose={() => setOpenAccordionOptionMobile(null)} />;
-
-            case CONTENT_TYPES.COLOR:
-            case CONTENT_TYPES.DUAL_COLOR:
-                // ✅ TypeScript knows the context is correct for ColorPanel here!
-                return <ColorPanel context={openAccordionOptionMobile.context} onClose={() => setOpenAccordionOptionMobile(null)} />;
-
-            case CONTENT_TYPES.TEXT:
-                return <TextPanel context={openAccordionOptionMobile.context} onClose={() => setOpenAccordionOptionMobile(null)} />;
-
-            default:
-                return null;
-        }
+        // The wrapper function handles which props to accept, preventing type errors.
+        return PanelRenderer({
+            context: (openAccordionOptionMobile as any).context,
+            onClose: () => setOpenAccordionOptionMobile(null),
+        });
     };
 
     return (
