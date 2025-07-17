@@ -5,7 +5,6 @@ import React, { useState, useRef, useLayoutEffect, useCallback, useEffect, creat
 type HexColor = string;
 type Font = 'SCRIPT' | 'BLOCK';
 
-// --- REFACTORED: Standardized Part Shapes ---
 type SingleColorPart = { type: 'single'; color: HexColor };
 type DualColorPart = { type: 'dual'; inner: HexColor; outer: HexColor };
 type WebPart = { type: 'web'; webType: string; color: HexColor };
@@ -21,7 +20,6 @@ interface BuildConfig {
     throwingHand: 'RIGHT HAND' | 'LEFT HAND';
 }
 
-// The shape of your main configuration object
 interface GloveConfiguration {
     build: BuildConfig;
     web: WebPart;
@@ -34,13 +32,11 @@ interface GloveConfiguration {
     pinkyName: TextPart;
 }
 
-// The complete state managed by the reducer
 interface AppState {
     configuration: GloveConfiguration;
     activeDualColorPart: (typeof DUAL_COLOR_SUB_PARTS)[keyof typeof DUAL_COLOR_SUB_PARTS];
 }
 
-// All possible actions your reducer can handle
 type GloveAction =
     | { type: typeof ACTION_TYPES.UPDATE_BUILD; payload: BuildConfig }
     | { type: typeof ACTION_TYPES.UPDATE_COLOR; payload: { id: 'index'; color: HexColor } }
@@ -52,14 +48,12 @@ type GloveAction =
 // --- END: Core Type Definitions ---
 
 // --- START: ADD NEW PANEL PROP TYPES ---
-// Define the specific IDs each panel type will handle
-type ColorPartId = typeof PART_IDS.COLOR[number];
-type TextPartId = typeof PART_IDS.TEXT[number];
-type GalleryPartId = typeof PART_IDS.GALLERY[number];
+type ColorPartId = 'thumb' | 'index' | 'middle' | 'ring' | 'pinky';
+type TextPartId = 'thumbName' | 'pinkyName';
+type GalleryPartId = 'web';
 
-// Define the exact props for each panel component
 interface BuildPanelProps {
-    context: { title: string };
+    context: { id: 'build'; title: string };
     onClose: () => void;
 }
 interface ColorPanelProps {
@@ -94,12 +88,6 @@ export const ACTION_TYPES = {
   UPDATE_GALLERY: 'UPDATE_GALLERY',
   UPDATE_TEXT: 'UPDATE_TEXT',
   APPLY_COLOR_TO_ALL: 'APPLY_COLOR_TO_ALL',
-} as const;
-
-export const PART_IDS = {
-    COLOR: ['thumb', 'index', 'middle', 'ring', 'pinky'],
-    TEXT: ['thumbName', 'pinkyName'],
-    GALLERY: ['web'],
 } as const;
 
 export const DUAL_COLOR_SUB_PARTS = {
@@ -156,50 +144,20 @@ const fontOptions: { id: Font, label: string }[] = [
 ];
 
 const colorSwatches: { name: string, hex: HexColor }[] = [
-    { name: 'Red', hex: '#C62828' },
-    { name: 'Pink', hex: '#AD1457' },
-    { name: 'Purple', hex: '#6A1B9A' },
-    { name: 'Indigo', hex: '#4527A0' },
-    { name: 'Royal', hex: '#283593' },
-    { name: 'Blue', hex: '#1565C0' },
-    { name: 'Light Blue', hex: '#0277BD' },
-    { name: 'Teal', hex: '#00838F' },
-    { name: 'Green', hex: '#00695C' },
-    { name: 'Forest', hex: '#2E7D32' },
-    { name: 'Lime', hex: '#558B2F' },
-    { name: 'Olive', hex: '#9E9D24' },
-    { name: 'Gold', hex: '#F9A825' },
-    { name: 'Orange', hex: '#FF8F00' },
-    { name: 'Burnt Orange', hex: '#EF6C00' },
-    { name: 'Red Orange', hex: '#D84315' },
-    { name: 'Brown', hex: '#4E342E' },
-    { name: 'Charcoal', hex: '#424242' },
-    { name: 'Grey', hex: '#BDBDBD' },
-    { name: 'Slate', hex: '#37474F' },
+    { name: 'Red', hex: '#C62828' }, { name: 'Pink', hex: '#AD1457' }, { name: 'Purple', hex: '#6A1B9A' }, { name: 'Indigo', hex: '#4527A0' }, { name: 'Royal', hex: '#283593' }, { name: 'Blue', hex: '#1565C0' }, { name: 'Light Blue', hex: '#0277BD' }, { name: 'Teal', hex: '#00838F' }, { name: 'Green', hex: '#00695C' }, { name: 'Forest', hex: '#2E7D32' }, { name: 'Lime', hex: '#558B2F' }, { name: 'Olive', hex: '#9E9D24' }, { name: 'Gold', hex: '#F9A825' }, { name: 'Orange', hex: '#FF8F00' }, { name: 'Burnt Orange', hex: '#EF6C00' }, { name: 'Red Orange', hex: '#D84315' }, { name: 'Brown', hex: '#4E342E' }, { name: 'Charcoal', hex: '#424242' }, { name: 'Grey', hex: '#BDBDBD' }, { name: 'Slate', hex: '#37474F' },
 ];
 
 const buildOptionsData = [
-    { id: 'position', title: 'Position', options: [{id: 'INFIELD', label: 'INFIELD'}, {id: 'OUTFIELD', label: 'OUTFIELD'}, {id: 'PITCHER', label: 'PITCHER'}, {id: 'CATCHER', label: 'CATCHER'}, {id: 'FIRST BASE', label: 'FIRST BASE'}], layout: 'grid-cols-3' },
-    { id: 'size', title: 'Size', options: [{id: '11"', label: '11"'}, {id: '11.25"', label: '11.25"'}, {id: '11.5"', label: '11.5"'}, {id: '11.75"', label: '11.75"'}, {id: '12"', label: '12"'}], layout: 'grid-cols-3' },
-    { id: 'handOpeningSize', title: 'Hand Opening Size', options: [{id: 'ADULT', label: 'ADULT'}, {id: 'YOUTH', label: 'YOUTH'}], layout: 'grid-cols-2' },
-    { id: 'stiffness', title: 'Stiffness', options: [{id: 'STIFF', label: 'STIFF'}, {id: 'STANDARD', label: 'STANDARD'}, {id: 'SOFT', label: 'SOFT'}], layout: 'grid-cols-3' },
-    { id: 'throwingHand', title: 'Throwing Hand', options: [{id: 'RIGHT HAND', label: 'RIGHT HAND'}, {id: 'LEFT HAND', label: 'LEFT HAND'}], layout: 'grid-cols-2' }
+    { id: 'position', title: 'Position', options: [{id: 'INFIELD', label: 'INFIELD'}, {id: 'OUTFIELD', label: 'OUTFIELD'}, {id: 'PITCHER', label: 'PITCHER'}, {id: 'CATCHER', label: 'CATCHER'}, {id: 'FIRST BASE', label: 'FIRST BASE'}], layout: 'grid-cols-3' }, { id: 'size', title: 'Size', options: [{id: '11"', label: '11"'}, {id: '11.25"', label: '11.25"'}, {id: '11.5"', label: '11.5"'}, {id: '11.75"', label: '11.75"'}, {id: '12"', label: '12"'}], layout: 'grid-cols-3' }, { id: 'handOpeningSize', title: 'Hand Opening Size', options: [{id: 'ADULT', label: 'ADULT'}, {id: 'YOUTH', label: 'YOUTH'}], layout: 'grid-cols-2' }, { id: 'stiffness', title: 'Stiffness', options: [{id: 'STIFF', label: 'STIFF'}, {id: 'STANDARD', label: 'STANDARD'}, {id: 'SOFT', label: 'SOFT'}], layout: 'grid-cols-3' }, { id: 'throwingHand', title: 'Throwing Hand', options: [{id: 'RIGHT HAND', label: 'RIGHT HAND'}, {id: 'LEFT HAND', label: 'LEFT HAND'}], layout: 'grid-cols-2' }
 ];
 
 const webTypeOptions = [
-    { id: 'MOD_TRAP', title: 'MOD TRAP' },
-    { id: 'ONE_PIECE', title: 'ONE PIECE' },
-    { id: 'TWO_PIECE', title: 'TWO PIECE' },
-    { id: 'DUAL_HINGE', title: 'DUAL HINGE' },
-    { id: 'FRAMED_MOD_TRAP', title: 'FRAMED MOD TRAP' },
-    { id: 'CLOSED_V', title: 'CLOSED V' },
-    { id: 'BASKET', title: 'BASKET' },
-    { id: 'BASKET_LACE', title: 'BASKET LACE' },
-    { id: 'SEALING', title: 'SEALING' },
-    { id: 'LACE_SEALING', title: 'LACE SEALING' }
+    { id: 'MOD_TRAP', title: 'MOD TRAP' }, { id: 'ONE_PIECE', title: 'ONE PIECE' }, { id: 'TWO_PIECE', title: 'TWO PIECE' }, { id: 'DUAL_HINGE', title: 'DUAL HINGE' }, { id: 'FRAMED_MOD_TRAP', title: 'FRAMED MOD TRAP' }, { id: 'CLOSED_V', title: 'CLOSED V' }, { id: 'BASKET', title: 'BASKET' }, { id: 'BASKET_LACE', title: 'BASKET LACE' }, { id: 'SEALING', title: 'SEALING' }, { id: 'LACE_SEALING', title: 'LACE SEALING' }
 ];
 
-const optionsConfig: { id: keyof GloveConfiguration | 'build'; title: string; contentType: (typeof CONTENT_TYPES)[keyof Omit<typeof CONTENT_TYPES, 'SUMMARY'>]; }[] = [
+type OptionsConfigItem = { id: keyof GloveConfiguration | 'build'; title: string; contentType: Exclude<(typeof CONTENT_TYPES)[keyof typeof CONTENT_TYPES], 'summary'>; };
+
+const optionsConfig: OptionsConfigItem[] = [
     { id: 'build', title: 'Build Options', contentType: CONTENT_TYPES.BUILD },
     { id: 'web', title: 'Web', contentType: CONTENT_TYPES.GALLERY },
     { id: 'thumb', title: 'Thumb Color', contentType: CONTENT_TYPES.DUAL_COLOR },
@@ -211,24 +169,14 @@ const optionsConfig: { id: keyof GloveConfiguration | 'build'; title: string; co
     { id: 'pinkyName', title: 'Pinky Name', contentType: CONTENT_TYPES.TEXT },
 ];
 
-const PANEL_NAME_MAP: { [key: string]: string } = {
-    [CONTENT_TYPES.BUILD]: 'build',
-    [CONTENT_TYPES.GALLERY]: 'gallery',
-    [CONTENT_TYPES.COLOR]: 'color',
-    [CONTENT_TYPES.DUAL_COLOR]: 'dual-color',
-    [CONTENT_TYPES.TEXT]: 'text',
-    [CONTENT_TYPES.SUMMARY]: 'summary'
-};
-
 interface GetColorDisplayOptions {
     format?: (typeof FORMAT_TYPES)[keyof typeof FORMAT_TYPES];
 }
 
-const getColorDisplay = (colorValue: SingleColorPart | DualColorPart | WebPart | TextPart | HexColor, options: GetColorDisplayOptions = {}): string => {
+const getColorDisplay = (colorValue: ColorablePart | HexColor, options: GetColorDisplayOptions = {}): string => {
     const { format = FORMAT_TYPES.DEFAULT } = options;
     const getColorName = (hex: HexColor) => colorSwatches.find(c => c.hex === hex)?.name || hex;
     
-    // Handle the case where a raw hex string is passed for simplicity (e.g., from text config)
     if (typeof colorValue === 'string') {
         return getColorName(colorValue);
     }
@@ -236,16 +184,34 @@ const getColorDisplay = (colorValue: SingleColorPart | DualColorPart | WebPart |
     switch (format) {
         case FORMAT_TYPES.HEADER:
             if (colorValue.type === 'dual') return `${getColorName(colorValue.inner)} · ${getColorName(colorValue.outer)}`;
-            if (colorValue.type === 'web') return getColorName(colorValue.color);
-            if (colorValue.type === 'single') return getColorName(colorValue.color);
             return getColorName(colorValue.color);
         case FORMAT_TYPES.SUMMARY:
             if (colorValue.type === 'dual') return `Inner: ${getColorName(colorValue.inner)}, Outer: ${getColorName(colorValue.outer)}`;
-            if (colorValue.type === 'web') return `Color: ${getColorName(colorValue.color)}`;
-            if (colorValue.type === 'single') return getColorName(colorValue.color);
-            return getColorName(colorValue.color);
+            if (colorValue.type === 'text') return getColorName(colorValue.color);
+            if (colorValue.type === 'single' || colorValue.type === 'web') return `Color: ${getColorName(colorValue.color)}`;
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
+            const exhaustiveCheck: never = colorValue;
+            return 'N/A';
         default:
             return JSON.stringify(colorValue);
+    }
+};
+
+const getActiveColor = (
+    colorValue: ColorablePart | null | undefined,
+    activeSubPart: AppState['activeDualColorPart']
+): HexColor | undefined => {
+    if (!colorValue || typeof colorValue !== 'object') return undefined;
+
+    switch (colorValue.type) {
+        case 'web':
+        case 'single':
+        case 'text':
+            return colorValue.color;
+        case 'dual':
+            return colorValue[activeSubPart];
+        default:
+            return undefined;
     }
 };
 
@@ -273,11 +239,12 @@ const gloveConfigReducer = (state: AppState, action: GloveAction): AppState => {
         case ACTION_TYPES.UPDATE_COLOR:
             return { ...state, configuration: { ...state.configuration, [action.payload.id]: { type: 'single', color: action.payload.color } } };
         case ACTION_TYPES.UPDATE_DUAL_COLOR:
+            const currentDualColorPart = state.configuration[action.payload.id];
             return {
                 ...state,
                 configuration: {
                     ...state.configuration,
-                    [action.payload.id]: { ...state.configuration[action.payload.id], [action.payload.subPartId]: action.payload.color },
+                    [action.payload.id]: { ...currentDualColorPart, [action.payload.subPartId]: action.payload.color },
                 },
                 activeDualColorPart: action.payload.subPartId,
             };
@@ -288,11 +255,8 @@ const gloveConfigReducer = (state: AppState, action: GloveAction): AppState => {
         case ACTION_TYPES.APPLY_COLOR_TO_ALL: {
             const { color } = action.payload;
             if (!color) return state;
-
-            // Create a mutable copy of the configuration
             const newConfig = { ...state.configuration };
 
-            // Explicitly update each color-related property for type safety
             newConfig.index = { type: 'single', color: color };
             newConfig.web = { ...newConfig.web, color: color };
             newConfig.thumb = { type: 'dual', inner: color, outer: color };
@@ -303,7 +267,8 @@ const gloveConfigReducer = (state: AppState, action: GloveAction): AppState => {
             return { ...state, configuration: newConfig };
         }
         default:
-            throw new Error(`Unhandled action type: ${(action as any).type}`);
+            const exhaustiveCheck: never = action;
+            throw new Error(`Unhandled action: ${JSON.stringify(exhaustiveCheck)}`);
     }
 };
 
@@ -324,7 +289,7 @@ const useGloveConfigurator = () => {
     return context;
 };
 
-// --- Helper Components (Unchanged) ---
+// --- Helper Components ---
 
 interface ScrollGradientProps {
     position: (typeof POSITIONS)[keyof typeof POSITIONS];
@@ -400,7 +365,7 @@ const ColorSwatchGrid = ({ swatches, selectedColor, onColorSelect }: ColorSwatch
     </div>
 );
 
-// --- Accordion Containers (Unchanged) ---
+// --- Accordion Containers ---
 
 interface AccordionOptionHeaderProps {
     title: string;
@@ -482,7 +447,7 @@ const AccordionOptionMobile = ({ title, onClose, headerAccessory = null, childre
     );
 };
 
-// --- Pure Content Components (Unchanged) ---
+// --- Content Components ---
 
 interface ColorContentProps {
     value: HexColor;
@@ -491,7 +456,7 @@ interface ColorContentProps {
 const ColorContent = ({ value, onChange }: ColorContentProps) => <ColorSwatchGrid swatches={colorSwatches} selectedColor={value} onColorSelect={onChange} />;
 
 interface DualColorContentProps {
-    value: { inner: HexColor; outer: HexColor };
+    value: DualColorPart;
     onChange: (subPart: (typeof DUAL_COLOR_SUB_PARTS)[keyof typeof DUAL_COLOR_SUB_PARTS], color: HexColor) => void;
     labels?: { inner: string; outer: string };
 }
@@ -572,7 +537,7 @@ const BuildOption = ({ isDesktop }: BuildOptionProps) => {
 };
 
 interface TextOptionProps {
-    contextId: 'thumbName' | 'pinkyName';
+    contextId: TextPartId;
 }
 const TextOption = ({ contextId }: TextOptionProps) => {
     const { state, dispatch } = useGloveConfigurator();
@@ -616,7 +581,7 @@ const GalleryOption = ({ isDesktop }: GalleryOptionProps) => {
     );
 };
 
-// --- START: NEW COMPONENT RENDERER MAPS ---
+// --- Panel Components ---
 
 const SummaryPanel = ({ onClose }: { onClose: () => void }) => <OverviewMobile onClose={onClose} />;
 
@@ -664,7 +629,6 @@ const ColorPanel = ({ context, onClose }: ColorPanelProps) => {
     return (
         <AccordionOptionMobile title={title} onClose={onClose} headerAccessory={headerAccessory}>
             {colorValue.type === 'dual' ? (
-                // --- TypeScript now knows `colorValue` is `DualColorPart` ---
                 <DualColorContent
                     value={colorValue}
                     onChange={(subPart, color) =>
@@ -675,13 +639,12 @@ const ColorPanel = ({ context, onClose }: ColorPanelProps) => {
                     }
                 />
             ) : (
-                // --- TypeScript now knows `colorValue` is `SingleColorPart` ---
                 <ColorContent
                     value={colorValue.color}
                     onChange={(color) =>
                         dispatch({
                             type: ACTION_TYPES.UPDATE_COLOR,
-                            payload: { id: id as 'index', color }
+                            payload: { id: 'index', color }
                         })
                     }
                 />
@@ -690,7 +653,7 @@ const ColorPanel = ({ context, onClose }: ColorPanelProps) => {
     );
 };
 
-// --- END: NEW COMPONENT RENDERER MAPS ---
+// --- Other UI Components ---
 
 const OrderSummaryInfo = () => {
     const { state } = useGloveConfigurator();
@@ -720,7 +683,7 @@ const OrderSummaryInfo = () => {
                     <p><span className="font-semibold text-gray-400">Middle:</span> {getColorDisplay(middle, { format: FORMAT_TYPES.SUMMARY })}</p>
                     <p><span className="font-semibold text-gray-400">Ring:</span> {getColorDisplay(ring, { format: FORMAT_TYPES.SUMMARY })}</p>
                     <p><span className="font-semibold text-gray-400">Pinky:</span> {getColorDisplay(pinky, { format: FORMAT_TYPES.SUMMARY })}</p>
-                    {web && <p><span className="font-semibold text-gray-400">Web Color:</span> {getColorDisplay(web.color, { format: FORMAT_TYPES.SUMMARY })}</p>}
+                    {web && <p><span className="font-semibold text-gray-400">Web Color:</span> {getColorDisplay(web, { format: FORMAT_TYPES.SUMMARY })}</p>}
                 </div>
             </div>
             <div>
@@ -765,15 +728,17 @@ const OrderButtonController = ({ isSummaryVisible, onReviewClick, onCompleteClic
 };
 
 type MobileAccordionState =
-  | { name: typeof CONTENT_TYPES.SUMMARY }
-  | { name: typeof CONTENT_TYPES.BUILD, context: BuildPanelProps['context'] }
-  | { name: typeof CONTENT_TYPES.GALLERY, context: GalleryPanelProps['context'] }
-  | { name: typeof CONTENT_TYPES.COLOR | typeof CONTENT_TYPES.DUAL_COLOR, context: ColorPanelProps['context'] }
-  | { name: typeof CONTENT_TYPES.TEXT, context: TextPanelProps['context'] }
-  | null;
+    | { name: typeof CONTENT_TYPES.SUMMARY }
+    | { name: typeof CONTENT_TYPES.BUILD; context: BuildPanelProps['context'] }
+    | { name: typeof CONTENT_TYPES.GALLERY; context: GalleryPanelProps['context'] }
+    | { name: typeof CONTENT_TYPES.COLOR; context: ColorPanelProps['context'] }
+    | { name: typeof CONTENT_TYPES.DUAL_COLOR; context: ColorPanelProps['context'] }
+    | { name: typeof CONTENT_TYPES.TEXT; context: TextPanelProps['context'] }
+    | null;
+
 
 interface FooterMobileProps {
-    openPanelName?: string | null;
+    openPanelName?: (typeof CONTENT_TYPES)[keyof typeof CONTENT_TYPES] | null;
     onClosePanel: () => void;
     onReviewClick: () => void;
     onCompleteOrder: () => void;
@@ -782,43 +747,29 @@ interface FooterMobileProps {
 }
 const FooterMobile = ({ openPanelName, onClosePanel, onReviewClick, onCompleteOrder, isDesktop, openAccordionOptionMobile }: FooterMobileProps) => {
     const { state, dispatch } = useGloveConfigurator();
-    const getActiveColor = (colorValue: ColorablePart): HexColor | undefined => {
-        if (typeof colorValue !== 'object' || colorValue === null) return undefined;
-        
-        switch (colorValue.type) {
-            case 'web':
-                return colorValue.color;
-            case 'dual':
-                return colorValue[state.activeDualColorPart];
-            case 'single':
-                return colorValue.color;
-            default:
-                return undefined;
-        }
-    };
     const getApplyAllColor = (): HexColor | undefined => {
         if (!openAccordionOptionMobile || openAccordionOptionMobile.name === CONTENT_TYPES.SUMMARY || openAccordionOptionMobile.name === CONTENT_TYPES.BUILD || openAccordionOptionMobile.name === CONTENT_TYPES.TEXT) {
             return undefined;
         }
         
         const { context } = openAccordionOptionMobile;
-        const colorValue = state.configuration[context.id];
-        return getActiveColor(colorValue);
+        const configValue = state.configuration[context.id];
+        return getActiveColor(configValue, state.activeDualColorPart);
     };
     const onApplyColorToAll = (color?: HexColor) => {
         if (color) dispatch({ type: ACTION_TYPES.APPLY_COLOR_TO_ALL, payload: { color } });
     };
     const colorToApply = getApplyAllColor();
-    const panelFooterMap: { [key: string]: ReactElement } = {
-        [PANEL_NAME_MAP[CONTENT_TYPES.COLOR]]: <div className="w-full grid grid-cols-[1fr_1.618fr] gap-[10px]"><SecondaryButton label="Apply to All" onClick={() => onApplyColorToAll(colorToApply)} variant={VARIANTS.THEME.DARK} icon={ICONS.CHECKMARK} disabled={!colorToApply} /><SecondaryButton label="Continue" onClick={onClosePanel} variant={VARIANTS.THEME.LIGHT} icon={ICONS.CHECKMARK} /></div>,
-        [PANEL_NAME_MAP[CONTENT_TYPES.DUAL_COLOR]]: <div className="w-full grid grid-cols-[1fr_1.618fr] gap-[10px]"><SecondaryButton label="Apply to All" onClick={() => onApplyColorToAll(colorToApply)} variant={VARIANTS.THEME.DARK} icon={ICONS.CHECKMARK} disabled={!colorToApply} /><SecondaryButton label="Continue" onClick={onClosePanel} variant={VARIANTS.THEME.LIGHT} icon={ICONS.CHECKMARK} /></div>,
-        [PANEL_NAME_MAP[CONTENT_TYPES.BUILD]]: <SecondaryButton label="Continue" onClick={onClosePanel} variant={VARIANTS.THEME.LIGHT} icon={ICONS.CHECKMARK} />,
-        [PANEL_NAME_MAP[CONTENT_TYPES.GALLERY]]: <div className="w-full grid grid-cols-[1fr_1.618fr] gap-[10px]"><SecondaryButton label="Apply to All" onClick={() => onApplyColorToAll(colorToApply)} variant={VARIANTS.THEME.DARK} icon={ICONS.CHECKMARK} disabled={!colorToApply} /><SecondaryButton label="Continue" onClick={onClosePanel} variant={VARIANTS.THEME.LIGHT} icon={ICONS.CHECKMARK} /></div>,
-        [PANEL_NAME_MAP[CONTENT_TYPES.TEXT]]: <SecondaryButton label="Continue" onClick={onClosePanel} variant={VARIANTS.THEME.LIGHT} icon={ICONS.CHECKMARK} />,
-        [PANEL_NAME_MAP[CONTENT_TYPES.SUMMARY]]: <div className="w-full grid grid-cols-[1fr_1.618fr] gap-[10px]"><SecondaryButton label="Back" onClick={onClosePanel} variant={VARIANTS.THEME.DARK} icon={ICONS.BACK_ARROW} /><OrderButtonController isSummaryVisible={true} onCompleteClick={onCompleteOrder} onReviewClick={() => {}} /></div>,
+    const panelFooterMap: { [key in (typeof CONTENT_TYPES)[keyof typeof CONTENT_TYPES]]?: ReactElement } = {
+        [CONTENT_TYPES.COLOR]: <div className="w-full grid grid-cols-[1fr_1.618fr] gap-[10px]"><SecondaryButton label="Apply to All" onClick={() => onApplyColorToAll(colorToApply)} variant={VARIANTS.THEME.DARK} icon={ICONS.CHECKMARK} disabled={!colorToApply} /><SecondaryButton label="Continue" onClick={onClosePanel} variant={VARIANTS.THEME.LIGHT} icon={ICONS.CHECKMARK} /></div>,
+        [CONTENT_TYPES.DUAL_COLOR]: <div className="w-full grid grid-cols-[1fr_1.618fr] gap-[10px]"><SecondaryButton label="Apply to All" onClick={() => onApplyColorToAll(colorToApply)} variant={VARIANTS.THEME.DARK} icon={ICONS.CHECKMARK} disabled={!colorToApply} /><SecondaryButton label="Continue" onClick={onClosePanel} variant={VARIANTS.THEME.LIGHT} icon={ICONS.CHECKMARK} /></div>,
+        [CONTENT_TYPES.BUILD]: <SecondaryButton label="Continue" onClick={onClosePanel} variant={VARIANTS.THEME.LIGHT} icon={ICONS.CHECKMARK} />,
+        [CONTENT_TYPES.GALLERY]: <div className="w-full grid grid-cols-[1fr_1.618fr] gap-[10px]"><SecondaryButton label="Apply to All" onClick={() => onApplyColorToAll(colorToApply)} variant={VARIANTS.THEME.DARK} icon={ICONS.CHECKMARK} disabled={!colorToApply} /><SecondaryButton label="Continue" onClick={onClosePanel} variant={VARIANTS.THEME.LIGHT} icon={ICONS.CHECKMARK} /></div>,
+        [CONTENT_TYPES.TEXT]: <SecondaryButton label="Continue" onClick={onClosePanel} variant={VARIANTS.THEME.LIGHT} icon={ICONS.CHECKMARK} />,
+        [CONTENT_TYPES.SUMMARY]: <div className="w-full grid grid-cols-[1fr_1.618fr] gap-[10px]"><SecondaryButton label="Back" onClick={onClosePanel} variant={VARIANTS.THEME.DARK} icon={ICONS.BACK_ARROW} /><OrderButtonController isSummaryVisible={true} onCompleteClick={onCompleteOrder} onReviewClick={() => {}} /></div>,
     };
     const defaultFooter = <div className="w-full grid grid-cols-[1fr_1.618fr] gap-[10px]"><OverviewButton onClick={onReviewClick} isDesktop={isDesktop} isOpen={false} /><OrderButtonController isSummaryVisible={false} onReviewClick={onReviewClick} onCompleteClick={onCompleteOrder} /></div>;
-    return <footer className="flex-shrink-0 bg-[#161616] flex items-center justify-start pb-[20px] px-[14px] pt-[10px]">{openPanelName ? (panelFooterMap[openPanelName] || defaultFooter) : defaultFooter}</footer>;
+    return <footer className="flex-shrink-0 bg-[#161616] flex items-center justify-start pb-[20px] px-[14px] pt-[10px]">{openPanelName ? (panelFooterMap[openPanelName as keyof typeof panelFooterMap] || defaultFooter) : defaultFooter}</footer>;
 };
 
 const useBreakpoint = (breakpoint: string = NUMERIC_CONSTANTS.DESKTOP_BREAKPOINT): boolean => {
@@ -859,48 +810,7 @@ const OverviewDesktop = () => {
     );
 };
 
-// --- REFACTORED: Main Desktop Accordion Component ---
-
-const DESKTOP_CONTENT_MAP = {
-  [CONTENT_TYPES.BUILD]: BuildOption,
-  [CONTENT_TYPES.GALLERY]: GalleryOption,
-  [CONTENT_TYPES.COLOR]: ColorContent,
-  [CONTENT_TYPES.DUAL_COLOR]: DualColorContent,
-  [CONTENT_TYPES.TEXT]: TextOption,
-};
-
-const getContentProps = (item: typeof optionsConfig[0], configuration: GloveConfiguration, dispatch: React.Dispatch<GloveAction>) => {
-  const { id } = item;
-  // This type assertion is safe because 'build' is handled separately and other keys align with ColorablePart types.
-  const configValue = configuration[id as keyof Omit<GloveConfiguration, 'build'>];
-
-  switch (configValue.type) {
-    case 'single':
-      return {
-        value: configValue.color,
-        onChange: (color: HexColor) => dispatch({ type: ACTION_TYPES.UPDATE_COLOR, payload: { id: 'index', color } }),
-      };
-    
-    case 'dual':
-      return {
-        value: configValue,
-        onChange: (subPart: any, color: any) => dispatch({ type: ACTION_TYPES.UPDATE_DUAL_COLOR, payload: { id: id as 'thumb' | 'middle' | 'ring' | 'pinky', subPartId: subPart, color } }),
-      };
-
-    case 'text':
-       return {
-         contextId: id as 'thumbName' | 'pinkyName',
-       };
-
-    case 'web':
-        return { isDesktop: true }; // GalleryOption doesn't need specific props here
-
-    default:
-      // For 'build', which doesn't have a 'type', or any other case.
-      return { isDesktop: true };
-  }
-};
-
+// --- Main Accordion Components ---
 
 const AccordionDesktop = () => {
     const { state, dispatch } = useGloveConfigurator();
@@ -912,19 +822,7 @@ const AccordionDesktop = () => {
     const [isScrolled, setIsScrolled] = useState(false);
 
     const handleAccordionToggle = (accordionId: string) => setOpenAccordion(prev => (prev === accordionId ? null : accordionId));
-    const getActiveColor = (colorValue: ColorablePart): HexColor | undefined => {
-        if (typeof colorValue !== 'object' || colorValue === null) return undefined;
-        switch (colorValue.type) {
-            case 'web':
-                return colorValue.color;
-            case 'dual':
-                return colorValue[activeDualColorPart];
-            case 'single':
-                return colorValue.color;
-            default:
-                return undefined;
-        }
-    };
+    
     const handleApplyColorToAll = (colorString?: HexColor) => {
         if (colorString) dispatch({ type: ACTION_TYPES.APPLY_COLOR_TO_ALL, payload: { color: colorString } });
     };
@@ -950,7 +848,7 @@ const AccordionDesktop = () => {
         };
     }, [checkAndSetGradients]);
 
-    const renderHeaderAccessory = (item: typeof optionsConfig[0]) => {
+    const renderHeaderAccessory = (item: OptionsConfigItem) => {
         if (item.id === 'build') return null;
         const isAccordionOpen = openAccordion === item.id;
         const configValue = configuration[item.id as keyof Omit<GloveConfiguration, 'build'>];
@@ -970,6 +868,8 @@ const AccordionDesktop = () => {
             case 'text':
                 return <span className="text-sm text-gray-400 truncate max-w-[100px]">{configValue.text}</span>;
             default:
+                // eslint-disable-next-line @typescript-eslint/no-unused-vars
+                const exhaustiveCheck: never = configValue;
                 return null;
         }
     };
@@ -980,30 +880,54 @@ const AccordionDesktop = () => {
             <div className={`absolute ${isScrolled ? 'top-[82px]' : 'top-[142px]'} bottom-4 left-[40px] w-[400px] pointer-events-auto transition-all duration-30 ease-in-out overflow-hidden`}>
                 <ScrollGradient position={POSITIONS.TOP} isVisible={isTopGradientVisible} />
                 <div ref={accordionContainerRef} className="h-full overflow-y-auto space-y-4">
-                    {optionsConfig.map(item => {
-                        const ContentComponent = DESKTOP_CONTENT_MAP[item.contentType];
-                        const contentProps = getContentProps(item, configuration, dispatch);
-
-                        return (
-                            <AccordionOptionDesktop
-                                key={item.id}
-                                title={item.title}
-                                isOpen={openAccordion === item.id}
-                                onToggle={() => handleAccordionToggle(item.id)}
-                                headerContent={renderHeaderAccessory(item as any)}
-                                actionButton={
-                                    (item.contentType === CONTENT_TYPES.COLOR || item.contentType === CONTENT_TYPES.DUAL_COLOR || item.contentType === CONTENT_TYPES.GALLERY) && (
-                                        <SecondaryButton
-                                            label="Apply to All"
-                                            onClick={() => handleApplyColorToAll(getActiveColor(configuration[item.id as keyof Omit<GloveConfiguration, 'build'>]))}
-                                        />
-                                    )
+                    {optionsConfig.map(item => (
+                        <AccordionOptionDesktop
+                            key={item.id}
+                            title={item.title}
+                            isOpen={openAccordion === item.id}
+                            onToggle={() => handleAccordionToggle(item.id)}
+                            headerContent={renderHeaderAccessory(item)}
+                            actionButton={
+                                (() => {
+                                    if (item.contentType === CONTENT_TYPES.COLOR || item.contentType === CONTENT_TYPES.DUAL_COLOR || item.contentType === CONTENT_TYPES.GALLERY) {
+                                        const configValue = configuration[item.id as keyof Omit<GloveConfiguration, 'build'>];
+                                        return (
+                                            <SecondaryButton
+                                                label="Apply to All"
+                                                onClick={() => handleApplyColorToAll(getActiveColor(configValue, activeDualColorPart))}
+                                            />
+                                        );
+                                    }
+                                    return null;
+                                })()
+                            }
+                        >
+                            {(() => {
+                                if (item.id === 'build') {
+                                    return <BuildOption isDesktop={true} />;
                                 }
-                            >
-                                {ContentComponent && <ContentComponent {...contentProps as any} />}
-                            </AccordionOptionDesktop>
-                        );
-                    })}
+                                const configValue = configuration[item.id];
+                                switch (item.contentType) {
+                                    case CONTENT_TYPES.COLOR:
+                                        return <ColorContent
+                                            value={(configValue as SingleColorPart).color}
+                                            onChange={(color) => dispatch({ type: ACTION_TYPES.UPDATE_COLOR, payload: { id: 'index', color } })}
+                                        />;
+                                    case CONTENT_TYPES.DUAL_COLOR:
+                                        return <DualColorContent
+                                            value={configValue as DualColorPart}
+                                            onChange={(subPart, color) => dispatch({ type: ACTION_TYPES.UPDATE_DUAL_COLOR, payload: { id: item.id as 'thumb' | 'middle' | 'ring' | 'pinky', subPartId: subPart, color } })}
+                                        />;
+                                    case CONTENT_TYPES.TEXT:
+                                        return <TextOption contextId={item.id as TextPartId} />;
+                                    case CONTENT_TYPES.GALLERY:
+                                        return <GalleryOption isDesktop={true} />;
+                                    default:
+                                        return null;
+                                }
+                            })()}
+                        </AccordionOptionDesktop>
+                    ))}
                 </div>
                 <ScrollGradient position={POSITIONS.BOTTOM} isVisible={isBottomGradientVisible} />
             </div>
@@ -1011,11 +935,11 @@ const AccordionDesktop = () => {
     );
 };
 
-// --- REFACTORED: Main Mobile Accordion Component ---
 interface AccordionMobileProps {
-    onOpenPanel: (item: typeof optionsConfig[0]) => void;
+    onOpenPanel: (item: OptionsConfigItem) => void;
     openAccordionOptionMobile: MobileAccordionState;
 }
+
 const AccordionMobile = ({ onOpenPanel, openAccordionOptionMobile }: AccordionMobileProps) => {
     const { state } = useGloveConfigurator();
     const { configuration } = state;
@@ -1043,7 +967,7 @@ const AccordionMobile = ({ onOpenPanel, openAccordionOptionMobile }: AccordionMo
         };
     }, [checkAndSetGradients]);
 
-    const renderAccessory = (item: typeof optionsConfig[0]) => {
+    const renderAccessory = (item: OptionsConfigItem) => {
         if (item.id === 'build') return null;
         const configValue = configuration[item.id as keyof Omit<GloveConfiguration, 'build'>];
         switch (configValue.type) {
@@ -1056,7 +980,10 @@ const AccordionMobile = ({ onOpenPanel, openAccordionOptionMobile }: AccordionMo
                 return <span className="w-6 h-6 rounded-full" style={{ backgroundColor: configValue.color }}></span>;
             case 'text':
                 return <span className="text-sm text-gray-400 truncate max-w-[100px]">{configValue.text}</span>;
-            default: return null;
+            default:
+                // eslint-disable-next-line @typescript-eslint/no-unused-vars 
+                const exhaustiveCheck: never = configValue;
+                return null;
         }
     };
 
@@ -1064,12 +991,12 @@ const AccordionMobile = ({ onOpenPanel, openAccordionOptionMobile }: AccordionMo
         <section ref={listContainerRef} className={`px-4 bg-[#161616] h-full overflow-y-auto ${openAccordionOptionMobile ? 'opacity-50 pointer-events-none' : ''}`} tabIndex={-1}>
             <ScrollGradient position={POSITIONS.TOP} isVisible={topGradientVisible} />
             {optionsConfig.map(item => (
-                <button key={item.id} data-id={item.id} className="w-full h-[56px] bg-[#1C1C1C] flex items-center justify-between px-4 mb-[10px] cursor-pointer hover:bg-[#2A2A2A] focus:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-white" onClick={() => onOpenPanel(item as any)}>
+                <button key={item.id} data-id={item.id} className="w-full h-[56px] bg-[#1C1C1C] flex items-center justify-between px-4 mb-[10px] cursor-pointer hover:bg-[#2A2A2A] focus:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-white" onClick={() => onOpenPanel(item)}>
                     <div className="flex items-center">
                         <svg viewBox="0 0 10 16" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-4 w-auto mr-3"><path d="M1 1L8 8L1.10769 15" stroke="white" strokeWidth={2}/></svg>
                         <span className="text-lg">{item.title}</span>
                     </div>
-                    {renderAccessory(item as any)}
+                    {renderAccessory(item)}
                 </button>
             ))}
             <ScrollGradient position={POSITIONS.BOTTOM} isVisible={bottomGradientVisible} />
@@ -1077,60 +1004,60 @@ const AccordionMobile = ({ onOpenPanel, openAccordionOptionMobile }: AccordionMo
     );
 };
 
-// --- REFACTORED: Main UI Component ---
-
-const MOBILE_PANEL_MAP = {
-  [CONTENT_TYPES.SUMMARY]: ({ onClose }: { onClose: () => void; }) => <SummaryPanel onClose={onClose} />,
-  [CONTENT_TYPES.BUILD]: ({ context, onClose }: { context: any, onClose: () => void; }) => <BuildPanel context={context} onClose={onClose} />,
-  [CONTENT_TYPES.GALLERY]: ({ context, onClose }: { context: any, onClose: () => void; }) => <GalleryPanel context={context} onClose={onClose} />,
-  [CONTENT_TYPES.COLOR]: ({ context, onClose }: { context: any, onClose: () => void; }) => <ColorPanel context={context} onClose={onClose} />,
-  [CONTENT_TYPES.DUAL_COLOR]: ({ context, onClose }: { context: any, onClose: () => void; }) => <ColorPanel context={context} onClose={onClose} />,
-  [CONTENT_TYPES.TEXT]: ({ context, onClose }: { context: any, onClose: () => void; }) => <TextPanel context={context} onClose={onClose} />,
-};
-
+// --- Main UI Component ---
 const UI = () => {
     const isDesktop = useBreakpoint();
     const { state } = useGloveConfigurator();
-    const { configuration } = state;
     const [isVisualizationExpanded, setIsVisualizationExpanded] = useState(false);
     const [openAccordionOptionMobile, setOpenAccordionOptionMobile] = useState<MobileAccordionState>(null);
 
-    const handleOpenPanel = (item: typeof optionsConfig[0]) => {
-        const panelName = PANEL_NAME_MAP[item.contentType];
-        // The `as any` here is a single, contained concession that bridges our
-        // data array (`optionsConfig`) to our strictly-typed state.
-        // It's acceptable because it happens at the "entry point" of the logic.
-        setOpenAccordionOptionMobile({ name: panelName, context: item } as any);
+    const handleOpenPanel = (item: OptionsConfigItem) => {
+        const { id, title, contentType } = item;
+        // This assertion is a concession because mapping the generic `OptionsConfigItem`
+        // to the specific members of the `MobileAccordionState` union is complex.
+        // However, `renderMobilePanel` consumes it safely with a discriminated union check.
+        setOpenAccordionOptionMobile({ name: contentType, context: { id: id as any, title } } as MobileAccordionState);
     };
 
-    const GOLDEN_RATIO_CONSTANT = 1.618;
-    const VIZ_PROPORTION = 1 / GOLDEN_RATIO_CONSTANT;
-    const CONTROLS_PROPORTION = 1 - VIZ_PROPORTION;
-
     const handleShare = useCallback(async () => {
-        const configUrl = `${window.location.origin}?config=${encodeURIComponent(JSON.stringify(configuration))}`;
+        const configUrl = `${window.location.origin}?config=${encodeURIComponent(JSON.stringify(state.configuration))}`;
         const shareData = { title: 'My Custom Glove', text: 'Check out the glove I designed!', url: configUrl };
         if (navigator.share) {
             try { await navigator.share(shareData); } catch (err) { console.log('Share failed', err); }
         } else {
             try { await navigator.clipboard.writeText(configUrl); alert('Sharable link copied to clipboard!'); } catch (err) { alert('Failed to copy link.'); }
         }
-    }, [configuration]);
+    }, [state.configuration]);
 
-    // RENDER MOBILE PANEL DYNAMICALLY
     const renderMobilePanel = () => {
         if (!openAccordionOptionMobile) return null;
 
-        const PanelRenderer = MOBILE_PANEL_MAP[openAccordionOptionMobile.name as keyof typeof MOBILE_PANEL_MAP];
-
-        if (!PanelRenderer) return null;
-
-        // The wrapper function handles which props to accept, preventing type errors.
-        return PanelRenderer({
-            context: (openAccordionOptionMobile as any).context,
-            onClose: () => setOpenAccordionOptionMobile(null),
-        });
+        const onClose = () => setOpenAccordionOptionMobile(null);
+        
+        switch (openAccordionOptionMobile.name) {
+            case CONTENT_TYPES.SUMMARY:
+                return <SummaryPanel onClose={onClose} />;
+            case CONTENT_TYPES.BUILD:
+                return <BuildPanel context={openAccordionOptionMobile.context} onClose={onClose} />;
+            case CONTENT_TYPES.GALLERY:
+                return <GalleryPanel context={openAccordionOptionMobile.context} onClose={onClose} />;
+            case CONTENT_TYPES.COLOR:
+            case CONTENT_TYPES.DUAL_COLOR:
+                return <ColorPanel context={openAccordionOptionMobile.context} onClose={onClose} />;
+            case CONTENT_TYPES.TEXT:
+                return <TextPanel context={openAccordionOptionMobile.context} onClose={onClose} />;
+            default:
+                // This will never be hit if MobileAccordionState is correct, but good for safety
+                const exhaustiveCheck: never = openAccordionOptionMobile;
+                // eslint-disable-next-line @typescript-eslint/no-unused-vars
+                const _ = exhaustiveCheck;
+                return null;
+        }
     };
+    
+    const GOLDEN_RATIO_CONSTANT = 1.618;
+    const VIZ_PROPORTION = 1 / GOLDEN_RATIO_CONSTANT;
+    const CONTROLS_PROPORTION = 1 - VIZ_PROPORTION;
 
     return (
         <div className="flex flex-col lg:relative h-[100dvh] bg-[#161616] text-white">
