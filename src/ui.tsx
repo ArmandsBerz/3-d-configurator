@@ -812,7 +812,7 @@ const OverviewDesktop = () => {
 
 // --- Main Accordion Components ---
 
-const AccordionDesktop = () => {
+const AccordionDesktop = ({ options }: { options: OptionsConfigItem[] }) => {
     const { state, dispatch } = useGloveConfigurator();
     const { configuration, activeDualColorPart } = state;
     const [openAccordion, setOpenAccordion] = useState<string | null>(CONTENT_TYPES.BUILD);
@@ -880,7 +880,7 @@ const AccordionDesktop = () => {
             <div className={`absolute ${isScrolled ? 'top-[82px]' : 'top-[142px]'} bottom-4 left-[40px] w-[400px] pointer-events-auto transition-all duration-30 ease-in-out overflow-hidden`}>
                 <ScrollGradient position={POSITIONS.TOP} isVisible={isTopGradientVisible} />
                 <div ref={accordionContainerRef} className="h-full overflow-y-auto space-y-4">
-                    {optionsConfig.map(item => (
+                    {options.map(item => (
                         <AccordionOptionDesktop
                             key={item.id}
                             title={item.title}
@@ -936,11 +936,12 @@ const AccordionDesktop = () => {
 };
 
 interface AccordionMobileProps {
+    options: OptionsConfigItem[];
     onOpenPanel: (item: OptionsConfigItem) => void;
     openAccordionOptionMobile: MobileAccordionState;
 }
 
-const AccordionMobile = ({ onOpenPanel, openAccordionOptionMobile }: AccordionMobileProps) => {
+const AccordionMobile = ({ options, onOpenPanel, openAccordionOptionMobile }: AccordionMobileProps) => {
     const { state } = useGloveConfigurator();
     const { configuration } = state;
     const listContainerRef = useRef<HTMLElement>(null);
@@ -990,7 +991,7 @@ const AccordionMobile = ({ onOpenPanel, openAccordionOptionMobile }: AccordionMo
     return (
         <section ref={listContainerRef} className={`px-4 bg-[#161616] h-full overflow-y-auto ${openAccordionOptionMobile ? 'opacity-50 pointer-events-none' : ''}`} tabIndex={-1}>
             <ScrollGradient position={POSITIONS.TOP} isVisible={topGradientVisible} />
-            {optionsConfig.map(item => (
+            {options.map(item => (
                 <button key={item.id} data-id={item.id} className="w-full h-[56px] bg-[#1C1C1C] flex items-center justify-between px-4 mb-[10px] cursor-pointer hover:bg-[#2A2A2A] focus:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-white" onClick={() => onOpenPanel(item)}>
                     <div className="flex items-center">
                         <svg viewBox="0 0 10 16" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-4 w-auto mr-3"><path d="M1 1L8 8L1.10769 15" stroke="white" strokeWidth={2}/></svg>
@@ -1082,13 +1083,14 @@ const UI = () => {
             {!isVisualizationExpanded && (
                 isDesktop ? (
                     <>
-                        <AccordionDesktop />
+                        <AccordionDesktop options={optionsConfig} />
                         <OverviewDesktop />
                     </>
                 ) : (
                     <div className="flex flex-col overflow-hidden bg-[#161616]" style={{ flexBasis: `${CONTROLS_PROPORTION * 100}%` }}>
                         <div className="relative flex-grow overflow-hidden">
                             <AccordionMobile
+                                options={optionsConfig}
                                 onOpenPanel={handleOpenPanel}
                                 openAccordionOptionMobile={openAccordionOptionMobile}
                             />
