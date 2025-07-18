@@ -300,6 +300,13 @@ const ScrollGradient = ({ position, isVisible }: ScrollGradientProps) => {
     return <div className={`absolute left-0 right-0 h-[63px] ${isTop ? 'top-0 bg-gradient-to-b' : 'bottom-0 bg-gradient-to-t'} from-[#161616] to-transparent pointer-events-none z-10 transition-opacity duration-200 ${isVisible ? 'opacity-100' : 'opacity-0'}`} aria-hidden="true" />;
 };
 
+const ColorIndicator = ({ color }: { color: HexColor }) => (
+    <span
+        className="w-5 h-5 rounded-full border border-white/20"
+        style={{ backgroundColor: color }}
+    ></span>
+);
+
 interface ImageOptionProps {
     id: string;
     title: string;
@@ -377,7 +384,7 @@ interface AccordionOptionHeaderProps {
 }
 const AccordionOptionHeader = ({ title, onClick, accessoryContent, icon, isOpen, variant }: AccordionOptionHeaderProps) => {
     const baseClasses = "w-full flex justify-between items-center text-left focus:outline-none focus-visible:ring-4 focus-visible:ring-inset";
-    const variantClasses = variant === VARIANTS.LAYOUT.DESKTOP ? "p-4 hover:bg-[#2A2A2A] transition-colors focus-visible:ring-white" : "py-3 h-[56px] mb-3 text-white focus-visible:ring-white/50";
+    const variantClasses = variant === VARIANTS.LAYOUT.DESKTOP ? "p-4 h-[56px] hover:bg-[#2A2A2A] transition-colors focus-visible:ring-white" : "py-3 h-[56px] mb-3 text-white focus-visible:ring-white/50";
     return (
         <button onClick={onClick} className={`${baseClasses} ${variantClasses}`}>
             <div className="flex items-center space-x-3">
@@ -858,13 +865,13 @@ const AccordionDesktop = ({ options }: { options: OptionsConfigItem[] }) => {
                 return (
                     <div className="flex items-center space-x-2">
                         <span className="text-sm text-gray-400 font-semibold truncate max-w-[100px]">{webTypeTitle}</span>
-                        {isAccordionOpen ? <span className="text-sm text-gray-400 font-semibold">{`· ${getColorDisplay(configValue, { format: FORMAT_TYPES.HEADER })}`}</span> : <span className="w-6 h-6 rounded-full border border-white/20" style={{ backgroundColor: configValue.color }}></span>}
+                        {isAccordionOpen ? <span className="text-sm text-gray-400 font-semibold">{`· ${getColorDisplay(configValue, { format: FORMAT_TYPES.HEADER })}`}</span> : <ColorIndicator color={configValue.color} />}
                     </div>
                 );
             case 'dual':
-                return isAccordionOpen ? <span className="text-sm text-gray-400 font-semibold">{getColorDisplay(configValue, { format: FORMAT_TYPES.HEADER })}</span> : <div className="flex items-center space-x-2"><span className="w-6 h-6 rounded-full border border-white/20" style={{ backgroundColor: configValue.inner }}></span><span className="w-6 h-6 rounded-full border border-white/20" style={{ backgroundColor: configValue.outer }}></span></div>;
+                return isAccordionOpen ? <span className="text-sm text-gray-400 font-semibold">{getColorDisplay(configValue, { format: FORMAT_TYPES.HEADER })}</span> : <div className="flex items-center space-x-2.5"><ColorIndicator color={configValue.inner} /><ColorIndicator color={configValue.outer} /></div>;
             case 'single':
-                return isAccordionOpen ? <span className="text-sm text-gray-400 font-semibold">{getColorDisplay(configValue, { format: FORMAT_TYPES.HEADER })}</span> : <span className="w-6 h-6 rounded-full border border-white/20" style={{ backgroundColor: configValue.color }}></span>;
+                return isAccordionOpen ? <span className="text-sm text-gray-400 font-semibold">{getColorDisplay(configValue, { format: FORMAT_TYPES.HEADER })}</span> : <ColorIndicator color={configValue.color} />;
             case 'text':
                 return <span className="text-sm text-gray-400 truncate max-w-[100px]">{configValue.text}</span>;
             default:
@@ -974,11 +981,11 @@ const AccordionMobile = ({ options, onOpenPanel, openAccordionOptionMobile }: Ac
         switch (configValue.type) {
             case 'web':
                 const webTypeTitle = webTypeOptions.find(opt => opt.id === configValue.webType)?.title || configValue.webType;
-                return <div className="flex items-center space-x-2"><span className="text-sm text-gray-400 font-semibold truncate max-w-[100px]">{webTypeTitle}</span><span className="w-6 h-6 rounded-full" style={{ backgroundColor: configValue.color }}></span></div>;
+                return <div className="flex items-center space-x-2"><span className="text-sm text-gray-400 font-semibold truncate max-w-[100px]">{webTypeTitle}</span><ColorIndicator color={configValue.color} /></div>;
             case 'dual':
-                return <div className="flex items-center space-x-2"><span className="w-6 h-6 rounded-full" style={{ backgroundColor: configValue.inner }}></span><span className="w-6 h-6 rounded-full" style={{ backgroundColor: configValue.outer }}></span></div>;
+                return <div className="flex items-center space-x-2"><ColorIndicator color={configValue.inner} /><ColorIndicator color={configValue.outer} /></div>;
             case 'single':
-                return <span className="w-6 h-6 rounded-full" style={{ backgroundColor: configValue.color }}></span>;
+                return <ColorIndicator color={configValue.color} />;
             case 'text':
                 return <span className="text-sm text-gray-400 truncate max-w-[100px]">{configValue.text}</span>;
             default:
