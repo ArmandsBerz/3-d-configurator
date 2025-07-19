@@ -56,19 +56,21 @@ const fragmentShaderCode = `
   const vec3 defaultColor = vec3(0.1, 0.1, 0.1);
 
   void main(void) {
-    // --- FIX: The manual flip has been removed. We now use vUV directly. ---
+    // Sample the texture. With BILINEAR filtering, this color will be smoothly interpolated.
     vec4 idColor = texture2D(textureSampler, vUV);
-    vec3 outputColor;
 
-    if (idColor.r > 0.9 && idColor.g < 0.1 && idColor.b < 0.1) {
-      outputColor = colorForRed;
-    } else if (idColor.g > 0.9 && idColor.r < 0.1 && idColor.b < 0.1) {
-      outputColor = colorForGreen;
-    } else if (idColor.b > 0.9 && idColor.r < 0.1 && idColor.g < 0.1) {
-      outputColor = colorForBlue;
-    } else {
-      outputColor = defaultColor;
-    }
+    // Use the R, G, and B channels from the texture as weights to blend your target colors.
+    // This mathematical approach naturally handles gradients.
+    vec3 blendedColor = idColor.r * colorForRed +
+                        idColor.g * colorForGreen +
+                        idColor.b * colorForBlue;
+
+    // Calculate the total influence of the mask.
+    float totalMask = clamp(idColor.r + idColor.g + idColor.b, 0.0, 1.0);
+
+    // Linearly interpolate between the default dark color and your new blended color
+    // based on the mask's total intensity.
+    vec3 outputColor = mix(defaultColor, blendedColor, totalMask);
 
     gl_FragColor = vec4(outputColor, 1.0);
   }
@@ -97,8 +99,10 @@ const createScene = async () => {
     scene,
     true, // noMipmap
     false, // invertY
-    Texture.NEAREST_SAMPLINGMODE // samplingMode
+    // --- FIX: Use BILINEAR filtering for smooth gradients ---
+    Texture.BILINEAR_SAMPLINGMODE // samplingMode
   );
+  
   
   shaderMaterial.setTexture("textureSampler", idTexture);
 
