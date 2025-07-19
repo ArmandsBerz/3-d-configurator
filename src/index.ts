@@ -14,8 +14,8 @@ import {
   HemisphericLight,
   Color4,
   SceneLoader,
-  Texture,
-  ShaderMaterial,
+  ShaderMaterial, // Import ShaderMaterial
+  Texture,        // Import Texture
   Color3
 } from '@babylonjs/core';
 
@@ -32,7 +32,7 @@ const scene = new Scene(engine);
 const camera = new ArcRotateCamera('Camera', Math.PI / 2, Math.PI / 2.5, 3, Vector3.Zero(), scene);
 camera.attachControl(canvas, true);
 
-// Vertex shader code
+// Vertex shader: Passes position and UV coordinates to the fragment shader
 const vertexShaderCode = `
   precision highp float;
   attribute vec3 position;
@@ -45,43 +45,34 @@ const vertexShaderCode = `
   }
 `;
 
-// Fragment shader code
+// Fragment shader: Blends two colors based on a texture mask
 const fragmentShaderCode = `
   precision highp float;
   varying vec2 vUV;
-  uniform sampler2D textureSampler;
-  uniform vec3 colorForRed;
-  uniform vec3 colorForGreen;
-  uniform vec3 colorForBlue;
-  const vec3 defaultColor = vec3(0.1, 0.1, 0.1);
+  uniform sampler2D maskTexture;
+  uniform vec3 startColor;
+  uniform vec3 endColor;
 
   void main(void) {
-    // Sample the texture. With BILINEAR filtering, this color will be smoothly interpolated.
-    vec4 idColor = texture2D(textureSampler, vUV);
+    // Sample the texture to get the grayscale value (0.0 to 1.0)
+    float blendAmount = texture2D(maskTexture, vUV).r;
 
-    // Use the R, G, and B channels from the texture as weights to blend your target colors.
-    // This mathematical approach naturally handles gradients.
-    vec3 blendedColor = idColor.r * colorForRed +
-                        idColor.g * colorForGreen +
-                        idColor.b * colorForBlue;
+    // Linearly interpolate (lerp) between the two colors
+    vec3 finalColor = mix(startColor, endColor, blendAmount);
 
-    // Calculate the total influence of the mask.
-    float totalMask = clamp(idColor.r + idColor.g + idColor.b, 0.0, 1.0);
-
-    // Linearly interpolate between the default dark color and your new blended color
-    // based on the mask's total intensity.
-    vec3 outputColor = mix(defaultColor, blendedColor, totalMask);
-
-    gl_FragColor = vec4(outputColor, 1.0);
+    // Set the final pixel color
+    gl_FragColor = vec4(finalColor, 1.0);
   }
 `;
+
 
 const createScene = async () => {
   scene.clearColor = Color4.FromHexString('#161616');
   new HemisphericLight('light1', new Vector3(1, 1, 0), scene);
 
+  // Create the custom shader material
   const shaderMaterial = new ShaderMaterial(
-    "colorMaskShader",
+    "textureBlendShader",
     scene,
     {
       vertexSource: vertexShaderCode,
@@ -89,30 +80,22 @@ const createScene = async () => {
     },
     {
       attributes: ["position", "uv"],
-      uniforms: ["worldViewProjection", "textureSampler", "colorForRed", "colorForGreen", "colorForBlue"],
+      uniforms: ["worldViewProjection", "maskTexture", "startColor", "endColor"],
     }
   );
 
-  // This line remains exactly as you provided it.
-  const idTexture = new Texture(
-    colorIdUrl,
-    scene,
-    true, // noMipmap
-    false, // invertY
-    // --- FIX: Use BILINEAR filtering for smooth gradients ---
-    Texture.BILINEAR_SAMPLINGMODE // samplingMode
-  );
-  
-  
-  shaderMaterial.setTexture("textureSampler", idTexture);
+  // Load the mask texture
+  const maskTexture = new Texture(colorIdUrl, scene);
 
-  shaderMaterial.setColor3("colorForRed", new Color3(1.0, 0.84, 0.0));
-  shaderMaterial.setColor3("colorForGreen", new Color3(0.75, 0.75, 0.75));
-  shaderMaterial.setColor3("colorForBlue", new Color3(0.6, 0.3, 0.1));
+  // Assign the texture and initial colors to the material's uniforms
+  shaderMaterial.setTexture("maskTexture", maskTexture);
+  shaderMaterial.setColor3("startColor", new Color3(0.8, 0.2, 0.2)); // Initial Red
+  shaderMaterial.setColor3("endColor", new Color3(0.2, 0.2, 0.8));   // Initial Blue
 
   const result = await SceneLoader.ImportMeshAsync(null, "", modelUrl, scene);
   const yourCube = result.meshes[1];
   if (yourCube) {
+    // Assign the shader material to the cube
     yourCube.material = shaderMaterial;
   }
 
@@ -126,10 +109,10 @@ const createScene = async () => {
   button.paddingBottom = "20px";
   advancedTexture.addControl(button);
 
+  // On button click, change the start and end colors to random values
   button.onPointerUpObservable.add(() => {
-    shaderMaterial.setColor3("colorForRed", Color3.Random());
-    shaderMaterial.setColor3("colorForGreen", Color3.Random());
-    shaderMaterial.setColor3("colorForBlue", Color3.Random());
+    shaderMaterial.setColor3("startColor", Color3.Random());
+    shaderMaterial.setColor3("endColor", Color3.Random());
   });
 };
 
