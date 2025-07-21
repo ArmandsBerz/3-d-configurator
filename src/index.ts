@@ -1,5 +1,6 @@
 // Import the model URL
 import modelUrl from './assets/cube.glb';
+import detailUrl from './assets/details.png';
 
 // Enable the GLTF loader
 import "@babylonjs/loaders/glTF";
@@ -20,7 +21,8 @@ import {
     MaterialDefines,
     SubMesh,
     UniformBuffer,
-    Constants
+    Constants,
+    Texture  // Added this import for detail texture
 } from '@babylonjs/core';
 
 // Import GUI components
@@ -176,6 +178,18 @@ const createScene = async () => {
             material.albedoTexture.updateSamplingMode(Constants.TEXTURE_NEAREST_SAMPLINGMODE);
         }
         // --- END OF CHANGE ---
+
+        // ADD DETAIL NORMAL MAP - START
+        const detailTexture = new Texture(detailUrl, scene);
+        detailTexture.coordinatesIndex = 1; // Use UV2
+        detailTexture.uScale = 1.5;
+        detailTexture.vScale = 1.5;
+        
+        material.detailMap.isEnabled = true;
+        material.detailMap.useNormalMap = true;
+        material.detailMap.normalBlendMethod = 1;
+        material.detailMap.texture = detailTexture;
+        // ADD DETAIL NORMAL MAP - END
 
         const plugin = new GradientColorSwapPlugin(yourCube.material as PBRBaseMaterial);
         
