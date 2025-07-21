@@ -33,18 +33,33 @@ const scene = new Scene(engine);
 const camera = new ArcRotateCamera('Camera', Math.PI / 2, Math.PI / 2.5, 5, Vector3.Zero(), scene);
 camera.attachControl(canvas, true);
 
-// --- 5-Color Swap Plugin ---
-// This plugin finds specific colors and replaces each with a unique, controllable color.
-class ColorSwapPluginMaterial extends MaterialPluginBase {
-    // --- Define replacement colors for each channel ---
-    redReplacement = new Color3(1.0, 0.0, 1.0);   // Default: Magenta
-    greenReplacement = new Color3(1.0, 1.0, 0.0); // Default: Yellow
-    blueReplacement = new Color3(0.0, 1.0, 1.0);  // Default: Cyan
-    yellowReplacement = new Color3(1.0, 0.5, 0.0); // Default: Orange
-    cyanReplacement = new Color3(0.5, 0.0, 1.0);   // Default: Purple
-
-    // A small threshold to catch colors that are "close enough"
-    threshold = 0.2;
+// Enhanced Color Swap Plugin with Gradient Blending
+class GradientColorSwapPlugin extends MaterialPluginBase {
+    // Store replacements in array for easier uniform handling
+    replacements = [
+        new Color3(1.0, 0.0, 1.0),   // Red replacement
+        new Color3(1.0, 1.0, 0.0),   // Green replacement
+        new Color3(0.0, 1.0, 1.0),   // Blue replacement
+        new Color3(1.0, 0.5, 0.0),   // Yellow replacement
+        new Color3(0.5, 0.0, 1.0),   // Cyan replacement
+        new Color3(1.0, 1.0, 1.0)    // Magenta replacement (default: white)
+    ];
+    
+    // Base colors we're targeting
+    baseColors = [
+        new Color3(1.0, 0.0, 0.0),   // Red
+        new Color3(0.0, 1.0, 0.0),   // Green
+        new Color3(0.0, 0.0, 1.0),   // Blue
+        new Color3(1.0, 1.0, 0.0),   // Yellow
+        new Color3(0.0, 1.0, 1.0),   // Cyan
+        new Color3(1.0, 0.0, 1.0)    // Magenta
+    ];
+    
+    // Controls the blend smoothness (higher = smoother)
+    blendRadius = 0.3;
+    
+    // Controls how much the replacement colors blend with original
+    blendStrength = 0.8;
 
     private _isEnabled = false;
     private _markAllDefinesAsDirty: () => void;
@@ -69,66 +84,81 @@ class ColorSwapPluginMaterial extends MaterialPluginBase {
 
     getUniforms() {
         return {
-            "ubo": [
-                { name: "redReplacement", size: 3, type: "vec3" },
-                { name: "greenReplacement", size: 3, type: "vec3" },
-                { name: "blueReplacement", size: 3, type: "vec3" },
-                { name: "yellowReplacement", size: 3, type: "vec3" },
-                { name: "cyanReplacement", size: 3, type: "vec3" },
-                { name: "threshold", size: 1, type: "float" },
+            ubo: [
+                { name: "replacements", size: 3, type: "vec3", arraySize: 6 },
+                { name: "baseColors", size: 3, type: "vec3", arraySize: 6 },
+                { name: "blendRadius", size: 1, type: "float" },
+                { name: "blendStrength", size: 1, type: "float" }
             ],
-            "fragment":
-                `#ifdef COLOR_SWAP
-                    uniform vec3 redReplacement;
-                    uniform vec3 greenReplacement;
-                    uniform vec3 blueReplacement;
-                    uniform vec3 yellowReplacement;
-                    uniform vec3 cyanReplacement;
-                    uniform float threshold;
-                #endif`,
+            fragment: `
+                #ifdef COLOR_SWAP
+                    uniform vec3 replacements[6];
+                    uniform vec3 baseColors[6];
+                    uniform float blendRadius;
+                    uniform float blendStrength;
+                #endif
+            `
         };
     }
 
-    bindForSubMesh(uniformBuffer: UniformBuffer) {
+        bindForSubMesh(uniformBuffer: UniformBuffer) {
         if (this._isEnabled) {
-            uniformBuffer.updateColor3("redReplacement", this.redReplacement);
-            uniformBuffer.updateColor3("greenReplacement", this.greenReplacement);
-            uniformBuffer.updateColor3("blueReplacement", this.blueReplacement);
-            uniformBuffer.updateColor3("yellowReplacement", this.yellowReplacement);
-            uniformBuffer.updateColor3("cyanReplacement", this.cyanReplacement);
-            uniformBuffer.updateFloat("threshold", this.threshold);
+            // Manually flatten the Color3 arrays into a single Float32Array
+            const replacementsArray = new Float32Array(this.replacements.length * 3);
+            const baseColorsArray = new Float32Array(this.baseColors.length * 3);
+
+            for (let i = 0; i < this.replacements.length; i++) {
+                replacementsArray.set(this.replacements[i].asArray(), i * 3);
+                baseColorsArray.set(this.baseColors[i].asArray(), i * 3);
+            }
+
+            // Use the spread operator [...] to convert the Float32Array to a number[]
+            uniformBuffer.updateArray("replacements", [...replacementsArray]);
+            uniformBuffer.updateArray("baseColors", [...baseColorsArray]);
+            
+            uniformBuffer.updateFloat("blendRadius", this.blendRadius);
+            uniformBuffer.updateFloat("blendStrength", this.blendStrength);
         }
     }
 
     getCustomCode(shaderType: string) {
-        return shaderType === "fragment" ? {
-            "CUSTOM_FRAGMENT_BEFORE_LIGHTS": `
-                #ifdef COLOR_SWAP
-                    // Check for Red (1, 0, 0)
-                    if (distance(surfaceAlbedo.rgb, vec3(1.0, 0.0, 0.0)) < threshold) {
-                        surfaceAlbedo.rgb = redReplacement;
-                    }
-                    // Check for Green (0, 1, 0)
-                    else if (distance(surfaceAlbedo.rgb, vec3(0.0, 1.0, 0.0)) < threshold) {
-                        surfaceAlbedo.rgb = greenReplacement;
-                    }
-                    // Check for Blue (0, 0, 1)
-                    else if (distance(surfaceAlbedo.rgb, vec3(0.0, 0.0, 1.0)) < threshold) {
-                        surfaceAlbedo.rgb = blueReplacement;
-                    }
-                    // Check for Yellow (1, 1, 0)
-                    else if (distance(surfaceAlbedo.rgb, vec3(1.0, 1.0, 0.0)) < threshold) {
-                        surfaceAlbedo.rgb = yellowReplacement;
-                    }
-                    // Check for Cyan (0, 1, 1)
-                    else if (distance(surfaceAlbedo.rgb, vec3(0.0, 1.0, 1.0)) < threshold) {
-                        surfaceAlbedo.rgb = cyanReplacement;
-                    }
-                #endif
-            `,
-        } : null;
+        if (shaderType === "fragment") {
+            return {
+                "CUSTOM_FRAGMENT_BEFORE_LIGHTS": `
+                    #ifdef COLOR_SWAP
+                        vec3 original = surfaceAlbedo.rgb;
+                        vec3 accumulatedColor = vec3(0.0);
+                        float totalInfluence = 0.0;
+                        
+                        // Use a safe radius to avoid division by zero
+                        float safeRadius = max(blendRadius, 0.0001);
+                        float radiusSq = 2.0 * safeRadius * safeRadius;
+                        
+                        for (int i = 0; i < 6; i++) {
+                            // Calculate distance to base color
+                            float dist = distance(original, baseColors[i]);
+                            
+                            // Calculate influence using Gaussian falloff
+                            float influence = exp(-(dist * dist) / radiusSq);
+                            
+                            // Accumulate color influence
+                            accumulatedColor += replacements[i] * influence;
+                            totalInfluence += influence;
+                        }
+                        
+                        // Normalize and apply blended color
+                        if (totalInfluence > 0.001) {
+                           vec3 finalColor = accumulatedColor / totalInfluence;
+                           surfaceAlbedo.rgb = mix(original, finalColor, min(totalInfluence * blendStrength, 1.0));
+                        }
+                    #endif
+                `
+            };
+        }
+        return null;
     }
 }
+
 
 const createScene = async () => {
     scene.clearColor = Color4.FromHexString('#161616');
@@ -138,7 +168,7 @@ const createScene = async () => {
     const yourCube = result.meshes[1];
 
     if (yourCube && yourCube.material) {
-        const plugin = new ColorSwapPluginMaterial(yourCube.material as PBRBaseMaterial);
+        const plugin = new GradientColorSwapPlugin(yourCube.material as PBRBaseMaterial);
         
         const advancedTexture = AdvancedDynamicTexture.CreateFullscreenUI("UI");
         const panel = new StackPanel();
@@ -161,19 +191,22 @@ const createScene = async () => {
         };
 
         createButton("Randomize Red", "red", () => {
-            plugin.redReplacement = new Color3(Math.random(), Math.random(), Math.random());
+            plugin.replacements[0] = new Color3(Math.random(), Math.random(), Math.random());
         });
         createButton("Randomize Green", "green", () => {
-            plugin.greenReplacement = new Color3(Math.random(), Math.random(), Math.random());
+            plugin.replacements[1] = new Color3(Math.random(), Math.random(), Math.random());
         });
         createButton("Randomize Blue", "blue", () => {
-            plugin.blueReplacement = new Color3(Math.random(), Math.random(), Math.random());
+            plugin.replacements[2] = new Color3(Math.random(), Math.random(), Math.random());
         });
         createButton("Randomize Yellow", "yellow", () => {
-            plugin.yellowReplacement = new Color3(Math.random(), Math.random(), Math.random());
+            plugin.replacements[3] = new Color3(Math.random(), Math.random(), Math.random());
         });
         createButton("Randomize Cyan", "cyan", () => {
-            plugin.cyanReplacement = new Color3(Math.random(), Math.random(), Math.random());
+            plugin.replacements[4] = new Color3(Math.random(), Math.random(), Math.random());
+        });
+        createButton("Randomize Magenta", "magenta", () => {
+            plugin.replacements[5] = new Color3(Math.random(), Math.random(), Math.random());
         });
     }
 };
