@@ -168,11 +168,21 @@ const createScene = async () => {
     const yourCube = result.meshes[1];
 
     if (yourCube && yourCube.material) {
+        
+        // --- THIS IS THE CORRECTED CHANGE ---
+        const material: any = yourCube.material;
+        if (material.albedoTexture) {
+            // Use the updateSamplingMode() method instead of direct assignment
+            material.albedoTexture.updateSamplingMode(Constants.TEXTURE_NEAREST_SAMPLINGMODE);
+        }
+        // --- END OF CHANGE ---
+
         const plugin = new GradientColorSwapPlugin(yourCube.material as PBRBaseMaterial);
         
+        // ... The rest of the function remains exactly the same
         const advancedTexture = AdvancedDynamicTexture.CreateFullscreenUI("UI");
         const panel = new StackPanel();
-        panel.isVertical = true; // Changed to vertical for better spacing
+        panel.isVertical = true; 
         panel.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_RIGHT;
         panel.verticalAlignment = Control.VERTICAL_ALIGNMENT_CENTER;
         panel.width = "200px";
