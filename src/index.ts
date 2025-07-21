@@ -1,11 +1,10 @@
-// Import the model and texture URLs
+// Import the model URL
 import modelUrl from './assets/cube.glb';
-import colorIdUrl from './assets/colorID.png';
 
 // Enable the GLTF loader
 import "@babylonjs/loaders/glTF";
 
-// Core BabylonJS imports
+// Core BabylonJS imports, with new ones added for the plugin
 import {
     Engine,
     Scene,
@@ -14,166 +13,121 @@ import {
     HemisphericLight,
     Color4,
     SceneLoader,
-    Texture,
-    ShaderMaterial,
-    Color3
+    Color3,
+    MaterialPluginBase,
+    PBRBaseMaterial,
+    AbstractMesh,
+    MaterialDefines,
+    SubMesh,
+    UniformBuffer,
+    Constants
 } from '@babylonjs/core';
 
-// Import GUI elements
-import {
-    AdvancedDynamicTexture,
-    Button,
-    Control
-} from '@babylonjs/gui';
-
+// Basic scene setup
 const canvas = document.getElementById('renderCanvas') as HTMLCanvasElement;
 const engine = new Engine(canvas, true);
 const scene = new Scene(engine);
 const camera = new ArcRotateCamera('Camera', Math.PI / 2, Math.PI / 2.5, 3, Vector3.Zero(), scene);
 camera.attachControl(canvas, true);
 
-// Vertex shader code (no changes needed here)
-const vertexShaderCode = `
-precision highp float;
-attribute vec3 position;
-attribute vec2 uv;
-uniform mat4 worldViewProjection;
-varying vec2 vUV;
-void main(void) {
-    gl_Position = worldViewProjection * vec4(position, 1.0);
-    vUV = uv;
+// --- Albedo Tinting Plugin ---
+// This modifies the albedo color before lighting calculations
+class AlbedoTintPluginMaterial extends MaterialPluginBase {
+    // The color to replace the albedo with
+    replacementColor = new Color3(1.0, 0.4, 0.8); // A bright pink color
+
+    private _isEnabled = false;
+    private _markAllDefinesAsDirty: () => void;
+
+    constructor(material: PBRBaseMaterial) {
+        // The last parameter are the #defines used in the shader.
+        super(material, "AlbedoTint", 200, { "ALBEDO_TINT": false });
+        
+        // This callback tells the material it needs to re-compile its shader
+        this._markAllDefinesAsDirty = material._dirtyCallbacks[Constants.MATERIAL_AllDirtyFlag];
+
+        // We can enable the plugin by default if we want
+        this.isEnabled = true;
+    }
+
+    // This property allows us to turn the plugin on or off
+    get isEnabled() {
+        return this._isEnabled;
+    }
+    set isEnabled(enabled) {
+        if (this._isEnabled === enabled) {
+            return;
+        }
+        this._isEnabled = enabled;
+        this._markAllDefinesAsDirty();
+        this._enable(this._isEnabled);
+    }
+
+    // This tells the shader compiler to activate our #ifdef block
+    prepareDefines(defines: MaterialDefines, scene: Scene, mesh: AbstractMesh) {
+        defines["ALBEDO_TINT"] = this._isEnabled;
+    }
+
+    // This declares the uniforms our shader will use
+    getUniforms() {
+        return {
+            "ubo": [
+                { name: "replacementColor", size: 3, type: "vec3" },
+            ],
+            "fragment":
+                `#ifdef ALBEDO_TINT
+                    uniform vec3 replacementColor;
+                #endif`,
+        };
+    }
+
+    // This sends our JavaScript replacement color value to the shader uniform
+    bindForSubMesh(uniformBuffer: UniformBuffer, scene: Scene, engine: Engine, subMesh: SubMesh) {
+        if (this._isEnabled) {
+            uniformBuffer.updateColor3("replacementColor", this.replacementColor);
+        }
+    }
+
+    // This injects our custom code into the PBR fragment shader
+    // We target the albedo after it's been calculated but before lighting
+    getCustomCode(shaderType: string) {
+        return shaderType === "fragment" ? {
+            // This hook happens after albedo calculation but before lighting
+            "CUSTOM_FRAGMENT_BEFORE_LIGHTS": `
+                #ifdef ALBEDO_TINT
+                    // Simply replace the albedo with our pink color
+                    surfaceAlbedo.rgb = replacementColor;
+                #endif
+            `,
+        } : null;
+    }
 }
-`;
-
-// --- MODIFIED: Fragment shader to handle 6 colors ---
-const fragmentShaderCode = `
-precision highp float;
-varying vec2 vUV;
-uniform sampler2D textureSampler;
-
-// Primary Colors
-uniform vec3 colorForRed;
-uniform vec3 colorForGreen;
-uniform vec3 colorForBlue;
-
-// --- NEW: Uniforms for secondary colors ---
-uniform vec3 colorForYellow;
-uniform vec3 colorForViolet;
-uniform vec3 colorForAqua;
-
-const vec3 defaultColor = vec3(0.1, 0.1, 0.1);
-
-void main(void) {
-    // Sample the texture.
-    vec4 idColor = texture2D(textureSampler, vUV);
-
-    // --- NEW LOGIC: Calculate masks for each of the 6 colors ---
-
-    // Primary masks: Isolate parts that are purely R, G, or B.
-    float redMask = max(0.0, idColor.r - idColor.g - idColor.b);
-    float greenMask = max(0.0, idColor.g - idColor.r - idColor.b);
-    float blueMask = max(0.0, idColor.b - idColor.r - idColor.g);
-
-    // Secondary masks: Isolate parts that are combinations.
-    // Yellow (R+G), Violet (R+B), Aqua (G+B)
-    float yellowMask = max(0.0, min(idColor.r, idColor.g) - idColor.b);
-    float violetMask = max(0.0, min(idColor.r, idColor.b) - idColor.g);
-    float aquaMask = max(0.0, min(idColor.g, idColor.b) - idColor.r);
-
-    // Blend all 6 colors together using their respective masks.
-    vec3 blendedColor = redMask * colorForRed +
-                        greenMask * colorForGreen +
-                        blueMask * colorForBlue +
-                        yellowMask * colorForYellow +
-                        violetMask * colorForViolet +
-                        aquaMask * colorForAqua;
-
-    // Calculate the total influence of all masks combined.
-    float totalMask = clamp(idColor.r + idColor.g + idColor.b, 0.0, 1.0);
-
-    // Linearly interpolate between the default dark color and the new blended color.
-    vec3 outputColor = mix(defaultColor, blendedColor, totalMask);
-
-    gl_FragColor = vec4(outputColor, 1.0);
-}
-`;
 
 const createScene = async () => {
+    // Set a background color and a basic light
     scene.clearColor = Color4.FromHexString('#161616');
     new HemisphericLight('light1', new Vector3(1, 1, 0), scene);
 
-    const shaderMaterial = new ShaderMaterial(
-        "colorMaskShader",
-        scene,
-        {
-            vertexSource: vertexShaderCode,
-            fragmentSource: fragmentShaderCode,
-        },
-        {
-            attributes: ["position", "uv"],
-            // --- MODIFIED: Add new uniforms to the list ---
-            uniforms: [
-                "worldViewProjection",
-                "textureSampler",
-                "colorForRed", "colorForGreen", "colorForBlue",
-                "colorForYellow", "colorForViolet", "colorForAqua"
-            ],
-        }
-    );
-
-    const idTexture = new Texture(
-        colorIdUrl,
-        scene,
-        true, // noMipmap
-        false, // invertY
-        Texture.BILINEAR_SAMPLINGMODE // samplingMode
-    );
-    shaderMaterial.setTexture("textureSampler", idTexture);
-
-    // Set primary colors
-    shaderMaterial.setColor3("colorForRed", new Color3(1.0, 0.0, 0.0));
-    shaderMaterial.setColor3("colorForGreen", new Color3(0.0, 1.0, 0.0));
-    shaderMaterial.setColor3("colorForBlue", new Color3(0.0, 0.0, 1.0));
-
-    // --- NEW: Set secondary colors ---
-    // Using the pure colors you asked for: Yellow(255,255,0), Violet(255,0,255), Aqua(0,255,255)
-    shaderMaterial.setColor3("colorForYellow", new Color3(1.0, 1.0, 0.0));
-    shaderMaterial.setColor3("colorForViolet", new Color3(1.0, 0.0, 1.0));
-    shaderMaterial.setColor3("colorForAqua", new Color3(0.0, 1.0, 1.0));
-
+    // Load the GLB model
     const result = await SceneLoader.ImportMeshAsync(null, "", modelUrl, scene);
+
+    // Find the cube's mesh and its material
     const yourCube = result.meshes[1];
-    if (yourCube) {
-        yourCube.material = shaderMaterial;
+    if (yourCube && yourCube.material) {
+        // Inject the albedo tint plugin into the cube's existing material
+        new AlbedoTintPluginMaterial(yourCube.material as PBRBaseMaterial);
     }
-
-    const advancedTexture = AdvancedDynamicTexture.CreateFullscreenUI("UI");
-    const button = Button.CreateSimpleButton("colorButton", "Randomize Colors");
-    button.width = "200px";
-    button.height = "40px";
-    button.color = "white";
-    button.background = "green";
-    button.verticalAlignment = Control.VERTICAL_ALIGNMENT_BOTTOM;
-    button.paddingBottom = "20px";
-    advancedTexture.addControl(button);
-
-    button.onPointerUpObservable.add(() => {
-        shaderMaterial.setColor3("colorForRed", Color3.Random());
-        shaderMaterial.setColor3("colorForGreen", Color3.Random());
-        shaderMaterial.setColor3("colorForBlue", Color3.Random());
-        // --- NEW: Randomize secondary colors as well ---
-        shaderMaterial.setColor3("colorForYellow", Color3.Random());
-        shaderMaterial.setColor3("colorForViolet", Color3.Random());
-        shaderMaterial.setColor3("colorForAqua", Color3.Random());
-    });
 };
 
+// Create the scene
 createScene();
 
+// Run the engine
 engine.runRenderLoop(() => {
     scene.render();
 });
 
+// Handle window resizing
 window.addEventListener('resize', () => {
     engine.resize();
 });
