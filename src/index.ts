@@ -23,6 +23,9 @@ import {
     Constants
 } from '@babylonjs/core';
 
+// Import GUI components
+import { AdvancedDynamicTexture, Button, Control } from '@babylonjs/gui';
+
 // Basic scene setup
 const canvas = document.getElementById('renderCanvas') as HTMLCanvasElement;
 const engine = new Engine(canvas, true);
@@ -115,7 +118,24 @@ const createScene = async () => {
     const yourCube = result.meshes[1];
     if (yourCube && yourCube.material) {
         // Inject the albedo tint plugin into the cube's existing material
-        new AlbedoTintPluginMaterial(yourCube.material as PBRBaseMaterial);
+        const plugin = new AlbedoTintPluginMaterial(yourCube.material as PBRBaseMaterial);
+
+        // --- ADDED BUTTON CODE ---
+        const advancedTexture = AdvancedDynamicTexture.CreateFullscreenUI("UI");
+        const button = Button.CreateSimpleButton("colorButton", "Randomize Colors");
+        button.width = "200px";
+        button.height = "40px";
+        button.color = "white";
+        button.background = "green";
+        button.verticalAlignment = Control.VERTICAL_ALIGNMENT_BOTTOM;
+        button.paddingBottom = "20px";
+        
+        // Add a click event to randomize the plugin's color
+        button.onPointerUpObservable.add(() => {
+            plugin.replacementColor = new Color3(Math.random(), Math.random(), Math.random());
+        });
+
+        advancedTexture.addControl(button);
     }
 };
 
