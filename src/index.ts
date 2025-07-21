@@ -4,7 +4,7 @@ import modelUrl from './assets/cube.glb';
 // Enable the GLTF loader
 import "@babylonjs/loaders/glTF";
 
-// Core BabylonJS imports, with new ones added for the plugin
+// Core BabylonJS imports
 import {
     Engine,
     Scene,
@@ -24,32 +24,34 @@ import {
 } from '@babylonjs/core';
 
 // Import GUI components
-import { AdvancedDynamicTexture, Button, Control } from '@babylonjs/gui';
+import { AdvancedDynamicTexture, Button, Control, StackPanel } from '@babylonjs/gui';
 
 // Basic scene setup
 const canvas = document.getElementById('renderCanvas') as HTMLCanvasElement;
 const engine = new Engine(canvas, true);
 const scene = new Scene(engine);
-const camera = new ArcRotateCamera('Camera', Math.PI / 2, Math.PI / 2.5, 3, Vector3.Zero(), scene);
+const camera = new ArcRotateCamera('Camera', Math.PI / 2, Math.PI / 2.5, 4, Vector3.Zero(), scene);
 camera.attachControl(canvas, true);
 
-// --- Albedo Tinting Plugin ---
-// This modifies the albedo color before lighting calculations
-class AlbedoTintPluginMaterial extends MaterialPluginBase {
-    // The color to replace the albedo with
-    replacementColor = new Color3(1.0, 0.4, 0.8); // A bright pink color
+// --- Multi-Color Swap Plugin ---
+// This plugin finds pure red, green, or blue and replaces each with a unique color.
+class ColorSwapPluginMaterial extends MaterialPluginBase {
+    // --- Define replacement colors for each channel ---
+    redReplacement = new Color3(1.0, 0.0, 1.0);   // Replace Red with Magenta
+    greenReplacement = new Color3(1.0, 1.0, 0.0); // Replace Green with Yellow
+    blueReplacement = new Color3(0.0, 1.0, 1.0);  // Replace Blue with Cyan
+
+    // A small threshold to catch colors that are "close enough"
+    threshold = 0.2;
 
     private _isEnabled = false;
     private _markAllDefinesAsDirty: () => void;
 
     constructor(material: PBRBaseMaterial) {
         // The last parameter are the #defines used in the shader.
-        super(material, "AlbedoTint", 200, { "ALBEDO_TINT": false });
+        super(material, "ColorSwap", 200, { "COLOR_SWAP": false });
         
-        // This callback tells the material it needs to re-compile its shader
         this._markAllDefinesAsDirty = material._dirtyCallbacks[Constants.MATERIAL_AllDirtyFlag];
-
-        // We can enable the plugin by default if we want
         this.isEnabled = true;
     }
 
@@ -68,38 +70,56 @@ class AlbedoTintPluginMaterial extends MaterialPluginBase {
 
     // This tells the shader compiler to activate our #ifdef block
     prepareDefines(defines: MaterialDefines, scene: Scene, mesh: AbstractMesh) {
-        defines["ALBEDO_TINT"] = this._isEnabled;
+        defines["COLOR_SWAP"] = this._isEnabled;
     }
 
     // This declares the uniforms our shader will use
     getUniforms() {
         return {
             "ubo": [
-                { name: "replacementColor", size: 3, type: "vec3" },
+                { name: "redReplacement", size: 3, type: "vec3" },
+                { name: "greenReplacement", size: 3, type: "vec3" },
+                { name: "blueReplacement", size: 3, type: "vec3" },
+                { name: "threshold", size: 1, type: "float" },
             ],
             "fragment":
-                `#ifdef ALBEDO_TINT
-                    uniform vec3 replacementColor;
+                `#ifdef COLOR_SWAP
+                    uniform vec3 redReplacement;
+                    uniform vec3 greenReplacement;
+                    uniform vec3 blueReplacement;
+                    uniform float threshold;
                 #endif`,
         };
     }
 
-    // This sends our JavaScript replacement color value to the shader uniform
+    // This sends our JavaScript values to the shader uniforms
     bindForSubMesh(uniformBuffer: UniformBuffer, scene: Scene, engine: Engine, subMesh: SubMesh) {
         if (this._isEnabled) {
-            uniformBuffer.updateColor3("replacementColor", this.replacementColor);
+            uniformBuffer.updateColor3("redReplacement", this.redReplacement);
+            uniformBuffer.updateColor3("greenReplacement", this.greenReplacement);
+            uniformBuffer.updateColor3("blueReplacement", this.blueReplacement);
+            uniformBuffer.updateFloat("threshold", this.threshold);
         }
     }
 
     // This injects our custom code into the PBR fragment shader
-    // We target the albedo after it's been calculated but before lighting
     getCustomCode(shaderType: string) {
         return shaderType === "fragment" ? {
             // This hook happens after albedo calculation but before lighting
             "CUSTOM_FRAGMENT_BEFORE_LIGHTS": `
-                #ifdef ALBEDO_TINT
-                    // Simply replace the albedo with our pink color
-                    surfaceAlbedo.rgb = replacementColor;
+                #ifdef COLOR_SWAP
+                    // Check for Red
+                    if (distance(surfaceAlbedo.rgb, vec3(1.0, 0.0, 0.0)) < threshold) {
+                        surfaceAlbedo.rgb = redReplacement;
+                    }
+                    // Check for Green
+                    else if (distance(surfaceAlbedo.rgb, vec3(0.0, 1.0, 0.0)) < threshold) {
+                        surfaceAlbedo.rgb = greenReplacement;
+                    }
+                    // Check for Blue
+                    else if (distance(surfaceAlbedo.rgb, vec3(0.0, 0.0, 1.0)) < threshold) {
+                        surfaceAlbedo.rgb = blueReplacement;
+                    }
                 #endif
             `,
         } : null;
@@ -111,31 +131,57 @@ const createScene = async () => {
     scene.clearColor = Color4.FromHexString('#161616');
     new HemisphericLight('light1', new Vector3(1, 1, 0), scene);
 
-    // Load the GLB model
+    // Load the GLB model. NOTE: The model must have pure red, green, and blue sections for this to work.
     const result = await SceneLoader.ImportMeshAsync(null, "", modelUrl, scene);
 
     // Find the cube's mesh and its material
     const yourCube = result.meshes[1];
     if (yourCube && yourCube.material) {
-        // Inject the albedo tint plugin into the cube's existing material
-        const plugin = new AlbedoTintPluginMaterial(yourCube.material as PBRBaseMaterial);
-
-        // --- ADDED BUTTON CODE ---
-        const advancedTexture = AdvancedDynamicTexture.CreateFullscreenUI("UI");
-        const button = Button.CreateSimpleButton("colorButton", "Randomize Colors");
-        button.width = "200px";
-        button.height = "40px";
-        button.color = "white";
-        button.background = "green";
-        button.verticalAlignment = Control.VERTICAL_ALIGNMENT_BOTTOM;
-        button.paddingBottom = "20px";
+        // Inject the color swap plugin into the cube's existing material
+        const plugin = new ColorSwapPluginMaterial(yourCube.material as PBRBaseMaterial);
         
-        // Add a click event to randomize the plugin's color
-        button.onPointerUpObservable.add(() => {
-            plugin.replacementColor = new Color3(Math.random(), Math.random(), Math.random());
-        });
+        // --- GUI to control each color ---
+        const advancedTexture = AdvancedDynamicTexture.CreateFullscreenUI("UI");
+        const panel = new StackPanel();
+        panel.isVertical = false;
+        panel.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_CENTER;
+        panel.verticalAlignment = Control.VERTICAL_ALIGNMENT_BOTTOM;
+        panel.spacing = 10;
+        panel.paddingBottom = "20px";
+        advancedTexture.addControl(panel);
 
-        advancedTexture.addControl(button);
+        // Button for Red
+        const redButton = Button.CreateSimpleButton("redButton", "Randomize Red");
+        redButton.width = "150px";
+        redButton.height = "40px";
+        redButton.color = "white";
+        redButton.background = "red";
+        redButton.onPointerUpObservable.add(() => {
+            plugin.redReplacement = new Color3(Math.random(), Math.random(), Math.random());
+        });
+        panel.addControl(redButton);
+
+        // Button for Green
+        const greenButton = Button.CreateSimpleButton("greenButton", "Randomize Green");
+        greenButton.width = "150px";
+        greenButton.height = "40px";
+        greenButton.color = "white";
+        greenButton.background = "green";
+        greenButton.onPointerUpObservable.add(() => {
+            plugin.greenReplacement = new Color3(Math.random(), Math.random(), Math.random());
+        });
+        panel.addControl(greenButton);
+
+        // Button for Blue
+        const blueButton = Button.CreateSimpleButton("blueButton", "Randomize Blue");
+        blueButton.width = "150px";
+        blueButton.height = "40px";
+        blueButton.color = "white";
+        blueButton.background = "blue";
+        blueButton.onPointerUpObservable.add(() => {
+            plugin.blueReplacement = new Color3(Math.random(), Math.random(), Math.random());
+        });
+        panel.addControl(blueButton);
     }
 };
 
