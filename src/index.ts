@@ -181,14 +181,17 @@ const createScene = async () => {
 
         // ADD DETAIL NORMAL MAP - START
         const detailTexture = new Texture(detailUrl, scene);
-        detailTexture.coordinatesIndex = 1; // Use UV2
-        detailTexture.uScale = 1.5;
-        detailTexture.vScale = 1.5;
+        detailTexture.coordinatesIndex = 0; // Use UV2
+        detailTexture.uScale = 4;
+        detailTexture.vScale = 4;
         
         material.detailMap.isEnabled = true;
         material.detailMap.useNormalMap = true;
         material.detailMap.normalBlendMethod = 1;
         material.detailMap.texture = detailTexture;
+        material.detailMap.diffuseBlendLevel = 0; 
+        material.detailMap.roughnessBlendLevel = 0;
+        material.detailMap.bumpLevel = .3; 
         // ADD DETAIL NORMAL MAP - END
 
         const plugin = new GradientColorSwapPlugin(yourCube.material as PBRBaseMaterial);
