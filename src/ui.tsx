@@ -354,11 +354,12 @@ const SecondaryButton = ({ label, onClick, variant = VARIANTS.THEME.DARK, icon =
 
 interface ColorSwatchProps {
     color: HexColor;
+    name: string;
     isSelected: boolean;
     onSelect: (color: HexColor) => void;
 }
-const ColorSwatch = ({ color, isSelected, onSelect }: ColorSwatchProps) => (
-    <button className={`w-[42px] h-[42px] rounded-full border-2 focus:outline-none ${isSelected ? 'border-transparent ring-4 ring-white' : 'border-transparent focus-visible:ring-4 focus-visible:ring-white/50'}`} style={{ backgroundColor: color }} onClick={() => onSelect(color)} aria-label={`Select color ${color}`} />
+const ColorSwatch = ({ color, name, isSelected, onSelect }: ColorSwatchProps) => (
+    <button className={`w-[42px] h-[42px] rounded-full border-2 focus:outline-none ${isSelected ? 'border-transparent ring-4 ring-white' : 'border-transparent focus-visible:ring-4 focus-visible:ring-white/50'}`} style={{ backgroundColor: color }} onClick={() => onSelect(color)} aria-label={`Select color ${name}`} />
 );
 
 interface ColorSwatchGridProps {
@@ -368,7 +369,7 @@ interface ColorSwatchGridProps {
 }
 const ColorSwatchGrid = ({ swatches, selectedColor, onColorSelect }: ColorSwatchGridProps) => (
     <div className="grid grid-cols-[repeat(auto-fit,minmax(42px,1fr))] gap-[10px] px-2 py-2">
-        {swatches.map((color) => <ColorSwatch key={color.hex} color={color.hex} isSelected={selectedColor === color.hex} onSelect={onColorSelect} />)}
+        {swatches.map((swatch) => <ColorSwatch key={swatch.hex} color={swatch.hex} name={swatch.name} isSelected={selectedColor === swatch.hex} onSelect={onColorSelect} />)}
     </div>
 );
 
@@ -379,14 +380,15 @@ interface AccordionOptionHeaderProps {
     onClick: () => void;
     accessoryContent: ReactNode;
     icon: (typeof ICONS.DESKTOP) | (typeof ICONS.MOBILE);
-    isOpen?: boolean;
+    isOpen: boolean;
     variant: (typeof VARIANTS.LAYOUT)[keyof typeof VARIANTS.LAYOUT];
+    controlsId: string;
 }
-const AccordionOptionHeader = ({ title, onClick, accessoryContent, icon, isOpen, variant }: AccordionOptionHeaderProps) => {
+const AccordionOptionHeader = ({ title, onClick, accessoryContent, icon, isOpen, variant, controlsId }: AccordionOptionHeaderProps) => {
     const baseClasses = "w-full flex justify-between items-center text-left focus:outline-none focus-visible:ring-4 focus-visible:ring-inset";
     const variantClasses = variant === VARIANTS.LAYOUT.DESKTOP ? "p-4 h-[56px] hover:bg-[#2A2A2A] transition-colors focus-visible:ring-white" : "py-3 h-[56px] mb-3 text-white focus-visible:ring-white/50";
     return (
-        <button onClick={onClick} className={`${baseClasses} ${variantClasses}`}>
+        <button onClick={onClick} className={`${baseClasses} ${variantClasses}`} aria-expanded={isOpen} aria-controls={controlsId}>
             <div className="flex items-center space-x-3">
                 {icon === ICONS.DESKTOP && <svg className={`h-[15px] w-auto transform transition-transform duration-300 ${isOpen ? 'rotate-90' : 'rotate-0'}`} viewBox="0 0 10 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M1 1L8 8L1.10769 15" stroke="white" strokeWidth={2}/></svg>}
                 {icon === ICONS.MOBILE && <svg className="w-5 h-5 mr-2 transform rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>}
@@ -405,14 +407,17 @@ interface AccordionOptionDesktopProps {
     headerContent: ReactNode;
     actionButton?: ReactNode;
 }
-const AccordionOptionDesktop = ({ title, children, isOpen, onToggle, headerContent, actionButton }: AccordionOptionDesktopProps) => (
-    <div className="bg-[#1C1C1C] overflow-hidden pointer-events-auto">
-        <AccordionOptionHeader variant={VARIANTS.LAYOUT.DESKTOP} title={title} onClick={onToggle} accessoryContent={headerContent} icon={ICONS.DESKTOP} isOpen={isOpen} />
-        <div className={`transition-all duration-500 ease-in-out grid ${isOpen ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'}`}>
-            <div className="overflow-hidden">{isOpen && <div className="p-4">{children}{actionButton && <div className="mt-4">{actionButton}</div>}</div>}</div>
+const AccordionOptionDesktop = ({ title, children, isOpen, onToggle, headerContent, actionButton }: AccordionOptionDesktopProps) => {
+    const contentId = `content-${title.replace(/\s+/g, '-')}`;
+    return (
+        <div className="bg-[#1C1C1C] overflow-hidden pointer-events-auto">
+            <AccordionOptionHeader variant={VARIANTS.LAYOUT.DESKTOP} title={title} onClick={onToggle} accessoryContent={headerContent} icon={ICONS.DESKTOP} isOpen={isOpen} controlsId={contentId} />
+            <div id={contentId} className={`transition-all duration-500 ease-in-out grid ${isOpen ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'}`}>
+                <div className="overflow-hidden">{isOpen && <div className="p-4">{children}{actionButton && <div className="mt-4">{actionButton}</div>}</div>}</div>
+            </div>
         </div>
-    </div>
-);
+    );
+};
 
 interface AccordionOptionMobileProps {
     title: string;
@@ -444,7 +449,7 @@ const AccordionOptionMobile = ({ title, onClose, headerAccessory = null, childre
     }, [checkAndSetGradients]);
     return (
         <div className="absolute inset-0 bg-[#161616] z-20 h-full flex flex-col px-[23px]">
-            <AccordionOptionHeader variant={VARIANTS.LAYOUT.MOBILE} title={title} onClick={onClose} accessoryContent={headerAccessory} icon={ICONS.MOBILE} />
+            <AccordionOptionHeader variant={VARIANTS.LAYOUT.MOBILE} title={title} onClick={onClose} accessoryContent={headerAccessory} icon={ICONS.MOBILE} isOpen={true} controlsId={`mobile-panel-${title.replace(/\s+/g, '-')}`} />
             <div className="flex-grow relative overflow-hidden">
                 <ScrollGradient position={POSITIONS.TOP} isVisible={isTopGradientVisible} />
                 <div className="h-full overflow-y-auto" ref={scrollContainerRef}>{children}</div>
@@ -716,7 +721,7 @@ interface OverviewButtonProps {
     isOpen: boolean;
 }
 const OverviewButton = ({ onClick, isDesktop, isOpen }: OverviewButtonProps) => (
-    <button type="button" onClick={onClick} className={`w-full flex items-center h-[56px] bg-[#393939] hover:bg-[#727272] active:bg-[#222222] text-base font-semibold text-white px-5 focus:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-white/50 ${isDesktop ? 'justify-between' : 'justify-center'}`} aria-label="Open summary panel">
+    <button type="button" onClick={onClick} className={`w-full flex items-center h-[56px] bg-[#393939] hover:bg-[#727272] active:bg-[#222222] text-base font-semibold text-white px-5 focus:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-white/50 ${isDesktop ? 'justify-between' : 'justify-center'}`} aria-label="Open summary panel" aria-expanded={isOpen} aria-controls="overview-content">
         <div className="flex items-center space-x-2">
             <svg width="22" height="22" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg"><g opacity="0.3"><path d="M17.1875 0H4.8125C3.53619 0 2.31204 0.507022 1.40953 1.40953C0.507021 2.31204 0 3.53619 0 4.8125V17.1875C0 18.4638 0.507021 19.688 1.40953 20.5905C2.31204 21.493 3.53619 22 4.8125 22H17.1875C18.4638 22 19.688 21.493 20.5905 20.5905C21.493 19.688 22 18.4638 22 17.1875V4.8125C22 3.53619 21.493 2.31204 20.5905 1.40953C19.688 0.507022 18.4638 0 17.1875 0ZM20.625 17.1875C20.625 18.0992 20.2628 18.9735 19.6181 19.6181C18.9735 20.2628 18.0992 20.625 17.1875 20.625H4.8125C3.9008 20.625 3.02653 20.2628 2.38185 19.6181C1.73717 18.9735 1.375 18.0992 1.375 17.1875V4.8125C1.375 3.9008 1.73717 3.02653 2.38185 2.38185C3.02654 1.73718 3.9008 1.375 4.8125 1.375H17.1875C18.0992 1.375 18.9735 1.73717 19.6181 2.38185C20.2628 3.02654 20.625 3.9008 20.625 4.8125V17.1875Z" fill="white"/><path d="M8.9375 5.5H17.1875V6.875H8.9375V5.5Z" fill="white"/><path d="M8.9375 10.3125H17.1875V11.6875H8.9375V10.3125Z" fill="white"/><path d="M8.9375 15.125H17.1875V16.5H8.9375V15.125Z" fill="white"/><path d="M7.5625 6.1875C7.5625 6.94681 6.94681 7.5625 6.1875 7.5625C5.42819 7.5625 4.8125 6.94681 4.8125 6.1875C4.8125 5.42819 5.42819 4.8125 6.1875 4.8125C6.94681 4.8125 7.5625 5.42819 7.5625 6.1875Z" fill="white"/><path d="M7.5625 11C7.5625 11.7593 6.94681 12.375 6.1875 12.375C5.42819 12.375 4.8125 11.7593 4.8125 11C4.8125 10.2407 5.42819 9.625 6.1875 9.625C6.94681 9.625 7.5625 10.2407 7.5625 11Z" fill="white"/><path d="M7.5625 15.8125C7.5625 16.5718 6.94681 17.1875 6.1875 17.1875C5.42819 17.1875 4.8125 16.5718 4.8125 15.8125C4.8125 15.0532 5.42819 14.4375 6.1875 14.4375C6.94681 14.4375 7.5625 15.0532 7.5625 15.8125Z" fill="white"/></g></svg>
             <span>Overview</span>
@@ -804,7 +809,7 @@ const OverviewDesktop = () => {
         <div className="flex lg:absolute lg:bottom-[60px] lg:right-[60px] fixed w-full bottom-[-1rem] flex-row items-center gap-4 lg:flex-col lg:justify-end lg:w-auto lg:h-auto lg:gap-0">
             <div className="lg:w-[400px] text-[#999999] font-black text-[1.3rem] my-0 lg:mb-2.5 mx-0 flex flex-col justify-end lg:h-auto h-[80.8vh]">
                 <OverviewButton onClick={() => setAgnosticAccordionOpen(!agnosticAccordionOpen)} isDesktop={true} isOpen={agnosticAccordionOpen} />
-                <div className={`bg-[#222222] transition-[height] duration-300 ease-in ${agnosticAccordionOpen ? 'overflow-y-scroll h-auto lg:h-[calc(100vh-335px)]' : 'overflow-hidden h-0'}`}>
+                <div id="overview-content" className={`bg-[#222222] transition-[height] duration-300 ease-in ${agnosticAccordionOpen ? 'overflow-y-scroll h-auto lg:h-[calc(100vh-335px)]' : 'overflow-hidden h-0'}`}>
                     <div className="text-base py-3.5 px-6">
                         <OrderSummaryInfo />
                     </div>
@@ -989,7 +994,7 @@ const AccordionMobile = ({ options, onOpenPanel, openAccordionOptionMobile }: Ac
             case 'text':
                 return <span className="text-sm text-gray-400 truncate max-w-[100px]">{configValue.text}</span>;
             default:
-                // eslint-disable-next-line @typescript-eslint/no-unused-vars 
+                // eslint-disable-next-line @typescript-eslint/no-unused-vars 
                 const exhaustiveCheck: never = configValue;
                 return null;
         }
