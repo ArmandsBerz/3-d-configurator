@@ -953,69 +953,74 @@ interface AccordionMobileProps {
     openAccordionOptionMobile: MobileAccordionState;
 }
 
-const AccordionMobile = ({ options, onOpenPanel, openAccordionOptionMobile }: AccordionMobileProps) => {
-    const { state } = useGloveConfigurator();
-    const { configuration } = state;
-    const listContainerRef = useRef<HTMLElement>(null);
-    const [topGradientVisible, setTopGradientVisible] = useState(false);
-    const [bottomGradientVisible, setBottomGradientVisible] = useState(false);
+// --- START: MODIFIED AccordionMobile Component ---
+const AccordionMobile = React.forwardRef<HTMLElement, AccordionMobileProps>(
+    ({ options, onOpenPanel, openAccordionOptionMobile }, ref) => {
+        const { state } = useGloveConfigurator();
+        const { configuration } = state;
+        const [topGradientVisible, setTopGradientVisible] = useState(false);
+        const [bottomGradientVisible, setBottomGradientVisible] = useState(false);
 
-    const checkAndSetGradients = useCallback(() => {
-        const listElement = listContainerRef.current;
-        if (!listElement) return;
-        const hasOverflow = listElement.scrollHeight > listElement.clientHeight;
-        setTopGradientVisible(hasOverflow && listElement.scrollTop > 0);
-        setBottomGradientVisible(hasOverflow && Math.abs(listElement.scrollHeight - listElement.clientHeight - listElement.scrollTop) >= NUMERIC_CONSTANTS.SCROLL_THRESHOLD);
-    }, []);
+        const checkAndSetGradients = useCallback(() => {
+            const listElement = (ref as React.MutableRefObject<HTMLElement | null>)?.current;
+            if (!listElement) return;
+            const hasOverflow = listElement.scrollHeight > listElement.clientHeight;
+            setTopGradientVisible(hasOverflow && listElement.scrollTop > 0);
+            setBottomGradientVisible(hasOverflow && Math.abs(listElement.scrollHeight - listElement.clientHeight - listElement.scrollTop) >= NUMERIC_CONSTANTS.SCROLL_THRESHOLD);
+        }, [ref]);
 
-    useEffect(() => { checkAndSetGradients(); }, [checkAndSetGradients, openAccordionOptionMobile]);
-    useEffect(() => {
-        const mobileHandler = checkAndSetGradients;
-        window.addEventListener('resize', mobileHandler);
-        const mobileElement = listContainerRef.current;
-        if (mobileElement) mobileElement.addEventListener('scroll', mobileHandler);
-        return () => {
-            window.removeEventListener('resize', mobileHandler);
-            if (mobileElement) mobileElement.removeEventListener('scroll', mobileHandler);
+        useEffect(() => { checkAndSetGradients(); }, [checkAndSetGradients, openAccordionOptionMobile]);
+
+        useEffect(() => {
+            const mobileHandler = checkAndSetGradients;
+            window.addEventListener('resize', mobileHandler);
+            const mobileElement = (ref as React.MutableRefObject<HTMLElement | null>)?.current;
+            if (mobileElement) mobileElement.addEventListener('scroll', mobileHandler);
+            return () => {
+                window.removeEventListener('resize', mobileHandler);
+                if (mobileElement) mobileElement.removeEventListener('scroll', mobileHandler);
+            };
+        }, [checkAndSetGradients, ref]);
+
+        const renderAccessory = (item: OptionsConfigItem) => {
+            if (item.id === 'build') return null;
+            const configValue = configuration[item.id as keyof Omit<GloveConfiguration, 'build'>];
+            switch (configValue.type) {
+                case 'web':
+                    const webTypeTitle = webTypeOptions.find(opt => opt.id === configValue.webType)?.title || configValue.webType;
+                    return <div className="flex items-center space-x-2"><span className="text-sm text-gray-400 font-semibold truncate max-w-[100px]">{webTypeTitle}</span><ColorIndicator color={configValue.color} /></div>;
+                case 'dual':
+                    return <div className="flex items-center space-x-2"><ColorIndicator color={configValue.inner} /><ColorIndicator color={configValue.outer} /></div>;
+                case 'single':
+                    return <ColorIndicator color={configValue.color} />;
+                case 'text':
+                    return <span className="text-sm text-gray-400 truncate max-w-[100px]">{configValue.text}</span>;
+                default:
+                    // eslint-disable-next-line @typescript-eslint/no-unused-vars 
+                    const exhaustiveCheck: never = configValue;
+                    return null;
+            }
         };
-    }, [checkAndSetGradients]);
 
-    const renderAccessory = (item: OptionsConfigItem) => {
-        if (item.id === 'build') return null;
-        const configValue = configuration[item.id as keyof Omit<GloveConfiguration, 'build'>];
-        switch (configValue.type) {
-            case 'web':
-                const webTypeTitle = webTypeOptions.find(opt => opt.id === configValue.webType)?.title || configValue.webType;
-                return <div className="flex items-center space-x-2"><span className="text-sm text-gray-400 font-semibold truncate max-w-[100px]">{webTypeTitle}</span><ColorIndicator color={configValue.color} /></div>;
-            case 'dual':
-                return <div className="flex items-center space-x-2"><ColorIndicator color={configValue.inner} /><ColorIndicator color={configValue.outer} /></div>;
-            case 'single':
-                return <ColorIndicator color={configValue.color} />;
-            case 'text':
-                return <span className="text-sm text-gray-400 truncate max-w-[100px]">{configValue.text}</span>;
-            default:
-                // eslint-disable-next-line @typescript-eslint/no-unused-vars 
-                const exhaustiveCheck: never = configValue;
-                return null;
-        }
-    };
+        return (
+            <section ref={ref} className={`px-4 bg-[#161616] h-full overflow-y-auto ${openAccordionOptionMobile ? 'opacity-50 pointer-events-none' : ''}`} tabIndex={-1}>
+                <ScrollGradient position={POSITIONS.TOP} isVisible={topGradientVisible} />
+                {options.map(item => (
+                    <button key={item.id} data-id={item.id} className="w-full h-[56px] bg-[#1C1C1C] flex items-center justify-between px-4 mb-[10px] cursor-pointer hover:bg-[#2A2A2A] focus:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-white" onClick={() => onOpenPanel(item)}>
+                        <div className="flex items-center">
+                            <svg viewBox="0 0 10 16" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-4 w-auto mr-3"><path d="M1 1L8 8L1.10769 15" stroke="white" strokeWidth={2}/></svg>
+                            <span className="text-lg">{item.title}</span>
+                        </div>
+                        {renderAccessory(item)}
+                    </button>
+                ))}
+                <ScrollGradient position={POSITIONS.BOTTOM} isVisible={bottomGradientVisible} />
+            </section>
+        );
+    }
+);
+// --- END: MODIFIED AccordionMobile Component ---
 
-    return (
-        <section ref={listContainerRef} className={`px-4 bg-[#161616] h-full overflow-y-auto ${openAccordionOptionMobile ? 'opacity-50 pointer-events-none' : ''}`} tabIndex={-1}>
-            <ScrollGradient position={POSITIONS.TOP} isVisible={topGradientVisible} />
-            {options.map(item => (
-                <button key={item.id} data-id={item.id} className="w-full h-[56px] bg-[#1C1C1C] flex items-center justify-between px-4 mb-[10px] cursor-pointer hover:bg-[#2A2A2A] focus:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-white" onClick={() => onOpenPanel(item)}>
-                    <div className="flex items-center">
-                        <svg viewBox="0 0 10 16" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-4 w-auto mr-3"><path d="M1 1L8 8L1.10769 15" stroke="white" strokeWidth={2}/></svg>
-                        <span className="text-lg">{item.title}</span>
-                    </div>
-                    {renderAccessory(item)}
-                </button>
-            ))}
-            <ScrollGradient position={POSITIONS.BOTTOM} isVisible={bottomGradientVisible} />
-        </section>
-    );
-};
 
 // --- Main UI Component ---
 const UI = () => {
@@ -1023,6 +1028,21 @@ const UI = () => {
     const { state } = useGloveConfigurator();
     const [isVisualizationExpanded, setIsVisualizationExpanded] = useState(false);
     const [openAccordionOptionMobile, setOpenAccordionOptionMobile] = useState<MobileAccordionState>(null);
+    
+    // --- START: MODIFIED UI Component ---
+    const mobileListRef = useRef<HTMLElement>(null);
+
+    useEffect(() => {
+        const listElement = mobileListRef.current;
+        if (!listElement) return;
+
+        if (openAccordionOptionMobile) {
+            listElement.setAttribute('inert', '');
+        } else {
+            listElement.removeAttribute('inert');
+        }
+    }, [openAccordionOptionMobile]);
+    // --- END: MODIFIED UI Component ---
 
     const handleOpenPanel = (item: OptionsConfigItem) => {
         const { id, title, contentType } = item;
@@ -1122,6 +1142,7 @@ const UI = () => {
                     <div className="flex flex-col overflow-hidden bg-[#161616]" style={{ flexBasis: 'calc(38.2% + 66px)' }}>
                         <div className="relative flex-grow overflow-hidden">
                             <AccordionMobile
+                                ref={mobileListRef}
                                 options={optionsConfig}
                                 onOpenPanel={handleOpenPanel}
                                 openAccordionOptionMobile={openAccordionOptionMobile}
