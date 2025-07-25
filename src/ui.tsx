@@ -176,7 +176,7 @@ interface GetColorDisplayOptions {
 const getColorDisplay = (colorValue: ColorablePart | HexColor, options: GetColorDisplayOptions = {}): string => {
     const { format = FORMAT_TYPES.DEFAULT } = options;
     const getColorName = (hex: HexColor) => colorSwatches.find(c => c.hex === hex)?.name || hex;
-    
+
     if (typeof colorValue === 'string') {
         return getColorName(colorValue);
     }
@@ -357,9 +357,20 @@ interface ColorSwatchProps {
     name: string;
     isSelected: boolean;
     onSelect: (color: HexColor) => void;
+    tabIndex: number;
+    elRef: React.RefObject<HTMLButtonElement>;
 }
-const ColorSwatch = ({ color, name, isSelected, onSelect }: ColorSwatchProps) => (
-    <button className={`w-[42px] h-[42px] rounded-full border-2 focus:outline-none ${isSelected ? 'border-transparent ring-4 ring-white' : 'border-transparent focus-visible:ring-4 focus-visible:ring-white/50'}`} style={{ backgroundColor: color }} onClick={() => onSelect(color)} aria-label={`Select color ${name}`} />
+const ColorSwatch = ({ color, name, isSelected, onSelect, tabIndex, elRef }: ColorSwatchProps) => (
+    <button
+        ref={elRef}
+        tabIndex={tabIndex}
+        role="radio"
+        aria-checked={isSelected}
+        className={`w-[42px] h-[42px] rounded-full border-2 focus:outline-none ${isSelected ? 'border-transparent ring-4 ring-white' : 'border-transparent focus-visible:ring-4 focus-visible:ring-white/50'}`}
+        style={{ backgroundColor: color }}
+        onClick={() => onSelect(color)}
+        aria-label={`Select color ${name}`}
+    />
 );
 
 interface ColorSwatchGridProps {
@@ -367,11 +378,74 @@ interface ColorSwatchGridProps {
     selectedColor: HexColor | undefined;
     onColorSelect: (color: HexColor) => void;
 }
-const ColorSwatchGrid = ({ swatches, selectedColor, onColorSelect }: ColorSwatchGridProps) => (
-    <div className="grid grid-cols-[repeat(auto-fit,minmax(42px,1fr))] gap-[10px] px-2 py-2">
-        {swatches.map((swatch) => <ColorSwatch key={swatch.hex} color={swatch.hex} name={swatch.name} isSelected={selectedColor === swatch.hex} onSelect={onColorSelect} />)}
-    </div>
-);
+const ColorSwatchGrid = ({ swatches, selectedColor, onColorSelect }: ColorSwatchGridProps) => {
+    const gridContainerRef = useRef<HTMLDivElement>(null);
+    const elRefs = useRef<React.RefObject<HTMLButtonElement>[]>([]);
+
+    if (elRefs.current.length !== swatches.length) {
+        elRefs.current = Array(swatches.length).fill(null).map((_, i) => elRefs.current[i] || React.createRef());
+    }
+
+    const handleKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+        const { key } = event;
+        if (!['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(key)) {
+            return;
+        }
+        event.preventDefault();
+
+        const focusedIndex = elRefs.current.findIndex(ref => document.activeElement === ref.current);
+        if (focusedIndex === -1) return;
+
+        const container = gridContainerRef.current;
+        if (!container) return;
+
+        const numColumns = window.getComputedStyle(container).gridTemplateColumns.split(' ').length;
+        let nextIndex = focusedIndex;
+
+        switch (key) {
+            case 'ArrowRight':
+                nextIndex = focusedIndex + 1;
+                break;
+            case 'ArrowLeft':
+                nextIndex = focusedIndex - 1;
+                break;
+            case 'ArrowUp':
+                nextIndex = focusedIndex - numColumns;
+                break;
+            case 'ArrowDown':
+                nextIndex = focusedIndex + numColumns;
+                break;
+        }
+
+        if (nextIndex >= 0 && nextIndex < swatches.length) {
+            elRefs.current[nextIndex]?.current?.focus();
+        }
+    };
+
+    return (
+        <div
+            ref={gridContainerRef}
+            className="grid grid-cols-[repeat(auto-fit,minmax(42px,1fr))] gap-[10px] px-2 py-2"
+            role="radiogroup"
+            onKeyDown={handleKeyDown}
+        >
+            {swatches.map((swatch, index) => {
+                const isSelected = selectedColor === swatch.hex;
+                return (
+                    <ColorSwatch
+                        key={swatch.hex}
+                        elRef={elRefs.current[index]}
+                        color={swatch.hex}
+                        name={swatch.name}
+                        isSelected={isSelected}
+                        onSelect={onColorSelect}
+                        tabIndex={isSelected || (selectedColor === undefined && index === 0) ? 0 : -1}
+                    />
+                );
+            })}
+        </div>
+    );
+};
 
 // --- Accordion Containers ---
 
@@ -763,7 +837,7 @@ const FooterMobile = ({ openPanelName, onClosePanel, onReviewClick, onCompleteOr
         if (!openAccordionOptionMobile || openAccordionOptionMobile.name === CONTENT_TYPES.SUMMARY || openAccordionOptionMobile.name === CONTENT_TYPES.BUILD || openAccordionOptionMobile.name === CONTENT_TYPES.TEXT) {
             return undefined;
         }
-        
+
         const { context } = openAccordionOptionMobile;
         const configValue = state.configuration[context.id];
         return getActiveColor(configValue, state.activeDualColorPart);
@@ -834,7 +908,7 @@ const AccordionDesktop = ({ options }: { options: OptionsConfigItem[] }) => {
     const [isScrolled, setIsScrolled] = useState(false);
 
     const handleAccordionToggle = (accordionId: string) => setOpenAccordion(prev => (prev === accordionId ? null : accordionId));
-    
+
     const handleApplyColorToAll = (colorString?: HexColor) => {
         if (colorString) dispatch({ type: ACTION_TYPES.APPLY_COLOR_TO_ALL, payload: { color: colorString } });
     };
@@ -996,7 +1070,7 @@ const AccordionMobile = React.forwardRef<HTMLElement, AccordionMobileProps>(
                 case 'text':
                     return <span className="text-sm text-gray-400 truncate max-w-[100px]">{configValue.text}</span>;
                 default:
-                    // eslint-disable-next-line @typescript-eslint/no-unused-vars 
+                    // eslint-disable-next-line @typescript-eslint/no-unused-vars
                     const exhaustiveCheck: never = configValue;
                     return null;
             }
@@ -1028,7 +1102,7 @@ const UI = () => {
     const { state } = useGloveConfigurator();
     const [isVisualizationExpanded, setIsVisualizationExpanded] = useState(false);
     const [openAccordionOptionMobile, setOpenAccordionOptionMobile] = useState<MobileAccordionState>(null);
-    
+
     // --- START: MODIFIED UI Component ---
     const mobileListRef = useRef<HTMLElement>(null);
 
@@ -1066,7 +1140,7 @@ const UI = () => {
         if (!openAccordionOptionMobile) return null;
 
         const onClose = () => setOpenAccordionOptionMobile(null);
-        
+
         switch (openAccordionOptionMobile.name) {
             case CONTENT_TYPES.SUMMARY:
                 return <SummaryPanel onClose={onClose} />;
@@ -1087,7 +1161,7 @@ const UI = () => {
                 return null;
         }
     };
-    
+
     const GOLDEN_RATIO_CONSTANT = 1.618;
     const VIZ_PROPORTION = 1 / GOLDEN_RATIO_CONSTANT;
     const CONTROLS_PROPORTION = 1 - VIZ_PROPORTION;
@@ -1100,7 +1174,7 @@ const UI = () => {
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-[31px] h-[31px] text-[#FFFFFF]"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>
                 </button>
                 <img src={`${process.env.PUBLIC_URL}/gloves.png`} alt="Glove Visualization" className="object-contain max-w-full max-h-full z-0" />
-                
+
                 {/* --- START: MODIFIED CODE BLOCK --- */}
                 <div className="absolute bottom-4 inset-x-0 h-8 z-10 pointer-events-none" aria-hidden="true">
                     {/* 1. The Button: Absolutely positioned on the left. Renders ONLY on mobile. */}
