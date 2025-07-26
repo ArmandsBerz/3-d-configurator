@@ -312,12 +312,15 @@ interface ImageOptionProps {
     title: string;
     isSelected: boolean;
     onSelect: () => void;
+    tabIndex?: number;
 }
-const ImageOption = ({ id, title, isSelected, onSelect }: ImageOptionProps) => (
-    <button className={`relative h-[100px] cursor-pointer flex flex-col justify-center items-center text-center bg-[#2a2a2a] ${isSelected ? 'border-4 border-white' : 'hover:bg-[#333333]'} focus:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-white`} onClick={onSelect}>
-        <h4 className="text-base font-semibold text-white">{title}</h4>
-        {isSelected && <div className="absolute top-0 right-0 w-[28px] h-[28px] bg-white flex items-center justify-center"><svg className="w-[14px] h-[14px] text-black" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"></path></svg></div>}
-    </button>
+const ImageOption = React.forwardRef<HTMLButtonElement, ImageOptionProps>(
+    ({ title, isSelected, onSelect, tabIndex }, ref) => (
+        <button ref={ref} tabIndex={tabIndex} className={`relative h-[100px] cursor-pointer flex flex-col justify-center items-center text-center bg-[#2a2a2a] ${isSelected ? 'border-4 border-white' : 'hover:bg-[#333333]'} focus:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-white`} onClick={onSelect}>
+            <h4 className="text-base font-semibold text-white">{title}</h4>
+            {isSelected && <div className="absolute top-0 right-0 w-[28px] h-[28px] bg-white flex items-center justify-center"><svg className="w-[14px] h-[14px] text-black" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"></path></svg></div>}
+        </button>
+    )
 );
 
 interface PrimaryCTAButtonProps {
@@ -379,52 +382,12 @@ interface ColorSwatchGridProps {
     onColorSelect: (color: HexColor) => void;
 }
 const ColorSwatchGrid = ({ swatches, selectedColor, onColorSelect }: ColorSwatchGridProps) => {
-    const gridContainerRef = useRef<HTMLDivElement>(null);
-    const elRefs = useRef<React.RefObject<HTMLButtonElement>[]>([]);
-
-    if (elRefs.current.length !== swatches.length) {
-        elRefs.current = Array(swatches.length).fill(null).map((_, i) => elRefs.current[i] || React.createRef());
-    }
-
-    const handleKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
-        const { key } = event;
-        if (!['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(key)) {
-            return;
-        }
-        event.preventDefault();
-
-        const focusedIndex = elRefs.current.findIndex(ref => document.activeElement === ref.current);
-        if (focusedIndex === -1) return;
-
-        const container = gridContainerRef.current;
-        if (!container) return;
-
-        const numColumns = window.getComputedStyle(container).gridTemplateColumns.split(' ').length;
-        let nextIndex = focusedIndex;
-
-        switch (key) {
-            case 'ArrowRight':
-                nextIndex = focusedIndex + 1;
-                break;
-            case 'ArrowLeft':
-                nextIndex = focusedIndex - 1;
-                break;
-            case 'ArrowUp':
-                nextIndex = focusedIndex - numColumns;
-                break;
-            case 'ArrowDown':
-                nextIndex = focusedIndex + numColumns;
-                break;
-        }
-
-        if (nextIndex >= 0 && nextIndex < swatches.length) {
-            elRefs.current[nextIndex]?.current?.focus();
-        }
-    };
+    const { containerRef, itemRefs, handleKeyDown } = useGridNavigation<HTMLDivElement>(swatches.length);
+    const itemRefsCasted = itemRefs as React.MutableRefObject<React.RefObject<HTMLButtonElement>[]>;
 
     return (
         <div
-            ref={gridContainerRef}
+            ref={containerRef}
             className="grid grid-cols-[repeat(auto-fit,minmax(42px,1fr))] gap-[10px] px-2 py-2"
             role="radiogroup"
             onKeyDown={handleKeyDown}
@@ -434,7 +397,7 @@ const ColorSwatchGrid = ({ swatches, selectedColor, onColorSelect }: ColorSwatch
                 return (
                     <ColorSwatch
                         key={swatch.hex}
-                        elRef={elRefs.current[index]}
+                        elRef={itemRefsCasted.current[index]}
                         color={swatch.hex}
                         name={swatch.name}
                         isSelected={isSelected}
@@ -563,11 +526,14 @@ interface OptionProps {
     label: string;
     isSelected: boolean;
     onSelect: () => void;
+    tabIndex?: number;
 }
-const Option = ({ label, isSelected, onSelect }: OptionProps) => (
-    <button className={`text-sm py-2 px-3 h-[36px] flex items-center justify-center font-medium transition-colors focus:outline-none focus-visible:ring-4 focus-visible:ring-inset ${isSelected ? 'bg-white text-[#222222] focus-visible:ring-blue-400' : 'bg-[#383838] hover:bg-[#595959] active:bg-[#272727] focus-visible:ring-white'}`} onClick={onSelect}>
-        {label}
-    </button>
+const Option = React.forwardRef<HTMLButtonElement, OptionProps>(
+    ({ label, isSelected, onSelect, tabIndex }, ref) => (
+        <button ref={ref} tabIndex={tabIndex} className={`text-sm py-2 px-3 h-[36px] flex items-center justify-center font-medium transition-colors focus:outline-none focus-visible:ring-4 focus-visible:ring-inset ${isSelected ? 'bg-white text-[#222222] focus-visible:ring-blue-400' : 'bg-[#383838] hover:bg-[#595959] active:bg-[#272727] focus-visible:ring-white'}`} onClick={onSelect}>
+            {label}
+        </button>
+    )
 );
 
 interface OptionGroupProps {
@@ -577,14 +543,32 @@ interface OptionGroupProps {
     selectedOption: string;
     onSelectOption: (id: string) => void;
 }
-const OptionGroup = ({ title, options, layout, selectedOption, onSelectOption }: OptionGroupProps) => (
-    <div>
-        <h3 className="text-sm font-semibold text-gray-400 mb-2">{title}</h3>
-        <div className={`grid ${layout} gap-2`}>
-            {options.map((option) => <Option key={option.id} label={option.label} isSelected={selectedOption === option.id} onSelect={() => onSelectOption(option.id)} />)}
+const OptionGroup = ({ title, options, layout, selectedOption, onSelectOption }: OptionGroupProps) => {
+    const { containerRef, itemRefs, handleKeyDown } = useGridNavigation<HTMLDivElement>(options.length);
+    const itemRefsCasted = itemRefs as React.MutableRefObject<React.RefObject<HTMLButtonElement>[]>;
+    const selectedIndex = options.findIndex(opt => opt.id === selectedOption);
+
+    return (
+        <div>
+            <h3 className="text-sm font-semibold text-gray-400 mb-2">{title}</h3>
+            <div ref={containerRef} className={`grid ${layout} gap-2`} onKeyDown={handleKeyDown}>
+                {options.map((option, index) => {
+                    const isSelected = selectedOption === option.id;
+                    return (
+                        <Option
+                            key={option.id}
+                            ref={itemRefsCasted.current[index]}
+                            label={option.label}
+                            isSelected={isSelected}
+                            onSelect={() => onSelectOption(option.id)}
+                            tabIndex={isSelected ? 0 : (selectedIndex === -1 && index === 0 ? 0 : -1)}
+                        />
+                    );
+                })}
+            </div>
         </div>
-    </div>
-);
+    );
+};
 
 interface ImageGroupProps {
     title: string;
@@ -593,14 +577,33 @@ interface ImageGroupProps {
     selectedOption: string;
     onSelectOption: (id: string) => void;
 }
-const ImageGroup = ({ title, options, layout, selectedOption, onSelectOption }: ImageGroupProps) => (
-    <div>
-        <h3 className="text-sm font-semibold text-gray-400 mb-2">{title}</h3>
-        <div className={`grid ${layout} gap-[10px]`}>
-            {options.map((option) => <ImageOption key={option.id} id={option.id} title={option.title} isSelected={selectedOption === option.id} onSelect={() => onSelectOption(option.id)} />)}
+const ImageGroup = ({ title, options, layout, selectedOption, onSelectOption }: ImageGroupProps) => {
+    const { containerRef, itemRefs, handleKeyDown } = useGridNavigation<HTMLDivElement>(options.length);
+    const itemRefsCasted = itemRefs as React.MutableRefObject<React.RefObject<HTMLButtonElement>[]>;
+    const selectedIndex = options.findIndex(opt => opt.id === selectedOption);
+
+    return (
+        <div>
+            <h3 className="text-sm font-semibold text-gray-400 mb-2">{title}</h3>
+            <div ref={containerRef} className={`grid ${layout} gap-[10px]`} onKeyDown={handleKeyDown}>
+                {options.map((option, index) => {
+                    const isSelected = selectedOption === option.id;
+                    return (
+                        <ImageOption
+                            key={option.id}
+                            ref={itemRefsCasted.current[index]}
+                            id={option.id}
+                            title={option.title}
+                            isSelected={isSelected}
+                            onSelect={() => onSelectOption(option.id)}
+                            tabIndex={isSelected ? 0 : (selectedIndex === -1 && index === 0 ? 0 : -1)}
+                        />
+                    );
+                })}
+            </div>
         </div>
-    </div>
-);
+    );
+};
 
 interface BuildOptionProps {
     isDesktop: boolean;
@@ -611,12 +614,13 @@ const BuildOption = ({ isDesktop }: BuildOptionProps) => {
     const onBuildConfigChange = (newConfig: BuildConfig) => dispatch({ type: ACTION_TYPES.UPDATE_BUILD, payload: newConfig });
     return (
         <div className={`space-y-6 ${!isDesktop ? 'pb-4' : ''}`}>
-            <div>
-                <h3 className="text-sm font-semibold text-gray-400 mb-2">Glove Leather</h3>
-                <div className="grid grid-cols-2 gap-[10px]">
-                    {leatherOptions.map(option => <ImageOption key={option.id} id={option.id} title={option.title} isSelected={buildConfig.imageSelection === option.id} onSelect={() => onBuildConfigChange({ ...buildConfig, imageSelection: option.id as 'imgOpt1' | 'imgOpt2' })} />)}
-                </div>
-            </div>
+            <ImageGroup
+                title="Glove Leather"
+                layout="grid-cols-2"
+                options={leatherOptions}
+                selectedOption={buildConfig.imageSelection}
+                onSelectOption={(value) => onBuildConfigChange({ ...buildConfig, imageSelection: value as 'imgOpt1' | 'imgOpt2' })}
+            />
             {buildOptionsData.map((group) => <OptionGroup key={group.id} title={group.title} options={group.options} layout={group.layout} selectedOption={buildConfig[group.id as keyof Omit<BuildConfig, 'imageSelection'>]} onSelectOption={(value) => onBuildConfigChange({ ...buildConfig, [group.id]: value })} />)}
         </div>
     );
@@ -629,6 +633,10 @@ const TextOption = ({ contextId }: TextOptionProps) => {
     const { state, dispatch } = useGloveConfigurator();
     const value = state.configuration[contextId];
     const onChange = (newValue: TextPart) => dispatch({ type: ACTION_TYPES.UPDATE_TEXT, payload: { id: contextId, data: newValue } });
+
+    const { containerRef, itemRefs, handleKeyDown } = useGridNavigation<HTMLDivElement>(fontOptions.length);
+    const itemRefsCasted = itemRefs as React.MutableRefObject<React.RefObject<HTMLButtonElement>[]>;
+
     return (
         <div className="space-y-5">
             <div>
@@ -637,8 +645,18 @@ const TextOption = ({ contextId }: TextOptionProps) => {
             </div>
             <div>
                 <h3 className="text-sm font-semibold text-gray-400 mb-2">Font</h3>
-                <div className="grid grid-cols-2 gap-3">
-                    {fontOptions.map(font => <button key={font.id} onClick={() => onChange({ ...value, font: font.id })} className={`py-3 text-base font-bold focus:outline-none focus-visible:ring-4 focus-visible:ring-inset ${value.font === font.id ? 'bg-white text-black focus-visible:ring-blue-400' : 'bg-[#2a2a2a] hover:bg-[#333333] text-white focus-visible:ring-white'}`}>{font.label}</button>)}
+                <div ref={containerRef} className="grid grid-cols-2 gap-3" onKeyDown={handleKeyDown}>
+                    {fontOptions.map((font, index) => (
+                        <button
+                            key={font.id}
+                            ref={itemRefsCasted.current[index]}
+                            onClick={() => onChange({ ...value, font: font.id })}
+                            tabIndex={value.font === font.id ? 0 : -1}
+                            className={`py-3 text-base font-bold focus:outline-none focus-visible:ring-4 focus-visible:ring-inset ${value.font === font.id ? 'bg-white text-black focus-visible:ring-blue-400' : 'bg-[#2a2a2a] hover:bg-[#333333] text-white focus-visible:ring-white'}`}
+                        >
+                            {font.label}
+                        </button>
+                    ))}
                 </div>
             </div>
             <div>
@@ -871,6 +889,65 @@ const useBreakpoint = (breakpoint: string = NUMERIC_CONSTANTS.DESKTOP_BREAKPOINT
     return isMatch;
 };
 
+// --- START: NEW Grid Navigation Hook ---
+const useGridNavigation = <T extends HTMLElement>(itemCount: number) => {
+    const containerRef = useRef<T>(null);
+    const itemRefs = useRef<React.RefObject<HTMLElement>[]>([]);
+
+    if (itemRefs.current.length !== itemCount) {
+        itemRefs.current = Array(itemCount).fill(null).map((_, i) => itemRefs.current[i] || React.createRef());
+    }
+
+    const handleKeyDown = (event: React.KeyboardEvent<T>) => {
+        const { key } = event;
+        if (!['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(key)) {
+            return;
+        }
+        event.preventDefault();
+
+        const focusedIndex = itemRefs.current.findIndex(ref => document.activeElement === ref.current);
+        if (focusedIndex === -1) return;
+
+        const container = containerRef.current;
+        if (!container) return;
+        
+        const numColumns = window.getComputedStyle(container).gridTemplateColumns.split(' ').length;
+        if (numColumns === 0) return;
+
+        let nextIndex = focusedIndex;
+
+        switch (key) {
+            case 'ArrowRight':
+                nextIndex = focusedIndex + 1;
+                break;
+            case 'ArrowLeft':
+                nextIndex = focusedIndex - 1;
+                break;
+            case 'ArrowUp':
+                nextIndex = focusedIndex - numColumns;
+                break;
+            case 'ArrowDown':
+                nextIndex = focusedIndex + numColumns;
+                break;
+        }
+        
+        if (key === 'ArrowLeft' || key === 'ArrowRight') {
+            const currentRow = Math.floor(focusedIndex / numColumns);
+            const nextRow = Math.floor(nextIndex / numColumns);
+            if (currentRow !== nextRow) {
+                return;
+            }
+        }
+
+        if (nextIndex >= 0 && nextIndex < itemCount) {
+            itemRefs.current[nextIndex]?.current?.focus();
+        }
+    };
+
+    return { containerRef, itemRefs, handleKeyDown };
+};
+// --- END: NEW Grid Navigation Hook ---
+
 const OverviewDesktop = () => {
     const [agnosticAccordionOpen, setAgnosticAccordionOpen] = useState(false);
     useEffect(() => {
@@ -1027,7 +1104,6 @@ interface AccordionMobileProps {
     openAccordionOptionMobile: MobileAccordionState;
 }
 
-// --- START: MODIFIED AccordionMobile Component ---
 const AccordionMobile = React.forwardRef<HTMLElement, AccordionMobileProps>(
     ({ options, onOpenPanel, openAccordionOptionMobile }, ref) => {
         const { state } = useGloveConfigurator();
@@ -1093,7 +1169,6 @@ const AccordionMobile = React.forwardRef<HTMLElement, AccordionMobileProps>(
         );
     }
 );
-// --- END: MODIFIED AccordionMobile Component ---
 
 
 // --- Main UI Component ---
@@ -1103,7 +1178,6 @@ const UI = () => {
     const [isVisualizationExpanded, setIsVisualizationExpanded] = useState(false);
     const [openAccordionOptionMobile, setOpenAccordionOptionMobile] = useState<MobileAccordionState>(null);
 
-    // --- START: MODIFIED UI Component ---
     const mobileListRef = useRef<HTMLElement>(null);
 
     useEffect(() => {
@@ -1116,7 +1190,6 @@ const UI = () => {
             listElement.removeAttribute('inert');
         }
     }, [openAccordionOptionMobile]);
-    // --- END: MODIFIED UI Component ---
 
     const handleOpenPanel = (item: OptionsConfigItem) => {
         const { id, title, contentType } = item;
@@ -1175,9 +1248,7 @@ const UI = () => {
                 </button>
                 <img src={`${process.env.PUBLIC_URL}/gloves.png`} alt="Glove Visualization" className="object-contain max-w-full max-h-full z-0" />
 
-                {/* --- START: MODIFIED CODE BLOCK --- */}
                 <div className="absolute bottom-4 inset-x-0 h-8 z-10 pointer-events-none" aria-hidden="true">
-                    {/* 1. The Button: Absolutely positioned on the left. Renders ONLY on mobile. */}
                     {!isDesktop && (
                         <button
                             className="absolute left-5 bottom-0 p-1 hover:bg-gray-800 hover:bg-opacity-50 cursor-pointer focus:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-white pointer-events-auto"
@@ -1187,8 +1258,6 @@ const UI = () => {
                             {isVisualizationExpanded ? <svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-7 h-7"><path d="M17.3176 3.39899C16.9681 3.39899 16.6330 3.53795 16.3856 3.78514C16.1386 4.03232 15.9997 4.3675 15.9997 4.71725V10.3042C15.9997 10.9906 16.5561 11.547 17.2424 11.547L22.8324 11.547C23.1819 11.547 23.5173 11.408 23.7644 11.1609C24.0116 10.9139 24.1505 10.5785 24.1505 10.229C24.1505 9.87922 24.0116 9.54402 23.7644 9.29685C23.5173 9.04967 23.1819 8.9107 22.8324 8.9107H20.501L27.167 2.24612C27.4123 1.99854 27.5496 1.66397 27.5488 1.31541C27.5482 0.966682 27.4093 0.632697 27.1629 0.386154C26.9164 0.139575 26.5824 0.000809714 26.2337 1.87161e-06C25.8852 -0.000604998 25.5505 0.136743 25.3029 0.382111L18.6359 7.04824V4.71693C18.6359 4.36719 18.4969 4.03199 18.2498 3.78482C18.0026 3.53764 17.6673 3.39899 17.3176 3.39899Z" fill="white"/><path d="M24.1489 17.3166C24.1489 16.9671 24.0099 16.632 23.7627 16.3846C23.5155 16.1377 23.1804 15.9987 22.8306 15.9987H17.2437C16.5573 15.9987 16.0008 16.5551 16.0008 17.2414V22.8314C16.0008 23.1809 16.1398 23.5163 16.387 23.7634C16.634 24.0106 16.9694 24.1496 17.3189 24.1496C17.6686 24.1496 18.0038 24.0106 18.251 23.7634C18.4982 23.5163 18.6372 23.1809 18.6372 22.8314V20.5L25.3017 27.166C25.5493 27.4113 25.8839 27.5487 26.2324 27.5478C26.5812 27.5472 26.9152 27.4083 27.1617 27.1619C27.4083 26.9154 27.547 26.5814 27.5478 26.2328C27.5485 25.8843 27.4111 25.5495 27.1657 25.3019L20.4996 18.6349H22.8309C23.1807 18.6349 23.5159 18.496 23.763 18.2488C24.0102 18.0016 24.1489 17.6664 24.1489 17.3166Z" fill="white"/><path d="M10.2312 24.1479C10.5807 24.1479 10.9159 24.0089 11.1632 23.7617C11.4102 23.5146 11.5491 23.1794 11.5491 22.8296V17.2427C11.5491 16.5563 10.9928 15.9999 10.3064 15.9999H4.71642C4.36691 15.9999 4.03154 16.1388 3.7844 16.386C3.53724 16.633 3.39829 16.9684 3.39829 17.3179C3.39829 17.6677 3.53724 18.0029 3.7844 18.25C4.03156 18.4972 4.36691 18.6362 4.71642 18.6362H7.04786L0.381872 25.3008C0.136529 25.5483 -0.0008042 25.8829 3.54305e-06 26.2315C0.000610281 26.5802 0.139565 26.9142 0.385917 27.1607C0.632472 27.4073 0.966407 27.5461 1.31508 27.5469C1.66358 27.5475 1.9983 27.4101 2.24591 27.1648L8.91293 20.4986V22.8299C8.91293 23.1797 9.05189 23.5149 9.29905 23.7621C9.54621 24.0092 9.88149 24.1479 10.2312 24.1479Z" fill="white"/><path d="M3.39996 10.2302C3.39996 10.5797 3.53893 10.9149 3.78612 11.1622C4.0333 11.4092 4.36848 11.5482 4.71822 11.5482L10.3052 11.5482C10.9916 11.5482 11.548 10.9918 11.548 10.3055L11.548 4.71544C11.548 4.36594 11.409 4.03057 11.1618 3.78343C10.9149 3.53627 10.5795 3.39731 10.2299 3.39731C9.88019 3.39731 9.54499 3.53627 9.29783 3.78343C9.05064 4.03059 8.91168 4.36594 8.91168 4.71544V7.04688L2.2471 0.380895C1.99951 0.135552 1.66495 -0.00178075 1.31639 -0.00097302C0.967659 -0.000366296 0.633674 0.138588 0.387132 0.384941C0.140553 0.631495 0.00178728 0.96543 0.00097943 1.31411C0.000372556 1.6626 0.137721 1.99733 0.383088 2.24493L7.04922 8.91195H4.71791C4.36817 8.91195 4.03296 9.05091 3.7858 9.29807C3.53861 9.54523 3.39996 9.88052 3.39996 10.2302Z" fill="white"/></svg> : <svg viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-7 h-7"><path d="M28 1.24271C28 0.556382 27.4436 0 26.7572 0H21.1692C20.8195 0 20.4843 0.138953 20.2371 0.386114C19.9899 0.633274 19.851 0.968417 19.851 1.31792C19.851 1.66763 19.9899 2.0028 20.2371 2.24994C20.4843 2.4971 20.8195 2.63605 21.1692 2.63605H23.4991L16.8345 9.30049C16.5891 9.54805 16.4518 9.88279 16.4524 10.2313C16.4532 10.58 16.5920 10.914 16.8385 11.1605C17.0851 11.4068 17.4191 11.5456 17.7678 11.5464C18.1163 11.5472 18.4509 11.4099 18.6985 11.1645L25.3636 4.49957V6.83184C25.3636 7.18135 25.5024 7.51672 25.7498 7.76386C25.9969 8.01102 26.3321 8.14997 26.6819 8.14997C27.0314 8.14997 27.3666 8.01102 27.6138 7.76386C27.861 7.5167 27.9999 7.18135 27.9999 6.83184L28 1.24271Z" fill="white"/><path d="M11.1656 16.8327C10.9184 16.5856 10.5831 16.4468 10.2335 16.4468C9.88397 16.4468 9.54857 16.5856 9.30141 16.8327L2.63631 23.4992V21.167C2.63631 20.8175 2.49735 20.4821 2.25016 20.235C2.00298 19.9878 1.6678 19.8488 1.31805 19.8488C0.968513 19.8488 0.633316 19.9878 0.386152 20.235C0.138967 20.4821 0 20.8175 0 21.167V26.7565C0 27.4428 0.556426 27.9992 1.24281 27.9992H6.82977C7.17931 27.9992 7.51471 27.8602 7.76187 27.6133C8.00906 27.3661 8.14803 27.0307 8.14803 26.6812C8.14803 26.3315 8.00906 25.9964 7.76187 25.7492C7.51469 25.5021 7.17931 25.3631 6.82977 25.3631H4.49929L11.1654 18.6966C11.4126 18.4492 11.5514 18.1141 11.5514 17.7646C11.5514 17.4151 11.4126 17.0797 11.1654 16.8326L11.1656 16.8327Z" fill="white"/><path d="M19.8508 26.6821C19.8508 27.0316 19.9898 27.3667 20.237 27.6141C20.4841 27.861 20.8193 28 21.1691 28H26.756C27.4424 28 27.9988 27.4436 27.9988 26.7573V21.1673C27.9988 20.8178 27.8599 20.4824 27.6127 20.2353C27.3657 19.9881 27.0303 19.8492 26.6808 19.8492C26.331 19.8492 25.9958 19.8881 25.7487 20.2353C25.5015 20.4824 25.3625 20.8178 25.3625 21.1673V23.4987L18.6979 16.8327C18.4503 16.5874 18.1158 16.4501 17.7672 16.4509C17.4185 16.4515 17.0845 16.5904 16.838 16.8368C16.5914 17.0833 16.4526 17.4173 16.4518 17.7659C16.4512 18.1144 16.5886 18.4492 16.8339 18.6968L23.5001 25.3638H21.1687C20.819 25.3638 20.4838 25.5027 20.2366 25.7499C19.9895 25.9971 19.8505 26.3322 19.8505 26.6819L19.8508 26.6821Z" fill="white"/><path d="M11.1656 9.30049L4.50001 2.63605H6.82987C7.17941 2.63605 7.51481 2.4971 7.76198 2.24994C8.00916 2.00278 8.14813 1.66764 8.14813 1.31792C8.14813 0.968417 8.00916 0.633253 7.76198 0.386114C7.51479 0.138953 7.17941 0 6.82987 0H1.24292C0.55653 0 0.000103511 0.55637 0.000103511 1.24269V6.8322C0.000103511 7.1817 0.139071 7.51707 0.386255 7.76421C0.63344 8.01137 0.968616 8.15033 1.31816 8.15033C1.6679 8.15033 2.0031 8.01137 2.25027 7.76421C2.49745 7.51705 2.63642 7.1817 2.63642 6.8322V4.49993L9.30151 11.1649C9.5491 11.4102 9.88387 11.5476 10.2324 11.5467C10.5812 11.5459 10.9151 11.4072 11.1617 11.1608C11.4081 10.9143 11.5468 10.5803 11.5476 10.2317C11.5484 9.88317 11.4111 9.54845 11.1657 9.30084L11.1656 9.30049Z" fill="white"/> </svg>}
                         </button>
                     )}
-
-                    {/* 2. The Text: Centered within a full-width container. Renders on BOTH mobile and desktop. */}
                     <div className="flex justify-center items-center h-full">
                         <div className="flex items-center space-x-4 text-xs text-gray-400 pointer-events-auto">
                             <div className="flex items-center space-x-1.5">
@@ -1202,7 +1271,6 @@ const UI = () => {
                         </div>
                     </div>
                 </div>
-                {/* --- END: MODIFIED CODE BLOCK --- */}
 
             </main>
 
