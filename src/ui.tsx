@@ -402,7 +402,7 @@ const ColorSwatchGrid = ({ swatches, selectedColor, onColorSelect }: ColorSwatch
                         name={swatch.name}
                         isSelected={isSelected}
                         onSelect={onColorSelect}
-                        tabIndex={isSelected || (selectedColor === undefined && index === 0) ? 0 : -1}
+                        tabIndex={index === 0 ? 0 : -1}
                     />
                 );
             })}
@@ -546,7 +546,6 @@ interface OptionGroupProps {
 const OptionGroup = ({ title, options, layout, selectedOption, onSelectOption }: OptionGroupProps) => {
     const { containerRef, itemRefs, handleKeyDown } = useGridNavigation<HTMLDivElement>(options.length);
     const itemRefsCasted = itemRefs as React.MutableRefObject<React.RefObject<HTMLButtonElement>[]>;
-    const selectedIndex = options.findIndex(opt => opt.id === selectedOption);
 
     return (
         <div>
@@ -561,7 +560,7 @@ const OptionGroup = ({ title, options, layout, selectedOption, onSelectOption }:
                             label={option.label}
                             isSelected={isSelected}
                             onSelect={() => onSelectOption(option.id)}
-                            tabIndex={isSelected ? 0 : (selectedIndex === -1 && index === 0 ? 0 : -1)}
+                            tabIndex={index === 0 ? 0 : -1}
                         />
                     );
                 })}
@@ -580,7 +579,6 @@ interface ImageGroupProps {
 const ImageGroup = ({ title, options, layout, selectedOption, onSelectOption }: ImageGroupProps) => {
     const { containerRef, itemRefs, handleKeyDown } = useGridNavigation<HTMLDivElement>(options.length);
     const itemRefsCasted = itemRefs as React.MutableRefObject<React.RefObject<HTMLButtonElement>[]>;
-    const selectedIndex = options.findIndex(opt => opt.id === selectedOption);
 
     return (
         <div>
@@ -596,7 +594,7 @@ const ImageGroup = ({ title, options, layout, selectedOption, onSelectOption }: 
                             title={option.title}
                             isSelected={isSelected}
                             onSelect={() => onSelectOption(option.id)}
-                            tabIndex={isSelected ? 0 : (selectedIndex === -1 && index === 0 ? 0 : -1)}
+                            tabIndex={index === 0 ? 0 : -1}
                         />
                     );
                 })}
@@ -651,7 +649,7 @@ const TextOption = ({ contextId }: TextOptionProps) => {
                             key={font.id}
                             ref={itemRefsCasted.current[index]}
                             onClick={() => onChange({ ...value, font: font.id })}
-                            tabIndex={value.font === font.id ? 0 : -1}
+                            tabIndex={index === 0 ? 0 : -1}
                             className={`py-3 text-base font-bold focus:outline-none focus-visible:ring-4 focus-visible:ring-inset ${value.font === font.id ? 'bg-white text-black focus-visible:ring-blue-400' : 'bg-[#2a2a2a] hover:bg-[#333333] text-white focus-visible:ring-white'}`}
                         >
                             {font.label}
