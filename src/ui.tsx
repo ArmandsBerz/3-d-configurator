@@ -382,16 +382,53 @@ interface ColorSwatchGridProps {
     onColorSelect: (color: HexColor) => void;
 }
 const ColorSwatchGrid = ({ swatches, selectedColor, onColorSelect }: ColorSwatchGridProps) => {
-    const { containerRef, itemRefs, handleKeyDown } = useGridNavigation<HTMLDivElement>(swatches.length);
+    const [showNavigationHint, setShowNavigationHint] = useState(false);
+    const mouseClickInProgress = useRef(false);
+
+    const handleFocus = (event: React.FocusEvent<HTMLDivElement>) => {
+        // If focus is gained due to a mouse click, do nothing and reset the flag.
+        if (mouseClickInProgress.current) {
+            mouseClickInProgress.current = false;
+            return;
+        }
+        // Otherwise, it was a keyboard event (Tab), so show the hint.
+        if (containerRef.current && !containerRef.current.contains(event.relatedTarget as Node)) {
+            setShowNavigationHint(true);
+        }
+    };
+
+    const handleMouseDown = () => {
+        // Set the flag to indicate a mouse click is happening.
+        mouseClickInProgress.current = true;
+        setShowNavigationHint(false);
+    };
+
+    const handleBlur = () => {
+        setShowNavigationHint(false);
+        mouseClickInProgress.current = false; // Also reset the mouse flag for safety
+    };
+
+    const { containerRef, itemRefs, handleKeyDown } = useGridNavigation<HTMLDivElement>(
+        swatches.length,
+        { onNavigate: () => setShowNavigationHint(false) }
+    );
     const itemRefsCasted = itemRefs as React.MutableRefObject<React.RefObject<HTMLButtonElement>[]>;
 
     return (
         <div
             ref={containerRef}
-            className="grid grid-cols-[repeat(auto-fit,minmax(42px,1fr))] gap-[10px] px-2 py-2"
+            className="relative grid grid-cols-[repeat(auto-fit,minmax(42px,1fr))] gap-[10px] px-2 py-2"
             role="radiogroup"
             onKeyDown={handleKeyDown}
+            onFocus={handleFocus}
+            onMouseDown={handleMouseDown}
+            onBlur={handleBlur}
         >
+            {showNavigationHint && (
+                <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-75 rounded-md z-10 pointer-events-none">
+                    <p className="text-white text-sm font-semibold">Use arrow keys to navigate</p>
+                </div>
+            )}
             {swatches.map((swatch, index) => {
                 const isSelected = selectedColor === swatch.hex;
                 return (
@@ -888,7 +925,10 @@ const useBreakpoint = (breakpoint: string = NUMERIC_CONSTANTS.DESKTOP_BREAKPOINT
 };
 
 // --- START: NEW Grid Navigation Hook ---
-const useGridNavigation = <T extends HTMLElement>(itemCount: number) => {
+const useGridNavigation = <T extends HTMLElement>(
+    itemCount: number,
+    options?: { onNavigate?: () => void }
+) => {
     const containerRef = useRef<T>(null);
     const itemRefs = useRef<React.RefObject<HTMLElement>[]>([]);
 
@@ -902,6 +942,9 @@ const useGridNavigation = <T extends HTMLElement>(itemCount: number) => {
             return;
         }
         event.preventDefault();
+
+        // Dismiss hint on first arrow navigation
+        options?.onNavigate?.();
 
         const focusedIndex = itemRefs.current.findIndex(ref => document.activeElement === ref.current);
         if (focusedIndex === -1) return;
