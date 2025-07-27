@@ -425,7 +425,7 @@ const ColorSwatchGrid = ({ swatches, selectedColor, onColorSelect }: ColorSwatch
             onBlur={handleBlur}
         >
             {showNavigationHint && (
-                <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-75 rounded-md z-10 pointer-events-none">
+                <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 rounded-md z-10 pointer-events-none">
                     <p className="text-white text-sm font-semibold">Use arrow keys to navigate</p>
                 </div>
             )}
