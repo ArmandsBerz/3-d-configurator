@@ -359,7 +359,7 @@ interface ColorSwatchProps {
     color: HexColor;
     name: string;
     isSelected: boolean;
-    onSelect: (color: HexColor) => void;
+    onSelect: () => void;
     tabIndex: number;
     elRef: React.RefObject<HTMLButtonElement>;
 }
@@ -371,7 +371,7 @@ const ColorSwatch = ({ color, name, isSelected, onSelect, tabIndex, elRef }: Col
         aria-checked={isSelected}
         className={`w-[42px] h-[42px] rounded-full border-2 focus:outline-none ${isSelected ? 'border-transparent ring-4 ring-white' : 'border-transparent focus-visible:ring-4 focus-visible:ring-white/50'}`}
         style={{ backgroundColor: color }}
-        onClick={() => onSelect(color)}
+        onClick={onSelect}
         aria-label={`Select color ${name}`}
     />
 );
@@ -382,36 +382,7 @@ interface ColorSwatchGridProps {
     onColorSelect: (color: HexColor) => void;
 }
 const ColorSwatchGrid = ({ swatches, selectedColor, onColorSelect }: ColorSwatchGridProps) => {
-    const [showNavigationHint, setShowNavigationHint] = useState(false);
-    const mouseClickInProgress = useRef(false);
-
-    const handleFocus = (event: React.FocusEvent<HTMLDivElement>) => {
-        // If focus is gained due to a mouse click, do nothing and reset the flag.
-        if (mouseClickInProgress.current) {
-            mouseClickInProgress.current = false;
-            return;
-        }
-        // Otherwise, it was a keyboard event (Tab), so show the hint.
-        if (containerRef.current && !containerRef.current.contains(event.relatedTarget as Node)) {
-            setShowNavigationHint(true);
-        }
-    };
-
-    const handleMouseDown = () => {
-        // Set the flag to indicate a mouse click is happening.
-        mouseClickInProgress.current = true;
-        setShowNavigationHint(false);
-    };
-
-    const handleBlur = () => {
-        setShowNavigationHint(false);
-        mouseClickInProgress.current = false; // Also reset the mouse flag for safety
-    };
-
-    const { containerRef, itemRefs, handleKeyDown } = useGridNavigation<HTMLDivElement>(
-        swatches.length,
-        { onNavigate: () => setShowNavigationHint(false) }
-    );
+    const { containerRef, itemRefs, showNavigationHint, gridEventHandlers, activeIndex, setActiveIndex } = useGridNavigation<HTMLDivElement>(swatches.length);
     const itemRefsCasted = itemRefs as React.MutableRefObject<React.RefObject<HTMLButtonElement>[]>;
 
     return (
@@ -419,16 +390,9 @@ const ColorSwatchGrid = ({ swatches, selectedColor, onColorSelect }: ColorSwatch
             ref={containerRef}
             className="relative grid grid-cols-[repeat(auto-fit,minmax(42px,1fr))] gap-[10px] px-2 py-2"
             role="radiogroup"
-            onKeyDown={handleKeyDown}
-            onFocus={handleFocus}
-            onMouseDown={handleMouseDown}
-            onBlur={handleBlur}
+            {...gridEventHandlers}
         >
-            {showNavigationHint && (
-                <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 rounded-md z-10 pointer-events-none">
-                    <p className="text-white text-sm font-semibold">Use arrow keys to navigate</p>
-                </div>
-            )}
+            <NavigationHint isVisible={showNavigationHint} />
             {swatches.map((swatch, index) => {
                 const isSelected = selectedColor === swatch.hex;
                 return (
@@ -438,8 +402,11 @@ const ColorSwatchGrid = ({ swatches, selectedColor, onColorSelect }: ColorSwatch
                         color={swatch.hex}
                         name={swatch.name}
                         isSelected={isSelected}
-                        onSelect={onColorSelect}
-                        tabIndex={index === 0 ? 0 : -1}
+                        onSelect={() => {
+                            onColorSelect(swatch.hex);
+                            setActiveIndex(index);
+                        }}
+                        tabIndex={index === activeIndex ? 0 : -1}
                     />
                 );
             })}
@@ -581,13 +548,14 @@ interface OptionGroupProps {
     onSelectOption: (id: string) => void;
 }
 const OptionGroup = ({ title, options, layout, selectedOption, onSelectOption }: OptionGroupProps) => {
-    const { containerRef, itemRefs, handleKeyDown } = useGridNavigation<HTMLDivElement>(options.length);
+    const { containerRef, itemRefs, showNavigationHint, gridEventHandlers, activeIndex, setActiveIndex } = useGridNavigation<HTMLDivElement>(options.length);
     const itemRefsCasted = itemRefs as React.MutableRefObject<React.RefObject<HTMLButtonElement>[]>;
 
     return (
         <div>
             <h3 className="text-sm font-semibold text-gray-400 mb-2">{title}</h3>
-            <div ref={containerRef} className={`grid ${layout} gap-2`} onKeyDown={handleKeyDown}>
+            <div ref={containerRef} className={`relative grid ${layout} gap-2`} {...gridEventHandlers}>
+                <NavigationHint isVisible={showNavigationHint} />
                 {options.map((option, index) => {
                     const isSelected = selectedOption === option.id;
                     return (
@@ -596,8 +564,11 @@ const OptionGroup = ({ title, options, layout, selectedOption, onSelectOption }:
                             ref={itemRefsCasted.current[index]}
                             label={option.label}
                             isSelected={isSelected}
-                            onSelect={() => onSelectOption(option.id)}
-                            tabIndex={index === 0 ? 0 : -1}
+                            onSelect={() => {
+                                onSelectOption(option.id);
+                                setActiveIndex(index);
+                            }}
+                            tabIndex={index === activeIndex ? 0 : -1}
                         />
                     );
                 })}
@@ -614,13 +585,14 @@ interface ImageGroupProps {
     onSelectOption: (id: string) => void;
 }
 const ImageGroup = ({ title, options, layout, selectedOption, onSelectOption }: ImageGroupProps) => {
-    const { containerRef, itemRefs, handleKeyDown } = useGridNavigation<HTMLDivElement>(options.length);
+    const { containerRef, itemRefs, showNavigationHint, gridEventHandlers, activeIndex, setActiveIndex } = useGridNavigation<HTMLDivElement>(options.length);
     const itemRefsCasted = itemRefs as React.MutableRefObject<React.RefObject<HTMLButtonElement>[]>;
 
     return (
         <div>
             <h3 className="text-sm font-semibold text-gray-400 mb-2">{title}</h3>
-            <div ref={containerRef} className={`grid ${layout} gap-[10px]`} onKeyDown={handleKeyDown}>
+            <div ref={containerRef} className={`relative grid ${layout} gap-[10px]`} {...gridEventHandlers}>
+                <NavigationHint isVisible={showNavigationHint} />
                 {options.map((option, index) => {
                     const isSelected = selectedOption === option.id;
                     return (
@@ -630,8 +602,11 @@ const ImageGroup = ({ title, options, layout, selectedOption, onSelectOption }: 
                             id={option.id}
                             title={option.title}
                             isSelected={isSelected}
-                            onSelect={() => onSelectOption(option.id)}
-                            tabIndex={index === 0 ? 0 : -1}
+                            onSelect={() => {
+                                onSelectOption(option.id);
+                                setActiveIndex(index);
+                            }}
+                            tabIndex={index === activeIndex ? 0 : -1}
                         />
                     );
                 })}
@@ -669,7 +644,7 @@ const TextOption = ({ contextId }: TextOptionProps) => {
     const value = state.configuration[contextId];
     const onChange = (newValue: TextPart) => dispatch({ type: ACTION_TYPES.UPDATE_TEXT, payload: { id: contextId, data: newValue } });
 
-    const { containerRef, itemRefs, handleKeyDown } = useGridNavigation<HTMLDivElement>(fontOptions.length);
+    const { containerRef, itemRefs, showNavigationHint, gridEventHandlers, activeIndex, setActiveIndex } = useGridNavigation<HTMLDivElement>(fontOptions.length);
     const itemRefsCasted = itemRefs as React.MutableRefObject<React.RefObject<HTMLButtonElement>[]>;
 
     return (
@@ -680,13 +655,17 @@ const TextOption = ({ contextId }: TextOptionProps) => {
             </div>
             <div>
                 <h3 className="text-sm font-semibold text-gray-400 mb-2">Font</h3>
-                <div ref={containerRef} className="grid grid-cols-2 gap-3" onKeyDown={handleKeyDown}>
+                <div ref={containerRef} className="relative grid grid-cols-2 gap-3" {...gridEventHandlers}>
+                    <NavigationHint isVisible={showNavigationHint} />
                     {fontOptions.map((font, index) => (
                         <button
                             key={font.id}
                             ref={itemRefsCasted.current[index]}
-                            onClick={() => onChange({ ...value, font: font.id })}
-                            tabIndex={index === 0 ? 0 : -1}
+                            onClick={() => {
+                                onChange({ ...value, font: font.id });
+                                setActiveIndex(index);
+                            }}
+                            tabIndex={index === activeIndex ? 0 : -1}
                             className={`py-3 text-base font-bold focus:outline-none focus-visible:ring-4 focus-visible:ring-inset ${value.font === font.id ? 'bg-white text-black focus-visible:ring-blue-400' : 'bg-[#2a2a2a] hover:bg-[#333333] text-white focus-visible:ring-white'}`}
                         >
                             {font.label}
@@ -924,17 +903,55 @@ const useBreakpoint = (breakpoint: string = NUMERIC_CONSTANTS.DESKTOP_BREAKPOINT
     return isMatch;
 };
 
-// --- START: NEW Grid Navigation Hook ---
-const useGridNavigation = <T extends HTMLElement>(
-    itemCount: number,
-    options?: { onNavigate?: () => void }
-) => {
+// --- START: NEW Reusable Hint Component ---
+const NavigationHint = ({ isVisible }: { isVisible: boolean }) => {
+    if (!isVisible) return null;
+
+    return (
+        <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-65 z-10 pointer-events-none">
+            <p className="text-white text-sm font-semibold">Use arrow keys to navigate</p>
+        </div>
+    );
+};
+// --- END: NEW Reusable Hint Component ---
+
+// --- START: REFACTORED Grid Navigation Hook ---
+const useGridNavigation = <T extends HTMLElement>(itemCount: number) => {
+    const [showNavigationHint, setShowNavigationHint] = useState(false);
+    const [activeIndex, setActiveIndex] = useState(0);
+    const mouseClickInProgress = useRef(false);
     const containerRef = useRef<T>(null);
     const itemRefs = useRef<React.RefObject<HTMLElement>[]>([]);
 
     if (itemRefs.current.length !== itemCount) {
         itemRefs.current = Array(itemCount).fill(null).map((_, i) => itemRefs.current[i] || React.createRef());
     }
+
+    const handleFocus = (event: React.FocusEvent<HTMLDivElement>) => {
+        if (mouseClickInProgress.current) {
+            mouseClickInProgress.current = false;
+            // When an item is clicked, it receives focus. We find its index to update the activeIndex.
+            const newIndex = itemRefs.current.findIndex(ref => ref.current === document.activeElement);
+            if (newIndex !== -1) {
+                setActiveIndex(newIndex);
+            }
+            return;
+        }
+        if (containerRef.current && !containerRef.current.contains(event.relatedTarget as Node)) {
+            setShowNavigationHint(true);
+        }
+    };
+
+    const handleMouseDown = () => {
+        mouseClickInProgress.current = true;
+        setShowNavigationHint(false);
+    };
+
+    const handleBlur = () => {
+        setShowNavigationHint(false);
+        mouseClickInProgress.current = false;
+        setActiveIndex(0); // Reset position when the grid loses focus
+    };
 
     const handleKeyDown = (event: React.KeyboardEvent<T>) => {
         const { key } = event;
@@ -943,10 +960,11 @@ const useGridNavigation = <T extends HTMLElement>(
         }
         event.preventDefault();
 
-        // Dismiss hint on first arrow navigation
-        options?.onNavigate?.();
+        if (showNavigationHint) {
+            setShowNavigationHint(false);
+        }
 
-        const focusedIndex = itemRefs.current.findIndex(ref => document.activeElement === ref.current);
+        const focusedIndex = activeIndex; // Use activeIndex as the source of truth
         if (focusedIndex === -1) return;
 
         const container = containerRef.current;
@@ -982,12 +1000,20 @@ const useGridNavigation = <T extends HTMLElement>(
 
         if (nextIndex >= 0 && nextIndex < itemCount) {
             itemRefs.current[nextIndex]?.current?.focus();
+            setActiveIndex(nextIndex); // Update activeIndex on navigation
         }
     };
+    
+    const gridEventHandlers = {
+        onFocus: handleFocus,
+        onMouseDown: handleMouseDown,
+        onBlur: handleBlur,
+        onKeyDown: handleKeyDown,
+    };
 
-    return { containerRef, itemRefs, handleKeyDown };
+    return { containerRef, itemRefs, showNavigationHint, gridEventHandlers, activeIndex, setActiveIndex };
 };
-// --- END: NEW Grid Navigation Hook ---
+// --- END: REFACTORED Grid Navigation Hook ---
 
 const OverviewDesktop = () => {
     const [agnosticAccordionOpen, setAgnosticAccordionOpen] = useState(false);
