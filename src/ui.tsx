@@ -955,6 +955,15 @@ const useGridNavigation = <T extends HTMLElement>(itemCount: number) => {
 
     const handleKeyDown = (event: React.KeyboardEvent<T>) => {
         const { key } = event;
+
+        if (['Enter', ' '].includes(key)) {
+            if (showNavigationHint) {
+                setShowNavigationHint(false);
+            }
+            // Do not prevent default, allow the click event to fire
+            return;
+        }
+
         if (!['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(key)) {
             return;
         }
