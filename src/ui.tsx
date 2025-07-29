@@ -1288,7 +1288,41 @@ const UI = () => {
     const handleOpenPanel = (item: OptionsConfigItem, event: React.MouseEvent<HTMLButtonElement>) => {
         triggerButtonRef.current = event.currentTarget; // Save the trigger button
         const { id, title, contentType } = item;
-        setOpenAccordionOptionMobile({ name: contentType, context: { id: id as any, title } } as MobileAccordionState);
+    
+        let panelState: MobileAccordionState;
+    
+        switch (contentType) {
+            case CONTENT_TYPES.BUILD:
+                panelState = {
+                    name: contentType,
+                    context: { id: id as 'build', title }
+                };
+                break;
+            case CONTENT_TYPES.GALLERY:
+                panelState = {
+                    name: contentType,
+                    context: { id: id as GalleryPartId, title }
+                };
+                break;
+            case CONTENT_TYPES.COLOR:
+            case CONTENT_TYPES.DUAL_COLOR:
+                panelState = {
+                    name: contentType,
+                    context: { id: id as ColorPartId, title }
+                };
+                break;
+            case CONTENT_TYPES.TEXT:
+                panelState = {
+                    name: contentType,
+                    context: { id: id as TextPartId, title }
+                };
+                break;
+            default:
+                const _exhaustiveCheck: never = contentType;
+                throw new Error(`Unhandled content type: ${_exhaustiveCheck}`);
+        }
+    
+        setOpenAccordionOptionMobile(panelState);
     };
 
     const handleClosePanel = () => {
