@@ -489,11 +489,11 @@ const AccordionOptionMobile = ({ title, onClose, headerAccessory = null, childre
         };
     }, [checkAndSetGradients]);
     return (
-        <div className="absolute inset-0 bg-[#161616] z-20 h-full flex flex-col px-[23px]">
+        <div className="absolute inset-0 bg-[#161616] z-20 h-full flex flex-col px-[19px]">
             <AccordionOptionHeader variant={VARIANTS.LAYOUT.MOBILE} title={title} onClick={onClose} accessoryContent={headerAccessory} icon={ICONS.MOBILE} isOpen={true} controlsId={`mobile-panel-${title.replace(/\s+/g, '-')}`} />
-            <div className="flex-grow relative overflow-hidden">
+            <div className="flex-grow relative overflow-hidden p-[4px]">
                 <ScrollGradient position={POSITIONS.TOP} isVisible={isTopGradientVisible} />
-                <div className="h-full overflow-y-auto" ref={scrollContainerRef}>{children}</div>
+                <div className="h-full overflow-y-auto focus:outline-none focus-visible:ring-4 focus-visible:ring-white" ref={scrollContainerRef}>{children}</div>
                 <ScrollGradient position={POSITIONS.BOTTOM} isVisible={isBottomGradientVisible} />
             </div>
         </div>
