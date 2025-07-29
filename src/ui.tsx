@@ -1266,17 +1266,15 @@ const UI = () => {
     const panelHeaderRef = useRef<HTMLButtonElement | null>(null);
     const triggerButtonRef = useRef<HTMLButtonElement | null>(null);
 
-    useEffect(() => {
+    useLayoutEffect(() => {
         const listElement = mobileListRef.current;
         if (!listElement) return;
 
         if (openAccordionOptionMobile) {
             // Panel is open, make list inert
             listElement.setAttribute('inert', '');
-            // Use a timeout to ensure the element is focusable after the render
-            setTimeout(() => {
-                panelHeaderRef.current?.focus();
-            }, 0);
+            // Set focus immediately after DOM mutation but before paint
+            panelHeaderRef.current?.focus();
         } else {
             // Panel is closed, remove inert and return focus
             listElement.removeAttribute('inert');
