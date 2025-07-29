@@ -55,18 +55,22 @@ type GalleryPartId = 'web';
 interface BuildPanelProps {
     context: { id: 'build'; title: string };
     onClose: () => void;
+    headerRef: React.RefObject<HTMLButtonElement | null>;
 }
 interface ColorPanelProps {
     context: { id: ColorPartId; title: string };
     onClose: () => void;
+    headerRef: React.RefObject<HTMLButtonElement | null>;
 }
 interface TextPanelProps {
     context: { id: TextPartId; title: string };
     onClose: () => void;
+    headerRef: React.RefObject<HTMLButtonElement | null>;
 }
 interface GalleryPanelProps {
     context: { id: GalleryPartId; title: string };
     onClose: () => void;
+    headerRef: React.RefObject<HTMLButtonElement | null>;
 }
 // --- END: ADD NEW PANEL PROP TYPES ---
 
@@ -425,11 +429,12 @@ interface AccordionOptionHeaderProps {
     variant: (typeof VARIANTS.LAYOUT)[keyof typeof VARIANTS.LAYOUT];
     controlsId: string;
 }
-const AccordionOptionHeader = ({ title, onClick, accessoryContent, icon, isOpen, variant, controlsId }: AccordionOptionHeaderProps) => {
+const AccordionOptionHeader = React.forwardRef<HTMLButtonElement, AccordionOptionHeaderProps>(
+    ({ title, onClick, accessoryContent, icon, isOpen, variant, controlsId }, ref) => {
     const baseClasses = "w-full flex justify-between items-center text-left focus:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-white";
     const variantClasses = variant === VARIANTS.LAYOUT.DESKTOP ? "p-4 h-[56px] hover:bg-[#2A2A2A] transition-colors" : "py-3 h-[56px] mb-3 text-white";
     return (
-        <button onClick={onClick} className={`${baseClasses} ${variantClasses}`} aria-expanded={isOpen} aria-controls={controlsId}>
+        <button ref={ref} onClick={onClick} className={`${baseClasses} ${variantClasses}`} aria-expanded={isOpen} aria-controls={controlsId}>
             <div className="flex items-center space-x-3">
                 {icon === ICONS.DESKTOP && <svg className={`h-[15px] w-auto transform transition-transform duration-300 ${isOpen ? 'rotate-90' : 'rotate-0'}`} viewBox="0 0 10 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M1 1L8 8L1.10769 15" stroke="white" strokeWidth={2}/></svg>}
                 {icon === ICONS.MOBILE && <svg className="w-5 h-5 mr-2 transform rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>}
@@ -438,7 +443,7 @@ const AccordionOptionHeader = ({ title, onClick, accessoryContent, icon, isOpen,
             <div className="flex items-center">{accessoryContent}</div>
         </button>
     );
-};
+});
 
 interface AccordionOptionDesktopProps {
     title: string;
@@ -465,8 +470,9 @@ interface AccordionOptionMobileProps {
     onClose: () => void;
     headerAccessory?: ReactNode | null;
     children: ReactNode;
+    headerRef: React.RefObject<HTMLButtonElement | null>;
 }
-const AccordionOptionMobile = ({ title, onClose, headerAccessory = null, children }: AccordionOptionMobileProps) => {
+const AccordionOptionMobile = ({ title, onClose, headerAccessory = null, children, headerRef }: AccordionOptionMobileProps) => {
     const scrollContainerRef = useRef<HTMLDivElement | null>(null);
     const [isTopGradientVisible, setIsTopGradientVisible] = useState(false);
     const [isBottomGradientVisible, setIsBottomGradientVisible] = useState(false);
@@ -490,7 +496,7 @@ const AccordionOptionMobile = ({ title, onClose, headerAccessory = null, childre
     }, [checkAndSetGradients]);
     return (
         <div className="absolute inset-0 bg-[#161616] z-20 h-full flex flex-col px-[19px]">
-            <AccordionOptionHeader variant={VARIANTS.LAYOUT.MOBILE} title={title} onClick={onClose} accessoryContent={headerAccessory} icon={ICONS.MOBILE} isOpen={true} controlsId={`mobile-panel-${title.replace(/\s+/g, '-')}`} />
+            <AccordionOptionHeader ref={headerRef} variant={VARIANTS.LAYOUT.MOBILE} title={title} onClick={onClose} accessoryContent={headerAccessory} icon={ICONS.MOBILE} isOpen={true} controlsId={`mobile-panel-${title.replace(/\s+/g, '-')}`} />
             <div className="flex-grow relative overflow-hidden p-[4px]">
                 <ScrollGradient position={POSITIONS.TOP} isVisible={isTopGradientVisible} />
                 <div className="h-full overflow-y-auto focus:outline-none focus-visible:ring-4 focus-visible:ring-white" ref={scrollContainerRef}>{children}</div>
@@ -701,15 +707,15 @@ const GalleryOption = ({ isDesktop }: GalleryOptionProps) => {
 
 // --- Panel Components ---
 
-const SummaryPanel = ({ onClose }: { onClose: () => void }) => <OverviewMobile onClose={onClose} />;
+const SummaryPanel = ({ onClose, headerRef }: { onClose: () => void, headerRef: React.RefObject<HTMLButtonElement | null> }) => <OverviewMobile onClose={onClose} headerRef={headerRef} />;
 
-const BuildPanel = ({ context, onClose }: BuildPanelProps) => (
-    <AccordionOptionMobile title={context.title} onClose={onClose}>
+const BuildPanel = ({ context, onClose, headerRef }: BuildPanelProps) => (
+    <AccordionOptionMobile title={context.title} onClose={onClose} headerRef={headerRef}>
         <BuildOption isDesktop={false} />
     </AccordionOptionMobile>
 );
 
-const GalleryPanel = ({ context, onClose }: GalleryPanelProps) => {
+const GalleryPanel = ({ context, onClose, headerRef }: GalleryPanelProps) => {
     const { state } = useGloveConfigurator();
     const headerAccessory = (
         <span className="text-sm text-gray-400 font-semibold truncate max-w-[150px]">
@@ -717,23 +723,23 @@ const GalleryPanel = ({ context, onClose }: GalleryPanelProps) => {
         </span>
     );
     return (
-        <AccordionOptionMobile title={context.title} onClose={onClose} headerAccessory={headerAccessory}>
+        <AccordionOptionMobile title={context.title} onClose={onClose} headerAccessory={headerAccessory} headerRef={headerRef}>
             <GalleryOption isDesktop={false} />
         </AccordionOptionMobile>
     );
 };
 
-const TextPanel = ({ context, onClose }: TextPanelProps) => {
+const TextPanel = ({ context, onClose, headerRef }: TextPanelProps) => {
     const { state } = useGloveConfigurator();
     const headerAccessory = <span className="text-sm text-gray-400 truncate max-w-[100px]">{state.configuration[context.id].text}</span>;
     return (
-        <AccordionOptionMobile title={context.title} onClose={onClose} headerAccessory={headerAccessory}>
+        <AccordionOptionMobile title={context.title} onClose={onClose} headerAccessory={headerAccessory} headerRef={headerRef}>
             <TextOption contextId={context.id} />
         </AccordionOptionMobile>
     );
 };
 
-const ColorPanel = ({ context, onClose }: ColorPanelProps) => {
+const ColorPanel = ({ context, onClose, headerRef }: ColorPanelProps) => {
     const { state, dispatch } = useGloveConfigurator();
     const { id, title } = context;
     const colorValue = state.configuration[id];
@@ -745,7 +751,7 @@ const ColorPanel = ({ context, onClose }: ColorPanelProps) => {
     );
 
     return (
-        <AccordionOptionMobile title={title} onClose={onClose} headerAccessory={headerAccessory}>
+        <AccordionOptionMobile title={title} onClose={onClose} headerAccessory={headerAccessory} headerRef={headerRef}>
             {colorValue.type === 'dual' ? (
                 <DualColorContent
                     value={colorValue}
@@ -815,8 +821,8 @@ const OrderSummaryInfo = () => {
     );
 };
 
-const OverviewMobile = ({ onClose }: { onClose: () => void }) => (
-    <AccordionOptionMobile title="Order Summary" onClose={onClose}>
+const OverviewMobile = ({ onClose, headerRef }: { onClose: () => void, headerRef: React.RefObject<HTMLButtonElement | null> }) => (
+    <AccordionOptionMobile title="Order Summary" onClose={onClose} headerRef={headerRef}>
         <OrderSummaryInfo />
     </AccordionOptionMobile>
 );
@@ -1176,7 +1182,7 @@ const AccordionDesktop = ({ options }: { options: OptionsConfigItem[] }) => {
 
 interface AccordionMobileProps {
     options: OptionsConfigItem[];
-    onOpenPanel: (item: OptionsConfigItem) => void;
+    onOpenPanel: (item: OptionsConfigItem, event: React.MouseEvent<HTMLButtonElement>) => void;
     openAccordionOptionMobile: MobileAccordionState;
 }
 
@@ -1232,7 +1238,7 @@ const AccordionMobile = React.forwardRef<HTMLElement, AccordionMobileProps>(
             <section ref={ref} className={`px-4 bg-[#161616] h-full overflow-y-auto ${openAccordionOptionMobile ? 'opacity-50 pointer-events-none' : ''}`} tabIndex={-1}>
                 <ScrollGradient position={POSITIONS.TOP} isVisible={topGradientVisible} />
                 {options.map(item => (
-                    <button key={item.id} data-id={item.id} className="w-full h-[56px] bg-[#1C1C1C] flex items-center justify-between px-4 mb-[10px] cursor-pointer hover:bg-[#2A2A2A] focus:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-white" onClick={() => onOpenPanel(item)}>
+                    <button key={item.id} data-id={item.id} className="w-full h-[56px] bg-[#1C1C1C] flex items-center justify-between px-4 mb-[10px] cursor-pointer hover:bg-[#2A2A2A] focus:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-white" onClick={(e) => onOpenPanel(item, e)}>
                         <div className="flex items-center">
                             <svg viewBox="0 0 10 16" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-4 w-auto mr-3"><path d="M1 1L8 8L1.10769 15" stroke="white" strokeWidth={2}/></svg>
                             <span className="text-lg">{item.title}</span>
@@ -1254,26 +1260,42 @@ const UI = () => {
     const [isVisualizationExpanded, setIsVisualizationExpanded] = useState(false);
     const [openAccordionOptionMobile, setOpenAccordionOptionMobile] = useState<MobileAccordionState>(null);
 
+    // --- START: Focus Management Implementation ---
     const mobileListRef = useRef<HTMLElement>(null);
+    const panelHeaderRef = useRef<HTMLButtonElement | null>(null);
+    const triggerButtonRef = useRef<HTMLButtonElement | null>(null);
 
     useEffect(() => {
         const listElement = mobileListRef.current;
         if (!listElement) return;
 
         if (openAccordionOptionMobile) {
+            // Panel is open, make list inert
             listElement.setAttribute('inert', '');
+            // Use a timeout to ensure the element is focusable after the render
+            setTimeout(() => {
+                panelHeaderRef.current?.focus();
+            }, 0);
         } else {
+            // Panel is closed, remove inert and return focus
             listElement.removeAttribute('inert');
+            if (triggerButtonRef.current) {
+                triggerButtonRef.current.focus();
+                triggerButtonRef.current = null; // Clear ref after use
+            }
         }
     }, [openAccordionOptionMobile]);
 
-    const handleOpenPanel = (item: OptionsConfigItem) => {
+    const handleOpenPanel = (item: OptionsConfigItem, event: React.MouseEvent<HTMLButtonElement>) => {
+        triggerButtonRef.current = event.currentTarget; // Save the trigger button
         const { id, title, contentType } = item;
-        // This assertion is a concession because mapping the generic `OptionsConfigItem`
-        // to the specific members of the `MobileAccordionState` union is complex.
-        // However, `renderMobilePanel` consumes it safely with a discriminated union check.
         setOpenAccordionOptionMobile({ name: contentType, context: { id: id as any, title } } as MobileAccordionState);
     };
+
+    const handleClosePanel = () => {
+        setOpenAccordionOptionMobile(null);
+    };
+    // --- END: Focus Management Implementation ---
 
     const handleShare = useCallback(async () => {
         const configUrl = `${window.location.origin}?config=${encodeURIComponent(JSON.stringify(state.configuration))}`;
@@ -1288,22 +1310,21 @@ const UI = () => {
     const renderMobilePanel = () => {
         if (!openAccordionOptionMobile) return null;
 
-        const onClose = () => setOpenAccordionOptionMobile(null);
+        const onClose = handleClosePanel;
 
         switch (openAccordionOptionMobile.name) {
             case CONTENT_TYPES.SUMMARY:
-                return <SummaryPanel onClose={onClose} />;
+                return <SummaryPanel onClose={onClose} headerRef={panelHeaderRef} />;
             case CONTENT_TYPES.BUILD:
-                return <BuildPanel context={openAccordionOptionMobile.context} onClose={onClose} />;
+                return <BuildPanel context={openAccordionOptionMobile.context} onClose={onClose} headerRef={panelHeaderRef} />;
             case CONTENT_TYPES.GALLERY:
-                return <GalleryPanel context={openAccordionOptionMobile.context} onClose={onClose} />;
+                return <GalleryPanel context={openAccordionOptionMobile.context} onClose={onClose} headerRef={panelHeaderRef} />;
             case CONTENT_TYPES.COLOR:
             case CONTENT_TYPES.DUAL_COLOR:
-                return <ColorPanel context={openAccordionOptionMobile.context} onClose={onClose} />;
+                return <ColorPanel context={openAccordionOptionMobile.context} onClose={onClose} headerRef={panelHeaderRef} />;
             case CONTENT_TYPES.TEXT:
-                return <TextPanel context={openAccordionOptionMobile.context} onClose={onClose} />;
+                return <TextPanel context={openAccordionOptionMobile.context} onClose={onClose} headerRef={panelHeaderRef} />;
             default:
-                // This will never be hit if MobileAccordionState is correct, but good for safety
                 const exhaustiveCheck: never = openAccordionOptionMobile;
                 // eslint-disable-next-line @typescript-eslint/no-unused-vars
                 const _ = exhaustiveCheck;
@@ -1313,6 +1334,7 @@ const UI = () => {
 
     const GOLDEN_RATIO_CONSTANT = 1.618;
     const VIZ_PROPORTION = 1 / GOLDEN_RATIO_CONSTANT;
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const CONTROLS_PROPORTION = 1 - VIZ_PROPORTION;
 
     return (
@@ -1369,7 +1391,7 @@ const UI = () => {
                         </div>
                         <FooterMobile
                             openPanelName={openAccordionOptionMobile?.name}
-                            onClosePanel={() => setOpenAccordionOptionMobile(null)}
+                            onClosePanel={handleClosePanel}
                             onCompleteOrder={() => alert('Complete Order clicked!')}
                             onReviewClick={() => setOpenAccordionOptionMobile({ name: CONTENT_TYPES.SUMMARY })}
                             isDesktop={isDesktop}
