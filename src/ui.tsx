@@ -1,3 +1,4 @@
+import 'wicg-inert';
 import React, { useState, useRef, useLayoutEffect, useCallback, useEffect, createContext, useContext, useReducer, ReactNode, ReactElement } from 'react';
 
 // --- START: Core Type Definitions ---
