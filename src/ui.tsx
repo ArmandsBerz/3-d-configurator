@@ -1031,14 +1031,38 @@ const useGridNavigation = <T extends HTMLElement>(itemCount: number) => {
 };
 // --- END: REFACTORED Grid Navigation Hook ---
 
+// --- START: Reusable Escape Key Hook Definition ---
+const useEscapeKey = (callback: () => void, isListening: boolean = true) => {
+    useEffect(() => {
+        // If the hook is told not to listen, we do nothing.
+        if (!isListening) {
+            return;
+        }
+
+        const handleKeyDown = (event: KeyboardEvent) => {
+            if (event.key === 'Escape') {
+                callback();
+            }
+        };
+
+        document.addEventListener('keydown', handleKeyDown);
+
+        // The cleanup function runs when isListening becomes false or the component unmounts.
+        return () => {
+            document.removeEventListener('keydown', handleKeyDown);
+        };
+    }, [callback, isListening]); // Effect is controlled by the listening state and callback function.
+};
+// --- END: Reusable Escape Key Hook Definition ---
+
 const OverviewDesktop = () => {
     const [agnosticAccordionOpen, setAgnosticAccordionOpen] = useState(false);
-    useEffect(() => {
-        if (!agnosticAccordionOpen) return;
-        const handleKeyDown = (event: KeyboardEvent) => { if (event.key === 'Escape') setAgnosticAccordionOpen(false); };
-        document.addEventListener('keydown', handleKeyDown);
-        return () => document.removeEventListener('keydown', handleKeyDown);
-    }, [agnosticAccordionOpen]);
+    
+    // --- REFACTORED with useEscapeKey Hook ---
+    const closeOverview = useCallback(() => setAgnosticAccordionOpen(false), []);
+    useEscapeKey(closeOverview, agnosticAccordionOpen);
+    // --- END REFACTOR ---
+
     return (
         <div className="flex lg:absolute lg:bottom-[60px] lg:right-[60px] fixed w-full bottom-[-1rem] flex-row items-center gap-4 lg:flex-col lg:justify-end lg:w-auto lg:h-auto lg:gap-0">
             <div className="lg:w-[400px] text-[#999999] font-black text-[1.3rem] my-0 lg:mb-2.5 mx-0 flex flex-col justify-end lg:h-auto h-[80.8vh]">
@@ -1068,6 +1092,11 @@ const AccordionDesktop = ({ options }: { options: OptionsConfigItem[] }) => {
     const [isScrolled, setIsScrolled] = useState(false);
 
     const handleAccordionToggle = (accordionId: string) => setOpenAccordion(prev => (prev === accordionId ? null : accordionId));
+
+    // --- REFACTORED with useEscapeKey Hook ---
+    const closeAccordion = useCallback(() => setOpenAccordion(null), []);
+    useEscapeKey(closeAccordion, openAccordion !== null);
+    // --- END REFACTOR ---
 
     const handleApplyColorToAll = (colorString?: HexColor) => {
         if (colorString) dispatch({ type: ACTION_TYPES.APPLY_COLOR_TO_ALL, payload: { color: colorString } });
@@ -1325,10 +1354,13 @@ const UI = () => {
         setOpenAccordionOptionMobile(panelState);
     };
 
-    const handleClosePanel = () => {
+    const handleClosePanel = useCallback(() => {
         setOpenAccordionOptionMobile(null);
-    };
-    // --- END: Focus Management Implementation ---
+    }, []);
+
+    // --- REFACTORED with useEscapeKey Hook ---
+    useEscapeKey(handleClosePanel, !!openAccordionOptionMobile);
+    // --- END REFACTOR ---
 
     const handleShare = useCallback(async () => {
         const configUrl = `${window.location.origin}?config=${encodeURIComponent(JSON.stringify(state.configuration))}`;
