@@ -423,7 +423,7 @@ const ColorSwatchGrid = ({ swatches, selectedColor, onColorSelect }: ColorSwatch
 
 interface AccordionOptionHeaderProps {
     title: string;
-    onClick: () => void;
+    onClick: (event: React.MouseEvent<HTMLButtonElement>) => void;
     accessoryContent: ReactNode;
     icon: (typeof ICONS.DESKTOP) | (typeof ICONS.MOBILE);
     isOpen: boolean;
@@ -450,7 +450,7 @@ interface AccordionOptionDesktopProps {
     title: string;
     children: ReactNode;
     isOpen: boolean;
-    onToggle: () => void;
+    onToggle: (event: React.MouseEvent<HTMLButtonElement>) => void;
     headerContent: ReactNode;
     actionButton?: ReactNode;
 }
@@ -1086,17 +1086,30 @@ const AccordionDesktop = ({ options }: { options: OptionsConfigItem[] }) => {
     const { state, dispatch } = useGloveConfigurator();
     const { configuration, activeDualColorPart } = state;
     const [openAccordion, setOpenAccordion] = useState<string | null>(CONTENT_TYPES.BUILD);
+    const triggerButtonRef = useRef<HTMLButtonElement | null>(null);
     const accordionContainerRef = useRef<HTMLDivElement>(null);
     const [isTopGradientVisible, setTopGradientVisible] = useState(false);
     const [isBottomGradientVisible, setBottomGradientVisible] = useState(false);
     const [isScrolled, setIsScrolled] = useState(false);
 
-    const handleAccordionToggle = (accordionId: string) => setOpenAccordion(prev => (prev === accordionId ? null : accordionId));
+    const handleAccordionToggle = (accordionId: string, event: React.MouseEvent<HTMLButtonElement>) => {
+        if (openAccordion !== accordionId) {
+            triggerButtonRef.current = event.currentTarget;
+        }
+        setOpenAccordion(prev => (prev === accordionId ? null : accordionId));
+    };
 
     // --- REFACTORED with useEscapeKey Hook ---
     const closeAccordion = useCallback(() => setOpenAccordion(null), []);
     useEscapeKey(closeAccordion, openAccordion !== null);
     // --- END REFACTOR ---
+
+    useLayoutEffect(() => {
+        if (openAccordion === null && triggerButtonRef.current) {
+            triggerButtonRef.current.focus();
+            triggerButtonRef.current = null; // Clear after use
+        }
+    }, [openAccordion]);
 
     const handleApplyColorToAll = (colorString?: HexColor) => {
         if (colorString) dispatch({ type: ACTION_TYPES.APPLY_COLOR_TO_ALL, payload: { color: colorString } });
@@ -1160,7 +1173,7 @@ const AccordionDesktop = ({ options }: { options: OptionsConfigItem[] }) => {
                             key={item.id}
                             title={item.title}
                             isOpen={openAccordion === item.id}
-                            onToggle={() => handleAccordionToggle(item.id)}
+                            onToggle={(e) => handleAccordionToggle(item.id, e)}
                             headerContent={renderHeaderAccessory(item)}
                             actionButton={
                                 (() => {
@@ -1326,7 +1339,7 @@ const UI = () => {
         container.addEventListener('keydown', handleKeyDown);
         return () => {
             if (container) {
-                 container.removeEventListener('keydown', handleKeyDown);
+                container.removeEventListener('keydown', handleKeyDown);
             }
         };
     }, [isDesktop, openAccordionOptionMobile, isVisualizationExpanded]); // Re-run when layout changes might alter focusable elements
