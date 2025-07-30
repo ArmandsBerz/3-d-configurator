@@ -1289,6 +1289,47 @@ const UI = () => {
     const { state } = useGloveConfigurator();
     const [isVisualizationExpanded, setIsVisualizationExpanded] = useState(false);
     const [openAccordionOptionMobile, setOpenAccordionOptionMobile] = useState<MobileAccordionState>(null);
+    const appContainerRef = useRef<HTMLDivElement>(null);
+
+    // --- Application-level Focus Containment ---
+    useEffect(() => {
+        const container = appContainerRef.current;
+        if (!container) return;
+
+        const handleKeyDown = (event: KeyboardEvent) => {
+            if (event.key !== 'Tab') return;
+
+            const focusableElements = Array.from(
+                container.querySelectorAll<HTMLElement>(
+                    'a[href]:not([disabled]), button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), details:not([disabled]), [tabindex]:not([tabindex="-1"])'
+                )
+            ).filter(el => !el.hasAttribute('inert') && window.getComputedStyle(el).display !== 'none');
+
+            if (focusableElements.length === 0) return;
+
+            const firstElement = focusableElements[0];
+            const lastElement = focusableElements[focusableElements.length - 1];
+
+            if (event.shiftKey) { // Shift + Tab
+                if (document.activeElement === firstElement) {
+                    lastElement.focus();
+                    event.preventDefault();
+                }
+            } else { // Tab
+                if (document.activeElement === lastElement) {
+                    firstElement.focus();
+                    event.preventDefault();
+                }
+            }
+        };
+        
+        container.addEventListener('keydown', handleKeyDown);
+        return () => {
+            if (container) {
+                 container.removeEventListener('keydown', handleKeyDown);
+            }
+        };
+    }, [isDesktop, openAccordionOptionMobile, isVisualizationExpanded]); // Re-run when layout changes might alter focusable elements
 
     // --- START: Focus Management Implementation ---
     const mobileListRef = useRef<HTMLElement>(null);
@@ -1403,7 +1444,7 @@ const UI = () => {
     const CONTROLS_PROPORTION = 1 - VIZ_PROPORTION;
 
     return (
-        <div className="flex flex-col lg:relative h-[100dvh] bg-[#161616] text-white">
+        <div ref={appContainerRef} className="flex flex-col lg:relative h-[100dvh] bg-[#161616] text-white">
             <main className={`p-4 flex flex-col items-center justify-center relative bg-[#161616] overflow-auto h-full w-full ${isVisualizationExpanded ? 'flex-grow' : 'lg:absolute lg:inset-0'}`} style={!isDesktop && !isVisualizationExpanded ? { flexBasis: 'calc(61.8% - 66px)' } : {}}>
                 {!isDesktop && <div className="absolute top-[20px] left-[20px] w-[70px] h-[49px] bg-gray-300 bg-opacity-75 z-10 flex items-center justify-center"><p className="font-bold text-xl text-gray-900">LOGO</p></div>}
                 <button className="absolute top-[20px] right-[20px] z-20 p-2 hover:bg-gray-800 hover:bg-opacity-50 focus:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-white" aria-label="Share configuration" onClick={handleShare}>
