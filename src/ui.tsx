@@ -1057,24 +1057,49 @@ const useEscapeKey = (callback: () => void, isListening: boolean = true) => {
 
 const OverviewDesktop = () => {
     const [agnosticAccordionOpen, setAgnosticAccordionOpen] = useState(false);
+    const triggerButtonRef = useRef<HTMLButtonElement | null>(null);
     
-    // --- REFACTORED with useEscapeKey Hook ---
     const closeOverview = useCallback(() => setAgnosticAccordionOpen(false), []);
     useEscapeKey(closeOverview, agnosticAccordionOpen);
-    // --- END REFACTOR ---
+
+    useLayoutEffect(() => {
+        if (!agnosticAccordionOpen && triggerButtonRef.current) {
+            triggerButtonRef.current.focus();
+            triggerButtonRef.current = null; // Clear ref after use
+        }
+    }, [agnosticAccordionOpen]);
+
+    const handleOpen = (event: React.MouseEvent<HTMLButtonElement>) => {
+        triggerButtonRef.current = event.currentTarget;
+        setAgnosticAccordionOpen(true);
+    };
+
+    const handleToggle = (event: React.MouseEvent<HTMLButtonElement>) => {
+        if (!agnosticAccordionOpen) {
+            triggerButtonRef.current = event.currentTarget;
+        }
+        setAgnosticAccordionOpen(!agnosticAccordionOpen);
+    };
 
     return (
         <div className="flex lg:absolute lg:bottom-[60px] lg:right-[60px] fixed w-full bottom-[-1rem] flex-row items-center gap-4 lg:flex-col lg:justify-end lg:w-auto lg:h-auto lg:gap-0">
             <div className="lg:w-[400px] text-[#999999] font-black text-[1.3rem] my-0 lg:mb-2.5 mx-0 flex flex-col justify-end lg:h-auto h-[80.8vh]">
-                <OverviewButton onClick={() => setAgnosticAccordionOpen(!agnosticAccordionOpen)} isDesktop={true} isOpen={agnosticAccordionOpen} />
-                <div id="overview-content" className={`bg-[#222222] transition-[height] duration-300 ease-in ${agnosticAccordionOpen ? 'overflow-y-scroll h-auto lg:h-[calc(100vh-335px)]' : 'overflow-hidden h-0'}`}>
+                <OverviewButton onClick={handleToggle} isDesktop={true} isOpen={agnosticAccordionOpen} />
+                <div 
+                    id="overview-content"
+                    className={`bg-[#222222] transition-[height] duration-300 ease-in ${agnosticAccordionOpen ? 'overflow-y-scroll h-auto lg:h-[calc(100vh-335px)]' : 'overflow-hidden h-0'} focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-white`}
+                >
                     <div className="text-base py-3.5 px-6">
                         <OrderSummaryInfo />
                     </div>
                 </div>
             </div>
             <div className="lg:w-[400px] w-full self-end mb-[1.9rem] mr-[2.5rem] lg:m-0 z-[1]">
-                <OrderButtonController isSummaryVisible={agnosticAccordionOpen} onReviewClick={() => setAgnosticAccordionOpen(true)} onCompleteClick={() => alert('Proceeding to next step...')} />
+                <OrderButtonController 
+                    isSummaryVisible={agnosticAccordionOpen} 
+                    onReviewClick={handleOpen} 
+                    onCompleteClick={() => alert('Proceeding to next step...')} 
+                />
             </div>
         </div>
     );
