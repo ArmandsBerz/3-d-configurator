@@ -1032,10 +1032,10 @@ const useGridNavigation = <T extends HTMLElement>(itemCount: number) => {
 // --- END: REFACTORED Grid Navigation Hook ---
 
 // --- START: Reusable Escape Key Hook Definition ---
-const useEscapeKey = (callback: () => void, isListening: boolean = true) => {
+const useEscapeKey = (ref: React.RefObject<HTMLElement | null>, callback: () => void, isListening: boolean = true) => {
     useEffect(() => {
-        // If the hook is told not to listen, we do nothing.
-        if (!isListening) {
+        const element = ref.current;
+        if (!isListening || !element) {
             return;
         }
 
@@ -1045,22 +1045,22 @@ const useEscapeKey = (callback: () => void, isListening: boolean = true) => {
             }
         };
 
-        document.addEventListener('keydown', handleKeyDown);
+        element.addEventListener('keydown', handleKeyDown);
 
-        // The cleanup function runs when isListening becomes false or the component unmounts.
         return () => {
-            document.removeEventListener('keydown', handleKeyDown);
+            element.removeEventListener('keydown', handleKeyDown);
         };
-    }, [callback, isListening]); // Effect is controlled by the listening state and callback function.
+    }, [ref, callback, isListening]);
 };
 // --- END: Reusable Escape Key Hook Definition ---
 
 const OverviewDesktop = () => {
     const [agnosticAccordionOpen, setAgnosticAccordionOpen] = useState(false);
     const triggerButtonRef = useRef<HTMLButtonElement | null>(null);
+    const containerRef = useRef<HTMLDivElement>(null);
     
     const closeOverview = useCallback(() => setAgnosticAccordionOpen(false), []);
-    useEscapeKey(closeOverview, agnosticAccordionOpen);
+    useEscapeKey(containerRef, closeOverview, agnosticAccordionOpen);
 
     useLayoutEffect(() => {
         if (!agnosticAccordionOpen && triggerButtonRef.current) {
@@ -1082,7 +1082,7 @@ const OverviewDesktop = () => {
     };
 
     return (
-        <div className="flex lg:absolute lg:bottom-[60px] lg:right-[60px] fixed w-full bottom-[-1rem] flex-row items-center gap-4 lg:flex-col lg:justify-end lg:w-auto lg:h-auto lg:gap-0">
+        <div ref={containerRef} className="flex lg:absolute lg:bottom-[60px] lg:right-[60px] fixed w-full bottom-[-1rem] flex-row items-center gap-4 lg:flex-col lg:justify-end lg:w-auto lg:h-auto lg:gap-0">
             <div className="lg:w-[400px] text-[#999999] font-black text-[1.3rem] my-0 lg:mb-2.5 mx-0 flex flex-col justify-end lg:h-auto h-[80.8vh]">
                 <OverviewButton onClick={handleToggle} isDesktop={true} isOpen={agnosticAccordionOpen} />
                 <div 
@@ -1124,10 +1124,8 @@ const AccordionDesktop = ({ options }: { options: OptionsConfigItem[] }) => {
         setOpenAccordion(prev => (prev === accordionId ? null : accordionId));
     };
 
-    // --- REFACTORED with useEscapeKey Hook ---
     const closeAccordion = useCallback(() => setOpenAccordion(null), []);
-    useEscapeKey(closeAccordion, openAccordion !== null);
-    // --- END REFACTOR ---
+    useEscapeKey(accordionContainerRef, closeAccordion, openAccordion !== null);
 
     useLayoutEffect(() => {
         if (openAccordion === null && triggerButtonRef.current) {
@@ -1437,9 +1435,7 @@ const UI = () => {
         setOpenAccordionOptionMobile(null);
     }, []);
 
-    // --- REFACTORED with useEscapeKey Hook ---
-    useEscapeKey(handleClosePanel, !!openAccordionOptionMobile);
-    // --- END REFACTOR ---
+    useEscapeKey(appContainerRef, handleClosePanel, !!openAccordionOptionMobile);
 
     const handleShare = useCallback(async () => {
         const configUrl = `${window.location.origin}?config=${encodeURIComponent(JSON.stringify(state.configuration))}`;
