@@ -330,7 +330,7 @@ const ImageOption = React.forwardRef<HTMLButtonElement, ImageOptionProps>(
 
 interface PrimaryCTAButtonProps {
     label: string;
-    onClick: () => void;
+    onClick: (event: React.MouseEvent<HTMLButtonElement>) => void;
     ariaLabel?: string;
 }
 const PrimaryCTAButton = ({ label, onClick, ariaLabel }: PrimaryCTAButtonProps) => (
@@ -829,7 +829,7 @@ const OverviewMobile = ({ onClose, headerRef }: { onClose: () => void, headerRef
 );
 
 interface OverviewButtonProps {
-    onClick: () => void;
+    onClick: (event: React.MouseEvent<HTMLButtonElement>) => void;
     isDesktop: boolean;
     isOpen: boolean;
 }
@@ -845,7 +845,7 @@ const OverviewButton = ({ onClick, isDesktop, isOpen }: OverviewButtonProps) => 
 
 interface OrderButtonControllerProps {
     isSummaryVisible: boolean;
-    onReviewClick: () => void;
+    onReviewClick: (event: React.MouseEvent<HTMLButtonElement>) => void;
     onCompleteClick: () => void;
 }
 const OrderButtonController = ({ isSummaryVisible, onReviewClick, onCompleteClick }: OrderButtonControllerProps) => {
@@ -865,7 +865,7 @@ type MobileAccordionState =
 interface FooterMobileProps {
     openPanelName?: (typeof CONTENT_TYPES)[keyof typeof CONTENT_TYPES] | null;
     onClosePanel: () => void;
-    onReviewClick: () => void;
+    onReviewClick: (event: React.MouseEvent<HTMLButtonElement>) => void;
     onCompleteOrder: () => void;
     isDesktop: boolean;
     openAccordionOptionMobile: MobileAccordionState;
@@ -1456,6 +1456,14 @@ const UI = () => {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const CONTROLS_PROPORTION = 1 - VIZ_PROPORTION;
 
+    const handleReviewClick = (event: React.MouseEvent<HTMLButtonElement>) => {
+        // 1. Set the trigger ref, just like handleOpenPanel does
+        triggerButtonRef.current = event.currentTarget; 
+
+        // 2. Open the summary panel
+        setOpenAccordionOptionMobile({ name: CONTENT_TYPES.SUMMARY });
+    };
+
     return (
         <div ref={appContainerRef} className="flex flex-col lg:relative h-[100dvh] bg-[#161616] text-white">
             <main className={`p-4 flex flex-col items-center justify-center relative bg-[#161616] overflow-auto h-full w-full ${isVisualizationExpanded ? 'flex-grow' : 'lg:absolute lg:inset-0'}`} style={!isDesktop && !isVisualizationExpanded ? { flexBasis: 'calc(61.8% - 66px)' } : {}}>
@@ -1512,7 +1520,7 @@ const UI = () => {
                             openPanelName={openAccordionOptionMobile?.name}
                             onClosePanel={handleClosePanel}
                             onCompleteOrder={() => alert('Complete Order clicked!')}
-                            onReviewClick={() => setOpenAccordionOptionMobile({ name: CONTENT_TYPES.SUMMARY })}
+                            onReviewClick={handleReviewClick}
                             isDesktop={isDesktop}
                             openAccordionOptionMobile={openAccordionOptionMobile}
                         />
