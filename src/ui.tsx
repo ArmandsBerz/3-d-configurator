@@ -340,25 +340,76 @@ const PrimaryCTAButton = ({ label, onClick, ariaLabel }: PrimaryCTAButtonProps) 
     </button>
 );
 
+// --- START: REFACTOR PLAN - STEP 1: Create Reusable Icon Components ---
+
+const SummaryIcon = () => (
+    <svg width="22" height="22" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <g opacity="0.3">
+            <path d="M17.1875 0H4.8125C3.53619 0 2.31204 0.507022 1.40953 1.40953C0.507021 2.31204 0 3.53619 0 4.8125V17.1875C0 18.4638 0.507021 19.688 1.40953 20.5905C2.31204 21.493 3.53619 22 4.8125 22H17.1875C18.4638 22 19.688 21.493 20.5905 20.5905C21.493 19.688 22 18.4638 22 17.1875V4.8125C22 3.53619 21.493 2.31204 20.5905 1.40953C19.688 0.507022 18.4638 0 17.1875 0ZM20.625 17.1875C20.625 18.0992 20.2628 18.9735 19.6181 19.6181C18.9735 20.2628 18.0992 20.625 17.1875 20.625H4.8125C3.9008 20.625 3.02653 20.2628 2.38185 19.6181C1.73717 18.9735 1.375 18.0992 1.375 17.1875V4.8125C1.375 3.9008 1.73717 3.02653 2.38185 2.38185C3.02654 1.73718 3.9008 1.375 4.8125 1.375H17.1875C18.0992 1.375 18.9735 1.73717 19.6181 2.38185C20.2628 3.02654 20.625 3.9008 20.625 4.8125V17.1875Z" fill="white"/>
+            <path d="M8.9375 5.5H17.1875V6.875H8.9375V5.5Z" fill="white"/>
+            <path d="M8.9375 10.3125H17.1875V11.6875H8.9375V10.3125Z" fill="white"/>
+            <path d="M8.9375 15.125H17.1875V16.5H8.9375V15.125Z" fill="white"/>
+            <path d="M7.5625 6.1875C7.5625 6.94681 6.94681 7.5625 6.1875 7.5625C5.42819 7.5625 4.8125 6.94681 4.8125 6.1875C4.8125 5.42819 5.42819 4.8125 6.1875 4.8125C6.94681 4.8125 7.5625 5.42819 7.5625 6.1875Z" fill="white"/>
+            <path d="M7.5625 11C7.5625 11.7593 6.94681 12.375 6.1875 12.375C5.42819 12.375 4.8125 11.7593 4.8125 11C4.8125 10.2407 5.42819 9.625 6.1875 9.625C6.94681 9.625 7.5625 10.2407 7.5625 11Z" fill="white"/>
+            <path d="M7.5625 15.8125C7.5625 16.5718 6.94681 17.1875 6.1875 17.1875C5.42819 17.1875 4.8125 16.5718 4.8125 15.8125C4.8125 15.0532 5.42819 14.4375 6.1875 14.4375C6.94681 14.4375 7.5625 15.0532 7.5625 15.8125Z" fill="white"/>
+        </g>
+    </svg>
+);
+
+const BackArrowIcon = () => (
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg" className="mr-[5px]">
+        <path d="M13 7H1M1 7L7 1M1 7L7 13" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+);
+
+const CheckmarkIcon = () => (
+    <svg className="w-5 h-5 ml-[5px]" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+    </svg>
+);
+
+// --- END: REFACTOR PLAN - STEP 1 ---
+
+// --- START: REFACTOR PLAN - STEP 2: Evolve SecondaryButton ---
+
 interface SecondaryButtonProps {
-    label: string;
+    label: ReactNode;
     onClick: (event: React.MouseEvent<HTMLButtonElement>) => void;
     variant?: (typeof VARIANTS.THEME)[keyof typeof VARIANTS.THEME];
-    icon?: (typeof ICONS)[keyof typeof ICONS];
+    icon?: ReactNode | null;
     disabled?: boolean;
+    justify?: 'justify-center' | 'justify-between';
 }
-const SecondaryButton = ({ label, onClick, variant = VARIANTS.THEME.DARK, icon = ICONS.CHECKMARK, disabled = false }: SecondaryButtonProps) => {
-    const baseClasses = "w-full flex items-center justify-center px-4 text-base font-semibold h-[56px] focus:outline-none transition-opacity";
+
+const SecondaryButton = ({
+    label,
+    onClick,
+    variant = VARIANTS.THEME.DARK,
+    icon = null,
+    disabled = false,
+    justify = 'justify-center',
+}: SecondaryButtonProps) => {
+    const baseClasses = `w-full flex items-center px-4 text-base font-semibold h-[56px] focus:outline-none transition-opacity ${justify}`;
     const disabledClasses = "disabled:opacity-50 disabled:cursor-not-allowed";
-    const variantClasses = variant === VARIANTS.THEME.LIGHT ? 'bg-white hover:bg-gray-200 active:bg-gray-300 text-[#161616] focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-blue-400' : 'bg-[#393939] hover:bg-[#727272] active:bg-[#222222] text-white focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-white';
+    const variantClasses = variant === VARIANTS.THEME.LIGHT
+        ? 'bg-white hover:bg-gray-200 active:bg-gray-300 text-[#161616] focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-blue-400'
+        : 'bg-[#393939] hover:bg-[#727272] active:bg-[#222222] text-white focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-white';
+
     return (
-        <button type="button" onClick={onClick} disabled={disabled} className={`${baseClasses} ${variantClasses} ${disabledClasses}`} aria-label={label}>
-            {icon === ICONS.BACK_ARROW && <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg" className="mr-[5px]"><path d="M13 7H1M1 7L7 1M1 7L7 13" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+        <button
+            type="button"
+            onClick={onClick}
+            disabled={disabled}
+            className={`${baseClasses} ${variantClasses} ${disabledClasses}`}
+            aria-label={typeof label === 'string' ? label : undefined}
+        >
+            {icon}
             <span>{label}</span>
-            {icon === ICONS.CHECKMARK && <svg className="w-5 h-5 ml-[5px]" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg>}
         </button>
     );
 };
+
+// --- END: REFACTOR PLAN - STEP 2 ---
 
 interface ColorSwatchProps {
     color: HexColor;
@@ -870,6 +921,39 @@ interface FooterMobileProps {
     isDesktop: boolean;
     openAccordionOptionMobile: MobileAccordionState;
 }
+
+// --- START: REFACTOR PLAN - STEP 3 & 4: Create Controller and Integrate ---
+
+interface OverviewActionControllerProps {
+    isOpen: boolean;
+    onOpen: (event: React.MouseEvent<HTMLButtonElement>) => void;
+    onClose: (event: React.MouseEvent<HTMLButtonElement>) => void;
+}
+
+const OverviewActionController = ({ isOpen, onOpen, onClose }: OverviewActionControllerProps) => {
+    if (isOpen) {
+        return (
+            <SecondaryButton
+                label="Back"
+                onClick={onClose}
+                variant={VARIANTS.THEME.DARK}
+                icon={<BackArrowIcon />}
+            />
+        );
+    }
+
+    return (
+        <SecondaryButton
+            label={<div className="flex items-center space-x-2"><span>Overview</span></div>}
+            onClick={onOpen}
+            variant={VARIANTS.THEME.DARK}
+            justify="justify-center"
+            icon={<SummaryIcon />}
+        />
+    );
+};
+
+
 const FooterMobile = ({ openPanelName, onClosePanel, onReviewClick, onCompleteOrder, isDesktop, openAccordionOptionMobile }: FooterMobileProps) => {
     const { state, dispatch } = useGloveConfigurator();
     const getApplyAllColor = (): HexColor | undefined => {
@@ -885,17 +969,62 @@ const FooterMobile = ({ openPanelName, onClosePanel, onReviewClick, onCompleteOr
         if (color) dispatch({ type: ACTION_TYPES.APPLY_COLOR_TO_ALL, payload: { color } });
     };
     const colorToApply = getApplyAllColor();
-    const panelFooterMap: { [key in (typeof CONTENT_TYPES)[keyof typeof CONTENT_TYPES]]?: ReactElement } = {
-        [CONTENT_TYPES.COLOR]: <div className="w-full grid grid-cols-[1fr_1.618fr] gap-[10px]"><SecondaryButton label="Apply to All" onClick={() => onApplyColorToAll(colorToApply)} variant={VARIANTS.THEME.DARK} icon={ICONS.CHECKMARK} disabled={!colorToApply} /><SecondaryButton label="Continue" onClick={onClosePanel} variant={VARIANTS.THEME.LIGHT} icon={ICONS.CHECKMARK} /></div>,
-        [CONTENT_TYPES.DUAL_COLOR]: <div className="w-full grid grid-cols-[1fr_1.618fr] gap-[10px]"><SecondaryButton label="Apply to All" onClick={() => onApplyColorToAll(colorToApply)} variant={VARIANTS.THEME.DARK} icon={ICONS.CHECKMARK} disabled={!colorToApply} /><SecondaryButton label="Continue" onClick={onClosePanel} variant={VARIANTS.THEME.LIGHT} icon={ICONS.CHECKMARK} /></div>,
-        [CONTENT_TYPES.BUILD]: <SecondaryButton label="Continue" onClick={onClosePanel} variant={VARIANTS.THEME.LIGHT} icon={ICONS.CHECKMARK} />,
-        [CONTENT_TYPES.GALLERY]: <div className="w-full grid grid-cols-[1fr_1.618fr] gap-[10px]"><SecondaryButton label="Apply to All" onClick={() => onApplyColorToAll(colorToApply)} variant={VARIANTS.THEME.DARK} icon={ICONS.CHECKMARK} disabled={!colorToApply} /><SecondaryButton label="Continue" onClick={onClosePanel} variant={VARIANTS.THEME.LIGHT} icon={ICONS.CHECKMARK} /></div>,
-        [CONTENT_TYPES.TEXT]: <SecondaryButton label="Continue" onClick={onClosePanel} variant={VARIANTS.THEME.LIGHT} icon={ICONS.CHECKMARK} />,
-        [CONTENT_TYPES.SUMMARY]: <div className="w-full grid grid-cols-[1fr_1.618fr] gap-[10px]"><SecondaryButton label="Back" onClick={onClosePanel} variant={VARIANTS.THEME.DARK} icon={ICONS.BACK_ARROW} /><OrderButtonController isSummaryVisible={true} onCompleteClick={onCompleteOrder} onReviewClick={() => {}} /></div>,
-    };
-    const defaultFooter = <div className="w-full grid grid-cols-[1fr_1.618fr] gap-[10px]"><OverviewButton onClick={onReviewClick} isDesktop={isDesktop} isOpen={false} /><OrderButtonController isSummaryVisible={false} onReviewClick={onReviewClick} onCompleteClick={onCompleteOrder} /></div>;
-    return <footer className="flex-shrink-0 bg-[#161616] flex items-center justify-start pb-[20px] px-[14px] pt-[10px]">{openPanelName ? (panelFooterMap[openPanelName as keyof typeof panelFooterMap] || defaultFooter) : defaultFooter}</footer>;
+    const isSummaryOpen = openPanelName === CONTENT_TYPES.SUMMARY;
+
+    if (!openPanelName || isSummaryOpen) {
+        return (
+            <footer className="flex-shrink-0 bg-[#161616] flex items-center justify-start pb-[20px] px-[14px] pt-[10px]">
+                <div className="w-full grid grid-cols-[1fr_1.618fr] gap-[10px]">
+                    <OverviewActionController
+                        isOpen={isSummaryOpen}
+                        onOpen={onReviewClick}
+                        onClose={onClosePanel}
+                    />
+                    <OrderButtonController
+                        isSummaryVisible={isSummaryOpen}
+                        onReviewClick={onReviewClick}
+                        onCompleteClick={onCompleteOrder}
+                    />
+                </div>
+            </footer>
+        );
+    }
+
+    let panelSpecificFooter: ReactElement;
+    switch (openPanelName) {
+        case CONTENT_TYPES.COLOR:
+        case CONTENT_TYPES.DUAL_COLOR:
+        case CONTENT_TYPES.GALLERY:
+            panelSpecificFooter = (
+                <div className="w-full grid grid-cols-[1fr_1.618fr] gap-[10px]">
+                    <SecondaryButton label="Apply to All" onClick={() => onApplyColorToAll(colorToApply)} variant={VARIANTS.THEME.DARK} icon={<CheckmarkIcon />} disabled={!colorToApply} />
+                    <SecondaryButton label="Continue" onClick={onClosePanel} variant={VARIANTS.THEME.LIGHT} icon={<CheckmarkIcon />} />
+                </div>
+            );
+            break;
+
+        case CONTENT_TYPES.BUILD:
+        case CONTENT_TYPES.TEXT:
+            panelSpecificFooter = (
+                <SecondaryButton label="Continue" onClick={onClosePanel} variant={VARIANTS.THEME.LIGHT} icon={<CheckmarkIcon />} />
+            );
+            break;
+
+        default:
+            const exhaustiveCheck: never = openPanelName;
+             // eslint-disable-next-line @typescript-eslint/no-unused-vars
+            const _ = exhaustiveCheck;
+            panelSpecificFooter = <div />;
+    }
+
+    return (
+        <footer className="flex-shrink-0 bg-[#161616] flex items-center justify-start pb-[20px] px-[14px] pt-[10px]">
+            {panelSpecificFooter}
+        </footer>
+    );
 };
+// --- END: REFACTOR PLAN - STEP 3 & 4 ---
+
 
 const useBreakpoint = (breakpoint: string = NUMERIC_CONSTANTS.DESKTOP_BREAKPOINT): boolean => {
     const query = `(min-width: ${breakpoint})`;
@@ -1206,6 +1335,7 @@ const AccordionDesktop = ({ options }: { options: OptionsConfigItem[] }) => {
                                             <SecondaryButton
                                                 label="Apply to All"
                                                 onClick={() => handleApplyColorToAll(getActiveColor(configValue, activeDualColorPart))}
+                                                icon={<CheckmarkIcon />}
                                             />
                                         );
                                     }
