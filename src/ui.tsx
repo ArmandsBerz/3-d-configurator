@@ -1248,28 +1248,43 @@ const AccordionDesktop = ({ options }: { options: OptionsConfigItem[] }) => {
     const { state, dispatch } = useGloveConfigurator();
     const { configuration, activeDualColorPart } = state;
     const [openAccordion, setOpenAccordion] = useState<string | null>(CONTENT_TYPES.BUILD);
-    const triggerButtonRef = useRef<HTMLButtonElement | null>(null);
+    const closingPanelIdRef = useRef<string | null>(null);
     const accordionContainerRef = useRef<HTMLDivElement>(null);
     const [isTopGradientVisible, setTopGradientVisible] = useState(false);
     const [isBottomGradientVisible, setBottomGradientVisible] = useState(false);
     const [isScrolled, setIsScrolled] = useState(false);
 
     const handleAccordionToggle = (accordionId: string, event: React.MouseEvent<HTMLButtonElement>) => {
-        if (openAccordion !== accordionId) {
-            triggerButtonRef.current = event.currentTarget;
+        if (openAccordion === accordionId) {
+            closingPanelIdRef.current = accordionId;
         }
         setOpenAccordion(prev => (prev === accordionId ? null : accordionId));
     };
 
-    const closeAccordion = useCallback(() => setOpenAccordion(null), []);
+    const closeAccordion = useCallback(() => {
+        closingPanelIdRef.current = openAccordion;
+        setOpenAccordion(null);
+    }, [openAccordion]);
+
     useEscapeKey(accordionContainerRef, closeAccordion, openAccordion !== null);
 
     useLayoutEffect(() => {
-        if (openAccordion === null && triggerButtonRef.current) {
-            triggerButtonRef.current.focus();
-            triggerButtonRef.current = null; // Clear after use
+        if (openAccordion === null && closingPanelIdRef.current) {
+            const panelIdToFocus = closingPanelIdRef.current;
+            const panelData = options.find(opt => opt.id === panelIdToFocus);
+
+            if (panelData) {
+                const contentId = `content-${panelData.title.replace(/\s+/g, '-')}`;
+                const headerButtonToFocus = accordionContainerRef.current?.querySelector(`button[aria-controls="${contentId}"]`);
+                
+                if (headerButtonToFocus instanceof HTMLButtonElement) {
+                    headerButtonToFocus.focus();
+                }
+            }
+            
+            closingPanelIdRef.current = null;
         }
-    }, [openAccordion]);
+    }, [openAccordion, options]);
 
     const handleApplyColorToAll = (colorString?: HexColor) => {
         if (colorString) dispatch({ type: ACTION_TYPES.APPLY_COLOR_TO_ALL, payload: { color: colorString } });
