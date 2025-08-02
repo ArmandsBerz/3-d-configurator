@@ -1262,6 +1262,9 @@ const AccordionDesktop = ({ options }: { options: OptionsConfigItem[] }) => {
     };
 
     const closeAccordion = useCallback(() => {
+        if (document.activeElement === accordionContainerRef.current) {
+            return;
+        }
         closingPanelIdRef.current = openAccordion;
         setOpenAccordion(null);
     }, [openAccordion]);
