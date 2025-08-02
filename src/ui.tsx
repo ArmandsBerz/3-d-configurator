@@ -932,6 +932,7 @@ interface OverviewActionControllerProps {
 
 const OverviewActionController = ({ isOpen, onOpen, onClose }: OverviewActionControllerProps) => {
     if (isOpen) {
+        // ... The "Back" button code remains the same
         return (
             <SecondaryButton
                 label="Back"
@@ -942,13 +943,20 @@ const OverviewActionController = ({ isOpen, onOpen, onClose }: OverviewActionCon
         );
     }
 
+    // THIS IS THE CORRECTED VERSION
     return (
         <SecondaryButton
-            label={<div className="flex items-center space-x-2"><span>Overview</span></div>}
             onClick={onOpen}
             variant={VARIANTS.THEME.DARK}
             justify="justify-center"
-            icon={<SummaryIcon />}
+            // We pass the entire visual content as the 'label' prop
+            // to ensure the icon and text are grouped and spaced correctly.
+            label={
+                <div className="flex items-center space-x-2">
+                    <SummaryIcon />
+                    <span>Overview</span>
+                </div>
+            }
         />
     );
 };
