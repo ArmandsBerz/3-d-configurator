@@ -78,21 +78,21 @@ interface GalleryPanelProps {
 // --- START: Application-Wide Constants ---
 
 export const CONTENT_TYPES = {
-  BUILD: 'build',
-  GALLERY: 'gallery',
-  COLOR: 'color',
-  DUAL_COLOR: 'dual-color',
-  TEXT: 'text',
-  SUMMARY: 'summary',
+    BUILD: 'build',
+    GALLERY: 'gallery',
+    COLOR: 'color',
+    DUAL_COLOR: 'dual-color',
+    TEXT: 'text',
+    SUMMARY: 'summary',
 } as const;
 
 export const ACTION_TYPES = {
-  UPDATE_BUILD: 'UPDATE_BUILD',
-  UPDATE_COLOR: 'UPDATE_COLOR',
-  UPDATE_DUAL_COLOR: 'UPDATE_DUAL_COLOR',
-  UPDATE_GALLERY: 'UPDATE_GALLERY',
-  UPDATE_TEXT: 'UPDATE_TEXT',
-  APPLY_COLOR_TO_ALL: 'APPLY_COLOR_TO_ALL',
+    UPDATE_BUILD: 'UPDATE_BUILD',
+    UPDATE_COLOR: 'UPDATE_COLOR',
+    UPDATE_DUAL_COLOR: 'UPDATE_DUAL_COLOR',
+    UPDATE_GALLERY: 'UPDATE_GALLERY',
+    UPDATE_TEXT: 'UPDATE_TEXT',
+    APPLY_COLOR_TO_ALL: 'APPLY_COLOR_TO_ALL',
 } as const;
 
 export const DUAL_COLOR_SUB_PARTS = {
@@ -444,7 +444,7 @@ const ColorSwatchGrid = ({ swatches, selectedColor, onColorSelect }: ColorSwatch
     return (
         <div
             ref={containerRef}
-            className="relative grid grid-cols-[repeat(auto-fit,minmax(42px,1fr))] gap-[10px] px-2 py-2"
+            className="option-group-container relative grid grid-cols-[repeat(auto-fit,minmax(42px,1fr))] gap-[10px] px-2 py-2"
             role="radiogroup"
             {...gridEventHandlers}
         >
@@ -535,6 +535,17 @@ const AccordionOptionMobile = ({ title, onClose, headerAccessory = null, childre
         setIsTopGradientVisible(hasOverflow && element.scrollTop > 0);
         setIsBottomGradientVisible(hasOverflow && Math.abs(element.scrollHeight - element.clientHeight - element.scrollTop) >= NUMERIC_CONSTANTS.SCROLL_THRESHOLD);
     }, []);
+
+    const handleReactiveScrollFix = (event: React.FocusEvent<HTMLDivElement>) => {
+        const parentGroup = (event.target as HTMLElement).closest('.option-group-container');
+        if (parentGroup) {
+            parentGroup.scrollIntoView({
+                behavior: 'auto',
+                block: 'nearest'
+            });
+        }
+    };
+
     useLayoutEffect(() => { checkAndSetGradients(); }, [children, checkAndSetGradients]);
     useEffect(() => {
         const element = scrollContainerRef.current;
@@ -551,7 +562,7 @@ const AccordionOptionMobile = ({ title, onClose, headerAccessory = null, childre
             <AccordionOptionHeader ref={headerRef} variant={VARIANTS.LAYOUT.MOBILE} title={title} onClick={onClose} accessoryContent={headerAccessory} icon={ICONS.MOBILE} isOpen={true} controlsId={`mobile-panel-${title.replace(/\s+/g, '-')}`} />
             <div className="flex-grow relative overflow-hidden p-[4px]">
                 <ScrollGradient position={POSITIONS.TOP} isVisible={isTopGradientVisible} />
-                <div className="h-full overflow-y-auto focus:outline-none focus-visible:ring-4 focus-visible:ring-white" ref={scrollContainerRef}>{children}</div>
+                <div className="h-full overflow-y-auto focus:outline-none focus-visible:ring-4 focus-visible:ring-white" ref={scrollContainerRef} onFocusCapture={handleReactiveScrollFix}>{children}</div>
                 <ScrollGradient position={POSITIONS.BOTTOM} isVisible={isBottomGradientVisible} />
             </div>
         </div>
@@ -573,11 +584,11 @@ interface DualColorContentProps {
 }
 const DualColorContent = ({ value, onChange, labels = { inner: "Inner", outer: "Outer" } }: DualColorContentProps) => (
     <div className="space-y-4">
-        <div>
+        <div className="option-group-container">
             <h3 className="text-sm font-semibold text-gray-400 mb-2">{labels.inner}</h3>
             <ColorSwatchGrid swatches={colorSwatches} selectedColor={value.inner} onColorSelect={(color) => onChange(DUAL_COLOR_SUB_PARTS.INNER, color)} />
         </div>
-        <div>
+        <div className="option-group-container">
             <h3 className="text-sm font-semibold text-gray-400 mb-2">{labels.outer}</h3>
             <ColorSwatchGrid swatches={colorSwatches} selectedColor={value.outer} onColorSelect={(color) => onChange(DUAL_COLOR_SUB_PARTS.OUTER, color)} />
         </div>
@@ -610,7 +621,7 @@ const OptionGroup = ({ title, options, layout, selectedOption, onSelectOption }:
     const itemRefsCasted = itemRefs as React.MutableRefObject<React.RefObject<HTMLButtonElement>[]>;
 
     return (
-        <div>
+        <div className="option-group-container">
             <h3 className="text-sm font-semibold text-gray-400 mb-2">{title}</h3>
             <div ref={containerRef} className={`relative grid ${layout} gap-2`} {...gridEventHandlers}>
                 <NavigationHint isVisible={showNavigationHint} />
@@ -647,7 +658,7 @@ const ImageGroup = ({ title, options, layout, selectedOption, onSelectOption }: 
     const itemRefsCasted = itemRefs as React.MutableRefObject<React.RefObject<HTMLButtonElement>[]>;
 
     return (
-        <div>
+        <div className="option-group-container">
             <h3 className="text-sm font-semibold text-gray-400 mb-2">{title}</h3>
             <div ref={containerRef} className={`relative grid ${layout} gap-[10px]`} {...gridEventHandlers}>
                 <NavigationHint isVisible={showNavigationHint} />
@@ -707,11 +718,11 @@ const TextOption = ({ contextId }: TextOptionProps) => {
 
     return (
         <div className="space-y-5">
-            <div>
+            <div className="option-group-container">
                 <h3 className="text-sm font-semibold text-gray-400 mb-2">Text</h3>
                 <input type="text" className="w-full p-3 bg-[#2A2A2A] text-white placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:outline-none" value={value.text} onChange={(e) => onChange({ ...value, text: e.target.value })} placeholder="ENTER YOUR TEXT..." />
             </div>
-            <div>
+            <div className="option-group-container">
                 <h3 className="text-sm font-semibold text-gray-400 mb-2">Font</h3>
                 <div ref={containerRef} className="relative grid grid-cols-2 gap-3" {...gridEventHandlers}>
                     <NavigationHint isVisible={showNavigationHint} />
@@ -731,7 +742,7 @@ const TextOption = ({ contextId }: TextOptionProps) => {
                     ))}
                 </div>
             </div>
-            <div>
+            <div className="option-group-container">
                 <h3 className="text-sm font-semibold text-gray-400 mb-2">Color</h3>
                 <ColorSwatchGrid swatches={colorSwatches} selectedColor={value.color} onColorSelect={(color) => onChange({ ...value, color: color })} />
             </div>
@@ -749,7 +760,7 @@ const GalleryOption = ({ isDesktop }: GalleryOptionProps) => {
     return (
         <div className={`space-y-6 ${!isDesktop ? 'pb-4' : ''}`}>
             <ImageGroup title="Type" layout="grid-cols-3" options={webTypeOptions} selectedOption={config.webType} onSelectOption={(optionId) => onConfigChange({ ...config, webType: optionId })} />
-            <div>
+            <div className="option-group-container">
                 <h3 className="text-sm font-semibold text-gray-400 mb-2">Color</h3>
                 <ColorSwatchGrid swatches={colorSwatches} selectedColor={config.color} onColorSelect={(color) => onConfigChange({ ...config, color: color })} />
             </div>
@@ -1222,7 +1233,7 @@ const OverviewDesktop = () => {
         <div ref={containerRef} className="flex lg:absolute lg:bottom-[60px] lg:right-[60px] fixed w-full bottom-[-1rem] flex-row items-center gap-4 lg:flex-col lg:justify-end lg:w-auto lg:h-auto lg:gap-0">
             <div className="lg:w-[400px] text-[#999999] font-black text-[1.3rem] my-0 lg:mb-2.5 mx-0 flex flex-col justify-end lg:h-auto h-[80.8vh]">
                 <OverviewButton onClick={handleToggle} isDesktop={true} isOpen={agnosticAccordionOpen} />
-                <div 
+                <div  
                     id="overview-content"
                     className={`bg-[#222222] transition-[height] duration-300 ease-in ${agnosticAccordionOpen ? 'overflow-y-scroll h-auto lg:h-[calc(100vh-335px)]' : 'overflow-hidden h-0'} focus:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-white`}
                 >
@@ -1232,10 +1243,10 @@ const OverviewDesktop = () => {
                 </div>
             </div>
             <div className="lg:w-[400px] w-full self-end mb-[1.9rem] mr-[2.5rem] lg:m-0 z-[1]">
-                <OrderButtonController 
-                    isSummaryVisible={agnosticAccordionOpen} 
-                    onReviewClick={handleOpen} 
-                    onCompleteClick={() => alert('Proceeding to next step...')} 
+                <OrderButtonController  
+                    isSummaryVisible={agnosticAccordionOpen}  
+                    onReviewClick={handleOpen}  
+                    onCompleteClick={() => alert('Proceeding to next step...')}  
                 />
             </div>
         </div>
@@ -1635,7 +1646,7 @@ const UI = () => {
 
     const handleReviewClick = (event: React.MouseEvent<HTMLButtonElement>) => {
         // 1. Set the trigger ref, just like handleOpenPanel does
-        triggerButtonRef.current = event.currentTarget; 
+        triggerButtonRef.current = event.currentTarget;  
 
         // 2. Open the summary panel
         setOpenAccordionOptionMobile({ name: CONTENT_TYPES.SUMMARY });
