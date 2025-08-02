@@ -592,7 +592,7 @@ interface OptionProps {
 }
 const Option = React.forwardRef<HTMLButtonElement, OptionProps>(
     ({ label, isSelected, onSelect, tabIndex }, ref) => (
-        <button ref={ref} tabIndex={tabIndex} className={`text-sm py-2 px-3 h-[36px] flex items-center justify-center font-medium transition-colors focus:outline-none focus-visible:ring-4 focus-visible:ring-inset ${isSelected ? 'bg-white text-[#222222] focus-visible:ring-blue-400' : 'bg-[#383838] hover:bg-[#595959] active:bg-[#272727] focus-visible:ring-white'}`} onClick={onSelect}>
+        <button ref={ref} tabIndex={tabIndex} className={`text-sm py-2 px-3 h-[40px] flex items-center justify-center font-medium transition-colors focus:outline-none focus-visible:ring-4 focus-visible:ring-inset ${isSelected ? 'bg-white text-[#222222] focus-visible:ring-blue-400' : 'bg-[#383838] hover:bg-[#595959] active:bg-[#272727] focus-visible:ring-white'}`} onClick={onSelect}>
             {label}
         </button>
     )
