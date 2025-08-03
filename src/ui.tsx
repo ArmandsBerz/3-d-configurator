@@ -1313,6 +1313,16 @@ const AccordionDesktop = ({ options }: { options: OptionsConfigItem[] }) => {
         setIsScrolled(element.scrollTop > 0);
     }, []);
 
+    const handleReactiveScrollFix = (event: React.FocusEvent<HTMLDivElement>) => {
+        const parentGroup = (event.target as HTMLElement).closest('.option-group-container');
+        if (parentGroup) {
+            parentGroup.scrollIntoView({
+                behavior: 'auto',
+                block: 'nearest'
+            });
+        }
+    };
+
     useEffect(() => { checkAndSetGradients(); }, [checkAndSetGradients, openAccordion]);
     useEffect(() => {
         const element = accordionContainerRef.current;
@@ -1356,7 +1366,7 @@ const AccordionDesktop = ({ options }: { options: OptionsConfigItem[] }) => {
             <div className="absolute z-20 w-[70px] h-[49px] bg-gray-300 bg-opacity-75 flex items-center justify-center pointer-events-auto"><p className="font-bold text-xl text-gray-900">LOGO</p></div>
             <div className={`absolute ${isScrolled ? 'top-[82px]' : 'top-[142px]'} bottom-4 left-[40px] w-[400px] pointer-events-auto transition-all duration-30 ease-in-out overflow-hidden`}>
                 <ScrollGradient position={POSITIONS.TOP} isVisible={isTopGradientVisible} />
-                <div ref={accordionContainerRef} className="h-full overflow-y-auto space-y-4 focus:outline-none focus-visible:outline focus-visible:outline-4 focus-visible:outline-white focus-visible:outline-offset-[-4px]">
+                <div ref={accordionContainerRef} className="h-full overflow-y-auto space-y-4 focus:outline-none focus-visible:outline focus-visible:outline-4 focus-visible:outline-white focus-visible:outline-offset-[-4px]" onFocusCapture={handleReactiveScrollFix}>
                     {options.map(item => (
                         <AccordionOptionDesktop
                             key={item.id}
