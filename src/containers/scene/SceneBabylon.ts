@@ -947,16 +947,22 @@ export default class SceneBabylon {
   }
 
   public async load(): Promise<EngineAPI> {
-    this.loader = AssetsLoader.getInstance(this.scene);
-    this.gloveManager = new GloveManager(this.scene);
-    const engineAPI = new EngineAPI(this.gloveManager, this);
-  
-    // Define the default glove and load it
-    const defGloveId = 0;
-    await this.createGloves(this.gloves[defGloveId], defGloveId);
-  
-    // Return the API
-    return engineAPI;
+    try {
+      this.loader = AssetsLoader.getInstance(this.scene);
+      this.gloveManager = new GloveManager(this.scene);
+      const engineAPI = new EngineAPI(this.gloveManager, this);
+    
+      // Define the default glove and load it
+      const defGloveId = 0;
+      await this.createGloves(this.gloves[defGloveId], defGloveId);
+    
+      // Return the API on success
+      return engineAPI;
+    } catch (error) {
+      console.error("Failed to load the Babylon scene:", error);
+      // Re-throw the error so the calling React component knows about the failure
+      throw error;
+    }
   }
 
   protected async createGloves(name: string, id: number) {
@@ -982,11 +988,6 @@ export default class SceneBabylon {
           }
         );
     });
-  }
-
-  protected setScene(): void {
-    const main = document.getElementById('main');
-    main?.append(this.canvas);
   }
 
   private createScene(canvas: HTMLCanvasElement): void {
