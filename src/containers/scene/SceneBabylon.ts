@@ -926,13 +926,10 @@ export default class SceneBabylon {
   engine: Engine;
   glove: Glove;
   gloveManager: GloveManager;
-  public static engineAPI: EngineAPI;
 
   protected loader: AssetsLoader;
   protected arrGloves: Glove[] = [];
   protected arrWebs: WebGlove[] = [];
-
-  protected static _instance: SceneBabylon;
 
   public websName: string[];
   public currentGlove: Glove;
@@ -941,50 +938,50 @@ export default class SceneBabylon {
   public gloves: string[];
   public glovesDesign = ['openBack', 'firstBase', 'closeBack', 'catcher'];
 
-  constructor(callback?) {
+  constructor(canvas: HTMLCanvasElement) {
     this.websName = WEBS;
-
-    this.createScene();
-    this.createDebugTool();
-    this.loader = AssetsLoader.getInstance(this.scene);
-
-    this.gloveManager = new GloveManager(this.scene);
-    SceneBabylon.engineAPI = new EngineAPI(this.gloveManager, this);
-
     this.gloves = ['openBack', 'firstBase', 'closeBack', 'catchers'];
+    this.glovesDesign = ['openBack', 'firstBase', 'closeBack', 'catcher'];
 
-    const defGloveId = 0;
-    this.createGloves(this.gloves[defGloveId], defGloveId, callback);
+    this.createScene(canvas);
   }
 
-  protected async createGloves(name: string, id: number, callback?: () => void) {
+  public async load(): Promise<EngineAPI> {
+    this.loader = AssetsLoader.getInstance(this.scene);
+    this.gloveManager = new GloveManager(this.scene);
+    const engineAPI = new EngineAPI(this.gloveManager, this);
+  
+    // Define the default glove and load it
+    const defGloveId = 0;
+    await this.createGloves(this.gloves[defGloveId], defGloveId);
+  
+    // Return the API
+    return engineAPI;
+  }
+
+  protected async createGloves(name: string, id: number) {
     console.log('createGloves');
 
     // Load the GLB as an AssetsContainer if needed
     const assets = await this.loader.loadAssetsContainer('assets/', `${name}.glb`, this.scene);
     console.log('assets ::', assets);
 
-    const glove = new Glove(
-      name,
-      this.glovesDesign[id],
-      this.scene,
-      this.engine,
-      () => {
-        console.log('glove ready', glove);
-        glove.glove.setEnabled(true);
-        this.currentGlove = glove;
-        this.arrGloves[id] = glove;
-        this.gloveManager.setActiveGlove(glove);
-        if (callback) callback();
-      }
-    );
-  }
-
-  public static instance(callback?): SceneBabylon {
-    if (!SceneBabylon._instance) {
-      SceneBabylon._instance = new SceneBabylon(callback);
-    }
-    return SceneBabylon._instance;
+    return new Promise<void>((resolve) => {
+        const glove = new Glove(
+          name,
+          this.glovesDesign[id],
+          this.scene,
+          this.engine,
+          () => {
+            console.log('glove ready', glove);
+            glove.glove.setEnabled(true);
+            this.currentGlove = glove;
+            this.arrGloves[id] = glove;
+            this.gloveManager.setActiveGlove(glove);
+            resolve();
+          }
+        );
+    });
   }
 
   protected setScene(): void {
@@ -992,14 +989,8 @@ export default class SceneBabylon {
     main?.append(this.canvas);
   }
 
-  createScene(): void {
-    const root = document.getElementById('root');
-    this.canvas = document.createElement('canvas') as HTMLCanvasElement;
-    this.canvas.style.position = 'absolute';
-    this.canvas.style.top = '0';
-    this.canvas.style.width = '100vw';
-    this.canvas.style.height = '100vh';
-    root?.prepend(this.canvas);
+  private createScene(canvas: HTMLCanvasElement): void {
+    this.canvas = canvas;
 
     // Initialize babylon scene and engine
     const engine = new Engine(this.canvas, true);
@@ -1041,6 +1032,8 @@ export default class SceneBabylon {
     this.engine.runRenderLoop(() => {
       this.scene.render();
     });
+
+    this.createDebugTool();
   }
 
   public async setActiveGlove(index: number) {
@@ -1067,9 +1060,7 @@ export default class SceneBabylon {
 
   protected async createNewGlove(id: number) {
     const name = this.gloves[id];
-    await new Promise<void>((resolve) => {
-      this.createGloves(name, id, () => resolve());
-    });
+    await this.createGloves(name, id);
   }
 
   createDebugTool(): void {
