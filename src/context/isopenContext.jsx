@@ -45,7 +45,7 @@ import {
 // CSS and App imports
 import '../../src/index.css';
 import '../../src/main.scss';
-import App from '../App';
+import App from './ui';
 
 
 // ------------------------
