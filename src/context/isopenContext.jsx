@@ -37,14 +37,17 @@ function SceneComponent({ children }) {
   const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
+    // Keep a mutable reference to the scene instance
+    let sceneInstance: SceneBabylon | null = null;
+
     // This effect runs only once when the component mounts
     const initializeScene = async () => {
       if (canvasRef.current) {
         try {
           // Create the engine instance using the canvas from our ref
-          const scene = new SceneBabylon(canvasRef.current);
+          sceneInstance = new SceneBabylon(canvasRef.current);
           // Call the new load method to start loading assets
-          const api = await scene.load();
+          const api = await sceneInstance.load();
           // Store the API in state once loading is complete
           setEngineApi(api);
         } catch (err) {
@@ -58,8 +61,12 @@ function SceneComponent({ children }) {
 
     initializeScene();
     
-    // NOTE: We don't have a cleanup function yet to dispose of the engine.
-    // This can be added later if the component needs to be unmounted.
+    // Cleanup function to dispose of the engine when the component unmounts
+    return () => {
+      if (sceneInstance) {
+        sceneInstance.engine.dispose();
+      }
+    };
 
   }, []); // Empty dependency array ensures this runs only once.
 
