@@ -30,9 +30,10 @@ module.exports = {
       {
         test: /\.s?css$/, // Matches .css and .scss files
         use: [
-          'style-loader', // 3. Injects styles into the DOM
-          'css-loader',   // 2. Turns css into commonjs
-          'sass-loader',  // 1. Turns sass into css
+          'style-loader',  // 4. Injects styles into the DOM
+          'css-loader',    // 3. Turns css into commonjs
+          'postcss-loader',// 2. Processes css with PostCSS/Tailwind
+          'sass-loader',   // 1. Turns sass into css
         ],
       },
     ],
