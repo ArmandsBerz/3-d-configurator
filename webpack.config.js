@@ -6,7 +6,7 @@ module.exports = {
   mode: 'development',
 
   // 2. Entry: The starting point of our application.
-  entry: './src/index.js',
+  entry: './src/index.jsx',
 
   // 3. Output: Where to put the final bundled code.
   output: {
