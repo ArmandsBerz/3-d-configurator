@@ -2,6 +2,7 @@
   "dependencies": {
     "@babylonjs/core": "^8.21.0",
     "react": "^19.1.1",
-    "react-dom": "^19.1.1"
+    "react-dom": "^19.1.1",
+    "wicg-inert": "^3.1.3"
   }
 }
