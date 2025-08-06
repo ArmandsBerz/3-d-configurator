@@ -1,25 +1,22 @@
-import { createRoot } from 'react-dom/client'; // Use the correct modern import
-import { Provider } from 'react-redux';
+import React from 'react';
+import ReactDOM from 'react-dom/client';
 
-import './index.css'; // Use the correct relative path
-import App from './ui';
-import { setupStore } from './store/rootReducer';
+import './index.css';
+import './main.scss';
 
-// This part is fine
-const store = setupStore();
+// Import the main assembler component from our new "bridge" file
+import { StageSecond } from './isopenContext';
 
-// Get the root DOM element
+// Find the root element with the ID we set in our index.html
 const rootElement = document.getElementById('root');
 
-// Create the root using the modern API
-const root = createRoot(rootElement);
-
-// Use the new render method on the root
-root.render(
-    // StrictMode is still good practice
+if (rootElement) {
+  const root = ReactDOM.createRoot(rootElement);
+  root.render(
     <React.StrictMode>
-        <Provider store={store}>
-            <App />
-        </Provider>
+      <StageSecond />
     </React.StrictMode>
-);
+  );
+} else {
+  console.error("Failed to find the root element with id 'root'.");
+}
