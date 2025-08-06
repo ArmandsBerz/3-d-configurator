@@ -2,7 +2,6 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 
 import './index.css';
-import './main.scss';
 
 // Import the main assembler component from our new "bridge" file
 import { StageSecond } from './isopenContext';
