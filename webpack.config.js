@@ -36,6 +36,11 @@ module.exports = {
           'sass-loader',   // 1. Turns sass into css
         ],
       },
+      // Rule for static assets (images, fonts, 3D models)
+      {
+        test: /\.(png|svg|jpg|jpeg|gif|glb|gltf|woff|woff2|eot|ttf|otf)$/i,
+        type: 'asset/resource',
+      },
     ],
   },
 
