@@ -1,17 +1,15 @@
 {
   "presets": [
-    // Handles modern JavaScript (ES2015+) for older browser compatibility
     "@babel/preset-env",
-    // Handles JSX and modern React features
     [
       "@babel/preset-react",
       {
-        "runtime": "automatic" // The modern standard, no need for `import React` in every file
+        "runtime": "automatic"
       }
-    ]
+    ],
+    "@babel/preset-typescript"
   ],
   "plugins": [
-    // Optimizes code by reusing Babel's helper functions instead of inlining them
     "@babel/plugin-transform-runtime"
   ]
 }
