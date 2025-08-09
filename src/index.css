@@ -1,3 +1,28 @@
+/* src/index.css */
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+body {
+  margin: 0;
+}
+
+.app-container {
+  display: flex;
+  width: 100vw;
+  height: 100vh;
+}
+
+.ui-wrapper {
+  /* This matches the 440px width used in your ui.tsx file */
+  width: 440px;
+  flex-shrink: 0; /* Stops this column from shrinking */
+  height: 100vh;
+  overflow: hidden;
+}
+
+.viewer-wrapper {
+  flex-grow: 1; /* Allows this column to take up the rest of the space */
+  height: 100vh;
+}
