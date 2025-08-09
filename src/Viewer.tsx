@@ -1,5 +1,3 @@
-// src/BabylonCanvas.tsx
-
 import React, { useEffect, useRef } from 'react';
 import {
   Engine,

@@ -1,5 +1,3 @@
-// src/state.ts
-
 import { configureStore, createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { updateSphereColor } from './BabylonCanvas'; // Assuming the command function is in this file
 
