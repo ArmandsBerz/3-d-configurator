@@ -1,117 +1,42 @@
+/* Tailwind directives */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/*
- ==================================================================
- WEBKIT-ONLY SCROLLBAR CONTROL
- This targets Chrome, Safari, Edge, and Opera.
- ==================================================================
-*/
+/* --- Layout Rules --- */
 
-/*
- ===== Default: Hide Scrollbar in main page containers =====
- Target common scrollable containers but preserve form elements
+/* This is the main container for the entire application.
+  It establishes a coordinate system for its children and sets the background color.
 */
-html::-webkit-scrollbar,
-body::-webkit-scrollbar,
-.content::-webkit-scrollbar,
-.main::-webkit-scrollbar,
-.container::-webkit-scrollbar,
-div::-webkit-scrollbar,
-section::-webkit-scrollbar,
-article::-webkit-scrollbar,
-aside::-webkit-scrollbar,
-nav::-webkit-scrollbar,
-ul::-webkit-scrollbar,
-ol::-webkit-scrollbar,
-pre::-webkit-scrollbar {
-  width: 0;
-  height: 0;
-  display: none;
+.app-container {
+  position: relative;
+  width: 100vw;
+  height: 100dvh; /* Use dvh for better mobile viewport handling */
+  background-color: #161616;
+  overflow: hidden;
 }
 
 /*
- ===== Preserve scrollbars for interactive elements =====
- Form elements and other interactive content keep their scrollbars
+  The wrapper for the Babylon.js canvas.
+  It is positioned absolutely to fill the entire app container.
+  It sits on the bottom layer (z-index: 0).
 */
-input::-webkit-scrollbar,
-textarea::-webkit-scrollbar,
-select::-webkit-scrollbar,
-.preserve-scrollbar::-webkit-scrollbar {
-  width: auto;
-  height: auto;
-  display: block;
+.viewer-wrapper {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
 }
 
 /*
- ===== Conditional: Show Custom Scrollbar on '.show-thin-scrollbar' =====
- This more specific rule overrides the global "hide" rules above.
+  The wrapper for the React UI.
+  It is also positioned absolutely to fill the container, creating an overlay.
+  It sits on the top layer (z-index: 1).
+  'pointer-events: none' allows mouse interactions (like dragging the camera)
+  to "pass through" the UI wrapper to the canvas below.
 */
-/* Give the scrollbar its width back for the target element */
-.show-thin-scrollbar::-webkit-scrollbar {
-  width: 6px;
-  display: block; /* This is needed to override the 'display: none' rule */
-}
-
-/* Style the track (the background of the scrollbar) */
-.show-thin-scrollbar::-webkit-scrollbar-track {
-  background-color: #222222;
-}
-
-/* Style the thumb (the draggable handle) */
-.show-thin-scrollbar::-webkit-scrollbar-thumb {
-  background-color: #555555;
-  border-radius: 4px;
-}
-
-/* Style the thumb on hover for user feedback */
-.show-thin-scrollbar::-webkit-scrollbar-thumb:hover {
-  background-color: #888888;
-}
-
-/*
- ==================================================================
- FIREFOX-ONLY SCROLLBAR CONTROL
- This targets Firefox using -moz- prefixes and scrollbar-width.
- ==================================================================
-*/
-
-/*
- ===== Default: Hide Scrollbar in main containers but preserve form elements =====
- Firefox uses scrollbar-width instead of ::-webkit-scrollbar
-*/
-@-moz-document url-prefix() {
-  html,
-  body,
-  .content,
-  .main,
-  .container,
-  div,
-  section,
-  article,
-  aside,
-  nav,
-  ul,
-  ol,
-  pre {
-    scrollbar-width: none; /* Firefox */
-  }
-  
-  /* Preserve scrollbars for interactive elements */
-  input,
-  textarea,
-  select,
-  .preserve-scrollbar {
-    scrollbar-width: auto;
-  }
-
-  /*
-   ===== Conditional: Show Custom Scrollbar on '.show-thin-scrollbar' in Firefox =====
-   This overrides the global "none" rule above for specific elements.
-   */
-  .show-thin-scrollbar {
-    scrollbar-width: thin; /* Firefox: shows a thin scrollbar */
-    scrollbar-color: #555555 #222222; /* Firefox: thumb-color track-color */
-  }
+.ui-wrapper {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none; /* Allows clicks to pass through to the canvas */
 }
