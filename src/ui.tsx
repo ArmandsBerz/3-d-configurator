@@ -1510,27 +1510,32 @@ const UI = () => {
     const mainRef = useRef<HTMLElement>(null);
 
     useEffect(() => {
-        const babylonContainer = document.getElementById('babylon-container');
-        const mainEl = mainRef.current;
+    const babylonContainer = document.getElementById('babylon-container');
+    const mainEl = mainRef.current;
 
-        if (!babylonContainer || !mainEl) {
-            return;
-        }
+    if (!babylonContainer || !mainEl) {
+        return;
+    }
 
-        const observer = new ResizeObserver(entries => {
+    const observer = new ResizeObserver(entries => {
+        // Defer the DOM update to the next animation frame
+        window.requestAnimationFrame(() => {
             for (let entry of entries) {
                 const { inlineSize: width, blockSize: height } = entry.borderBoxSize[0];
+
+                // Set the size using the original, precise values
                 babylonContainer.style.width = `${width}px`;
                 babylonContainer.style.height = `${height}px`;
             }
         });
+    });
 
-        observer.observe(mainEl);
+    observer.observe(mainEl);
 
-        return () => {
-            observer.disconnect();
-        };
-    }, []); // The empty array ensures this effect runs only once.
+    return () => {
+        observer.disconnect();
+    };
+}, []); // The empty array ensures this effect runs only once.
     // --- END: 1 of 2 ADDED SECTIONS ---
 
     // --- Application-level Focus Containment ---
