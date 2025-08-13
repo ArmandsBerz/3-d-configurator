@@ -16,27 +16,3 @@
   overflow: hidden;
 }
 
-/*
-  The wrapper for the Babylon.js canvas.
-  It is positioned absolutely to fill the entire app container.
-  It sits on the bottom layer (z-index: 0).
-*/
-.viewer-wrapper {
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-}
-
-/*
-  The wrapper for the React UI.
-  It is also positioned absolutely to fill the container, creating an overlay.
-  It sits on the top layer (z-index: 1).
-  'pointer-events: none' allows mouse interactions (like dragging the camera)
-  to "pass through" the UI wrapper to the canvas below.
-*/
-.ui-wrapper {
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  pointer-events: none; /* Allows clicks to pass through to the canvas */
-}
