@@ -2,34 +2,21 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 
-// Import global styles and main sass file.
-// All layout CSS is now included in index.css.
 import './index.css';
 import './main.scss';
 
-// Import the UI Layer and Rendering Layer components
+// Only import the main App component. It controls both the UI and 3D layers.
+// Make sure this path points to your file (e.g., './App' or './ui').
 import App from './ui';
-import BabylonCanvas from './viewer';
 
 const rootElement = document.getElementById('root');
 if (!rootElement) throw new Error('Failed to find the root element');
 
 const root = ReactDOM.createRoot(rootElement);
 
-// Render the two layers as siblings within a main container.
-// The layout rules in index.css will handle stacking them correctly.
+// Now, you only need to render the single <App /> component.
 root.render(
   <React.StrictMode>
-    <div className="app-container">
-      {/* --- RENDERING LAYER --- */}
-      <div className="viewer-wrapper">
-        <BabylonCanvas />
-      </div>
-
-      {/* --- UI LAYER --- */}
-      <div className="ui-wrapper">
-        <App />
-      </div>
-    </div>
+    <App />
   </React.StrictMode>
 );

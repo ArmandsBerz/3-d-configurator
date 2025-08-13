@@ -1,5 +1,6 @@
 import 'wicg-inert';
 import React, { useState, useRef, useLayoutEffect, useCallback, useEffect, createContext, useContext, useReducer, ReactNode, ReactElement } from 'react';
+import BabylonCanvas from './viewer';
 
 // --- START: Core Type Definitions ---
 
@@ -558,7 +559,7 @@ const AccordionOptionMobile = ({ title, onClose, headerAccessory = null, childre
         };
     }, [checkAndSetGradients]);
     return (
-        <div className="absolute inset-0 bg-[#161616] z-20 h-full flex flex-col px-[19px] pointer-events-auto">
+        <div className="absolute inset-0 bg-[#161616] z-20 h-full flex flex-col px-[19px]">
             <AccordionOptionHeader ref={headerRef} variant={VARIANTS.LAYOUT.MOBILE} title={title} onClick={onClose} accessoryContent={headerAccessory} icon={ICONS.MOBILE} isOpen={true} controlsId={`mobile-panel-${title.replace(/\s+/g, '-')}`} />
             <div className="flex-grow relative overflow-hidden p-[4px]">
                 <ScrollGradient position={POSITIONS.TOP} isVisible={isTopGradientVisible} />
@@ -992,7 +993,7 @@ const FooterMobile = ({ openPanelName, onClosePanel, onReviewClick, onCompleteOr
 
     if (!openPanelName || isSummaryOpen) {
         return (
-            <footer className="flex-shrink-0 bg-[#161616] flex items-center justify-start pb-[20px] px-[14px] pt-[10px] pointer-events-auto">
+            <footer className="flex-shrink-0 bg-[#161616] flex items-center justify-start pb-[20px] px-[14px] pt-[10px]">
                 <div className="w-full grid grid-cols-[1fr_1.618fr] gap-[10px]">
                     <OverviewActionController
                         isOpen={isSummaryOpen}
@@ -1037,7 +1038,7 @@ const FooterMobile = ({ openPanelName, onClosePanel, onReviewClick, onCompleteOr
     }
 
     return (
-        <footer className="flex-shrink-0 bg-[#161616] flex items-center justify-start pb-[20px] px-[14px] pt-[10px] pointer-events-auto">
+        <footer className="flex-shrink-0 bg-[#161616] flex items-center justify-start pb-[20px] px-[14px] pt-[10px]">
             {panelSpecificFooter}
         </footer>
     );
@@ -1230,7 +1231,7 @@ const OverviewDesktop = () => {
     };
 
     return (
-        <div ref={containerRef} className="flex lg:absolute lg:bottom-[60px] lg:right-[60px] fixed w-full bottom-[-1rem] flex-row items-center gap-4 lg:flex-col lg:justify-end lg:w-auto lg:h-auto lg:gap-0 pointer-events-auto">
+        <div ref={containerRef} className="flex lg:absolute lg:bottom-[60px] lg:right-[60px] fixed w-full bottom-[-1rem] flex-row items-center gap-4 lg:flex-col lg:justify-end lg:w-auto lg:h-auto lg:gap-0">
             <div className="lg:w-[400px] text-[#999999] font-black text-[1.3rem] my-0 lg:mb-2.5 mx-0 flex flex-col justify-end lg:h-auto h-[80.8vh]">
                 <OverviewButton onClick={handleToggle} isDesktop={true} isOpen={agnosticAccordionOpen} />
                 <div  
@@ -1478,7 +1479,7 @@ const AccordionMobile = React.forwardRef<HTMLElement, AccordionMobileProps>(
         };
 
         return (
-            <section ref={ref} className={`px-4 bg-[#161616] h-full overflow-y-auto pointer-events-auto ${openAccordionOptionMobile ? 'opacity-50 pointer-events-none' : ''}`} tabIndex={-1}>
+            <section ref={ref} className={`px-4 bg-[#161616] h-full overflow-y-auto ${openAccordionOptionMobile ? 'opacity-50 pointer-events-none' : ''}`} tabIndex={-1}>
                 <ScrollGradient position={POSITIONS.TOP} isVisible={topGradientVisible} />
                 {options.map(item => (
                     <button key={item.id} data-id={item.id} className="w-full h-[56px] bg-[#1C1C1C] flex items-center justify-between px-4 mb-[10px] cursor-pointer hover:bg-[#2A2A2A] focus:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-white" onClick={(e) => onOpenPanel(item, e)}>
@@ -1663,12 +1664,13 @@ const UI = () => {
     };
 
     return (
-        <div ref={appContainerRef} className="flex flex-col lg:relative h-[100dvh] bg-transparent text-white">
-            <main className={`p-4 flex flex-col items-center justify-center relative overflow-auto h-full w-full ${isVisualizationExpanded ? 'flex-grow' : 'lg:absolute lg:inset-0'}`} style={!isDesktop && !isVisualizationExpanded ? { flexBasis: 'calc(61.8% - 66px)' } : {}}>
-                {!isDesktop && <div className="absolute top-[20px] left-[20px] w-[70px] h-[49px] bg-gray-300 bg-opacity-75 z-10 flex items-center justify-center pointer-events-auto"><p className="font-bold text-xl text-gray-900">LOGO</p></div>}
-                <button className="absolute top-[20px] right-[20px] z-20 p-2 hover:bg-gray-800 hover:bg-opacity-50 focus:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-white pointer-events-auto" aria-label="Share configuration" onClick={handleShare}>
+        <div ref={appContainerRef} className="flex flex-col lg:relative w-full h-full bg-transparent text-white">
+            <main className={`p-4 flex flex-col items-center justify-center relative bg-transparent overflow-auto h-full w-full ${isVisualizationExpanded ? 'flex-grow' : 'lg:absolute lg:inset-0'}`} style={!isDesktop && !isVisualizationExpanded ? { flexBasis: 'calc(61.8% - 66px)' } : {}}>
+                {!isDesktop && <div className="absolute top-[20px] left-[20px] w-[70px] h-[49px] bg-gray-300 bg-opacity-75 z-10 flex items-center justify-center"><p className="font-bold text-xl text-gray-900">LOGO</p></div>}
+                <button className="absolute top-[20px] right-[20px] z-20 p-2 hover:bg-gray-800 hover:bg-opacity-50 focus:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-white" aria-label="Share configuration" onClick={handleShare}>
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-[31px] h-[31px] text-[#FFFFFF]"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>
                 </button>
+            
                 <div className="absolute bottom-4 inset-x-0 h-8 z-10 pointer-events-none" aria-hidden="true">
                     {!isDesktop && (
                         <button
@@ -1729,7 +1731,20 @@ const UI = () => {
 
 const App = () => (
     <GloveConfiguratorProvider>
-        <UI />
+        {/* Neutral Parent Container: Sets up the positioning context for the layers. */}
+        <div id="app-root" className="relative w-full h-[100dvh] bg-black">
+
+            {/* Layer 1: Babylon.js Container (Bottom Layer) */}
+            <div id="babylon-container" className="absolute inset-0 z-10">
+                <BabylonCanvas />
+            </div>
+
+            {/* Layer 2: UI Container (Top Layer) */}
+            <div id="ui-container" className="absolute inset-0 z-20 pointer-events-none">
+                <UI />
+            </div>
+
+        </div>
     </GloveConfiguratorProvider>
 );
 
