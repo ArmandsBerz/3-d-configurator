@@ -1497,13 +1497,41 @@ const AccordionMobile = React.forwardRef<HTMLElement, AccordionMobileProps>(
 );
 
 
-// --- Main UI Component ---
+// --- Main UI Component (THIS IS THE MODIFIED VERSION) ---
 const UI = () => {
     const isDesktop = useBreakpoint();
     const { state } = useGloveConfigurator();
     const [isVisualizationExpanded, setIsVisualizationExpanded] = useState(false);
     const [openAccordionOptionMobile, setOpenAccordionOptionMobile] = useState<MobileAccordionState>(null);
     const appContainerRef = useRef<HTMLDivElement>(null);
+
+    // --- START: 1 of 2 ADDED SECTIONS ---
+    // This new ref and effect hook handle the resizing logic.
+    const mainRef = useRef<HTMLElement>(null);
+
+    useEffect(() => {
+        const babylonContainer = document.getElementById('babylon-container');
+        const mainEl = mainRef.current;
+
+        if (!babylonContainer || !mainEl) {
+            return;
+        }
+
+        const observer = new ResizeObserver(entries => {
+            for (let entry of entries) {
+                const { inlineSize: width, blockSize: height } = entry.borderBoxSize[0];
+                babylonContainer.style.width = `${width}px`;
+                babylonContainer.style.height = `${height}px`;
+            }
+        });
+
+        observer.observe(mainEl);
+
+        return () => {
+            observer.disconnect();
+        };
+    }, []); // The empty array ensures this effect runs only once.
+    // --- END: 1 of 2 ADDED SECTIONS ---
 
     // --- Application-level Focus Containment ---
     useEffect(() => {
@@ -1665,7 +1693,10 @@ const UI = () => {
 
     return (
         <div ref={appContainerRef} className="flex flex-col lg:relative w-full h-full bg-transparent text-white">
-            <main className={`p-4 flex flex-col items-center justify-center relative bg-transparent overflow-auto h-full w-full ${isVisualizationExpanded ? 'flex-grow' : 'lg:absolute lg:inset-0'}`} style={!isDesktop && !isVisualizationExpanded ? { flexBasis: 'calc(61.8% - 66px)' } : {}}>
+            {/* --- START: 2 of 2 ADDED SECTIONS --- */}
+            {/* The ref={mainRef} is the only change in this entire <main> tag. */}
+            <main ref={mainRef} className={`p-4 flex flex-col items-center justify-center relative bg-transparent overflow-auto h-full w-full ${isVisualizationExpanded ? 'flex-grow' : 'lg:absolute lg:inset-0'}`} style={!isDesktop && !isVisualizationExpanded ? { flexBasis: 'calc(61.8% - 66px)' } : {}}>
+            {/* --- END: 2 of 2 ADDED SECTIONS --- */}
                 {!isDesktop && <div className="absolute top-[20px] left-[20px] w-[70px] h-[49px] bg-gray-300 bg-opacity-75 z-10 flex items-center justify-center"><p className="font-bold text-xl text-gray-900">LOGO</p></div>}
                 <button className="absolute top-[20px] right-[20px] z-20 p-2 hover:bg-gray-800 hover:bg-opacity-50 focus:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-white" aria-label="Share configuration" onClick={handleShare}>
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-[31px] h-[31px] text-[#FFFFFF]"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>
