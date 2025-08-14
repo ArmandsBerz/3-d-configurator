@@ -1768,7 +1768,7 @@ const UI = () => {
 const App = () => (
     <GloveConfiguratorProvider>
         {/* Neutral Parent Container: Sets up the positioning context for the layers. */}
-        <div id="app-root" className="relative w-full h-[100dvh] bg-black">
+        <div id="app-root" className="relative w-full h-[100dvh] bg-[#161616]">
 
             {/* Layer 1: Babylon.js Container (Bottom Layer) */}
             <div id="babylon-container" className="absolute inset-0 z-10">
