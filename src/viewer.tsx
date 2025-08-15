@@ -10,8 +10,21 @@ import {
   StandardMaterial,
   Color3,
   Mesh,
-  Color4 // Import Color4 for transparency
+  Color4, // Import Color4 for transparency
+  AssetContainer // Import AssetContainer for the cache
 } from '@babylonjs/core';
+
+/**
+ * Manages the loading and caching of all 3D assets.
+ * This class is the single source for fetching assets.
+ */
+class AssetManager {
+  private cache = new Map<string, Promise<AssetContainer>>();
+
+  constructor(private scene: Scene) {
+    // The constructor takes the scene to know where to load assets into.
+  }
+}
 
 /**
  * Manages the entire lifecycle of the Babylon.js scene.
@@ -21,6 +34,7 @@ class SceneManager {
   private engine: Engine;
   private scene: Scene;
   private resizeObserver: ResizeObserver;
+  private assetManager: AssetManager; // The SceneManager now owns the AssetManager
   
   // The box mesh is now a public property of the manager
   public box: Mesh | null = null;
@@ -32,6 +46,9 @@ class SceneManager {
 
     const scene = new Scene(engine);
     this.scene = scene;
+
+    // Create and hold the single instance of the AssetManager
+    this.assetManager = new AssetManager(this.scene);
 
     // 2. Set the scene's clear color to be fully transparent (R:0, G:0, B:0, A:0)
     scene.clearColor = new Color4(0, 0, 0, 0);
