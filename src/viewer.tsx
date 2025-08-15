@@ -12,7 +12,8 @@ import {
   Mesh,
   Color4, // Import Color4 for transparency
   AssetContainer, // Import AssetContainer for the cache
-  SceneLoader // Import SceneLoader for loading assets
+  SceneLoader, // Import SceneLoader for loading assets
+  Material // Import Material for post-processing
 } from '@babylonjs/core';
 import "@babylonjs/loaders/glTF"; // Import the GLTF loader
 
@@ -27,18 +28,37 @@ class AssetManager {
     // The constructor takes the scene to know where to load assets into.
   }
 
+  /**
+   * This is the placeholder for future shader attachment logic.
+   * It will be called on specific materials after an asset is loaded.
+   */
+  private _prepareMaterial(material: Material) {
+    // Future logic to attach a custom shader plugin will go here.
+    console.log(`Found and prepared material: ${material.name}`);
+  }
+
   public async getAsset(name: string): Promise<AssetContainer> {
     // 1. Check Cache: If the asset promise is already in the cache, return it.
     if (this.cache.has(name)) {
       return this.cache.get(name)!;
     }
 
-    // 2. Load and Cache: If not in cache, start loading and store the promise.
+    // 2. Load and Cache: If not in cache, create a new promise that includes loading AND post-processing.
     const loadPromise = SceneLoader.LoadAssetContainerAsync(
       `build3/assets/`, // The root URL for assets
       `${name}.glb`, // The file name of the asset
       this.scene
-    );
+    ).then(container => {
+      // 3. Post-processing: After loading, find the specific material by name.
+      const gloveMaterial = container.materials.find(m => m.name === 'glove');
+
+      // If the material is found, prepare it.
+      if (gloveMaterial) {
+        this._prepareMaterial(gloveMaterial);
+      }
+      
+      return container;
+    });
 
     this.cache.set(name, loadPromise);
 
