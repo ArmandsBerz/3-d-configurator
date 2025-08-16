@@ -113,9 +113,6 @@ class SceneManager {
     // Create and hold the single instance of the AssetManager
     this.assetManager = new AssetManager(this.scene);
 
-    // Test the preloading mechanism by loading another shell in the background.
-    this.assetManager.preloadAssets(['closeBack']);
-
     // 2. Set the scene's clear color to be fully transparent (R:0, G:0, B:0, A:0)
     scene.clearColor = new Color4(0, 0, 0, 0);
 
@@ -124,17 +121,22 @@ class SceneManager {
 
     const light = new HemisphericLight("light", new Vector3(0, 1, 0), scene);
     
-    // Replace the placeholder box with a call to the AssetManager
+    // First, load the primary, high-priority asset.
     this.assetManager.getAsset('openBack').then(container => {
       // Add all the assets from the loaded file into the scene
       container.addAllToScene();
 
       // Find the main mesh from the loaded container to use for interaction
-      // Note: We look for a mesh with geometry to avoid picking an empty root node.
       const mainMesh = container.meshes.find(m => m.geometry) as Mesh;
       if (mainMesh) {
         this.box = mainMesh;
       }
+
+      // Defer the preload call to the next event loop tick.
+      // This ensures the browser has a chance to render the primary asset first.
+      Promise.resolve().then(() => {
+        this.assetManager.preloadAssets(['closeBack']);
+      });
     });
     
     engine.runRenderLoop(() => {
