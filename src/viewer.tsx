@@ -37,6 +37,18 @@ class AssetManager {
     console.log(`Found and prepared material: ${material.name}`);
   }
 
+  /**
+   * Handles errors that occur during a non-critical preload operation.
+   * In production, it fails silently. In development, it logs a debug message.
+   */
+  private _handlePreloadError(assetName: string, error: any): void {
+    // In production, we want to do nothing. A failed preload is not a user-facing error.
+    if (process.env.NODE_ENV === 'development') {
+      // In development, we log a low-priority debug message to inform the developer.
+      console.debug(`[AssetManager] Preload failed for "${assetName}":`, error);
+    }
+  }
+
   public async getAsset(name: string): Promise<AssetContainer> {
     // 1. Check Cache: If the asset promise is already in the cache, return it.
     if (this.cache.has(name)) {
@@ -64,6 +76,17 @@ class AssetManager {
 
     return loadPromise;
   }
+
+  /**
+   * Initiates the download of assets in the background without waiting for them to complete.
+   * This is used to preload assets that the user is likely to need soon.
+   */
+  public preloadAssets(names: string[]): void {
+    for (const name of names) {
+      // Call getAsset and attach a catch handler to silently manage preload failures.
+      this.getAsset(name).catch((error) => this._handlePreloadError(name, error));
+    }
+  }
 }
 
 /**
@@ -89,6 +112,9 @@ class SceneManager {
 
     // Create and hold the single instance of the AssetManager
     this.assetManager = new AssetManager(this.scene);
+
+    // Test the preloading mechanism by loading another shell in the background.
+    this.assetManager.preloadAssets(['closeBack']);
 
     // 2. Set the scene's clear color to be fully transparent (R:0, G:0, B:0, A:0)
     scene.clearColor = new Color4(0, 0, 0, 0);
