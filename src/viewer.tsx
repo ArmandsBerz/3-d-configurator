@@ -13,7 +13,9 @@ import {
   Color4, // Import Color4 for transparency
   AssetContainer, // Import AssetContainer for the cache
   SceneLoader, // Import SceneLoader for loading assets
-  Material // Import Material for post-processing
+  Material, // Import Material for post-processing
+  Texture, // Import Texture for the detail map
+  PBRBaseMaterial // Import PBRBaseMaterial for type checking
 } from '@babylonjs/core';
 import "@babylonjs/loaders/glTF"; // Import the GLTF loader
 
@@ -67,6 +69,22 @@ class AssetManager {
       // If the material is found, prepare it.
       if (gloveMaterial) {
         this._prepareMaterial(gloveMaterial);
+
+        // Add detail normal map if the material supports it
+        if (gloveMaterial instanceof PBRBaseMaterial) {
+            const detailTexture = new Texture("build3/assets/details.png", this.scene);
+            detailTexture.coordinatesIndex = 0; // Use UV2
+            detailTexture.uScale = 4;
+            detailTexture.vScale = 4;
+            
+            gloveMaterial.detailMap.isEnabled = true;
+            gloveMaterial.detailMap.normalBlendMethod = 1; // Constants.MATERIAL_NORMALBLENDMETHOD_WHITEOUT
+            gloveMaterial.detailMap.texture = detailTexture;
+            gloveMaterial.detailMap.diffuseBlendLevel = 0; 
+            gloveMaterial.detailMap.roughnessBlendLevel = 0;
+            gloveMaterial.detailMap.bumpLevel = .6; 
+
+        }
       }
       
       return container;
@@ -116,8 +134,14 @@ class SceneManager {
     // 2. Set the scene's clear color to be fully transparent (R:0, G:0, B:0, A:0)
     scene.clearColor = new Color4(0, 0, 0, 0);
 
+    // ...
     const camera = new ArcRotateCamera("camera", -Math.PI / 2, Math.PI / 2.5, 5, Vector3.Zero(), scene);
-    camera.attachControl(canvas, true);
+
+    camera.minZ = 0.01;
+    camera.wheelDeltaPercentage = 0.002;
+
+    camera.attachControl(canvas, true); // Controls are attached once, after configuration
+    // ...
 
     const light = new HemisphericLight("light", new Vector3(0, 1, 0), scene);
     
