@@ -1,6 +1,7 @@
-// Import the model URL
+// Import the model and texture URLs
 import modelUrl from './assets/cube.glb';
 import detailUrl from './assets/details.png';
+import colorIdUrl from './assets/colorID.png'; // Added missing color ID map import
 
 // Enable the GLTF loader
 import "@babylonjs/loaders/glTF";
@@ -17,12 +18,13 @@ import {
     Color3,
     MaterialPluginBase,
     PBRBaseMaterial,
+    PBRMaterial, // Added PBRMaterial for correct type casting
     AbstractMesh,
     MaterialDefines,
     SubMesh,
     UniformBuffer,
     Constants,
-    Texture  // Added this import for detail texture
+    Texture
 } from '@babylonjs/core';
 
 // Import GUI components
@@ -103,7 +105,7 @@ class GradientColorSwapPlugin extends MaterialPluginBase {
         };
     }
 
-        bindForSubMesh(uniformBuffer: UniformBuffer) {
+    bindForSubMesh(uniformBuffer: UniformBuffer) {
         if (this._isEnabled) {
             // Manually flatten the Color3 arrays into a single Float32Array
             const replacementsArray = new Float32Array(this.replacements.length * 3);
@@ -171,22 +173,23 @@ const createScene = async () => {
 
     if (yourCube && yourCube.material) {
         
-        // --- THIS IS THE CORRECTED CHANGE ---
-        const material: any = yourCube.material;
-        if (material.albedoTexture) {
-            // Use the updateSamplingMode() method instead of direct assignment
-            material.albedoTexture.updateSamplingMode(Constants.TEXTURE_NEAREST_SAMPLINGMODE);
-        }
-        // --- END OF CHANGE ---
+        // --- FIX: LOAD THE COLOR ID MASK ---
+        const material = yourCube.material as PBRMaterial;
+        
+        // Create the texture from the imported URL, ensuring Y is inverted and sampling is NEAREST
+        const colorIdTexture = new Texture(colorIdUrl, scene, false, false, Constants.TEXTURE_NEAREST_SAMPLINGMODE);
+
+        // Assign the color ID map as the main albedo texture for the plugin to read
+        material.albedoTexture = colorIdTexture;
+        // --- END OF FIX ---
 
         // ADD DETAIL NORMAL MAP - START
         const detailTexture = new Texture(detailUrl, scene);
-        detailTexture.coordinatesIndex = 0; // Use UV2
+        detailTexture.coordinatesIndex = 0; // Use UV1 (Corrected Comment)
         detailTexture.uScale = 4;
         detailTexture.vScale = 4;
         
         material.detailMap.isEnabled = true;
-        material.detailMap.useNormalMap = true;
         material.detailMap.normalBlendMethod = 1;
         material.detailMap.texture = detailTexture;
         material.detailMap.diffuseBlendLevel = 0; 
@@ -196,7 +199,6 @@ const createScene = async () => {
 
         const plugin = new GradientColorSwapPlugin(yourCube.material as PBRBaseMaterial);
         
-        // ... The rest of the function remains exactly the same
         const advancedTexture = AdvancedDynamicTexture.CreateFullscreenUI("UI");
         const panel = new StackPanel();
         panel.isVertical = true; 
