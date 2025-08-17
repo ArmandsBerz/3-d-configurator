@@ -5,6 +5,7 @@
   "homepage": "/build3",
   "dependencies": {
     "@babylonjs/core": "^8.22.2",
+    "@babylonjs/gui": "^8.23.1",
     "@babylonjs/loaders": "^8.22.2",
     "@testing-library/dom": "^10.4.0",
     "@testing-library/jest-dom": "^6.6.3",

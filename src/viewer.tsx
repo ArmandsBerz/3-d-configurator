@@ -6,168 +6,251 @@ import {
   ArcRotateCamera,
   Vector3,
   HemisphericLight,
-  MeshBuilder,
-  StandardMaterial,
-  Color3,
   Mesh,
-  Color4, // Import Color4 for transparency
-  AssetContainer, // Import AssetContainer for the cache
-  SceneLoader, // Import SceneLoader for loading assets
-  Material, // Import Material for post-processing
-  Texture, // Import Texture for the detail map
-  PBRBaseMaterial, // Import PBRBaseMaterial for type checking
-  PBRMaterial // Import PBRMaterial for specific texture properties
+  Color4,
+  AssetContainer,
+  SceneLoader,
+  Material,
+  Texture,
+  PBRMaterial,
+  // --- ADDED IMPORTS for Plugin and GUI ---
+  MaterialPluginBase,
+  PBRBaseMaterial,
+  MaterialDefines,
+  UniformBuffer,
+  Constants,
+  Color3
 } from '@babylonjs/core';
-import "@babylonjs/loaders/glTF"; // Import the GLTF loader
+import { AdvancedDynamicTexture, Button, Control } from '@babylonjs/gui'; // GUI Imports
+import "@babylonjs/loaders/glTF";
+
+// --- PLUGIN CODE PASTED HERE ---
+// The GradientColorSwapPlugin is now part of this file.
+class GradientColorSwapPlugin extends MaterialPluginBase {
+    // Store replacements in array for easier uniform handling
+    replacements = [
+        new Color3(1.0, 0.0, 1.0),   // Red replacement
+        new Color3(1.0, 1.0, 0.0),   // Green replacement
+        new Color3(0.0, 1.0, 1.0),   // Blue replacement
+        new Color3(1.0, 0.5, 0.0),   // Yellow replacement
+        new Color3(0.5, 0.0, 1.0),
+        new Color3(0.5, 0.0, 1.0),
+        new Color3(0.2, 0.0, 0.2),
+        new Color3(0.1, 0.5, 0.9),   // Cyan replacement
+        new Color3(1.0, 1.0, 1.0)    // Magenta replacement (default: white)
+    ];
+    
+    // Base colors we're targeting from the colorID map
+    baseColors = [
+        Color3.FromHexString("#FF0000"),
+        Color3.FromHexString("#00FFFF"),
+        Color3.FromHexString("#7F00FF"),
+        Color3.FromHexString("#FFBF00"),
+        Color3.FromHexString("#0040FF"),
+        Color3.FromHexString("#00FF40"),
+        Color3.FromHexString("#FF00BF"),
+        Color3.FromHexString("#FF6000"),
+        Color3.FromHexString("#009FFF")
+    ];
+    
+    blendRadius = 0.05;
+    blendStrength = 1;
+
+    private _isEnabled = false;
+    private _markAllDefinesAsDirty: () => void;
+
+    constructor(material: PBRBaseMaterial) {
+        super(material, "ColorSwap", 200, { "COLOR_SWAP": false });
+        this._markAllDefinesAsDirty = material._dirtyCallbacks[Constants.MATERIAL_AllDirtyFlag];
+        this.isEnabled = true;
+    }
+
+    get isEnabled() { return this._isEnabled; }
+    set isEnabled(enabled) {
+        if (this._isEnabled === enabled) return;
+        this._isEnabled = enabled;
+        this._markAllDefinesAsDirty();
+        this._enable(this._isEnabled);
+    }
+
+    prepareDefines(defines: MaterialDefines) {
+        defines["COLOR_SWAP"] = this._isEnabled;
+    }
+
+    getUniforms() {
+        return {
+            ubo: [
+                { name: "replacements", size: 3, type: "vec3", arraySize: 6 },
+                { name: "baseColors", size: 3, type: "vec3", arraySize: 6 },
+                { name: "blendRadius", size: 1, type: "float" },
+                { name: "blendStrength", size: 1, type: "float" }
+            ],
+            fragment: `
+                #ifdef COLOR_SWAP
+                    uniform vec3 replacements[6];
+                    uniform vec3 baseColors[6];
+                    uniform float blendRadius;
+                    uniform float blendStrength;
+                #endif
+            `
+        };
+    }
+
+    bindForSubMesh(uniformBuffer: UniformBuffer) {
+        if (this._isEnabled) {
+            const replacementsArray = new Float32Array(this.replacements.length * 3);
+            const baseColorsArray = new Float32Array(this.baseColors.length * 3);
+
+            for (let i = 0; i < this.replacements.length; i++) {
+                replacementsArray.set(this.replacements[i].asArray(), i * 3);
+                baseColorsArray.set(this.baseColors[i].asArray(), i * 3);
+            }
+
+            uniformBuffer.updateArray("replacements", [...replacementsArray]);
+            uniformBuffer.updateArray("baseColors", [...baseColorsArray]);
+            uniformBuffer.updateFloat("blendRadius", this.blendRadius);
+            uniformBuffer.updateFloat("blendStrength", this.blendStrength);
+        }
+    }
+
+    getCustomCode(shaderType: string) {
+        if (shaderType === "fragment") {
+            return {
+                "CUSTOM_FRAGMENT_BEFORE_LIGHTS": `
+                    #ifdef COLOR_SWAP
+                        vec3 original = surfaceAlbedo.rgb;
+                        vec3 accumulatedColor = vec3(0.0);
+                        float totalInfluence = 0.0;
+                        float safeRadius = max(blendRadius, 0.0001);
+                        float radiusSq = 2.0 * safeRadius * safeRadius;
+                        
+                        for (int i = 0; i < 6; i++) {
+                            float dist = distance(original, baseColors[i]);
+                            float influence = exp(-(dist * dist) / radiusSq);
+                            accumulatedColor += replacements[i] * influence;
+                            totalInfluence += influence;
+                        }
+                        
+                        if (totalInfluence > 0.001) {
+                           vec3 finalColor = accumulatedColor / totalInfluence;
+                           surfaceAlbedo.rgb = mix(original, finalColor, min(totalInfluence * blendStrength, 1.0));
+                        }
+                    #endif
+                `
+            };
+        }
+        return null;
+    }
+}
+
 
 /**
- * Manages the loading and caching of all 3D assets.
- * This class is the single source for fetching assets.
+ * AssetManager remains unchanged. The plugin attachment logic
+ * will be handled in the SceneManager after the asset is loaded.
  */
 class AssetManager {
   private cache = new Map<string, Promise<AssetContainer>>();
 
-  constructor(private scene: Scene) {
-    // The constructor takes the scene to know where to load assets into.
-  }
+  constructor(private scene: Scene) {}
 
-  /**
-   * This is the placeholder for future shader attachment logic.
-   * It will be called on specific materials after an asset is loaded.
-   */
-  private _prepareMaterial(material: Material) {
-    // Future logic to attach a custom shader plugin will go here.
-    console.log(`Found and prepared material: ${material.name}`);
-  }
-
-  /**
-   * Handles errors that occur during a non-critical preload operation.
-   * In production, it fails silently. In development, it logs a debug message.
-   */
   private _handlePreloadError(assetName: string, error: any): void {
-    // In production, we want to do nothing. A failed preload is not a user-facing error.
     if (process.env.NODE_ENV === 'development') {
-      // In development, we log a low-priority debug message to inform the developer.
       console.debug(`[AssetManager] Preload failed for "${assetName}":`, error);
     }
   }
 
   public async getAsset(name: string): Promise<AssetContainer> {
-    // 1. Check Cache: If the asset promise is already in the cache, return it.
     if (this.cache.has(name)) {
       return this.cache.get(name)!;
     }
 
-    // 2. Load and Cache: If not in cache, create a new promise that includes loading AND post-processing.
     const loadPromise = SceneLoader.LoadAssetContainerAsync(
-      `build3/assets/`, // The root URL for assets
-      `${name}.glb`, // The file name of the asset
+      `build3/assets/`,
+      `${name}.glb`,
       this.scene
-    ).then(container => {
-      // 3. Post-processing: After loading, find the specific material by name.
-      const gloveMaterial = container.materials.find(m => m.name === 'glove');
-
-      // If the material is found, prepare it.
-      if (gloveMaterial) {
-        this._prepareMaterial(gloveMaterial);
-
-        // Add albedo and detail maps if the material is a PBRMaterial
-        if (gloveMaterial instanceof PBRMaterial) {
-            // Load and assign the albedo texture
-            const albedoTexture = new Texture("build3/assets/openBack.png", this.scene, false, false);
-            gloveMaterial.albedoTexture = albedoTexture;
-            
-            // Add detail normal map
-            const detailTexture = new Texture("build3/assets/details.png", this.scene);
-            detailTexture.coordinatesIndex = 0; // Use UV2
-            detailTexture.uScale = 4;
-            detailTexture.vScale = 4;
-            
-            gloveMaterial.detailMap.isEnabled = true;
-            gloveMaterial.detailMap.normalBlendMethod = 1; // Constants.MATERIAL_NORMALBLENDMETHOD_WHITEOUT
-            gloveMaterial.detailMap.texture = detailTexture;
-            gloveMaterial.detailMap.diffuseBlendLevel = 0; 
-            gloveMaterial.detailMap.roughnessBlendLevel = 0;
-            gloveMaterial.detailMap.bumpLevel = .6; 
-
-        }
-      }
-      
-      return container;
-    });
+    );
 
     this.cache.set(name, loadPromise);
-
     return loadPromise;
   }
 
-  /**
-   * Initiates the download of assets in the background without waiting for them to complete.
-   * This is used to preload assets that the user is likely to need soon.
-   */
   public preloadAssets(names: string[]): void {
     for (const name of names) {
-      // Call getAsset and attach a catch handler to silently manage preload failures.
       this.getAsset(name).catch((error) => this._handlePreloadError(name, error));
     }
   }
 }
 
 /**
- * Manages the entire lifecycle of the Babylon.js scene.
- * This class is responsible for initialization, rendering, and disposal.
+ * SceneManager now creates the GUI button and attaches the plugin.
  */
 class SceneManager {
   private engine: Engine;
   private scene: Scene;
   private resizeObserver: ResizeObserver;
-  private assetManager: AssetManager; // The SceneManager now owns the AssetManager
+  private assetManager: AssetManager;
   
-  // The box property is kept to be populated by the loaded asset
+  // --- ADDED a property to hold the plugin instance ---
+  private colorPlugin: GradientColorSwapPlugin | null = null;
   public box: Mesh | null = null;
 
   constructor(canvas: HTMLCanvasElement) {
-    // 1. Enable the alpha channel for the WebGL context
     const engine = new Engine(canvas, true, { alpha: true });
     this.engine = engine;
 
     const scene = new Scene(engine);
     this.scene = scene;
-
-    // Create and hold the single instance of the AssetManager
     this.assetManager = new AssetManager(this.scene);
-
-    // 2. Set the scene's clear color to be fully transparent (R:0, G:0, B:0, A:0)
     scene.clearColor = new Color4(0, 0, 0, 0);
 
-    // ...
     const camera = new ArcRotateCamera("camera", -Math.PI / 2, Math.PI / 2.5, 5, Vector3.Zero(), scene);
-
     camera.minZ = 0.01;
     camera.wheelDeltaPercentage = 0.002;
-
-    camera.attachControl(canvas, true); // Controls are attached once, after configuration
-    // ...
+    camera.attachControl(canvas, true);
 
     const light = new HemisphericLight("light", new Vector3(0, 1, 0), scene);
     
-    // First, load the primary, high-priority asset.
     this.assetManager.getAsset('openBack').then(container => {
-      // Add all the assets from the loaded file into the scene
       container.addAllToScene();
-
-      // Find the main mesh from the loaded container to use for interaction
       const mainMesh = container.meshes.find(m => m.geometry) as Mesh;
       if (mainMesh) {
         this.box = mainMesh;
       }
+      
+      // Find the specific material by name
+      const gloveMaterial = container.materials.find(m => m.name === 'glove');
 
-      // Defer the preload call to the next event loop tick.
-      // This ensures the browser has a chance to render the primary asset first.
+      if (gloveMaterial && gloveMaterial instanceof PBRMaterial) {
+        // --- PLUGIN ATTACHED HERE ---
+
+        // 1. Load the "color ID" map. We assume 'openBack.png' serves this purpose.
+        // It's crucial to use NEAREST sampling for accurate color picking by the shader.
+        const colorIdTexture = new Texture("build3/assets/openBack.png", this.scene, false, false, Constants.TEXTURE_NEAREST_SAMPLINGMODE);
+        gloveMaterial.albedoTexture = colorIdTexture;
+        
+        // 2. Add detail normal map
+        const detailTexture = new Texture("build3/assets/details.png", this.scene);
+        detailTexture.coordinatesIndex = 0;
+        detailTexture.uScale = 4;
+        detailTexture.vScale = 4;
+        gloveMaterial.detailMap.isEnabled = true;
+        gloveMaterial.detailMap.normalBlendMethod = 1;
+        gloveMaterial.detailMap.texture = detailTexture;
+        gloveMaterial.detailMap.diffuseBlendLevel = 0; 
+        gloveMaterial.detailMap.roughnessBlendLevel = 0;
+        gloveMaterial.detailMap.bumpLevel = .6;
+
+        // 3. Instantiate the plugin and store it in the class property
+        this.colorPlugin = new GradientColorSwapPlugin(gloveMaterial);
+      }
+
       Promise.resolve().then(() => {
         this.assetManager.preloadAssets(['closeBack']);
       });
     });
+
+    // --- GUI CREATION ---
+    this.createUI();
     
     engine.runRenderLoop(() => {
       scene.render();
@@ -180,27 +263,49 @@ class SceneManager {
   }
 
   /**
-   * Cleans up all Babylon.js resources to prevent memory leaks.
+   * Creates the GUI with a single button to randomize one color.
    */
+  private createUI() {
+    const advancedTexture = AdvancedDynamicTexture.CreateFullscreenUI("UI");
+
+    const randomButton = Button.CreateSimpleButton("randomBtn", "Randomize One Color");
+    randomButton.width = "200px";
+    randomButton.height = "40px";
+    randomButton.color = "white";
+    randomButton.background = "#555555";
+    randomButton.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_RIGHT;
+    randomButton.verticalAlignment = Control.VERTICAL_ALIGNMENT_BOTTOM;
+    randomButton.paddingRight = "20px";
+    randomButton.paddingBottom = "20px";
+    
+    randomButton.onPointerUpObservable.add(() => {
+        // If the plugin has been initialized...
+        if (this.colorPlugin) {
+            // Pick a random index from 0 to 5
+            const randomIndex = Math.floor(Math.random() * this.colorPlugin.replacements.length);
+            // Create a new random color
+            const randomColor = new Color3(Math.random(), Math.random(), Math.random());
+            // Assign the new random color to the randomly chosen slot
+            this.colorPlugin.replacements[randomIndex] = randomColor;
+            console.log(`Changed color at index ${randomIndex} to ${randomColor.toHexString()}`);
+        }
+    });
+
+    advancedTexture.addControl(randomButton);
+  }
+
   public dispose() {
     this.resizeObserver.disconnect();
     this.engine.dispose();
   }
 }
 
-// A module-level variable to hold the SceneManager instance.
-// This allows the exported update function to access it.
+// --- The rest of the file remains the same ---
 let sceneManager: SceneManager | null = null;
 
-// This function remains as the future entry point for the "Bridge"
+// This function is no longer used by the new plugin system but can be kept for other purposes.
 export function updateBoxColor(hexColor: string) {
-  if (sceneManager && sceneManager.box && sceneManager.box.material) {
-    // Note: This will only work if the loaded model's material is a StandardMaterial.
-    // We will replace this with the shader plugin logic later.
-    if (sceneManager.box.material instanceof StandardMaterial) {
-      sceneManager.box.material.diffuseColor = Color3.FromHexString(hexColor);
-    }
-  }
+    // Legacy function, not connected to the shader plugin
 }
 
 const BabylonCanvas = () => {
@@ -210,17 +315,14 @@ const BabylonCanvas = () => {
     const { current: canvas } = reactCanvas;
     if (!canvas) return;
 
-    // Create a single instance of our new SceneManager, passing it the canvas.
     sceneManager = new SceneManager(canvas);
 
-    // Call the dispose method on that instance in its cleanup function.
     return () => {
       sceneManager?.dispose();
       sceneManager = null;
     };
   }, []);
 
-  // The canvas itself fills its wrapper from layout.css
   return <canvas ref={reactCanvas} style={{ width: '100%', height: '100%', outline: 'none' }} />;
 };
 
