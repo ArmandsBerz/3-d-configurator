@@ -15,7 +15,8 @@ import {
   SceneLoader, // Import SceneLoader for loading assets
   Material, // Import Material for post-processing
   Texture, // Import Texture for the detail map
-  PBRBaseMaterial // Import PBRBaseMaterial for type checking
+  PBRBaseMaterial, // Import PBRBaseMaterial for type checking
+  PBRMaterial // Import PBRMaterial for specific texture properties
 } from '@babylonjs/core';
 import "@babylonjs/loaders/glTF"; // Import the GLTF loader
 
@@ -70,8 +71,13 @@ class AssetManager {
       if (gloveMaterial) {
         this._prepareMaterial(gloveMaterial);
 
-        // Add detail normal map if the material supports it
-        if (gloveMaterial instanceof PBRBaseMaterial) {
+        // Add albedo and detail maps if the material is a PBRMaterial
+        if (gloveMaterial instanceof PBRMaterial) {
+            // Load and assign the albedo texture
+            const albedoTexture = new Texture("build3/assets/openBack.png", this.scene, false, false);
+            gloveMaterial.albedoTexture = albedoTexture;
+            
+            // Add detail normal map
             const detailTexture = new Texture("build3/assets/details.png", this.scene);
             detailTexture.coordinatesIndex = 0; // Use UV2
             detailTexture.uScale = 4;
