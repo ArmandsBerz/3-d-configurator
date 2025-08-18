@@ -24,53 +24,64 @@ import {
 import { AdvancedDynamicTexture, Button, Control } from '@babylonjs/gui'; // GUI Imports
 import "@babylonjs/loaders/glTF";
 
-// --- PLUGIN CODE PASTED HERE ---
-// The GradientColorSwapPlugin is now part of this file.
-class GradientColorSwapPlugin extends MaterialPluginBase {
-    // Store replacements in array for easier uniform handling
-    replacements = [
-        new Color3(1.0, 0.0, 1.0),   // Red replacement
-        new Color3(1.0, 1.0, 0.0),   // Green replacement
-        new Color3(0.0, 1.0, 1.0),   // Blue replacement
-        new Color3(1.0, 0.5, 0.0),   // Yellow replacement
-        new Color3(0.5, 0.0, 1.0),
-        new Color3(0.5, 0.0, 1.0),
-        new Color3(0.2, 0.0, 0.2),
-        new Color3(0.1, 0.5, 0.9),   // Cyan replacement
-        new Color3(1.0, 1.0, 1.0)    // Magenta replacement (default: white)
-    ];
-    
-    // Base colors we're targeting from the colorID map
-    baseColors = [
-        Color3.FromHexString("#FF0000"),
-        Color3.FromHexString("#00FFFF"),
-        Color3.FromHexString("#80FF00"),
-        Color3.FromHexString("#7F00FF"),
-        Color3.FromHexString("#FFBF00"),
-        Color3.FromHexString("#0040FF"),
-        Color3.FromHexString("#00FF40"),
-        Color3.FromHexString("#FF00BF"),
-        Color3.FromHexString("#FF6000")
-    ];
-    
-    blendRadius = 0.05;
-    blendStrength = 1;
+// --- INTERFACE FOR PLUGIN CONFIGURATION ---
+interface ColorSwapConfig {
+    baseColors: string[]; // Hex strings
+    initialReplacements: Color3[];
+}
+
+// --- REFACTORED PLUGIN CODE ---
+class ColorSwapPlugin extends MaterialPluginBase {
+    // --- PRIVATE INTERNAL STATE ---
+    private _baseColors: Color3[] = [];
+    private _replacements: Color3[] = [];
+    // _material is inherited from MaterialPluginBase and should not be re-declared.
+
+    // Public properties for shader uniforms
+    public blendRadius = 0.01;
+    public blendStrength = 1.5;
 
     private _isEnabled = false;
     private _markAllDefinesAsDirty: () => void;
 
-    constructor(material: PBRBaseMaterial) {
+    // --- CONSTRUCTOR ACCEPTS CONFIGURATION ---
+    constructor(material: PBRBaseMaterial, config: ColorSwapConfig) {
         super(material, "ColorSwap", 200, { "COLOR_SWAP": false });
+        // The super() call handles assigning the material to this._material
         this._markAllDefinesAsDirty = material._dirtyCallbacks[Constants.MATERIAL_AllDirtyFlag];
 
-        // *** FIX: Convert all base colors to linear space. ***
-        // This ensures the colors sent to the shader match the color space
-        // of the texture after it's processed by the rendering engine.
-        for (let i = 0; i < this.baseColors.length; i++) {
-            this.baseColors[i] = this.baseColors[i].toLinearSpace();
+        // --- VALIDATE AND INITIALIZE FROM CONFIG ---
+        if (!config || !config.baseColors || !config.initialReplacements || config.baseColors.length !== config.initialReplacements.length) {
+            console.error("ColorSwapPlugin: Invalid configuration provided.");
+            return;
+        }
+
+        this._replacements = [...config.initialReplacements];
+
+        // Convert hex base colors to linear Color3 objects
+        for (const hex of config.baseColors) {
+            this._baseColors.push(Color3.FromHexString(hex).toLinearSpace());
         }
 
         this.isEnabled = true;
+    }
+    
+    // --- CONTROLLED PUBLIC API FOR UPDATES ---
+    public updateColor(index: number, newColor: Color3) {
+        if (index < 0 || index >= this._replacements.length) {
+            console.warn(`ColorSwapPlugin: Invalid color index provided: ${index}`);
+            return;
+        }
+        this._replacements[index] = newColor;
+    }
+
+    // --- DISPOSE METHOD FOR CLEANUP ---
+    public dispose() {
+        // Clean up this plugin's specific properties
+        this._baseColors = [];
+        this._replacements = [];
+        // Call the base class dispose method for its cleanup
+        super.dispose();
     }
 
     get isEnabled() { return this._isEnabled; }
@@ -86,17 +97,19 @@ class GradientColorSwapPlugin extends MaterialPluginBase {
     }
 
     getUniforms() {
+        // *** FIX: Add a safeguard (optional chaining) to prevent crash if _baseColors is not yet initialized. ***
+        const arraySize = this._baseColors?.length > 0 ? this._baseColors.length : 9; // Use 9 as a fallback for initial compile
         return {
             ubo: [
-                { name: "replacements", size: 3, type: "vec3", arraySize: 9 },
-                { name: "baseColors", size: 3, type: "vec3", arraySize: 9 },
+                { name: "replacements", size: 3, type: "vec3", arraySize },
+                { name: "baseColors", size: 3, type: "vec3", arraySize },
                 { name: "blendRadius", size: 1, type: "float" },
                 { name: "blendStrength", size: 1, type: "float" }
             ],
             fragment: `
                 #ifdef COLOR_SWAP
-                    uniform vec3 replacements[9];
-                    uniform vec3 baseColors[9];
+                    uniform vec3 replacements[${arraySize}];
+                    uniform vec3 baseColors[${arraySize}];
                     uniform float blendRadius;
                     uniform float blendStrength;
                 #endif
@@ -106,12 +119,12 @@ class GradientColorSwapPlugin extends MaterialPluginBase {
 
     bindForSubMesh(uniformBuffer: UniformBuffer) {
         if (this._isEnabled) {
-            const replacementsArray = new Float32Array(this.replacements.length * 3);
-            const baseColorsArray = new Float32Array(this.baseColors.length * 3);
+            const replacementsArray = new Float32Array(this._replacements.length * 3);
+            const baseColorsArray = new Float32Array(this._baseColors.length * 3);
 
-            for (let i = 0; i < this.replacements.length; i++) {
-                replacementsArray.set(this.replacements[i].asArray(), i * 3);
-                baseColorsArray.set(this.baseColors[i].asArray(), i * 3);
+            for (let i = 0; i < this._replacements.length; i++) {
+                replacementsArray.set(this._replacements[i].asArray(), i * 3);
+                baseColorsArray.set(this._baseColors[i].asArray(), i * 3);
             }
 
             uniformBuffer.updateArray("replacements", [...replacementsArray]);
@@ -123,6 +136,8 @@ class GradientColorSwapPlugin extends MaterialPluginBase {
 
     getCustomCode(shaderType: string) {
         if (shaderType === "fragment") {
+            // *** FIX: Add a safeguard (optional chaining) to prevent crash if _baseColors is not yet initialized. ***
+            const arraySize = this._baseColors?.length > 0 ? this._baseColors.length : 9;
             return {
                 "CUSTOM_FRAGMENT_BEFORE_LIGHTS": `
                     #ifdef COLOR_SWAP
@@ -132,7 +147,7 @@ class GradientColorSwapPlugin extends MaterialPluginBase {
                         float safeRadius = max(blendRadius, 0.0001);
                         float radiusSq = 2.0 * safeRadius * safeRadius;
                         
-                        for (int i = 0; i < 9; i++) {
+                        for (int i = 0; i < ${arraySize}; i++) {
                             float dist = distance(original, baseColors[i]);
                             float influence = exp(-(dist * dist) / radiusSq);
                             accumulatedColor += replacements[i] * influence;
@@ -153,8 +168,7 @@ class GradientColorSwapPlugin extends MaterialPluginBase {
 
 
 /**
- * AssetManager remains unchanged. The plugin attachment logic
- * will be handled in the SceneManager after the asset is loaded.
+ * AssetManager remains unchanged.
  */
 class AssetManager {
   private cache = new Map<string, Promise<AssetContainer>>();
@@ -172,8 +186,7 @@ class AssetManager {
       return this.cache.get(name)!;
     }
     
-    // *** FIX: Use process.env.PUBLIC_URL to create the correct path ***
-    const rootUrl = `${process.env.PUBLIC_URL}/assets/`;
+    const rootUrl = `${process.env.PUBLIC_URL || ''}/assets/`;
     const loadPromise = SceneLoader.LoadAssetContainerAsync(
       rootUrl,
       `${name}.glb`,
@@ -200,8 +213,7 @@ class SceneManager {
   private resizeObserver: ResizeObserver;
   private assetManager: AssetManager;
   
-  // --- ADDED a property to hold the plugin instance ---
-  private colorPlugin: GradientColorSwapPlugin | null = null;
+  private colorPlugin: ColorSwapPlugin | null = null;
   public box: Mesh | null = null;
 
   constructor(canvas: HTMLCanvasElement) {
@@ -227,20 +239,14 @@ class SceneManager {
         this.box = mainMesh;
       }
       
-      // Find the specific material by name
       const gloveMaterial = container.materials.find(m => m.name === 'glove');
 
       if (gloveMaterial && gloveMaterial instanceof PBRMaterial) {
-        // --- PLUGIN ATTACHED HERE ---
-
-        // 1. Load the "color ID" map.
-        // *** FIX: Use process.env.PUBLIC_URL for the texture path ***
-        const colorIdTexture = new Texture(`${process.env.PUBLIC_URL}/assets/openBack.png`, this.scene, false, false, Constants.TEXTURE_NEAREST_SAMPLINGMODE);
+        const rootUrl = `${process.env.PUBLIC_URL || ''}/assets/`;
+        const colorIdTexture = new Texture(`${rootUrl}openBack.png`, this.scene, false, false, Constants.TEXTURE_NEAREST_SAMPLINGMODE);
         gloveMaterial.albedoTexture = colorIdTexture;
         
-        // 2. Add detail normal map
-        // *** FIX: Use process.env.PUBLIC_URL for the texture path ***
-        const detailTexture = new Texture(`${process.env.PUBLIC_URL}/assets/details.png`, this.scene);
+        const detailTexture = new Texture(`${rootUrl}details.png`, this.scene);
         detailTexture.coordinatesIndex = 0;
         detailTexture.uScale = 4;
         detailTexture.vScale = 4;
@@ -251,8 +257,21 @@ class SceneManager {
         gloveMaterial.detailMap.roughnessBlendLevel = 0;
         gloveMaterial.detailMap.bumpLevel = .6;
 
-        // 3. Instantiate the plugin and store it in the class property
-        this.colorPlugin = new GradientColorSwapPlugin(gloveMaterial);
+        // --- CONFIGURATION IS NOW CENTRALIZED HERE ---
+        const gloveConfig: ColorSwapConfig = {
+            baseColors: [
+                "#FF0000", "#00FFFF", "#80FF00", "#7F00FF", "#FFBF00",
+                "#0040FF", "#00FF40", "#FF00BF", "#FF6000"
+            ],
+            initialReplacements: [
+                new Color3(1.0, 0.0, 1.0), new Color3(1.0, 1.0, 0.0), new Color3(0.0, 1.0, 1.0),
+                new Color3(1.0, 0.5, 0.0), new Color3(0.5, 0.0, 1.0), new Color3(0.5, 0.0, 1.0),
+                new Color3(0.2, 0.0, 0.2), new Color3(0.1, 0.5, 0.9), new Color3(1.0, 1.0, 1.0)
+            ]
+        };
+
+        // --- INSTANTIATE PLUGIN WITH CONFIG ---
+        this.colorPlugin = new ColorSwapPlugin(gloveMaterial, gloveConfig);
       }
 
       Promise.resolve().then(() => {
@@ -260,7 +279,6 @@ class SceneManager {
       });
     });
 
-    // --- GUI CREATION ---
     this.createUI();
     
     engine.runRenderLoop(() => {
@@ -273,34 +291,26 @@ class SceneManager {
     this.resizeObserver.observe(canvas);
   }
 
-  /**
-   * Creates the GUI with nine buttons, each one hooked to a specific color index.
-   */
   private createUI() {
     const advancedTexture = AdvancedDynamicTexture.CreateFullscreenUI("UI");
 
-    // Loop 9 times to create a button for each color index
-    for (let i = 0; i < 9; i++) {
+    for (let i = 0; i < 9; i++) { // Assuming 9 for static UI creation
         const button = Button.CreateSimpleButton(`randomBtn_${i}`, `Randomize Color ${i + 1}`);
         button.width = "200px";
         button.height = "40px";
         button.color = "white";
         button.background = "#555555";
         button.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_RIGHT;
-        // Align to the top of the screen
         button.verticalAlignment = Control.VERTICAL_ALIGNMENT_TOP;
         button.paddingRight = "20px";
-        // Position each button below the last one using the 'top' property
         button.top = `${20 + (i * 50)}px`;
         
         button.onPointerUpObservable.add(() => {
-            // If the plugin has been initialized...
             if (this.colorPlugin) {
-                // Create a new random color
                 const randomColor = new Color3(Math.random(), Math.random(), Math.random());
-                // Assign the new random color to the specific slot for this button
-                this.colorPlugin.replacements[i] = randomColor;
-                console.log(`Changed color at index ${i} to ${randomColor.toHexString()}`);
+                // --- USE THE NEW, SAFE API METHOD ---
+                this.colorPlugin.updateColor(i, randomColor);
+                console.log(`Updated color at index ${i} to ${randomColor.toHexString()}`);
             }
         });
 
@@ -309,6 +319,8 @@ class SceneManager {
   }
 
   public dispose() {
+    // --- CALL PLUGIN'S DISPOSE METHOD ---
+    this.colorPlugin?.dispose();
     this.resizeObserver.disconnect();
     this.engine.dispose();
   }
@@ -317,7 +329,6 @@ class SceneManager {
 // --- The rest of the file remains the same ---
 let sceneManager: SceneManager | null = null;
 
-// This function is no longer used by the new plugin system but can be kept for other purposes.
 export function updateBoxColor(hexColor: string) {
     // Legacy function, not connected to the shader plugin
 }
