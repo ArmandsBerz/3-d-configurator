@@ -171,9 +171,11 @@ class AssetManager {
     if (this.cache.has(name)) {
       return this.cache.get(name)!;
     }
-
+    
+    // *** FIX: Use process.env.PUBLIC_URL to create the correct path ***
+    const rootUrl = `${process.env.PUBLIC_URL}/assets/`;
     const loadPromise = SceneLoader.LoadAssetContainerAsync(
-      `build3/assets/`,
+      rootUrl,
       `${name}.glb`,
       this.scene
     );
@@ -231,13 +233,14 @@ class SceneManager {
       if (gloveMaterial && gloveMaterial instanceof PBRMaterial) {
         // --- PLUGIN ATTACHED HERE ---
 
-        // 1. Load the "color ID" map. We assume 'openBack.png' serves this purpose.
-        // It's crucial to use NEAREST sampling for accurate color picking by the shader.
-        const colorIdTexture = new Texture("build3/assets/openBack.png", this.scene, false, false, Constants.TEXTURE_NEAREST_SAMPLINGMODE);
+        // 1. Load the "color ID" map.
+        // *** FIX: Use process.env.PUBLIC_URL for the texture path ***
+        const colorIdTexture = new Texture(`${process.env.PUBLIC_URL}/assets/openBack.png`, this.scene, false, false, Constants.TEXTURE_NEAREST_SAMPLINGMODE);
         gloveMaterial.albedoTexture = colorIdTexture;
         
         // 2. Add detail normal map
-        const detailTexture = new Texture("build3/assets/details.png", this.scene);
+        // *** FIX: Use process.env.PUBLIC_URL for the texture path ***
+        const detailTexture = new Texture(`${process.env.PUBLIC_URL}/assets/details.png`, this.scene);
         detailTexture.coordinatesIndex = 0;
         detailTexture.uScale = 4;
         detailTexture.vScale = 4;
