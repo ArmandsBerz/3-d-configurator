@@ -44,13 +44,13 @@ class GradientColorSwapPlugin extends MaterialPluginBase {
     baseColors = [
         Color3.FromHexString("#FF0000"),
         Color3.FromHexString("#00FFFF"),
+        Color3.FromHexString("#80FF00"),
         Color3.FromHexString("#7F00FF"),
         Color3.FromHexString("#FFBF00"),
         Color3.FromHexString("#0040FF"),
         Color3.FromHexString("#00FF40"),
         Color3.FromHexString("#FF00BF"),
-        Color3.FromHexString("#FF6000"),
-        Color3.FromHexString("#009FFF")
+        Color3.FromHexString("#FF6000")
     ];
     
     blendRadius = 0.05;
@@ -62,6 +62,14 @@ class GradientColorSwapPlugin extends MaterialPluginBase {
     constructor(material: PBRBaseMaterial) {
         super(material, "ColorSwap", 200, { "COLOR_SWAP": false });
         this._markAllDefinesAsDirty = material._dirtyCallbacks[Constants.MATERIAL_AllDirtyFlag];
+
+        // *** FIX: Convert all base colors to linear space. ***
+        // This ensures the colors sent to the shader match the color space
+        // of the texture after it's processed by the rendering engine.
+        for (let i = 0; i < this.baseColors.length; i++) {
+            this.baseColors[i] = this.baseColors[i].toLinearSpace();
+        }
+
         this.isEnabled = true;
     }
 
@@ -80,15 +88,15 @@ class GradientColorSwapPlugin extends MaterialPluginBase {
     getUniforms() {
         return {
             ubo: [
-                { name: "replacements", size: 3, type: "vec3", arraySize: 6 },
-                { name: "baseColors", size: 3, type: "vec3", arraySize: 6 },
+                { name: "replacements", size: 3, type: "vec3", arraySize: 9 },
+                { name: "baseColors", size: 3, type: "vec3", arraySize: 9 },
                 { name: "blendRadius", size: 1, type: "float" },
                 { name: "blendStrength", size: 1, type: "float" }
             ],
             fragment: `
                 #ifdef COLOR_SWAP
-                    uniform vec3 replacements[6];
-                    uniform vec3 baseColors[6];
+                    uniform vec3 replacements[9];
+                    uniform vec3 baseColors[9];
                     uniform float blendRadius;
                     uniform float blendStrength;
                 #endif
@@ -124,7 +132,7 @@ class GradientColorSwapPlugin extends MaterialPluginBase {
                         float safeRadius = max(blendRadius, 0.0001);
                         float radiusSq = 2.0 * safeRadius * safeRadius;
                         
-                        for (int i = 0; i < 6; i++) {
+                        for (int i = 0; i < 9; i++) {
                             float dist = distance(original, baseColors[i]);
                             float influence = exp(-(dist * dist) / radiusSq);
                             accumulatedColor += replacements[i] * influence;
@@ -263,35 +271,38 @@ class SceneManager {
   }
 
   /**
-   * Creates the GUI with a single button to randomize one color.
+   * Creates the GUI with nine buttons, each one hooked to a specific color index.
    */
   private createUI() {
     const advancedTexture = AdvancedDynamicTexture.CreateFullscreenUI("UI");
 
-    const randomButton = Button.CreateSimpleButton("randomBtn", "Randomize One Color");
-    randomButton.width = "200px";
-    randomButton.height = "40px";
-    randomButton.color = "white";
-    randomButton.background = "#555555";
-    randomButton.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_RIGHT;
-    randomButton.verticalAlignment = Control.VERTICAL_ALIGNMENT_BOTTOM;
-    randomButton.paddingRight = "20px";
-    randomButton.paddingBottom = "20px";
-    
-    randomButton.onPointerUpObservable.add(() => {
-        // If the plugin has been initialized...
-        if (this.colorPlugin) {
-            // Pick a random index from 0 to 5
-            const randomIndex = Math.floor(Math.random() * this.colorPlugin.replacements.length);
-            // Create a new random color
-            const randomColor = new Color3(Math.random(), Math.random(), Math.random());
-            // Assign the new random color to the randomly chosen slot
-            this.colorPlugin.replacements[randomIndex] = randomColor;
-            console.log(`Changed color at index ${randomIndex} to ${randomColor.toHexString()}`);
-        }
-    });
+    // Loop 9 times to create a button for each color index
+    for (let i = 0; i < 9; i++) {
+        const button = Button.CreateSimpleButton(`randomBtn_${i}`, `Randomize Color ${i + 1}`);
+        button.width = "200px";
+        button.height = "40px";
+        button.color = "white";
+        button.background = "#555555";
+        button.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_RIGHT;
+        // Align to the top of the screen
+        button.verticalAlignment = Control.VERTICAL_ALIGNMENT_TOP;
+        button.paddingRight = "20px";
+        // Position each button below the last one using the 'top' property
+        button.top = `${20 + (i * 50)}px`;
+        
+        button.onPointerUpObservable.add(() => {
+            // If the plugin has been initialized...
+            if (this.colorPlugin) {
+                // Create a new random color
+                const randomColor = new Color3(Math.random(), Math.random(), Math.random());
+                // Assign the new random color to the specific slot for this button
+                this.colorPlugin.replacements[i] = randomColor;
+                console.log(`Changed color at index ${i} to ${randomColor.toHexString()}`);
+            }
+        });
 
-    advancedTexture.addControl(randomButton);
+        advancedTexture.addControl(button);
+    }
   }
 
   public dispose() {
