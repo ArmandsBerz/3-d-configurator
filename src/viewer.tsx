@@ -35,6 +35,7 @@ class ColorSwapPlugin extends MaterialPluginBase {
     // --- PRIVATE INTERNAL STATE ---
     private _baseColors: Color3[] = [];
     private _replacements: Color3[] = [];
+    private _specialBaseColor!: Color3; // For the neighbor-mixing logic
     // _material is inherited from MaterialPluginBase and should not be re-declared.
 
     // Public properties for shader uniforms
@@ -60,7 +61,18 @@ class ColorSwapPlugin extends MaterialPluginBase {
 
         // Convert hex base colors to linear Color3 objects
         for (const hex of config.baseColors) {
-            this._baseColors.push(Color3.FromHexString(hex).toLinearSpace());
+            const linearColor = Color3.FromHexString(hex).toLinearSpace();
+            this._baseColors.push(linearColor);
+            // Identify and store the special color for the neighbor logic
+            if (hex === "#FF0060") {
+                this._specialBaseColor = linearColor;
+            }
+        }
+        
+        if (!this._specialBaseColor) {
+             console.warn("ColorSwapPlugin: Special base color #FF0060 not found in config.");
+             // Assign a fallback to prevent crashes
+             this._specialBaseColor = new Color3(1.0, 0.0, 0.376); 
         }
 
         this.isEnabled = true;
@@ -92,19 +104,24 @@ class ColorSwapPlugin extends MaterialPluginBase {
         this._enable(this._isEnabled);
     }
 
+    // Tells the engine that our plugin needs access to this sampler
+    public getSamplers(samplers: string[]) {
+        samplers.push("albedoSampler");
+    }
+
     prepareDefines(defines: MaterialDefines) {
         defines["COLOR_SWAP"] = this._isEnabled;
     }
 
     getUniforms() {
-        // *** FIX: Add a safeguard (optional chaining) to prevent crash if _baseColors is not yet initialized. ***
-        const arraySize = this._baseColors?.length > 0 ? this._baseColors.length : 9; // Use 9 as a fallback for initial compile
+        const arraySize = this._baseColors?.length > 0 ? this._baseColors.length : 9;
         return {
             ubo: [
                 { name: "replacements", size: 3, type: "vec3", arraySize },
                 { name: "baseColors", size: 3, type: "vec3", arraySize },
                 { name: "blendRadius", size: 1, type: "float" },
-                { name: "blendStrength", size: 1, type: "float" }
+                { name: "blendStrength", size: 1, type: "float" },
+                { name: "specialBaseColor", size: 3, type: "vec3"}
             ],
             fragment: `
                 #ifdef COLOR_SWAP
@@ -112,6 +129,9 @@ class ColorSwapPlugin extends MaterialPluginBase {
                     uniform vec3 baseColors[${arraySize}];
                     uniform float blendRadius;
                     uniform float blendStrength;
+                    uniform vec3 specialBaseColor;
+                    uniform sampler2D albedoSampler;
+                    varying vec2 vAlbedoUV;
                 #endif
             `
         };
@@ -131,33 +151,76 @@ class ColorSwapPlugin extends MaterialPluginBase {
             uniformBuffer.updateArray("baseColors", [...baseColorsArray]);
             uniformBuffer.updateFloat("blendRadius", this.blendRadius);
             uniformBuffer.updateFloat("blendStrength", this.blendStrength);
+            uniformBuffer.updateColor3("specialBaseColor", this._specialBaseColor);
         }
     }
 
     getCustomCode(shaderType: string) {
         if (shaderType === "fragment") {
-            // *** FIX: Add a safeguard (optional chaining) to prevent crash if _baseColors is not yet initialized. ***
             const arraySize = this._baseColors?.length > 0 ? this._baseColors.length : 9;
             return {
                 "CUSTOM_FRAGMENT_BEFORE_LIGHTS": `
                     #ifdef COLOR_SWAP
-                        vec3 original = surfaceAlbedo.rgb;
-                        vec3 accumulatedColor = vec3(0.0);
-                        float totalInfluence = 0.0;
-                        float safeRadius = max(blendRadius, 0.0001);
-                        float radiusSq = 2.0 * safeRadius * safeRadius;
-                        
-                        for (int i = 0; i < ${arraySize}; i++) {
-                            float dist = distance(original, baseColors[i]);
-                            float influence = exp(-(dist * dist) / radiusSq);
-                            accumulatedColor += replacements[i] * influence;
-                            totalInfluence += influence;
+                        vec3 finalPixelColor = surfaceAlbedo.rgb;
+                        bool specialLogicApplied = false;
+
+                        // --- Special logic for the #FF0060 color based on neighbors ---
+                        if (distance(surfaceAlbedo.rgb, specialBaseColor) < 0.01) {
+                            vec2 texelSize = 1.0 / vec2(textureSize(albedoSampler, 0));
+                            vec2 offsets[4];
+                            offsets[0] = vec2(0.0, texelSize.y);  // Up
+                            offsets[1] = vec2(0.0, -texelSize.y); // Down
+                            offsets[2] = vec2(-texelSize.x, 0.0); // Left
+                            offsets[3] = vec2(texelSize.x, 0.0);  // Right
+                            
+                            vec3 foundReplacements[2];
+                            int paletteMatchCount = 0;
+
+                            // Check 4 neighbors
+                            for (int j = 0; j < 4; j++) {
+                                vec3 neighborColor = texture(albedoSampler, vAlbedoUV + offsets[j]).rgb;
+                                
+                                // Check if neighbor color is in our base palette
+                                for (int i = 0; i < ${arraySize}; i++) {
+                                    if (distance(neighborColor, baseColors[i]) < 0.01) {
+                                        if (paletteMatchCount < 2) {
+                                            foundReplacements[paletteMatchCount] = replacements[i];
+                                        }
+                                        paletteMatchCount++;
+                                        break; // Found a match, go to next neighbor
+                                    }
+                                }
+                            }
+
+                            // If exactly two neighbors were in the palette, mix their replacement colors
+                            if (paletteMatchCount == 2) {
+                                finalPixelColor = mix(foundReplacements[0], foundReplacements[1], 0.5);
+                                specialLogicApplied = true;
+                            }
                         }
                         
-                        if (totalInfluence > 0.001) {
-                           vec3 finalColor = accumulatedColor / totalInfluence;
-                           surfaceAlbedo.rgb = mix(original, finalColor, min(totalInfluence * blendStrength, 1.0));
+                        // --- If special logic didn't run, perform the standard color swap ---
+                        if (!specialLogicApplied) {
+                            vec3 original = surfaceAlbedo.rgb;
+                            vec3 accumulatedColor = vec3(0.0);
+                            float totalInfluence = 0.0;
+                            float safeRadius = max(blendRadius, 0.0001);
+                            float radiusSq = 2.0 * safeRadius * safeRadius;
+                            
+                            for (int i = 0; i < ${arraySize}; i++) {
+                                float dist = distance(original, baseColors[i]);
+                                float influence = exp(-(dist * dist) / radiusSq);
+                                accumulatedColor += replacements[i] * influence;
+                                totalInfluence += influence;
+                            }
+                            
+                            if (totalInfluence > 0.001) {
+                               vec3 blendedColor = accumulatedColor / totalInfluence;
+                               finalPixelColor = mix(original, blendedColor, min(totalInfluence * blendStrength, 1.0));
+                            }
                         }
+
+                        surfaceAlbedo.rgb = finalPixelColor;
                     #endif
                 `
             };
@@ -243,7 +306,7 @@ class SceneManager {
 
       if (gloveMaterial && gloveMaterial instanceof PBRMaterial) {
         const rootUrl = `${process.env.PUBLIC_URL || ''}/assets/`;
-        const colorIdTexture = new Texture(`${rootUrl}openBack.png`, this.scene, false, false, Constants.TEXTURE_NEAREST_SAMPLINGMODE);
+        const colorIdTexture = new Texture(`${rootUrl}openBack.png`, this.scene, true, false, Constants.TEXTURE_NEAREST_SAMPLINGMODE);
         gloveMaterial.albedoTexture = colorIdTexture;
         
         const detailTexture = new Texture(`${rootUrl}details.png`, this.scene);
@@ -261,12 +324,13 @@ class SceneManager {
         const gloveConfig: ColorSwapConfig = {
             baseColors: [
                 "#FF0000", "#00FFFF", "#80FF00", "#7F00FF", "#FFBF00",
-                "#0040FF", "#00FF40", "#FF00BF", "#FF6000"
+                "#0040FF", "#00FF40", "#FF00BF", "#FF6000", "#FF0060"
             ],
             initialReplacements: [
                 new Color3(1.0, 0.0, 1.0), new Color3(1.0, 1.0, 0.0), new Color3(0.0, 1.0, 1.0),
                 new Color3(1.0, 0.5, 0.0), new Color3(0.5, 0.0, 1.0), new Color3(0.5, 0.0, 1.0),
-                new Color3(0.2, 0.0, 0.2), new Color3(0.1, 0.5, 0.9), new Color3(1.0, 1.0, 1.0)
+                new Color3(0.2, 0.0, 0.2), new Color3(0.1, 0.5, 0.9), new Color3(1.0, 1.0, 1.0),
+                new Color3(0.0, 1.0, 0.0) // Added a corresponding replacement to maintain array length
             ]
         };
 
@@ -326,7 +390,6 @@ class SceneManager {
   }
 }
 
-// --- The rest of the file remains the same ---
 let sceneManager: SceneManager | null = null;
 
 export function updateBoxColor(hexColor: string) {
