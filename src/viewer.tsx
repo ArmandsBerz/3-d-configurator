@@ -166,29 +166,42 @@ class ColorSwapPlugin extends MaterialPluginBase {
                         // IF the pixel is the special pink color...
                         if (distance(surfaceAlbedo.rgb, specialBaseColor) < 0.02) {
                             
-                            // --- CLEAN LOGIC: Find the BEST match for the left neighbor ---
+                            // --- LOGIC: Find best matches for BOTH left and right neighbors ---
                             vec2 texelSize = 1.0 / vec2(textureSize(albedoSampler, 0));
                             vec2 leftOffset = vec2(-texelSize.x, 0.0);
+                            vec2 rightOffset = vec2(texelSize.x, 0.0);
                             vec3 leftNeighborColor = texture(albedoSampler, vAlbedoUV + leftOffset).rgb;
+                            vec3 rightNeighborColor = texture(albedoSampler, vAlbedoUV + rightOffset).rgb;
 
-                            float smallestDistance = 1000.0;
-                            int closestMatchIndex = -1;
-
-                            // Find which base color is closest to our neighbor
+                            // Find best match for LEFT neighbor
+                            float smallestDistanceLeft = 1000.0;
+                            int closestMatchIndexLeft = -1;
                             for (int i = 0; i < ${arraySize}; i++) {
-                                // We skip the special pink color itself (index 9)
-                                if (i == 9) { continue; }
-
+                                if (i == 9) { continue; } // Skip the special pink color
                                 float dist = distance(leftNeighborColor, baseColors[i]);
-                                if (dist < smallestDistance) {
-                                    smallestDistance = dist;
-                                    closestMatchIndex = i;
+                                if (dist < smallestDistanceLeft) {
+                                    smallestDistanceLeft = dist;
+                                    closestMatchIndexLeft = i;
                                 }
                             }
 
-                            // If we found a best match, use its replacement color
-                            if (closestMatchIndex != -1) {
-                                finalPixelColor = replacements[closestMatchIndex];
+                            // Find best match for RIGHT neighbor
+                            float smallestDistanceRight = 1000.0;
+                            int closestMatchIndexRight = -1;
+                            for (int i = 0; i < ${arraySize}; i++) {
+                                if (i == 9) { continue; } // Skip the special pink color
+                                float dist = distance(rightNeighborColor, baseColors[i]);
+                                if (dist < smallestDistanceRight) {
+                                    smallestDistanceRight = dist;
+                                    closestMatchIndexRight = i;
+                                }
+                            }
+
+                            // If we found valid matches for BOTH neighbors, mix their replacement colors
+                            if (closestMatchIndexLeft != -1 && closestMatchIndexRight != -1) {
+                                vec3 leftReplacement = replacements[closestMatchIndexLeft];
+                                vec3 rightReplacement = replacements[closestMatchIndexRight];
+                                finalPixelColor = mix(leftReplacement, rightReplacement, 0.5);
                             }
 
                         } 
