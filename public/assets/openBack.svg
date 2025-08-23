@@ -26,7 +26,37 @@
     <g transform="matrix(1,0,0,1,-18,-3)">
         <rect x="974.399" y="1670.97" width="61.322" height="70.686" style="fill:rgb(0,255,64);"/>
     </g>
-    <g transform="matrix(0.0625,0,0,4.91667,891.179,-6443.42)">
+    <g transform="matrix(0.0625,0,0,2.58333,891.179,-2591.09)">
+        <rect x="1041" y="1651" width="8" height="12" style="fill:rgb(255,0,96);"/>
+    </g>
+    <g transform="matrix(0.1125,0,0,0.0416667,838.62,1641.46)">
+        <rect x="1041" y="1651" width="8" height="12" style="fill:rgb(255,0,96);"/>
+    </g>
+    <g transform="matrix(0.1125,0,0,0.0416667,838.62,1644.46)">
+        <rect x="1041" y="1651" width="8" height="12" style="fill:rgb(255,0,96);"/>
+    </g>
+    <g transform="matrix(-0.0625,0,0,0.0416667,958.252,1647.49)">
+        <rect x="1041" y="1651" width="8" height="12" style="fill:rgb(255,0,96);"/>
+    </g>
+    <g transform="matrix(-0.0625,0,0,0.0416667,958.252,1648.49)">
+        <rect x="1041" y="1651" width="8" height="12" style="fill:rgb(255,0,96);"/>
+    </g>
+    <g transform="matrix(-0.0625,0,0,0.0416667,958.252,1651.49)">
+        <rect x="1041" y="1651" width="8" height="12" style="fill:rgb(255,0,96);"/>
+    </g>
+    <g transform="matrix(-0.0625,0,0,0.0416667,958.252,1654.49)">
+        <rect x="1041" y="1651" width="8" height="12" style="fill:rgb(255,0,96);"/>
+    </g>
+    <g transform="matrix(-0.0625,0,0,0.0416667,958.252,1656.49)">
+        <rect x="1041" y="1651" width="8" height="12" style="fill:rgb(255,0,96);"/>
+    </g>
+    <g transform="matrix(0.1125,0,0,0.0416667,838.62,1649.46)">
+        <rect x="1041" y="1651" width="8" height="12" style="fill:rgb(255,0,96);"/>
+    </g>
+    <g transform="matrix(0.1125,0,0,0.0416667,838.62,1651.46)">
+        <rect x="1041" y="1651" width="8" height="12" style="fill:rgb(255,0,96);"/>
+    </g>
+    <g transform="matrix(0.1125,0,0,0.0416667,838.62,1653.46)">
         <rect x="1041" y="1651" width="8" height="12" style="fill:rgb(255,0,96);"/>
     </g>
     <g transform="matrix(0.0625,0,0,4.91667,893.938,-6539.42)">

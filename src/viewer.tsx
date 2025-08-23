@@ -114,7 +114,7 @@ class ColorSwapPlugin extends MaterialPluginBase {
     }
 
     getUniforms() {
-        const arraySize = this._baseColors?.length > 0 ? this._baseColors.length : 9;
+        const arraySize = this._baseColors?.length > 0 ? this._baseColors.length : 10;
         return {
             ubo: [
                 { name: "replacements", size: 3, type: "vec3", arraySize },
@@ -157,50 +157,44 @@ class ColorSwapPlugin extends MaterialPluginBase {
 
     getCustomCode(shaderType: string) {
         if (shaderType === "fragment") {
-            const arraySize = this._baseColors?.length > 0 ? this._baseColors.length : 9;
+            const arraySize = this._baseColors?.length > 0 ? this._baseColors.length : 10;
             return {
                 "CUSTOM_FRAGMENT_BEFORE_LIGHTS": `
                     #ifdef COLOR_SWAP
                         vec3 finalPixelColor = surfaceAlbedo.rgb;
-                        bool specialLogicApplied = false;
 
-                        // --- Special logic for the #FF0060 color based on neighbors ---
-                        if (distance(surfaceAlbedo.rgb, specialBaseColor) < 0.01) {
-                            vec2 texelSize = 1.0 / vec2(textureSize(albedoSampler, 0));
-                            vec2 offsets[4];
-                            offsets[0] = vec2(0.0, texelSize.y);  // Up
-                            offsets[1] = vec2(0.0, -texelSize.y); // Down
-                            offsets[2] = vec2(-texelSize.x, 0.0); // Left
-                            offsets[3] = vec2(texelSize.x, 0.0);  // Right
+                        // IF the pixel is the special pink color...
+                        if (distance(surfaceAlbedo.rgb, specialBaseColor) < 0.02) {
                             
-                            vec3 foundReplacements[2];
-                            int paletteMatchCount = 0;
+                            // --- CLEAN LOGIC: Find the BEST match for the left neighbor ---
+                            vec2 texelSize = 1.0 / vec2(textureSize(albedoSampler, 0));
+                            vec2 leftOffset = vec2(-texelSize.x, 0.0);
+                            vec3 leftNeighborColor = texture(albedoSampler, vAlbedoUV + leftOffset).rgb;
 
-                            // Check 4 neighbors
-                            for (int j = 0; j < 4; j++) {
-                                vec3 neighborColor = texture(albedoSampler, vAlbedoUV + offsets[j]).rgb;
-                                
-                                // Check if neighbor color is in our base palette
-                                for (int i = 0; i < ${arraySize}; i++) {
-                                    if (distance(neighborColor, baseColors[i]) < 0.01) {
-                                        if (paletteMatchCount < 2) {
-                                            foundReplacements[paletteMatchCount] = replacements[i];
-                                        }
-                                        paletteMatchCount++;
-                                        break; // Found a match, go to next neighbor
-                                    }
+                            float smallestDistance = 1000.0;
+                            int closestMatchIndex = -1;
+
+                            // Find which base color is closest to our neighbor
+                            for (int i = 0; i < ${arraySize}; i++) {
+                                // We skip the special pink color itself (index 9)
+                                if (i == 9) { continue; }
+
+                                float dist = distance(leftNeighborColor, baseColors[i]);
+                                if (dist < smallestDistance) {
+                                    smallestDistance = dist;
+                                    closestMatchIndex = i;
                                 }
                             }
 
-                            // If exactly two neighbors were in the palette, mix their replacement colors
-                            if (paletteMatchCount == 2) {
-                                finalPixelColor = mix(foundReplacements[0], foundReplacements[1], 0.5);
-                                specialLogicApplied = true;
+                            // If we found a best match, use its replacement color
+                            if (closestMatchIndex != -1) {
+                                finalPixelColor = replacements[closestMatchIndex];
                             }
-                        }
-                        
-                        // --- If special logic didn't run, perform the standard color swap ---
-                        if (!specialLogicApplied) {
+
+                        } 
+                        // ELSE, if it's any other color...
+                        else {
+                            // ...we run the standard fuzzy color swapping logic that already works.
                             vec3 original = surfaceAlbedo.rgb;
                             vec3 accumulatedColor = vec3(0.0);
                             float totalInfluence = 0.0;
