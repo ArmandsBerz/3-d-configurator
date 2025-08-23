@@ -113,6 +113,8 @@ class ColorSwapPlugin extends MaterialPluginBase {
         defines["COLOR_SWAP"] = this._isEnabled;
     }
 
+
+
     getUniforms() {
         const arraySize = this._baseColors?.length > 0 ? this._baseColors.length : 10;
         return {
@@ -166,34 +168,42 @@ class ColorSwapPlugin extends MaterialPluginBase {
                         // IF the pixel is the special pink color...
                         if (distance(surfaceAlbedo.rgb, specialBaseColor) < 0.02) {
                             
-                            // --- LOGIC: Find best matches for BOTH left and right neighbors ---
                             vec2 texelSize = 1.0 / vec2(textureSize(albedoSampler, 0));
-                            vec2 leftOffset = vec2(-texelSize.x, 0.0);
-                            vec2 rightOffset = vec2(texelSize.x, 0.0);
-                            vec3 leftNeighborColor = texture(albedoSampler, vAlbedoUV + leftOffset).rgb;
-                            vec3 rightNeighborColor = texture(albedoSampler, vAlbedoUV + rightOffset).rgb;
+                            vec3 leftNeighborColor = texture(albedoSampler, vAlbedoUV + vec2(-texelSize.x, 0.0)).rgb;
+                            vec3 rightNeighborColor = texture(albedoSampler, vAlbedoUV + vec2(texelSize.x, 0.0)).rgb;
 
-                            // Find best match for LEFT neighbor
-                            float smallestDistanceLeft = 1000.0;
                             int closestMatchIndexLeft = -1;
-                            for (int i = 0; i < ${arraySize}; i++) {
-                                if (i == 9) { continue; } // Skip the special pink color
-                                float dist = distance(leftNeighborColor, baseColors[i]);
-                                if (dist < smallestDistanceLeft) {
-                                    smallestDistanceLeft = dist;
-                                    closestMatchIndexLeft = i;
+                            int closestMatchIndexRight = -1;
+
+                            // --- Step 2: Validate and Identify the Left Neighbor ---
+                            if (distance(leftNeighborColor, specialBaseColor) < 0.02) {
+                                // Neighbor is pink (invalid), index remains -1.
+                            } else {
+                                // Neighbor is a valid color, find its match.
+                                float smallestDistanceLeft = 1000.0;
+                                for (int i = 0; i < ${arraySize}; i++) {
+                                    if (i == 9) { continue; } // Skip pink swatch
+                                    float dist = distance(leftNeighborColor, baseColors[i]);
+                                    if (dist < smallestDistanceLeft) {
+                                        smallestDistanceLeft = dist;
+                                        closestMatchIndexLeft = i;
+                                    }
                                 }
                             }
 
-                            // Find best match for RIGHT neighbor
-                            float smallestDistanceRight = 1000.0;
-                            int closestMatchIndexRight = -1;
-                            for (int i = 0; i < ${arraySize}; i++) {
-                                if (i == 9) { continue; } // Skip the special pink color
-                                float dist = distance(rightNeighborColor, baseColors[i]);
-                                if (dist < smallestDistanceRight) {
-                                    smallestDistanceRight = dist;
-                                    closestMatchIndexRight = i;
+                            // --- Step 3: Validate and Identify the Right Neighbor ---
+                            if (distance(rightNeighborColor, specialBaseColor) < 0.02) {
+                                // Neighbor is pink (invalid), index remains -1.
+                            } else {
+                                // Neighbor is a valid color, find its match.
+                                float smallestDistanceRight = 1000.0;
+                                for (int i = 0; i < ${arraySize}; i++) {
+                                    if (i == 9) { continue; } // Skip pink swatch
+                                    float dist = distance(rightNeighborColor, baseColors[i]);
+                                    if (dist < smallestDistanceRight) {
+                                        smallestDistanceRight = dist;
+                                        closestMatchIndexRight = i;
+                                    }
                                 }
                             }
 
