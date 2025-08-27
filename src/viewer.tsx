@@ -1,25 +1,25 @@
 // src/viewer.tsx
 import React, { useEffect, useRef } from 'react';
 import {
-    Engine,
-    Scene,
-    ArcRotateCamera,
-    Vector3,
-    HemisphericLight,
-    Mesh,
-    Color4,
-    AssetContainer,
-    SceneLoader,
-    Material,
-    Texture,
-    PBRMaterial,
-    // --- ADDED IMPORTS for Plugin and GUI ---
-    MaterialPluginBase,
-    PBRBaseMaterial,
-    MaterialDefines,
-    UniformBuffer,
-    Constants,
-    Color3
+    Engine,
+    Scene,
+    ArcRotateCamera,
+    Vector3,
+    HemisphericLight,
+    Mesh,
+    Color4,
+    AssetContainer,
+    SceneLoader,
+    Material,
+    Texture,
+    PBRMaterial,
+    // --- ADDED IMPORTS for Plugin and GUI ---
+    MaterialPluginBase,
+    PBRBaseMaterial,
+    MaterialDefines,
+    UniformBuffer,
+    Constants,
+    Color3
 } from '@babylonjs/core';
 import { AdvancedDynamicTexture, Button, Control } from '@babylonjs/gui'; // GUI Imports
 import "@babylonjs/loaders/glTF";
@@ -27,247 +27,144 @@ import "@babylonjs/loaders/glTF";
 
 // --- INTERFACE FOR PLUGIN CONFIGURATION ---
 interface ColorSwapConfig {
-    baseColors: string[]; // Hex strings
-    initialReplacements: Color3[];
+    baseColors: string[]; // Hex strings
+    initialReplacements: Color3[];
 }
 
 
 // --- REFACTORED PLUGIN CODE ---
 class ColorSwapPlugin extends MaterialPluginBase {
-    // --- PRIVATE INTERNAL STATE ---
-    private _baseColors: Color3[] = [];
-    private _replacements: Color3[] = [];
-    private _specialBaseColor!: Color3; // For the neighbor-mixing logic
-    // _material is inherited from MaterialPluginBase and should not be re-declared.
+    // --- PRIVATE INTERNAL STATE ---
+    private _baseColors: Color3[] = [];
+    private _replacements: Color3[] = [];
+    // _material is inherited from MaterialPluginBase and should not be re-declared.
 
 
-    // Public properties for shader uniforms
-    public blendRadius = 0.01;
-    public blendStrength = 1.5;
+    // Public properties for shader uniforms
+    public blendRadius = 0.01;
+    public blendStrength = 1.5;
 
 
-    private _isEnabled = false;
-    private _markAllDefinesAsDirty: () => void;
+    private _isEnabled = false;
+    private _markAllDefinesAsDirty: () => void;
 
 
-    // --- CONSTRUCTOR ACCEPTS CONFIGURATION ---
-    constructor(material: PBRBaseMaterial, config: ColorSwapConfig) {
-        super(material, "ColorSwap", 200, { "COLOR_SWAP": false });
-        // The super() call handles assigning the material to this._material
-        this._markAllDefinesAsDirty = material._dirtyCallbacks[Constants.MATERIAL_AllDirtyFlag];
+    // --- CONSTRUCTOR ACCEPTS CONFIGURATION ---
+    constructor(material: PBRBaseMaterial, config: ColorSwapConfig) {
+        super(material, "ColorSwap", 200, { "COLOR_SWAP": false });
+        // The super() call handles assigning the material to this._material
+        this._markAllDefinesAsDirty = material._dirtyCallbacks[Constants.MATERIAL_AllDirtyFlag];
 
 
-        // --- VALIDATE AND INITIALIZE FROM CONFIG ---
-        if (!config || !config.baseColors || !config.initialReplacements || config.baseColors.length !== config.initialReplacements.length) {
-            console.error("ColorSwapPlugin: Invalid configuration provided.");
-            return;
-        }
+        // --- VALIDATE AND INITIALIZE FROM CONFIG ---
+        if (!config || !config.baseColors || !config.initialReplacements || config.baseColors.length !== config.initialReplacements.length) {
+            console.error("ColorSwapPlugin: Invalid configuration provided.");
+            return;
+        }
 
 
-        this._replacements = [...config.initialReplacements];
+        this._replacements = [...config.initialReplacements];
 
 
-        // Convert hex base colors to linear Color3 objects
-        for (const hex of config.baseColors) {
-            const linearColor = Color3.FromHexString(hex).toLinearSpace();
-            this._baseColors.push(linearColor);
-            // Identify and store the special color for the neighbor logic
-            if (hex === "#FF0060") {
-                this._specialBaseColor = linearColor;
-            }
-        }
+        // Convert hex base colors to linear Color3 objects
+        for (const hex of config.baseColors) {
+            const linearColor = Color3.FromHexString(hex).toLinearSpace();
+            this._baseColors.push(linearColor);
+        }
 
-        if (!this._specialBaseColor) {
-            console.warn("ColorSwapPlugin: Special base color #FF0060 not found in config.");
-            // Assign a fallback to prevent crashes
-            this._specialBaseColor = new Color3(1.0, 0.0, 0.376);
-        }
+        this.isEnabled = true;
+    }
 
-
-        this.isEnabled = true;
-    }
-
-    // --- CONTROLLED PUBLIC API FOR UPDATES ---
-    public updateColor(index: number, newColor: Color3) {
-        if (index < 0 || index >= this._replacements.length) {
-            console.warn(`ColorSwapPlugin: Invalid color index provided: ${index}`);
-            return;
-        }
-        this._replacements[index] = newColor;
-    }
+    // --- CONTROLLED PUBLIC API FOR UPDATES ---
+    public updateColor(index: number, newColor: Color3) {
+        if (index < 0 || index >= this._replacements.length) {
+            console.warn(`ColorSwapPlugin: Invalid color index provided: ${index}`);
+            return;
+        }
+        this._replacements[index] = newColor;
+    }
 
 
-    // --- DISPOSE METHOD FOR CLEANUP ---
-    public dispose() {
-        // Clean up this plugin's specific properties
-        this._baseColors = [];
-        this._replacements = [];
-        // Call the base class dispose method for its cleanup
-        super.dispose();
-    }
+    // --- DISPOSE METHOD FOR CLEANUP ---
+    public dispose() {
+        // Clean up this plugin's specific properties
+        this._baseColors = [];
+        this._replacements = [];
+        // Call the base class dispose method for its cleanup
+        super.dispose();
+    }
 
 
-    get isEnabled() { return this._isEnabled; }
-    set isEnabled(enabled) {
-        if (this._isEnabled === enabled) return;
-        this._isEnabled = enabled;
-        this._markAllDefinesAsDirty();
-        this._enable(this._isEnabled);
-    }
+    get isEnabled() { return this._isEnabled; }
+    set isEnabled(enabled) {
+        if (this._isEnabled === enabled) return;
+        this._isEnabled = enabled;
+        this._markAllDefinesAsDirty();
+        this._enable(this._isEnabled);
+    }
 
 
-    // Tells the engine that our plugin needs access to this sampler
-    public getSamplers(samplers: string[]) {
-        samplers.push("albedoSampler");
-    }
+    prepareDefines(defines: MaterialDefines) {
+        defines["COLOR_SWAP"] = this._isEnabled;
+    }
 
 
-    prepareDefines(defines: MaterialDefines) {
-        defines["COLOR_SWAP"] = this._isEnabled;
-    }
+    getUniforms() {
+        const arraySize = this._baseColors?.length > 0 ? this._baseColors.length : 10;
+        return {
+            ubo: [
+                { name: "replacements", size: 3, type: "vec3", arraySize },
+                { name: "baseColors", size: 3, type: "vec3", arraySize },
+                { name: "blendRadius", size: 1, type: "float" },
+                { name: "blendStrength", size: 1, type: "float" },
+            ],
 
-
-
-
-
-
-    getUniforms() {
-        const arraySize = this._baseColors?.length > 0 ? this._baseColors.length : 10;
-        return {
-            ubo: [
-                { name: "replacements", size: 3, type: "vec3", arraySize },
-                { name: "baseColors", size: 3, type: "vec3", arraySize },
-                { name: "blendRadius", size: 1, type: "float" },
-                { name: "blendStrength", size: 1, type: "float" },
-                { name: "specialBaseColor", size: 3, type: "vec3" }
-            ],
-
-            fragment: `
+            fragment: `
 #ifdef COLOR_SWAP
 uniform vec3 replacements[${arraySize}];
 uniform vec3 baseColors[${arraySize}];
 uniform float blendRadius;
 uniform float blendStrength;
-uniform vec3 specialBaseColor;
-uniform sampler2D albedoSampler;
-varying vec2 vAlbedoUV;
 #endif
 `
-        };
-    }
+        };
+    }
 
 
-    bindForSubMesh(uniformBuffer: UniformBuffer) {
-        if (this._isEnabled) {
-            const replacementsArray = new Float32Array(this._replacements.length * 3);
-            const baseColorsArray = new Float32Array(this._baseColors.length * 3);
+    bindForSubMesh(uniformBuffer: UniformBuffer) {
+        if (this._isEnabled) {
+            const replacementsArray = new Float32Array(this._replacements.length * 3);
+            const baseColorsArray = new Float32Array(this._baseColors.length * 3);
 
 
-            for (let i = 0; i < this._replacements.length; i++) {
-                replacementsArray.set(this._replacements[i].asArray(), i * 3);
-                baseColorsArray.set(this._baseColors[i].asArray(), i * 3);
-            }
+            for (let i = 0; i < this._replacements.length; i++) {
+                replacementsArray.set(this._replacements[i].asArray(), i * 3);
+                baseColorsArray.set(this._baseColors[i].asArray(), i * 3);
+            }
 
 
-            uniformBuffer.updateArray("replacements", [...replacementsArray]);
-            uniformBuffer.updateArray("baseColors", [...baseColorsArray]);
-            uniformBuffer.updateFloat("blendRadius", this.blendRadius);
-            uniformBuffer.updateFloat("blendStrength", this.blendStrength);
-            uniformBuffer.updateColor3("specialBaseColor", this._specialBaseColor);
-        }
-    }
+            uniformBuffer.updateArray("replacements", [...replacementsArray]);
+            uniformBuffer.updateArray("baseColors", [...baseColorsArray]);
+            uniformBuffer.updateFloat("blendRadius", this.blendRadius);
+            uniformBuffer.updateFloat("blendStrength", this.blendStrength);
+        }
+    }
 
 
-    getCustomCode(shaderType: string) {
-        if (shaderType === "fragment") {
-            const arraySize = this._baseColors?.length > 0 ? this._baseColors.length : 10;
-            return {
-                "CUSTOM_FRAGMENT_BEFORE_LIGHTS": `
+    getCustomCode(shaderType: string) {
+        if (shaderType === "fragment") {
+            const arraySize = this._baseColors?.length > 0 ? this._baseColors.length : 10;
+            return {
+                "CUSTOM_FRAGMENT_BEFORE_LIGHTS": `
 #ifdef COLOR_SWAP
 vec3 finalPixelColor = surfaceAlbedo.rgb;
-
-
-if (distance(surfaceAlbedo.rgb, specialBaseColor) < 0.02) {
-
-vec2 texelSize = 1.0 / vec2(textureSize(albedoSampler, 0));
-int validIndices[2];
-validIndices[0] = -1;
-validIndices[1] = -1;
-int foundCount = 0;
-
-
-vec3 neighbors[4];
-neighbors[0] = texture(albedoSampler, vAlbedoUV + vec2(0.0, texelSize.y)).rgb; // Up
-neighbors[1] = texture(albedoSampler, vAlbedoUV + vec2(0.0, -texelSize.y)).rgb; // Down
-neighbors[2] = texture(albedoSampler, vAlbedoUV + vec2(-texelSize.x, 0.0)).rgb; // Left
-neighbors[3] = texture(albedoSampler, vAlbedoUV + vec2(texelSize.x, 0.0)).rgb; // Right
-
-
-
-for (int j = 0; j < 4; j++) {
-if (foundCount == 2) {
-break;
-}
-
-
-float smallestDistance = 1000.0;
-int bestIndex = -1;
-
-// Find the absolute closest match for the neighbor from ALL swatches.
-for (int i = 0; i < ${arraySize}; i++) {
-float dist = distance(neighbors[j], baseColors[i]);
-if (dist < smallestDistance) {
-smallestDistance = dist;
-bestIndex = i;
-}
-}
-
-
-// A neighbor is valid ONLY if its closest match was NOT the pink swatch (index 9).
-// If it was pink, we ignore it and move to the next sampler.
-if (bestIndex != -1 && bestIndex != 9) {
-validIndices[foundCount] = bestIndex;
-foundCount++;
-}
-}
-
-
-if (foundCount == 2) {
-vec3 firstReplacement = replacements[validIndices[0]];
-vec3 secondReplacement = replacements[validIndices[1]];
-finalPixelColor = mix(firstReplacement, secondReplacement, 0.5);
-}
-
-
-} else {
-// ... standard fuzzy color swapping logic ...
-vec3 original = surfaceAlbedo.rgb;
-vec3 accumulatedColor = vec3(0.0);
-float totalInfluence = 0.0;
-float safeRadius = max(blendRadius, 0.0001);
-float radiusSq = 2.0 * safeRadius * safeRadius;
-
-for (int i = 0; i < ${arraySize}; i++) {
-float dist = distance(original, baseColors[i]);
-float influence = exp(-(dist * dist) / radiusSq);
-accumulatedColor += replacements[i] * influence;
-totalInfluence += influence;
-}
-
-if (totalInfluence > 0.001) {
-vec3 blendedColor = accumulatedColor / totalInfluence;
-finalPixelColor = mix(original, blendedColor, min(totalInfluence * blendStrength, 1.0));
-}
-}
-
-
 surfaceAlbedo.rgb = finalPixelColor;
 #endif
 `
-            };
-        }
-        return null;
-    }
+            };
+        }
+        return null;
+    }
 }
 
 
@@ -277,42 +174,42 @@ surfaceAlbedo.rgb = finalPixelColor;
 * AssetManager remains unchanged.
 */
 class AssetManager {
-    private cache = new Map<string, Promise<AssetContainer>>();
+    private cache = new Map<string, Promise<AssetContainer>>();
 
 
-    constructor(private scene: Scene) { }
+    constructor(private scene: Scene) { }
 
 
-    private _handlePreloadError(assetName: string, error: any): void {
-        if (process.env.NODE_ENV === 'development') {
-            console.debug(`[AssetManager] Preload failed for "${assetName}":`, error);
-        }
-    }
+    private _handlePreloadError(assetName: string, error: any): void {
+        if (process.env.NODE_ENV === 'development') {
+            console.debug(`[AssetManager] Preload failed for "${assetName}":`, error);
+        }
+    }
 
 
-    public async getAsset(name: string): Promise<AssetContainer> {
-        if (this.cache.has(name)) {
-            return this.cache.get(name)!;
-        }
+    public async getAsset(name: string): Promise<AssetContainer> {
+        if (this.cache.has(name)) {
+            return this.cache.get(name)!;
+        }
 
-        const rootUrl = `${process.env.PUBLIC_URL || ''}/assets/`;
-        const loadPromise = SceneLoader.LoadAssetContainerAsync(
-            rootUrl,
-            `${name}.glb`,
-            this.scene
-        );
-
-
-        this.cache.set(name, loadPromise);
-        return loadPromise;
-    }
+        const rootUrl = `${process.env.PUBLIC_URL || ''}/assets/`;
+        const loadPromise = SceneLoader.LoadAssetContainerAsync(
+            rootUrl,
+            `${name}.glb`,
+            this.scene
+        );
 
 
-    public preloadAssets(names: string[]): void {
-        for (const name of names) {
-            this.getAsset(name).catch((error) => this._handlePreloadError(name, error));
-        }
-    }
+        this.cache.set(name, loadPromise);
+        return loadPromise;
+    }
+
+
+    public preloadAssets(names: string[]): void {
+        for (const name of names) {
+            this.getAsset(name).catch((error) => this._handlePreloadError(name, error));
+        }
+    }
 }
 
 
@@ -320,138 +217,138 @@ class AssetManager {
 * SceneManager now creates the GUI button and attaches the plugin.
 */
 class SceneManager {
-    private engine: Engine;
-    private scene: Scene;
-    private resizeObserver: ResizeObserver;
-    private assetManager: AssetManager;
+    private engine: Engine;
+    private scene: Scene;
+    private resizeObserver: ResizeObserver;
+    private assetManager: AssetManager;
 
-    private colorPlugin: ColorSwapPlugin | null = null;
-    public box: Mesh | null = null;
-
-
-    constructor(canvas: HTMLCanvasElement) {
-        const engine = new Engine(canvas, true, { alpha: true });
-        this.engine = engine;
+    private colorPlugin: ColorSwapPlugin | null = null;
+    public box: Mesh | null = null;
 
 
-        const scene = new Scene(engine);
-        this.scene = scene;
-        this.assetManager = new AssetManager(this.scene);
-        scene.clearColor = new Color4(0, 0, 0, 0);
+    constructor(canvas: HTMLCanvasElement) {
+        const engine = new Engine(canvas, true, { alpha: true });
+        this.engine = engine;
 
 
-        const camera = new ArcRotateCamera("camera", -Math.PI / 2, Math.PI / 2.5, 5, Vector3.Zero(), scene);
-        camera.minZ = 0.01;
-        camera.wheelDeltaPercentage = 0.002;
-        camera.attachControl(canvas, true);
+        const scene = new Scene(engine);
+        this.scene = scene;
+        this.assetManager = new AssetManager(this.scene);
+        scene.clearColor = new Color4(0, 0, 0, 0);
 
 
-        const light = new HemisphericLight("light", new Vector3(0, 1, 0), scene);
-
-        this.assetManager.getAsset('openBack').then(container => {
-            container.addAllToScene();
-            const mainMesh = container.meshes.find(m => m.geometry) as Mesh;
-            if (mainMesh) {
-                this.box = mainMesh;
-            }
-
-            const gloveMaterial = container.materials.find(m => m.name === 'glove');
+        const camera = new ArcRotateCamera("camera", -Math.PI / 2, Math.PI / 2.5, 5, Vector3.Zero(), scene);
+        camera.minZ = 0.01;
+        camera.wheelDeltaPercentage = 0.002;
+        camera.attachControl(canvas, true);
 
 
-            if (gloveMaterial && gloveMaterial instanceof PBRMaterial) {
-                const rootUrl = `${process.env.PUBLIC_URL || ''}/assets/`;
-                const colorIdTexture = new Texture(`${rootUrl}openBack.png`, this.scene, true, false, Constants.TEXTURE_NEAREST_SAMPLINGMODE);
+        const light = new HemisphericLight("light", new Vector3(0, 1, 0), scene);
 
-                gloveMaterial.albedoTexture = colorIdTexture;
+        this.assetManager.getAsset('openBack').then(container => {
+            container.addAllToScene();
+            const mainMesh = container.meshes.find(m => m.geometry) as Mesh;
+            if (mainMesh) {
+                this.box = mainMesh;
+            }
 
-                const detailTexture = new Texture(`${rootUrl}details.png`, this.scene);
-                detailTexture.coordinatesIndex = 0;
-                detailTexture.uScale = 4;
-                detailTexture.vScale = 4;
-                gloveMaterial.detailMap.isEnabled = true;
-                gloveMaterial.detailMap.normalBlendMethod = 1;
-                gloveMaterial.detailMap.texture = detailTexture;
-                gloveMaterial.detailMap.diffuseBlendLevel = 0;
-                gloveMaterial.detailMap.roughnessBlendLevel = 0;
-                gloveMaterial.detailMap.bumpLevel = .6;
+            const gloveMaterial = container.materials.find(m => m.name === 'glove');
 
 
-                // --- CONFIGURATION IS NOW CENTRALIZED HERE ---
-                const gloveConfig: ColorSwapConfig = {
-                    baseColors: [
-                        "#FF0000", "#00FFFF", "#80FF00", "#7F00FF", "#FFBF00",
-                        "#0040FF", "#00FF40", "#FF00BF", "#FF6000", "#FF0060"
-                    ],
-                    initialReplacements: [
-                        new Color3(1.0, 0.0, 1.0), new Color3(1.0, 1.0, 0.0), new Color3(0.0, 1.0, 1.0),
-                        new Color3(1.0, 0.5, 0.0), new Color3(0.5, 0.0, 1.0), new Color3(0.5, 0.0, 1.0),
-                        new Color3(0.2, 0.0, 0.2), new Color3(0.1, 0.5, 0.9), new Color3(1.0, 1.0, 1.0),
-                        new Color3(0.0, 1.0, 0.0) // Added a corresponding replacement to maintain array length
-                    ]
-                };
+            if (gloveMaterial && gloveMaterial instanceof PBRMaterial) {
+                const rootUrl = `${process.env.PUBLIC_URL || ''}/assets/`;
+                const colorIdTexture = new Texture(`${rootUrl}openBack.png`, this.scene, true, false, Constants.TEXTURE_NEAREST_SAMPLINGMODE);
+
+                gloveMaterial.albedoTexture = colorIdTexture;
+
+                const detailTexture = new Texture(`${rootUrl}details.png`, this.scene);
+                detailTexture.coordinatesIndex = 0;
+                detailTexture.uScale = 4;
+                detailTexture.vScale = 4;
+                gloveMaterial.detailMap.isEnabled = true;
+                gloveMaterial.detailMap.normalBlendMethod = 1;
+                gloveMaterial.detailMap.texture = detailTexture;
+                gloveMaterial.detailMap.diffuseBlendLevel = 0;
+                gloveMaterial.detailMap.roughnessBlendLevel = 0;
+                gloveMaterial.detailMap.bumpLevel = .6;
 
 
-                // --- INSTANTIATE PLUGIN WITH CONFIG ---
-                this.colorPlugin = new ColorSwapPlugin(gloveMaterial, gloveConfig);
-            }
+                // --- CONFIGURATION IS NOW CENTRALIZED HERE ---
+                const gloveConfig: ColorSwapConfig = {
+                    baseColors: [
+                        "#FF0000", "#00FFFF", "#80FF00", "#7F00FF", "#FFBF00",
+                        "#0040FF", "#00FF40", "#FF00BF", "#FF6000", "#FF0060"
+                    ],
+                    initialReplacements: [
+                        new Color3(1.0, 0.0, 1.0), new Color3(1.0, 1.0, 0.0), new Color3(0.0, 1.0, 1.0),
+                        new Color3(1.0, 0.5, 0.0), new Color3(0.5, 0.0, 1.0), new Color3(0.5, 0.0, 1.0),
+                        new Color3(0.2, 0.0, 0.2), new Color3(0.1, 0.5, 0.9), new Color3(1.0, 1.0, 1.0),
+                        new Color3(0.0, 1.0, 0.0) // Added a corresponding replacement to maintain array length
+                    ]
+                };
 
 
-            Promise.resolve().then(() => {
-                this.assetManager.preloadAssets(['closeBack']);
-            });
-        });
+                // --- INSTANTIATE PLUGIN WITH CONFIG ---
+                this.colorPlugin = new ColorSwapPlugin(gloveMaterial, gloveConfig);
+            }
 
 
-        this.createUI();
-
-        engine.runRenderLoop(() => {
-            scene.render();
-        });
-
-
-        this.resizeObserver = new ResizeObserver(() => {
-            engine.resize();
-        });
-        this.resizeObserver.observe(canvas);
-    }
+            Promise.resolve().then(() => {
+                this.assetManager.preloadAssets(['closeBack']);
+            });
+        });
 
 
-    private createUI() {
-        const advancedTexture = AdvancedDynamicTexture.CreateFullscreenUI("UI");
+        this.createUI();
+
+        engine.runRenderLoop(() => {
+            scene.render();
+        });
 
 
-        for (let i = 0; i < 9; i++) { // Assuming 9 for static UI creation
-            const button = Button.CreateSimpleButton(`randomBtn_${i}`, `Randomize Color ${i + 1}`);
-            button.width = "200px";
-            button.height = "40px";
-            button.color = "white";
-            button.background = "#555555";
-            button.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_RIGHT;
-            button.verticalAlignment = Control.VERTICAL_ALIGNMENT_TOP;
-            button.paddingRight = "20px";
-            button.top = `${20 + (i * 50)}px`;
-
-            button.onPointerUpObservable.add(() => {
-                if (this.colorPlugin) {
-                    const randomColor = new Color3(Math.random(), Math.random(), Math.random());
-                    // --- USE THE NEW, SAFE API METHOD ---
-                    this.colorPlugin.updateColor(i, randomColor);
-                    console.log(`Updated color at index ${i} to ${randomColor.toHexString()}`);
-                }
-            });
+        this.resizeObserver = new ResizeObserver(() => {
+            engine.resize();
+        });
+        this.resizeObserver.observe(canvas);
+    }
 
 
-            advancedTexture.addControl(button);
-        }
-    }
+    private createUI() {
+        const advancedTexture = AdvancedDynamicTexture.CreateFullscreenUI("UI");
 
 
-    public dispose() {
-        // --- CALL PLUGIN'S DISPOSE METHOD ---
-        this.colorPlugin?.dispose();
-        this.resizeObserver.disconnect();
-        this.engine.dispose();
-    }
+        for (let i = 0; i < 9; i++) { // Assuming 9 for static UI creation
+            const button = Button.CreateSimpleButton(`randomBtn_${i}`, `Randomize Color ${i + 1}`);
+            button.width = "200px";
+            button.height = "40px";
+            button.color = "white";
+            button.background = "#555555";
+            button.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_RIGHT;
+            button.verticalAlignment = Control.VERTICAL_ALIGNMENT_TOP;
+            button.paddingRight = "20px";
+            button.top = `${20 + (i * 50)}px`;
+
+            button.onPointerUpObservable.add(() => {
+                if (this.colorPlugin) {
+                    const randomColor = new Color3(Math.random(), Math.random(), Math.random());
+                    // --- USE THE NEW, SAFE API METHOD ---
+                    this.colorPlugin.updateColor(i, randomColor);
+                    console.log(`Updated color at index ${i} to ${randomColor.toHexString()}`);
+                }
+            });
+
+
+            advancedTexture.addControl(button);
+        }
+    }
+
+
+    public dispose() {
+        // --- CALL PLUGIN'S DISPOSE METHOD ---
+        this.colorPlugin?.dispose();
+        this.resizeObserver.disconnect();
+        this.engine.dispose();
+    }
 }
 
 
@@ -459,29 +356,29 @@ let sceneManager: SceneManager | null = null;
 
 
 export function updateBoxColor(hexColor: string) {
-    // Legacy function, not connected to the shader plugin
+    // Legacy function, not connected to the shader plugin
 }
 
 
 const BabylonCanvas = () => {
-    const reactCanvas = useRef<HTMLCanvasElement | null>(null);
+    const reactCanvas = useRef<HTMLCanvasElement | null>(null);
 
-    useEffect(() => {
-        const { current: canvas } = reactCanvas;
-        if (!canvas) return;
-
-
-        sceneManager = new SceneManager(canvas);
+    useEffect(() => {
+        const { current: canvas } = reactCanvas;
+        if (!canvas) return;
 
 
-        return () => {
-            sceneManager?.dispose();
-            sceneManager = null;
-        };
-    }, []);
+        sceneManager = new SceneManager(canvas);
 
 
-    return <canvas ref={reactCanvas} style={{ width: '100%', height: '100%', outline: 'none' }} />;
+        return () => {
+            sceneManager?.dispose();
+            sceneManager = null;
+        };
+    }, []);
+
+
+    return <canvas ref={reactCanvas} style={{ width: '100%', height: '100%', outline: 'none' }} />;
 
 };
 
