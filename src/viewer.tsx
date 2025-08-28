@@ -180,13 +180,9 @@ for (int i = 0; i < ${arraySize}; i++) {
     }
 }
 
-// --- VISUALIZATION OUTPUT FOR TESTING ---
-if (bestIndex == -1) {
-    // Red for no match found.
-    finalPixelColor = vec3(1.0, 0.0, 0.0);
-} else {
-    // Map index to a grayscale value for visual verification.
-    finalPixelColor = vec3(float(bestIndex) / (float(${arraySize}) - 1.0));
+// --- MAIN COLOR SWAPPING LOGIC ---
+if (bestIndex != -1) {
+    finalPixelColor = replacements[bestIndex];
 }
 
 surfaceAlbedo.rgb = finalPixelColor;
