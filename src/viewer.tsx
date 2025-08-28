@@ -104,6 +104,12 @@ class ColorSwapPlugin extends MaterialPluginBase {
     }
 
 
+    // Tells the engine that our plugin needs access to this sampler
+    public getSamplers(samplers: string[]) {
+        samplers.push("albedoSampler");
+    }
+
+
     prepareDefines(defines: MaterialDefines) {
         defines["COLOR_SWAP"] = this._isEnabled;
     }
@@ -125,6 +131,8 @@ uniform vec3 replacements[${arraySize}];
 uniform vec3 baseColors[${arraySize}];
 uniform float blendRadius;
 uniform float blendStrength;
+uniform sampler2D albedoSampler;
+varying vec2 vAlbedoUV;
 #endif
 `
         };
@@ -170,8 +178,21 @@ for (int i = 0; i < ${arraySize}; i++) {
     }
 }
 
-// NOTE: No color swapping logic is applied here yet.
-// We are only performing the identification step as the first phase.
+const float MATCH_TOLERANCE = 0.05;
+if (smallestDistance > MATCH_TOLERANCE) {
+    // The signal is explicitly killed.
+    bestIndex = -1;
+}
+
+// --- VISUALIZATION OUTPUT FOR TESTING ---
+if (bestIndex == -1) {
+    // Red for no match found. This should not happen.
+    finalPixelColor = vec3(1.0, 0.0, 0.0);
+} else {
+    // Map index to a grayscale value for visual verification.
+    // The explicit float() casting is the fix for the compilation error.
+    finalPixelColor = vec3(float(bestIndex) / (float(${arraySize}) - 1.0));
+}
 
 surfaceAlbedo.rgb = finalPixelColor;
 #endif
