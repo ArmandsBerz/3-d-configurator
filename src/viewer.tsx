@@ -181,8 +181,7 @@ varying vec2 vAlbedoUV;
 #ifdef COLOR_SWAP
 vec3 finalPixelColor = surfaceAlbedo.rgb;
 
-// --- STEP 1: IDENTIFY THE CURRENT PIXEL'S COLOR ---
-// This loop is non-greedy and stops as soon as it finds a valid match.
+// --- NON-EXHAUSTIVE SEARCH FOR CURRENT PIXEL ---
 const float MATCH_TOLERANCE = 0.05;
 int bestIndex = -1; // -1 is the initial "no match found" state.
 
@@ -194,16 +193,9 @@ for (int i = 0; i < ${arraySize}; i++) {
     }
 }
 
-
-// --- STEP 2: CONDITIONAL LOGIC FOR MAIN VS. BORDER ZONES ---
-// If the pixel is a non-pink color...
-if (bestIndex != -1 && bestIndex != 9) {
-    // --- MAIN COLOR SWAPPING LOGIC ---
-    // Apply the replacement color via a direct lookup.
-    finalPixelColor = replacements[bestIndex];
-} 
-// ELSE, if the pixel is the special pink border color...
-else if (bestIndex == 9) {
+// --- CONDITIONAL LOGIC FOR MAIN VS. BORDER ZONES ---
+// If the pixel is the special pink border color...
+if (distance(finalPixelColor, specialBaseColor) < MATCH_TOLERANCE) {
     // --- AGNOSTIC NEIGHBOR SAMPLING ---
     vec2 texelSize = 1.0 / vec2(textureSize(albedoSampler, 0));
     vec3 neighbors[4];
@@ -216,11 +208,14 @@ else if (bestIndex == 9) {
     // We are only adding the sampling code for now.
 
     // A temporary placeholder to visualize the pink border.
-    finalPixelColor = vec3(0.0, 1.0, 0.0); // Green to indicate pink zone is recognized.
+    finalPixelColor = vec3(0.0, 1.0, 0.0); // Green placeholder to indicate pink zone is recognized.
 }
-// ELSE, if no match was found...
+// ELSE, for all other non-pink colors...
 else {
-    finalPixelColor = finalPixelColor; // Leave the color as is (or swap for red to test).
+    // --- MAIN COLOR SWAPPING LOGIC ---
+    if (bestIndex != -1) {
+        finalPixelColor = replacements[bestIndex];
+    }
 }
 
 surfaceAlbedo.rgb = finalPixelColor;
