@@ -167,30 +167,25 @@ varying vec2 vAlbedoUV;
 #ifdef COLOR_SWAP
 vec3 finalPixelColor = surfaceAlbedo.rgb;
 
-// --- STRICT COLOR IDENTIFICATION ---
-float smallestDistance = 1000.0;
-int bestIndex = -1;
+// --- NON-EXHAUSTIVE SEARCH ---
+// This loop is non-greedy and stops as soon as it finds a valid match.
+const float MATCH_TOLERANCE = 0.05;
+int bestIndex = -1; // -1 is the initial "no match found" state.
+
 for (int i = 0; i < ${arraySize}; i++) {
     float dist = distance(finalPixelColor, baseColors[i]);
-    if (dist < smallestDistance) {
-        smallestDistance = dist;
+    if (dist < MATCH_TOLERANCE) {
         bestIndex = i;
+        break; // The crucial kill switch: the loop terminates immediately.
     }
-}
-
-const float MATCH_TOLERANCE = 0.05;
-if (smallestDistance > MATCH_TOLERANCE) {
-    // The signal is explicitly killed.
-    bestIndex = -1;
 }
 
 // --- VISUALIZATION OUTPUT FOR TESTING ---
 if (bestIndex == -1) {
-    // Red for no match found. This should not happen.
+    // Red for no match found.
     finalPixelColor = vec3(1.0, 0.0, 0.0);
 } else {
     // Map index to a grayscale value for visual verification.
-    // The explicit float() casting is the fix for the compilation error.
     finalPixelColor = vec3(float(bestIndex) / (float(${arraySize}) - 1.0));
 }
 
