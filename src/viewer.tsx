@@ -37,6 +37,7 @@ class ColorSwapPlugin extends MaterialPluginBase {
     // --- PRIVATE INTERNAL STATE ---
     private _baseColors: Color3[] = [];
     private _replacements: Color3[] = [];
+    private _specialBaseColor!: Color3; // For the neighbor-mixing logic
     // _material is inherited from MaterialPluginBase and should not be re-declared.
 
 
@@ -70,10 +71,21 @@ class ColorSwapPlugin extends MaterialPluginBase {
         for (const hex of config.baseColors) {
             const linearColor = Color3.FromHexString(hex).toLinearSpace();
             this._baseColors.push(linearColor);
+            // Identify and store the special color for the neighbor logic
+            if (hex === "#FF0060") {
+                this._specialBaseColor = linearColor;
+            }
+        }
+        
+        if (!this._specialBaseColor) {
+             console.warn("ColorSwapPlugin: Special base color #FF0060 not found in config.");
+             // Assign a fallback to prevent crashes
+             this._specialBaseColor = new Color3(1.0, 0.0, 0.376); 
         }
 
         this.isEnabled = true;
     }
+
 
     // --- CONTROLLED PUBLIC API FOR UPDATES ---
     public updateColor(index: number, newColor: Color3) {
@@ -123,14 +135,15 @@ class ColorSwapPlugin extends MaterialPluginBase {
                 { name: "baseColors", size: 3, type: "vec3", arraySize },
                 { name: "blendRadius", size: 1, type: "float" },
                 { name: "blendStrength", size: 1, type: "float" },
+                { name: "specialBaseColor", size: 3, type: "vec3"}
             ],
-
             fragment: `
 #ifdef COLOR_SWAP
 uniform vec3 replacements[${arraySize}];
 uniform vec3 baseColors[${arraySize}];
 uniform float blendRadius;
 uniform float blendStrength;
+uniform vec3 specialBaseColor;
 uniform sampler2D albedoSampler;
 varying vec2 vAlbedoUV;
 #endif
@@ -155,6 +168,7 @@ varying vec2 vAlbedoUV;
             uniformBuffer.updateArray("baseColors", [...baseColorsArray]);
             uniformBuffer.updateFloat("blendRadius", this.blendRadius);
             uniformBuffer.updateFloat("blendStrength", this.blendStrength);
+            uniformBuffer.updateColor3("specialBaseColor", this._specialBaseColor);
         }
     }
 
@@ -167,7 +181,7 @@ varying vec2 vAlbedoUV;
 #ifdef COLOR_SWAP
 vec3 finalPixelColor = surfaceAlbedo.rgb;
 
-// --- NON-EXHAUSTIVE SEARCH ---
+// --- STEP 1: IDENTIFY THE CURRENT PIXEL'S COLOR ---
 // This loop is non-greedy and stops as soon as it finds a valid match.
 const float MATCH_TOLERANCE = 0.05;
 int bestIndex = -1; // -1 is the initial "no match found" state.
@@ -180,9 +194,33 @@ for (int i = 0; i < ${arraySize}; i++) {
     }
 }
 
-// --- MAIN COLOR SWAPPING LOGIC ---
-if (bestIndex != -1) {
+
+// --- STEP 2: CONDITIONAL LOGIC FOR MAIN VS. BORDER ZONES ---
+// If the pixel is a non-pink color...
+if (bestIndex != -1 && bestIndex != 9) {
+    // --- MAIN COLOR SWAPPING LOGIC ---
+    // Apply the replacement color via a direct lookup.
     finalPixelColor = replacements[bestIndex];
+} 
+// ELSE, if the pixel is the special pink border color...
+else if (bestIndex == 9) {
+    // --- AGNOSTIC NEIGHBOR SAMPLING ---
+    vec2 texelSize = 1.0 / vec2(textureSize(albedoSampler, 0));
+    vec3 neighbors[4];
+    neighbors[0] = texture(albedoSampler, vAlbedoUV + vec2(0.0, texelSize.y)).rgb; // Up
+    neighbors[1] = texture(albedoSampler, vAlbedoUV + vec2(0.0, -texelSize.y)).rgb; // Down
+    neighbors[2] = texture(albedoSampler, vAlbedoUV + vec2(-texelSize.x, 0.0)).rgb; // Left
+    neighbors[3] = texture(albedoSampler, vAlbedoUV + vec2(texelSize.x, 0.0)).rgb; // Right
+
+    // NOTE: The rest of the logic for filtering and mixing goes here.
+    // We are only adding the sampling code for now.
+
+    // A temporary placeholder to visualize the pink border.
+    finalPixelColor = vec3(0.0, 1.0, 0.0); // Green to indicate pink zone is recognized.
+}
+// ELSE, if no match was found...
+else {
+    finalPixelColor = finalPixelColor; // Leave the color as is (or swap for red to test).
 }
 
 surfaceAlbedo.rgb = finalPixelColor;
@@ -193,8 +231,6 @@ surfaceAlbedo.rgb = finalPixelColor;
         return null;
     }
 }
-
-
 
 
 /**
