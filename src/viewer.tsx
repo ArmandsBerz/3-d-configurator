@@ -196,7 +196,7 @@ for (int i = 0; i < ${arraySize}; i++) {
 // --- CONDITIONAL LOGIC FOR MAIN VS. BORDER ZONES ---
 // If the pixel is the special pink border color...
 if (distance(finalPixelColor, specialBaseColor) < MATCH_TOLERANCE) {
-    // --- AGNOSTIC NEIGHBOR SAMPLING ---
+    // --- Isolated Neighbor Sampling ---
     vec2 texelSize = 1.0 / vec2(textureSize(albedoSampler, 0));
     vec3 neighbors[4];
     neighbors[0] = texture(albedoSampler, vAlbedoUV + vec2(0.0, texelSize.y)).rgb; // Up
@@ -204,11 +204,42 @@ if (distance(finalPixelColor, specialBaseColor) < MATCH_TOLERANCE) {
     neighbors[2] = texture(albedoSampler, vAlbedoUV + vec2(-texelSize.x, 0.0)).rgb; // Left
     neighbors[3] = texture(albedoSampler, vAlbedoUV + vec2(texelSize.x, 0.0)).rgb; // Right
 
-    // NOTE: The rest of the logic for filtering and mixing goes here.
-    // We are only adding the sampling code for now.
+    // --- Comprehensive Filtered Collection ---
+    
+    // 1. INITIALIZATION: Array can now hold up to 4 indices.
+    int validIndices[4];
+    validIndices[0] = -1;
+    validIndices[1] = -1;
+    validIndices[2] = -1;
+    validIndices[3] = -1;
+    int foundCount = 0;
+    
+    // 2. COMPREHENSIVE SEARCH: Loop now checks ALL 4 neighbors.
+    for (int j = 0; j < 4; j++) {
+        
+        // 3. REUSED "KILL SWITCH" IDENTIFICATION:
+        // This efficient search is now used for each neighbor.
+        int neighborBestIndex = -1;
+        for (int i = 0; i < ${arraySize}; i++) {
+            float dist = distance(neighbors[j], baseColors[i]);
+            if (dist < MATCH_TOLERANCE) {
+                neighborBestIndex = i;
+                break; // Stop as soon as a match is found.
+            }
+        }
+    
+        // 4. SIMPLIFIED FILTERING & COLLECTION:
+        // The tolerance check is now part of the identification itself.
+        if (neighborBestIndex != -1 && neighborBestIndex != 9) {
+            validIndices[foundCount] = neighborBestIndex;
+            foundCount++;
+        }
+    }
+    
+    // The flexible mixing logic would go here, using the 'validIndices' and 'foundCount' results.
+    // For now, we are not mixing. We can use a placeholder to visualize.
+    finalPixelColor = vec3(0.0, 0.0, 1.0); // Blue placeholder: collection is complete.
 
-    // A temporary placeholder to visualize the pink border.
-    finalPixelColor = vec3(0.0, 1.0, 0.0); // Green placeholder to indicate pink zone is recognized.
 }
 // ELSE, for all other non-pink colors...
 else {
