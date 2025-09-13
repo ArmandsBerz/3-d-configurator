@@ -37,7 +37,6 @@ class ColorSwapPlugin extends MaterialPluginBase {
     // --- PRIVATE INTERNAL STATE ---
     private _baseColors: Color3[] = [];
     private _replacements: Color3[] = [];
-    private _specialBaseColor!: Color3; // For the neighbor-mixing logic
     // _material is inherited from MaterialPluginBase and should not be re-declared.
 
 
@@ -71,21 +70,10 @@ class ColorSwapPlugin extends MaterialPluginBase {
         for (const hex of config.baseColors) {
             const linearColor = Color3.FromHexString(hex).toLinearSpace();
             this._baseColors.push(linearColor);
-            // Identify and store the special color for the neighbor logic
-            if (hex === "#FF0060") {
-                this._specialBaseColor = linearColor;
-            }
-        }
-        
-        if (!this._specialBaseColor) {
-             console.warn("ColorSwapPlugin: Special base color #FF0060 not found in config.");
-             // Assign a fallback to prevent crashes
-             this._specialBaseColor = new Color3(1.0, 0.0, 0.376); 
         }
 
         this.isEnabled = true;
     }
-
 
     // --- CONTROLLED PUBLIC API FOR UPDATES ---
     public updateColor(index: number, newColor: Color3) {
@@ -135,15 +123,14 @@ class ColorSwapPlugin extends MaterialPluginBase {
                 { name: "baseColors", size: 3, type: "vec3", arraySize },
                 { name: "blendRadius", size: 1, type: "float" },
                 { name: "blendStrength", size: 1, type: "float" },
-                { name: "specialBaseColor", size: 3, type: "vec3"}
             ],
+
             fragment: `
 #ifdef COLOR_SWAP
 uniform vec3 replacements[${arraySize}];
 uniform vec3 baseColors[${arraySize}];
 uniform float blendRadius;
 uniform float blendStrength;
-uniform vec3 specialBaseColor;
 uniform sampler2D albedoSampler;
 varying vec2 vAlbedoUV;
 #endif
@@ -168,7 +155,6 @@ varying vec2 vAlbedoUV;
             uniformBuffer.updateArray("baseColors", [...baseColorsArray]);
             uniformBuffer.updateFloat("blendRadius", this.blendRadius);
             uniformBuffer.updateFloat("blendStrength", this.blendStrength);
-            uniformBuffer.updateColor3("specialBaseColor", this._specialBaseColor);
         }
     }
 
@@ -181,7 +167,8 @@ varying vec2 vAlbedoUV;
 #ifdef COLOR_SWAP
 vec3 finalPixelColor = surfaceAlbedo.rgb;
 
-// --- NON-EXHAUSTIVE SEARCH FOR CURRENT PIXEL ---
+// --- NON-EXHAUSTIVE SEARCH ---
+// This loop is non-greedy and stops as soon as it finds a valid match.
 const float MATCH_TOLERANCE = 0.05;
 int bestIndex = -1; // -1 is the initial "no match found" state.
 
@@ -193,64 +180,9 @@ for (int i = 0; i < ${arraySize}; i++) {
     }
 }
 
-// --- CONDITIONAL LOGIC FOR MAIN VS. BORDER ZONES ---
-// If the pixel is the special pink border color...
-if (distance(finalPixelColor, specialBaseColor) < MATCH_TOLERANCE) {
-    // --- Isolated Neighbor Sampling ---
-    vec2 texelSize = 1.0 / vec2(textureSize(albedoSampler, 0));
-    vec3 neighbors[4];
-    neighbors[0] = texture(albedoSampler, vAlbedoUV + vec2(0.0, texelSize.y)).rgb; // Up
-    neighbors[1] = texture(albedoSampler, vAlbedoUV + vec2(0.0, -texelSize.y)).rgb; // Down
-    neighbors[2] = texture(albedoSampler, vAlbedoUV + vec2(-texelSize.x, 0.0)).rgb; // Left
-    neighbors[3] = texture(albedoSampler, vAlbedoUV + vec2(texelSize.x, 0.0)).rgb; // Right
-
-    // --- Comprehensive Filtered Collection ---
-    int validIndices[4];
-    validIndices[0] = -1;
-    validIndices[1] = -1;
-    validIndices[2] = -1;
-    validIndices[3] = -1;
-    int foundCount = 0;
-     
-    for (int j = 0; j < 4; j++) {
-        int neighborBestIndex = -1;
-        for (int i = 0; i < ${arraySize}; i++) {
-            float dist = distance(neighbors[j], baseColors[i]);
-            if (dist < MATCH_TOLERANCE) {
-                neighborBestIndex = i;
-                break; // Stop as soon as a match is found for this neighbor.
-            }
-        }
-     
-        // FILTERING & COLLECTION:
-        // Collect index if a match was found AND it's not the exception color (index 9)
-        if (neighborBestIndex != -1 && neighborBestIndex != 9) {
-            validIndices[foundCount] = neighborBestIndex;
-            foundCount++;
-        }
-    }
-     
-    // --- MIXING AND APPLICATION LOGIC ---
-    if (foundCount > 0) {
-        vec3 accumulatedColor = vec3(0.0);
-        // Sum the replacement colors of all valid neighbors found
-        for (int i = 0; i < foundCount; i++) {
-            accumulatedColor += replacements[validIndices[i]];
-        }
-        // Calculate the average color
-        finalPixelColor = accumulatedColor / float(foundCount);
-    } else {
-        // If no valid neighbors were found, the pixel retains its original color.
-        finalPixelColor = surfaceAlbedo.rgb;
-    }
-
-}
-// ELSE, for all other non-pink colors...
-else {
-    // --- MAIN COLOR SWAPPING LOGIC ---
-    if (bestIndex != -1) {
-        finalPixelColor = replacements[bestIndex];
-    }
+// --- MAIN COLOR SWAPPING LOGIC ---
+if (bestIndex != -1) {
+    finalPixelColor = replacements[bestIndex];
 }
 
 surfaceAlbedo.rgb = finalPixelColor;
@@ -261,6 +193,8 @@ surfaceAlbedo.rgb = finalPixelColor;
         return null;
     }
 }
+
+
 
 
 /**
