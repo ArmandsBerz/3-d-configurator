@@ -1,5 +1,5 @@
 import { SceneManager } from './viewer';
-import { SceneContext, GloveLogicController } from './logic';
+import { SceneContext, GloveLogicController, leatherOptions, fontOptions, colorSwatches, buildOptionsData, webTypeOptions, initialState, getColorDisplay, getActiveColor, DUAL_COLOR_SUB_PARTS, FORMAT_TYPES } from './logic';
 import 'wicg-inert';
 import React, { useState, useRef, useLayoutEffect, useCallback, useEffect, createContext, useContext, useReducer, ReactNode, ReactElement } from 'react';
 import BabylonCanvas from './viewer';
@@ -7,14 +7,14 @@ import { SummaryIcon, BackArrowIcon, CheckmarkIcon, LongArrowRightIcon, CaretRig
 
 // --- START: Core Type Definitions ---
 
-type HexColor = string;
-type Font = 'SCRIPT' | 'BLOCK';
+export type HexColor = string;
+export type Font = 'SCRIPT' | 'BLOCK';
 
-type SingleColorPart = { type: 'single'; color: HexColor };
-type DualColorPart = { type: 'dual'; inner: HexColor; outer: HexColor };
-type WebPart = { type: 'web'; webType: string; color: HexColor };
-type TextPart = { type: 'text'; text: string; font: Font; color: HexColor };
-type ColorablePart = SingleColorPart | DualColorPart | WebPart | TextPart;
+export type SingleColorPart = { type: 'single'; color: HexColor };
+export type DualColorPart = { type: 'dual'; inner: HexColor; outer: HexColor };
+export type WebPart = { type: 'web'; webType: string; color: HexColor };
+export type TextPart = { type: 'text'; text: string; font: Font; color: HexColor };
+export type ColorablePart = SingleColorPart | DualColorPart | WebPart | TextPart;
 
 interface BuildConfig {
     imageSelection: 'imgOpt1' | 'imgOpt2';
@@ -37,12 +37,12 @@ export interface GloveConfiguration {
     pinkyName: TextPart;
 }
 
-interface AppState {
+export interface AppState {
     configuration: GloveConfiguration;
     activeDualColorPart: (typeof DUAL_COLOR_SUB_PARTS)[keyof typeof DUAL_COLOR_SUB_PARTS];
 }
 
-type GloveAction =
+export type GloveAction =
     | { type: typeof ACTION_TYPES.UPDATE_BUILD; payload: BuildConfig }
     | { type: typeof ACTION_TYPES.UPDATE_COLOR; payload: { id: 'index'; color: HexColor } }
     | { type: typeof ACTION_TYPES.UPDATE_DUAL_COLOR; payload: { id: 'thumb' | 'middle' | 'ring' | 'pinky'; subPartId: (typeof DUAL_COLOR_SUB_PARTS)[keyof typeof DUAL_COLOR_SUB_PARTS]; color: HexColor } }
@@ -99,11 +99,6 @@ export const ACTION_TYPES = {
     APPLY_COLOR_TO_ALL: 'APPLY_COLOR_TO_ALL',
 } as const;
 
-export const DUAL_COLOR_SUB_PARTS = {
-    INNER: 'inner',
-    OUTER: 'outer',
-} as const;
-
 export const POSITIONS = {
     TOP: 'top',
     BOTTOM: 'bottom',
@@ -127,12 +122,6 @@ export const ICONS = {
     MOBILE: 'mobile',
 } as const;
 
-export const FORMAT_TYPES = {
-    DEFAULT: 'default',
-    HEADER: 'header',
-    SUMMARY: 'summary',
-} as const;
-
 export const NUMERIC_CONSTANTS = {
     SCROLL_THRESHOLD: 1,
     DESKTOP_BREAKPOINT: '1024px',
@@ -141,28 +130,6 @@ export const NUMERIC_CONSTANTS = {
 // --- END: Application-Wide Constants ---
 
 // --- Constants (Decoupled Data Sources) ---
-
-const leatherOptions = [
-    { id: 'imgOpt1', title: 'Japanese Kip' },
-    { id: 'imgOpt2', title: 'American Steerhide' }
-];
-
-const fontOptions: { id: Font, label: string }[] = [
-    { id: 'SCRIPT', label: 'SCRIPT' },
-    { id: 'BLOCK', label: 'BLOCK' }
-];
-
-const colorSwatches: { name: string, hex: HexColor }[] = [
-    { name: 'Red', hex: '#C62828' }, { name: 'Pink', hex: '#AD1457' }, { name: 'Purple', hex: '#6A1B9A' }, { name: 'Indigo', hex: '#4527A0' }, { name: 'Royal', hex: '#283593' }, { name: 'Blue', hex: '#1565C0' }, { name: 'Light Blue', hex: '#0277BD' }, { name: 'Teal', hex: '#00838F' }, { name: 'Green', hex: '#00695C' }, { name: 'Forest', hex: '#2E7D32' }, { name: 'Lime', hex: '#558B2F' }, { name: 'Olive', hex: '#9E9D24' }, { name: 'Gold', hex: '#F9A825' }, { name: 'Orange', hex: '#FF8F00' }, { name: 'Burnt Orange', hex: '#EF6C00' }, { name: 'Red Orange', hex: '#D84315' }, { name: 'Brown', hex: '#4E342E' }, { name: 'Charcoal', hex: '#424242' }, { name: 'Grey', hex: '#BDBDBD' }, { name: 'Slate', hex: '#37474F' },
-];
-
-const buildOptionsData = [
-    { id: 'position', title: 'Position', options: [{id: 'INFIELD', label: 'INFIELD'}, {id: 'OUTFIELD', label: 'OUTFIELD'}, {id: 'PITCHER', label: 'PITCHER'}, {id: 'CATCHER', label: 'CATCHER'}, {id: 'FIRST BASE', label: 'FIRST BASE'}], layout: 'grid-cols-3' }, { id: 'size', title: 'Size', options: [{id: '11"', label: '11"'}, {id: '11.25"', label: '11.25"'}, {id: '11.5"', label: '11.5"'}, {id: '11.75"', label: '11.75"'}, {id: '12"', label: '12"'}], layout: 'grid-cols-3' }, { id: 'handOpeningSize', title: 'Hand Opening Size', options: [{id: 'ADULT', label: 'ADULT'}, {id: 'YOUTH', label: 'YOUTH'}], layout: 'grid-cols-2' }, { id: 'stiffness', title: 'Stiffness', options: [{id: 'STIFF', label: 'STIFF'}, {id: 'STANDARD', label: 'STANDARD'}, {id: 'SOFT', label: 'SOFT'}], layout: 'grid-cols-3' }, { id: 'throwingHand', title: 'Throwing Hand', options: [{id: 'RIGHT HAND', label: 'RIGHT HAND'}, {id: 'LEFT HAND', label: 'LEFT HAND'}], layout: 'grid-cols-2' }
-];
-
-const webTypeOptions = [
-    { id: 'MOD_TRAP', title: 'MOD TRAP' }, { id: 'ONE_PIECE', title: 'ONE PIECE' }, { id: 'TWO_PIECE', title: 'TWO PIECE' }, { id: 'DUAL_HINGE', title: 'DUAL HINGE' }, { id: 'FRAMED_MOD_TRAP', title: 'FRAMED MOD TRAP' }, { id: 'CLOSED_V', title: 'CLOSED V' }, { id: 'BASKET', title: 'BASKET' }, { id: 'BASKET_LACE', title: 'BASKET LACE' }, { id: 'SEALING', title: 'SEALING' }, { id: 'LACE_SEALING', title: 'LACE SEALING' }
-];
 
 type OptionsConfigItem = { id: keyof GloveConfiguration | 'build'; title: string; contentType: Exclude<(typeof CONTENT_TYPES)[keyof typeof CONTENT_TYPES], 'summary'>; };
 
@@ -178,68 +145,7 @@ const optionsConfig: OptionsConfigItem[] = [
     { id: 'pinkyName', title: 'Pinky Name', contentType: CONTENT_TYPES.TEXT },
 ];
 
-interface GetColorDisplayOptions {
-    format?: (typeof FORMAT_TYPES)[keyof typeof FORMAT_TYPES];
-}
-
-const getColorDisplay = (colorValue: ColorablePart | HexColor, options: GetColorDisplayOptions = {}): string => {
-    const { format = FORMAT_TYPES.DEFAULT } = options;
-    const getColorName = (hex: HexColor) => colorSwatches.find(c => c.hex === hex)?.name || hex;
-
-    if (typeof colorValue === 'string') {
-        return getColorName(colorValue);
-    }
-
-    switch (format) {
-        case FORMAT_TYPES.HEADER:
-            if (colorValue.type === 'dual') return `${getColorName(colorValue.inner)} · ${getColorName(colorValue.outer)}`;
-            return getColorName(colorValue.color);
-        case FORMAT_TYPES.SUMMARY:
-            if (colorValue.type === 'dual') return `Inner: ${getColorName(colorValue.inner)}, Outer: ${getColorName(colorValue.outer)}`;
-            if (colorValue.type === 'text') return getColorName(colorValue.color);
-            if (colorValue.type === 'single' || colorValue.type === 'web') return `Color: ${getColorName(colorValue.color)}`;
-            // eslint-disable-next-line @typescript-eslint/no-unused-vars
-            const exhaustiveCheck: never = colorValue;
-            return 'N/A';
-        default:
-            return JSON.stringify(colorValue);
-    }
-};
-
-const getActiveColor = (
-    colorValue: ColorablePart | null | undefined,
-    activeSubPart: AppState['activeDualColorPart']
-): HexColor | undefined => {
-    if (!colorValue || typeof colorValue !== 'object') return undefined;
-
-    switch (colorValue.type) {
-        case 'web':
-        case 'single':
-        case 'text':
-            return colorValue.color;
-        case 'dual':
-            return colorValue[activeSubPart];
-        default:
-            return undefined;
-    }
-};
-
 // --- Centralized State Management ---
-
-const initialState: AppState = {
-    configuration: {
-        build: { imageSelection: 'imgOpt1', position: 'OUTFIELD', size: '11"', handOpeningSize: 'ADULT', stiffness: 'STANDARD', throwingHand: 'RIGHT HAND' },
-        web: { type: 'web', webType: 'MOD_TRAP', color: '#C62828' },
-        thumb: { type: 'dual', inner: '#C62828', outer: '#2E7D32' },
-        index: { type: 'single', color: '#1565C0' },
-        middle: { type: 'dual', inner: '#2E7D32', outer: '#C62828' },
-        ring: { type: 'dual', inner: '#F9A825', outer: '#6A1B9A' },
-        pinky: { type: 'dual', inner: '#6A1B9A', outer: '#F9A825' },
-        thumbName: { type: 'text', text: 'Thumb', font: 'SCRIPT', color: '#BDBDBD' },
-        pinkyName: { type: 'text', text: 'Pinky', font: 'BLOCK', color: '#FFFFFF' },
-    },
-    activeDualColorPart: DUAL_COLOR_SUB_PARTS.INNER,
-};
 
 const gloveConfigReducer = (state: AppState, action: GloveAction): AppState => {
     switch (action.type) {
@@ -344,8 +250,6 @@ const PrimaryCTAButton = ({ label, onClick, ariaLabel }: PrimaryCTAButtonProps) 
     </button>
 );
 
-// --- START: REFACTOR PLAN - STEP 2: Evolve SecondaryButton ---
-
 interface SecondaryButtonProps {
     label: ReactNode;
     onClick: (event: React.MouseEvent<HTMLButtonElement>) => void;
@@ -382,8 +286,6 @@ const SecondaryButton = ({
         </button>
     );
 };
-
-// --- END: REFACTOR PLAN - STEP 2 ---
 
 interface ColorSwatchProps {
     color: HexColor;
@@ -907,8 +809,6 @@ interface FooterMobileProps {
     openAccordionOptionMobile: MobileAccordionState;
 }
 
-// --- START: REFACTOR PLAN - STEP 3 & 4: Create Controller and Integrate ---
-
 interface OverviewActionControllerProps {
     isOpen: boolean;
     onOpen: (event: React.MouseEvent<HTMLButtonElement>) => void;
@@ -917,7 +817,6 @@ interface OverviewActionControllerProps {
 
 const OverviewActionController = ({ isOpen, onOpen, onClose }: OverviewActionControllerProps) => {
     if (isOpen) {
-        // ... The "Back" button code remains the same
         return (
             <SecondaryButton
                 label="Back"
@@ -928,14 +827,11 @@ const OverviewActionController = ({ isOpen, onOpen, onClose }: OverviewActionCon
         );
     }
 
-    // THIS IS THE CORRECTED VERSION
     return (
         <SecondaryButton
             onClick={onOpen}
             variant={VARIANTS.THEME.DARK}
             justify="justify-center"
-            // We pass the entire visual content as the 'label' prop
-            // to ensure the icon and text are grouped and spaced correctly.
             label={
                 <div className="flex items-center space-x-2">
                     <SummaryIcon />
@@ -1016,8 +912,6 @@ const FooterMobile = ({ openPanelName, onClosePanel, onReviewClick, onCompleteOr
         </footer>
     );
 };
-// --- END: REFACTOR PLAN - STEP 3 & 4 ---
-
 
 const useBreakpoint = (breakpoint: string = NUMERIC_CONSTANTS.DESKTOP_BREAKPOINT): boolean => {
     const query = `(min-width: ${breakpoint})`;
@@ -1032,7 +926,6 @@ const useBreakpoint = (breakpoint: string = NUMERIC_CONSTANTS.DESKTOP_BREAKPOINT
     return isMatch;
 };
 
-// --- START: NEW Reusable Hint Component ---
 const NavigationHint = ({ isVisible }: { isVisible: boolean }) => {
     if (!isVisible) return null;
 
@@ -1042,9 +935,7 @@ const NavigationHint = ({ isVisible }: { isVisible: boolean }) => {
         </div>
     );
 };
-// --- END: NEW Reusable Hint Component ---
 
-// --- START: REFACTORED Grid Navigation Hook ---
 const useGridNavigation = <T extends HTMLElement>(itemCount: number) => {
     const [showNavigationHint, setShowNavigationHint] = useState(false);
     const [activeIndex, setActiveIndex] = useState(0);
@@ -1059,7 +950,6 @@ const useGridNavigation = <T extends HTMLElement>(itemCount: number) => {
     const handleFocus = (event: React.FocusEvent<HTMLDivElement>) => {
         if (mouseClickInProgress.current) {
             mouseClickInProgress.current = false;
-            // When an item is clicked, it receives focus. We find its index to update the activeIndex.
             const newIndex = itemRefs.current.findIndex(ref => ref.current === document.activeElement);
             if (newIndex !== -1) {
                 setActiveIndex(newIndex);
@@ -1079,7 +969,7 @@ const useGridNavigation = <T extends HTMLElement>(itemCount: number) => {
     const handleBlur = () => {
         setShowNavigationHint(false);
         mouseClickInProgress.current = false;
-        setActiveIndex(0); // Reset position when the grid loses focus
+        setActiveIndex(0);
     };
 
     const handleKeyDown = (event: React.KeyboardEvent<T>) => {
@@ -1089,7 +979,6 @@ const useGridNavigation = <T extends HTMLElement>(itemCount: number) => {
             if (showNavigationHint) {
                 setShowNavigationHint(false);
             }
-            // Do not prevent default, allow the click event to fire
             return;
         }
 
@@ -1102,7 +991,7 @@ const useGridNavigation = <T extends HTMLElement>(itemCount: number) => {
             setShowNavigationHint(false);
         }
 
-        const focusedIndex = activeIndex; // Use activeIndex as the source of truth
+        const focusedIndex = activeIndex;
         if (focusedIndex === -1) return;
 
         const container = containerRef.current;
@@ -1138,7 +1027,7 @@ const useGridNavigation = <T extends HTMLElement>(itemCount: number) => {
 
         if (nextIndex >= 0 && nextIndex < itemCount) {
             itemRefs.current[nextIndex]?.current?.focus();
-            setActiveIndex(nextIndex); // Update activeIndex on navigation
+            setActiveIndex(nextIndex);
         }
     };
     
@@ -1151,9 +1040,7 @@ const useGridNavigation = <T extends HTMLElement>(itemCount: number) => {
 
     return { containerRef, itemRefs, showNavigationHint, gridEventHandlers, activeIndex, setActiveIndex };
 };
-// --- END: REFACTORED Grid Navigation Hook ---
 
-// --- START: Reusable Escape Key Hook Definition ---
 const useEscapeKey = (ref: React.RefObject<HTMLElement | null>, callback: () => void, isListening: boolean = true) => {
     useEffect(() => {
         const element = ref.current;
@@ -1174,7 +1061,6 @@ const useEscapeKey = (ref: React.RefObject<HTMLElement | null>, callback: () => 
         };
     }, [ref, callback, isListening]);
 };
-// --- END: Reusable Escape Key Hook Definition ---
 
 const OverviewDesktop = () => {
     const [agnosticAccordionOpen, setAgnosticAccordionOpen] = useState(false);
@@ -1187,7 +1073,7 @@ const OverviewDesktop = () => {
     useLayoutEffect(() => {
         if (!agnosticAccordionOpen && triggerButtonRef.current) {
             triggerButtonRef.current.focus();
-            triggerButtonRef.current = null; // Clear ref after use
+            triggerButtonRef.current = null;
         }
     }, [agnosticAccordionOpen]);
 
