@@ -155,6 +155,20 @@ export const GloveLogicController = () => {
 
         sceneManager.updateBuild(configuration.build);
 
+        sceneManager.updateText({
+            zone: 'thumbName',
+            text: configuration.thumbName.text,
+            font: configuration.thumbName.font,
+            color: configuration.thumbName.color,
+        });
+
+        sceneManager.updateText({
+            zone: 'pinkyName',
+            text: configuration.pinkyName.text,
+            font: configuration.pinkyName.font,
+            color: configuration.pinkyName.color,
+        });
+
     }, [state, state.configuration, sceneManager]);
 
     return null;

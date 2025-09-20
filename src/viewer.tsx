@@ -1,4 +1,3 @@
-// src/viewer.tsx
 import React, { useEffect, useRef } from 'react';
 import {
     Engine,
@@ -18,7 +17,8 @@ import {
     MaterialDefines,
     UniformBuffer,
     Constants,
-    Color3
+    Color3,
+    DynamicTexture
 } from '@babylonjs/core';
 import { AdvancedDynamicTexture, Button, Control } from '@babylonjs/gui';
 import "@babylonjs/loaders";
@@ -176,7 +176,8 @@ export class SceneManager {
     private resizeObserver: ResizeObserver;
     private assetManager: AssetManager;
     private colorPlugin: ColorSwapPlugin | null = null;
-    private isSceneReady = false; // <-- CHANGE #2: Added a ready flag
+    private isSceneReady = false;
+    private textTextures = new Map<string, DynamicTexture>();
 
     constructor(canvas: HTMLCanvasElement, onReady: (manager: SceneManager) => void) {
         const engine = new Engine(canvas, true, { alpha: true });
@@ -215,17 +216,36 @@ export class SceneManager {
                     initialReplacements: [new Color3(1.0, 0.0, 1.0), new Color3(1.0, 1.0, 0.0), new Color3(0.0, 1.0, 1.0), new Color3(1.0, 0.5, 0.0), new Color3(0.5, 0.0, 1.0), new Color3(0.5, 0.0, 1.0), new Color3(0.2, 0.0, 0.2), new Color3(0.1, 0.5, 0.9), new Color3(1.0, 1.0, 1.0), new Color3(0.0, 1.0, 0.0)]
                 };
                 this.colorPlugin = new ColorSwapPlugin(gloveMaterial, gloveConfig);
+
+                // --- TEXT SETUP BLOCK ---
+                const textZones = ['thumbName', 'pinkyName'];
+                textZones.forEach(zoneName => {
+                    const materialName = `${zoneName}OpenBack`;
+                    const textMat = this.scene.getMaterialByName(materialName) as PBRMaterial;
+            
+                    if (textMat) {
+                        const textTexture = new DynamicTexture(zoneName, { width: 512, height: 256 }, this.scene);
+                        textTexture.hasAlpha = true;
+            
+                        textMat.albedoTexture = textTexture;
+                        textMat.useAlphaFromAlbedoTexture = true;
+                        textMat.transparencyMode = PBRMaterial.PBRMATERIAL_ALPHABLEND;
+                        textMat.unlit = true;
+            
+                        this.textTextures.set(zoneName, textTexture);
+                    } else {
+                        console.warn(`Text material "${materialName}" not found.`);
+                    }
+                });
+                // --- END OF TEXT SETUP BLOCK ---
             }
             
-            // --- CHANGE #2 & #4 ---
-            // Set the ready flag and call the callback to notify React
             this.isSceneReady = true;
             onReady(this);
 
             Promise.resolve().then(() => this.assetManager.preloadAssets(['closeBack']));
         });
         
-        // This remains untouched as requested.
         this.createUI();
 
         engine.runRenderLoop(() => scene.render());
@@ -233,7 +253,6 @@ export class SceneManager {
         this.resizeObserver.observe(canvas);
     }
 
-    // Your testing UI - no changes made here.
     private createUI() {
         const advancedTexture = AdvancedDynamicTexture.CreateFullscreenUI("UI");
         for (let i = 0; i < 10; i++) {
@@ -256,7 +275,6 @@ export class SceneManager {
         }
     }
 
-    // --- CHANGE #2 & #3: NEW PUBLIC METHODS ---
     public isReady = (): boolean => this.isSceneReady;
 
     public updateColor = (index: number, color: Color3) => {
@@ -265,7 +283,40 @@ export class SceneManager {
 
     public updateBuild = (buildConfig: any) => {
         console.log("SceneManager received build update:", buildConfig.imageSelection);
-        // Future logic for swapping 3D models will go here.
+    };
+
+    public updateText = (options: {
+        zone: string;
+        text: string;
+        font: string;
+        color: string;
+    }) => {
+        const { zone, text, font, color } = options;
+    
+        const texture = this.textTextures.get(zone);
+        if (!texture) {
+            return;
+        }
+    
+        const fontSize = text ? 70 : 90; 
+        const fontString = `bold ${fontSize}px "${font}"`;
+    
+        const ctx = texture.getContext();
+        const size = texture.getSize();
+    
+        ctx.clearRect(0, 0, size.width, size.height);
+    
+        if (text) {
+            texture.drawText(
+                text,
+                null,
+                null,
+                fontString,
+                color,
+                'transparent',
+                false // CORRECTED: Set invertY to false
+            );
+        }
     };
 
     public dispose() {
@@ -275,7 +326,6 @@ export class SceneManager {
     }
 }
 
-// --- MODIFIED BabylonCanvas COMPONENT ---
 interface BabylonCanvasProps {
     onSceneReady: (sceneManager: SceneManager) => void;
 }
@@ -287,7 +337,6 @@ const BabylonCanvas = ({ onSceneReady }: BabylonCanvasProps) => {
         const { current: canvas } = reactCanvas;
         if (!canvas) return;
 
-        // The SceneManager is now created and its instance is passed up via the callback
         const sceneManager = new SceneManager(canvas, onSceneReady);
 
         return () => {
