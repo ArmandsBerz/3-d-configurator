@@ -1,3 +1,5 @@
+import { SceneManager } from './viewer';
+import { SceneContext, GloveLogicController } from './logic';
 import 'wicg-inert';
 import React, { useState, useRef, useLayoutEffect, useCallback, useEffect, createContext, useContext, useReducer, ReactNode, ReactElement } from 'react';
 import BabylonCanvas from './viewer';
@@ -22,7 +24,7 @@ interface BuildConfig {
     throwingHand: 'RIGHT HAND' | 'LEFT HAND';
 }
 
-interface GloveConfiguration {
+export interface GloveConfiguration {
     build: BuildConfig;
     web: WebPart;
     thumb: DualColorPart;
@@ -289,7 +291,7 @@ const GloveConfiguratorProvider = ({ children }: GloveConfiguratorProviderProps)
     return <GloveConfiguratorContext.Provider value={{ state, dispatch }}>{children}</GloveConfiguratorContext.Provider>;
 };
 
-const useGloveConfigurator = () => {
+export const useGloveConfigurator = () => {
     const context = useContext(GloveConfiguratorContext);
     if (!context) throw new Error('useGloveConfigurator must be used within a GloveConfiguratorProvider');
     return context;
@@ -1765,23 +1767,32 @@ const UI = () => {
     );
 };
 
-const App = () => (
-    <GloveConfiguratorProvider>
-        {/* Neutral Parent Container: Sets up the positioning context for the layers. */}
-        <div id="app-root" className="relative w-full h-[100dvh] bg-[#161616]">
+const App = () => {
+    // NEW: State to hold the SceneManager instance once it's ready.
+    const [sceneManager, setSceneManager] = useState<SceneManager | null>(null);
 
-            {/* Layer 1: Babylon.js Container (Bottom Layer) */}
-            <div id="babylon-container" className="absolute inset-0 z-10">
-                <BabylonCanvas />
-            </div>
+    return (
+        <GloveConfiguratorProvider>
+            {/* NEW: Provider that makes the sceneManager available to the logic controller */}
+            <SceneContext.Provider value={sceneManager}>
 
-            {/* Layer 2: UI Container (Top Layer) */}
-            <div id="ui-container" className="absolute inset-0 z-20 pointer-events-none">
-                <UI />
-            </div>
+                {/* This part remains mostly the same */}
+                <div id="app-root" className="relative w-full h-[100dvh] bg-[#161616]">
+                    <div id="babylon-container" className="absolute inset-0 z-10">
+                        {/* MODIFIED: Pass the onSceneReady callback to get the manager instance */}
+                        <BabylonCanvas onSceneReady={setSceneManager} />
+                    </div>
+                    <div id="ui-container" className="absolute inset-0 z-20 pointer-events-none">
+                        <UI />
+                    </div>
+                </div>
 
-        </div>
-    </GloveConfiguratorProvider>
-);
+                {/* NEW: The non-visual logic controller that connects UI state to the 3D scene */}
+                <GloveLogicController />
+
+            </SceneContext.Provider>
+        </GloveConfiguratorProvider>
+    );
+};
 
 export default App;
