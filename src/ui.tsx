@@ -44,7 +44,7 @@ export interface AppState {
 
 export type GloveAction =
     | { type: typeof ACTION_TYPES.UPDATE_BUILD; payload: BuildConfig }
-    | { type: typeof ACTION_TYPES.UPDATE_COLOR; payload: { id: 'index'; color: HexColor } }
+    | { type: typeof ACTION_TYPES.UPDATE_COLOR; payload: { id: ColorPartId; color: HexColor } }
     | { type: typeof ACTION_TYPES.UPDATE_DUAL_COLOR; payload: { id: 'thumb' | 'middle' | 'ring' | 'pinky'; subPartId: (typeof DUAL_COLOR_SUB_PARTS)[keyof typeof DUAL_COLOR_SUB_PARTS]; color: HexColor } }
     | { type: typeof ACTION_TYPES.UPDATE_GALLERY; payload: WebPart }
     | { type: typeof ACTION_TYPES.UPDATE_TEXT; payload: { id: 'thumbName' | 'pinkyName'; data: TextPart } }
@@ -707,7 +707,7 @@ const ColorPanel = ({ context, onClose, headerRef }: ColorPanelProps) => {
                     onChange={(color) =>
                         dispatch({
                             type: ACTION_TYPES.UPDATE_COLOR,
-                            payload: { id: 'index', color }
+                            payload: { id: id, color }
                         })
                     }
                 />
@@ -1254,12 +1254,12 @@ const AccordionDesktop = ({ options }: { options: OptionsConfigItem[] }) => {
                                 if (item.id === 'build') {
                                     return <BuildOption isDesktop={true} />;
                                 }
-                                const configValue = configuration[item.id];
+                                const configValue = configuration[item.id as keyof Omit<GloveConfiguration, 'build'>];
                                 switch (item.contentType) {
                                     case CONTENT_TYPES.COLOR:
                                         return <ColorContent
                                             value={(configValue as SingleColorPart).color}
-                                            onChange={(color) => dispatch({ type: ACTION_TYPES.UPDATE_COLOR, payload: { id: 'index', color } })}
+                                            onChange={(color) => dispatch({ type: ACTION_TYPES.UPDATE_COLOR, payload: { id: item.id as ColorPartId, color } })}
                                         />;
                                     case CONTENT_TYPES.DUAL_COLOR:
                                         return <DualColorContent
@@ -1325,9 +1325,9 @@ const AccordionMobile = React.forwardRef<HTMLElement, AccordionMobileProps>(
                     const webTypeTitle = webTypeOptions.find(opt => opt.id === configValue.webType)?.title || configValue.webType;
                     return <div className="flex items-center space-x-2"><span className="text-sm text-gray-400 font-semibold truncate max-w-[100px]">{webTypeTitle}</span><ColorIndicator color={configValue.color} /></div>;
                 case 'dual':
-                    return <div className="flex items-center space-x-2"><ColorIndicator color={configValue.inner} /><ColorIndicator color={configValue.outer} /></div>;
+                    return <div className="flex items-center space-x-2"><ColorIndicator color={(configValue as DualColorPart).inner} /><ColorIndicator color={(configValue as DualColorPart).outer} /></div>;
                 case 'single':
-                    return <ColorIndicator color={configValue.color} />;
+                    return <ColorIndicator color={(configValue as SingleColorPart).color} />;
                 case 'text':
                     return <span className="text-sm text-gray-400 truncate max-w-[100px]">{configValue.text}</span>;
                 default:
