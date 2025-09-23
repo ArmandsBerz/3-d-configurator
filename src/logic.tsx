@@ -1,6 +1,6 @@
 import { useEffect, createContext, useContext } from 'react';
 import { Color3 } from '@babylonjs/core';
-import { useGloveConfigurator, GloveConfiguration, AppState, HexColor, ColorablePart, Font, WebPart } from './ui';
+import { useGloveConfigurator, GloveConfiguration, AppState, HexColor, ColorablePart, Font, WebPart, ACTION_TYPES } from './ui';
 import { SceneManager } from './viewer';
 
 // --- CORE DATA CONSTANTS (MOVED FROM UI) ---
@@ -36,9 +36,77 @@ export const buildOptionsData = [
     { id: 'position', title: 'Position', options: [{id: 'INFIELD', label: 'INFIELD'}, {id: 'OUTFIELD', label: 'OUTFIELD'}, {id: 'PITCHER', label: 'PITCHER'}, {id: 'CATCHER', label: 'CATCHER'}, {id: 'FIRST BASE', label: 'FIRST BASE'}], layout: 'grid-cols-3' }, { id: 'size', title: 'Size', options: [{id: '11"', label: '11"'}, {id: '11.25"', label: '11.25"'}, {id: '11.5"', label: '11.5"'}, {id: '11.75"', label: '11.75"'}, {id: '12"', label: '12"'}], layout: 'grid-cols-3' }, { id: 'handOpeningSize', title: 'Hand Opening Size', options: [{id: 'ADULT', label: 'ADULT'}, {id: 'YOUTH', label: 'YOUTH'}], layout: 'grid-cols-2' }, { id: 'stiffness', title: 'Stiffness', options: [{id: 'STIFF', label: 'STIFF'}, {id: 'STANDARD', label: 'STANDARD'}, {id: 'SOFT', label: 'SOFT'}], layout: 'grid-cols-3' }, { id: 'throwingHand', title: 'Throwing Hand', options: [{id: 'RIGHT HAND', label: 'RIGHT HAND'}, {id: 'LEFT HAND', label: 'LEFT HAND'}], layout: 'grid-cols-2' }
 ];
 
+// --- UPDATED --- Expanded to include all web types discovered in the file list
 export const webTypeOptions = [
-    { id: 'MOD_TRAP', title: 'MOD TRAP' }, { id: 'ONE_PIECE', title: 'ONE PIECE' }, { id: 'TWO_PIECE', title: 'TWO PIECE' }, { id: 'DUAL_HINGE', title: 'DUAL HINGE' }, { id: 'FRAMED_MOD_TRAP', title: 'FRAMED MOD TRAP' }, { id: 'CLOSED_V', title: 'CLOSED V' }, { id: 'BASKET', title: 'BASKET' }, { id: 'BASKET_LACE', title: 'BASKET LACE' }, { id: 'SEALING', title: 'SEALING' }, { id: 'LACE_SEALING', title: 'LACE SEALING' }
+    { id: 'BASKET', title: 'Basket' },
+    { id: 'BASKET_LACE', title: 'Basket Lace' },
+    { id: 'CLOSED_V', title: 'Closed V' },
+    { id: 'DUAL_HINGE', title: 'Dual Hinge' },
+    { id: 'FRAMED_MOD_TRAP', title: 'Framed Mod Trap' },
+    { id: 'H_WEB', title: 'H-Web' },
+    { id: 'I_WEB', title: 'I-Web' },
+    { id: 'LACED_H', title: 'Laced H-Web' },
+    { id: 'LACE_SEALING', title: 'Lace Sealing' },
+    { id: 'MOD_TRAP', title: 'Mod Trap' },
+    { id: 'ONE_PIECE', title: 'One Piece' },
+    { id: 'POST', title: 'Post' },
+    { id: 'SEALING', title: 'Sealing' },
+    { id: 'SINGLE_POST', title: 'Single Post' },
+    { id: 'SINGLE_POST_LACE', title: 'Single Post Lace' },
+    { id: 'TRAP', title: 'Trap' },
+    { id: 'TWO_PIECE', title: 'Two Piece' },
 ];
+
+// --- UPDATED --- Data maps to connect UI selections to 3D model names
+export const POSITION_TO_MODEL_MAP = {
+    'INFIELD': 'openBack',
+    'OUTFIELD': 'closeBack',
+    'PITCHER': 'closeBack',
+    'CATCHER': 'catchers',
+    'FIRST BASE': 'firstBase'
+};
+
+// --- UPDATED --- The complete mapping of glove shells to their compatible web models
+export const GLOVE_TO_WEBS_MAP = {
+    openBack: {
+        BASKET: 'basketOB',
+        BASKET_LACE: 'basketLaceOB',
+        CLOSED_V: 'closedVOB',
+        DUAL_HINGE: 'dualHingeOB',
+        FRAMED_MOD_TRAP: 'framedModTrapOB',
+        H_WEB: 'hOB',
+        I_WEB: 'iOB',
+        LACED_H: 'lacedHOB',
+        LACE_SEALING: 'laceSealingOB',
+        MOD_TRAP: 'modTrapOB',
+        ONE_PIECE: 'onePieceOB',
+        SEALING: 'sealingOB',
+        SINGLE_POST: 'singlePostOB',
+        SINGLE_POST_LACE: 'singlePostLaceOB',
+        TRAP: 'trapOB',
+        TWO_PIECE: 'twoPieceOB',
+    },
+    closeBack: {
+        BASKET: 'basketCB',
+        CLOSED_V: 'closedVCB',
+        DUAL_HINGE: 'dualHingeCB',
+        FRAMED_MOD_TRAP: 'framedModTrapCB',
+        H_WEB: 'hCB',
+        LACED_H: 'lacedHCB',
+        LACE_SEALING: 'laceSealingCB',
+        MOD_TRAP: 'modTrapCB',
+        ONE_PIECE: 'onePieceCB',
+        SEALING: 'sealingCB',
+        TRAP: 'trapCB',
+    },
+    firstBase: {
+        POST: 'postFB',
+        TWO_PIECE: 'twoPieceFB',
+    },
+    catchers: {
+        TWO_PIECE: 'twoPieceCM',
+    }
+};
 
 // --- DEFAULT BLUEPRINT ---
 
@@ -55,6 +123,7 @@ export const initialState: AppState = {
         pinkyName: { type: 'text', text: 'Pinky', font: 'BLOCK', color: '#FFFFFF' },
     },
     activeDualColorPart: DUAL_COLOR_SUB_PARTS.INNER,
+    isLoading: false,
 };
 
 // --- DATA TRANSFORMATION LOGIC ---
@@ -132,44 +201,65 @@ const PART_TO_SHADER_INDEX_MAP = {
 };
 
 export const GloveLogicController = () => {
-    const { state } = useGloveConfigurator();
+    const { state, dispatch } = useGloveConfigurator(); // Get dispatch
     const sceneManager = useContext(SceneContext);
 
+    // --- UPDATED --- Controller now handles asynchronous engine commands and loading state
     useEffect(() => {
-        if (!sceneManager || !sceneManager.isReady()) {
-            return;
-        }
+        const updateSceneAsync = async () => {
+            if (!sceneManager || !sceneManager.isReady()) {
+                return;
+            }
+            
+            dispatch({ type: ACTION_TYPES.SET_LOADING, payload: true });
+            
+            try {
+                const { configuration } = state;
+                const activeShell = POSITION_TO_MODEL_MAP[configuration.build.position];
+                
+                // Use the new map to find the correct web model filename
+                const webModelFilename = (GLOVE_TO_WEBS_MAP as any)[activeShell]?.[configuration.web.webType];
+    
+                // Asynchronously update the 3D models first
+                await sceneManager.updateBuild(configuration.build);
+                await sceneManager.updateWeb(webModelFilename);
+        
+                // Update colors and text after models are loaded and visible
+                sceneManager.updateColor(PART_TO_SHADER_INDEX_MAP.thumb_inner, Color3.FromHexString(configuration.thumb.inner));
+                sceneManager.updateColor(PART_TO_SHADER_INDEX_MAP.thumb_outer, Color3.FromHexString(configuration.thumb.outer));
+                sceneManager.updateColor(PART_TO_SHADER_INDEX_MAP.index, Color3.FromHexString(configuration.index.color));
+                sceneManager.updateColor(PART_TO_SHADER_INDEX_MAP.middle_inner, Color3.FromHexString(configuration.middle.inner));
+                sceneManager.updateColor(PART_TO_SHADER_INDEX_MAP.middle_outer, Color3.FromHexString(configuration.middle.outer));
+                sceneManager.updateColor(PART_TO_SHADER_INDEX_MAP.ring_inner, Color3.FromHexString(configuration.ring.inner));
+                sceneManager.updateColor(PART_TO_SHADER_INDEX_MAP.ring_outer, Color3.FromHexString(configuration.ring.outer));
+                sceneManager.updateColor(PART_TO_SHADER_INDEX_MAP.pinky_inner, Color3.FromHexString(configuration.pinky.inner));
+                sceneManager.updateColor(PART_TO_SHADER_INDEX_MAP.pinky_outer, Color3.FromHexString(configuration.pinky.outer));
+                sceneManager.updateColor(PART_TO_SHADER_INDEX_MAP.web, Color3.FromHexString(configuration.web.color));
+        
+                sceneManager.updateText({
+                    zone: 'thumbName',
+                    text: configuration.thumbName.text,
+                    font: configuration.thumbName.font,
+                    color: configuration.thumbName.color,
+                });
+        
+                sceneManager.updateText({
+                    zone: 'pinkyName',
+                    text: configuration.pinkyName.text,
+                    font: configuration.pinkyName.font,
+                    color: configuration.pinkyName.color,
+                });
+            } catch (error) {
+                console.error("Failed to update scene:", error);
+                // Optionally dispatch an error state to the UI
+            } finally {
+                dispatch({ type: ACTION_TYPES.SET_LOADING, payload: false });
+            }
+        };
 
-        const { configuration } = state;
+        updateSceneAsync();
 
-        sceneManager.updateColor(PART_TO_SHADER_INDEX_MAP.thumb_inner, Color3.FromHexString(configuration.thumb.inner));
-        sceneManager.updateColor(PART_TO_SHADER_INDEX_MAP.thumb_outer, Color3.FromHexString(configuration.thumb.outer));
-        sceneManager.updateColor(PART_TO_SHADER_INDEX_MAP.index, Color3.FromHexString(configuration.index.color));
-        sceneManager.updateColor(PART_TO_SHADER_INDEX_MAP.middle_inner, Color3.FromHexString(configuration.middle.inner));
-        sceneManager.updateColor(PART_TO_SHADER_INDEX_MAP.middle_outer, Color3.FromHexString(configuration.middle.outer));
-        sceneManager.updateColor(PART_TO_SHADER_INDEX_MAP.ring_inner, Color3.FromHexString(configuration.ring.inner));
-        sceneManager.updateColor(PART_TO_SHADER_INDEX_MAP.ring_outer, Color3.FromHexString(configuration.ring.outer));
-        sceneManager.updateColor(PART_TO_SHADER_INDEX_MAP.pinky_inner, Color3.FromHexString(configuration.pinky.inner));
-        sceneManager.updateColor(PART_TO_SHADER_INDEX_MAP.pinky_outer, Color3.FromHexString(configuration.pinky.outer));
-        sceneManager.updateColor(PART_TO_SHADER_INDEX_MAP.web, Color3.FromHexString(configuration.web.color));
-
-        sceneManager.updateBuild(configuration.build);
-
-        sceneManager.updateText({
-            zone: 'thumbName',
-            text: configuration.thumbName.text,
-            font: configuration.thumbName.font,
-            color: configuration.thumbName.color,
-        });
-
-        sceneManager.updateText({
-            zone: 'pinkyName',
-            text: configuration.pinkyName.text,
-            font: configuration.pinkyName.font,
-            color: configuration.pinkyName.color,
-        });
-
-    }, [state, state.configuration, sceneManager]);
+    }, [state.configuration, sceneManager, dispatch]);
 
     return null;
 };

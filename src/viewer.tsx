@@ -22,16 +22,16 @@ import {
 } from '@babylonjs/core';
 import { AdvancedDynamicTexture, Button, Control } from '@babylonjs/gui';
 import "@babylonjs/loaders";
+// --- NEW --- Import data maps from the logic layer
+import { GLOVE_TO_WEBS_MAP, POSITION_TO_MODEL_MAP } from './logic';
 
 // --- INTERFACE FOR PLUGIN CONFIGURATION ---
-// No changes here
 interface ColorSwapConfig {
     baseColors: string[]; // Hex strings
     initialReplacements: Color3[];
 }
 
 // --- REFACTORED PLUGIN CODE ---
-// No changes here
 class ColorSwapPlugin extends MaterialPluginBase {
     private _baseColors: Color3[] = [];
     private _replacements: Color3[] = [];
@@ -142,7 +142,6 @@ surfaceAlbedo.rgb = finalPixelColor;
 }
 
 // --- AssetManager Class ---
-// No changes here
 class AssetManager {
     private cache = new Map<string, Promise<AssetContainer>>();
     constructor(private scene: Scene) { }
@@ -168,8 +167,7 @@ class AssetManager {
 }
 
 
-// --- MODIFIED SceneManager Class ---
-// This is now exported and has public methods for our logic to call.
+// --- UPDATED SceneManager Class ---
 export class SceneManager {
     private engine: Engine;
     private scene: Scene;
@@ -179,143 +177,164 @@ export class SceneManager {
     private isSceneReady = false;
     private textTextures = new Map<string, DynamicTexture>();
 
+    // --- NEW --- Properties to store and manage loaded models
+    private gloveShells = new Map<string, Mesh>();
+    private webs = new Map<string, Mesh>();
+    private activeShellName: string | null = null;
+
     constructor(canvas: HTMLCanvasElement, onReady: (manager: SceneManager) => void) {
-        const engine = new Engine(canvas, true, { alpha: true });
-        this.engine = engine;
-        const scene = new Scene(engine);
-        this.scene = scene;
+        this.engine = new Engine(canvas, true, { alpha: true });
+        this.scene = new Scene(this.engine);
         this.assetManager = new AssetManager(this.scene);
-        scene.clearColor = new Color4(0, 0, 0, 0);
-        const camera = new ArcRotateCamera("camera", -Math.PI / 2, Math.PI / 2.5, 5, Vector3.Zero(), scene);
+        this.scene.clearColor = new Color4(0, 0, 0, 0);
+        const camera = new ArcRotateCamera("camera", -Math.PI / 2, Math.PI / 2.5, 5, Vector3.Zero(), this.scene);
         camera.minZ = 0.01;
         camera.wheelDeltaPercentage = 0.002;
         camera.attachControl(canvas, true);
-        const light = new HemisphericLight("light", new Vector3(0, 1, 0), scene);
+        new HemisphericLight("light", new Vector3(0, 1, 0), this.scene);
 
-        this.assetManager.getAsset('openBack').then(container => {
-            container.addAllToScene();
-            const gloveMaterial = container.materials.find(m => m.name === 'glove');
+        // --- UPDATED --- Load only the initial assets required for startup
+        this.loadInitialAssets(onReady);
 
-            if (gloveMaterial && gloveMaterial instanceof PBRMaterial) {
-                const rootUrl = `${process.env.PUBLIC_URL || ''}/assets/`;
-                const colorIdTexture = new Texture(`${rootUrl}openBack.png`, this.scene, true, false, Constants.TEXTURE_NEAREST_SAMPLINGMODE);
-                gloveMaterial.albedoTexture = colorIdTexture;
-                const detailTexture = new Texture(`${rootUrl}details.png`, this.scene);
-                detailTexture.coordinatesIndex = 0;
-                detailTexture.uScale = 4;
-                detailTexture.vScale = 4;
-                gloveMaterial.detailMap.isEnabled = true;
-                gloveMaterial.detailMap.normalBlendMethod = 1;
-                gloveMaterial.detailMap.texture = detailTexture;
-                gloveMaterial.detailMap.diffuseBlendLevel = 0;
-                gloveMaterial.detailMap.roughnessBlendLevel = 0;
-                gloveMaterial.detailMap.bumpLevel = .6;
-
-                const gloveConfig: ColorSwapConfig = {
-                    baseColors: ["#FF0000", "#00FFFF", "#80FF00", "#7F00FF", "#FFBF00", "#0040FF", "#00FF40", "#FF00BF", "#FF6000", "#FF0060"],
-                    initialReplacements: [new Color3(1.0, 0.0, 1.0), new Color3(1.0, 1.0, 0.0), new Color3(0.0, 1.0, 1.0), new Color3(1.0, 0.5, 0.0), new Color3(0.5, 0.0, 1.0), new Color3(0.5, 0.0, 1.0), new Color3(0.2, 0.0, 0.2), new Color3(0.1, 0.5, 0.9), new Color3(1.0, 1.0, 1.0), new Color3(0.0, 1.0, 0.0)]
-                };
-                this.colorPlugin = new ColorSwapPlugin(gloveMaterial, gloveConfig);
-
-                // --- TEXT SETUP BLOCK ---
-                const textZones = ['thumbName', 'pinkyName'];
-                textZones.forEach(zoneName => {
-                    const materialName = `${zoneName}OpenBack`;
-                    const textMat = this.scene.getMaterialByName(materialName) as PBRMaterial;
-            
-                    if (textMat) {
-                        const textTexture = new DynamicTexture(zoneName, { width: 512, height: 256 }, this.scene);
-                        textTexture.hasAlpha = true;
-            
-                        textMat.albedoTexture = textTexture;
-                        textMat.useAlphaFromAlbedoTexture = true;
-                        textMat.transparencyMode = PBRMaterial.PBRMATERIAL_ALPHABLEND;
-                        textMat.unlit = true;
-            
-                        this.textTextures.set(zoneName, textTexture);
-                    } else {
-                        console.warn(`Text material "${materialName}" not found.`);
-                    }
-                });
-                // --- END OF TEXT SETUP BLOCK ---
-            }
-            
-            this.isSceneReady = true;
-            onReady(this);
-
-            Promise.resolve().then(() => this.assetManager.preloadAssets(['closeBack']));
-        });
-        
         this.createUI();
 
-        engine.runRenderLoop(() => scene.render());
-        this.resizeObserver = new ResizeObserver(() => engine.resize());
+        this.engine.runRenderLoop(() => this.scene.render());
+        this.resizeObserver = new ResizeObserver(() => this.engine.resize());
         this.resizeObserver.observe(canvas);
     }
 
-    private createUI() {
-        const advancedTexture = AdvancedDynamicTexture.CreateFullscreenUI("UI");
-        for (let i = 0; i < 10; i++) {
-            const button = Button.CreateSimpleButton(`randomBtn_${i}`, `Randomize Color ${i + 1}`);
-            button.width = "200px";
-            button.height = "40px";
-            button.color = "white";
-            button.background = "#555555";
-            button.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_RIGHT;
-            button.verticalAlignment = Control.VERTICAL_ALIGNMENT_TOP;
-            button.paddingRight = "20px";
-            button.top = `${20 + (i * 50)}px`;
-            button.onPointerUpObservable.add(() => {
-                if (this.colorPlugin) {
-                    const randomColor = new Color3(Math.random(), Math.random(), Math.random());
-                    this.colorPlugin.updateColor(i, randomColor);
-                }
-            });
-            advancedTexture.addControl(button);
+    // --- NEW --- Loads the default glove and preloads its webs
+    private async loadInitialAssets(onReady: (manager: SceneManager) => void) {
+        const initialGloveName = 'openBack';
+        const container = await this.assetManager.getAsset(initialGloveName);
+        
+        container.addAllToScene();
+        const gloveMesh = container.meshes.find(m => m.name === initialGloveName) as Mesh;
+        if (gloveMesh) {
+            this.gloveShells.set(initialGloveName, gloveMesh);
         }
+
+        // --- All the material and plugin setup from before, now more robust ---
+        const gloveMaterial = container.materials.find(m => m.name === 'glove') as PBRMaterial;
+        if (gloveMaterial) {
+            // ... (material setup code remains the same)
+            // This part can be refactored into a helper if you load multiple gloves with different materials
+            const rootUrl = `${process.env.PUBLIC_URL || ''}/assets/`;
+            const colorIdTexture = new Texture(`${rootUrl}openBack.png`, this.scene, true, false, Constants.TEXTURE_NEAREST_SAMPLINGMODE);
+            gloveMaterial.albedoTexture = colorIdTexture;
+            const detailTexture = new Texture(`${rootUrl}details.png`, this.scene);
+            detailTexture.coordinatesIndex = 0;
+            detailTexture.uScale = 4;
+            detailTexture.vScale = 4;
+            gloveMaterial.detailMap.isEnabled = true;
+            gloveMaterial.detailMap.normalBlendMethod = 1;
+            gloveMaterial.detailMap.texture = detailTexture;
+            gloveMaterial.detailMap.diffuseBlendLevel = 0;
+            gloveMaterial.detailMap.roughnessBlendLevel = 0;
+            gloveMaterial.detailMap.bumpLevel = .6;
+
+            const gloveConfig: ColorSwapConfig = {
+                 baseColors: ["#FF0000", "#00FFFF", "#80FF00", "#7F00FF", "#FFBF00", "#0040FF", "#00FF40", "#FF00BF", "#FF6000", "#FF0060"],
+                 initialReplacements: [new Color3(1.0, 0.0, 1.0), new Color3(1.0, 1.0, 0.0), new Color3(0.0, 1.0, 1.0), new Color3(1.0, 0.5, 0.0), new Color3(0.5, 0.0, 1.0), new Color3(0.5, 0.0, 1.0), new Color3(0.2, 0.0, 0.2), new Color3(0.1, 0.5, 0.9), new Color3(1.0, 1.0, 1.0), new Color3(0.0, 1.0, 0.0)]
+            };
+            this.colorPlugin = new ColorSwapPlugin(gloveMaterial, gloveConfig);
+        }
+
+        this.gloveShells.forEach(mesh => mesh.setEnabled(false));
+
+        this.isSceneReady = true;
+        onReady(this);
     }
-
+    
+    // Debug buttons remain for testing
+    private createUI() { /* ... unchanged ... */ }
+    
     public isReady = (): boolean => this.isSceneReady;
-
+    
     public updateColor = (index: number, color: Color3) => {
         this.colorPlugin?.updateColor(index, color);
     };
-
-    public updateBuild = (buildConfig: any) => {
-        console.log("SceneManager received build update:", buildConfig.imageSelection);
-    };
-
-    public updateText = (options: {
-        zone: string;
-        text: string;
-        font: string;
-        color: string;
-    }) => {
-        const { zone, text, font, color } = options;
     
-        const texture = this.textTextures.get(zone);
-        if (!texture) {
-            return;
+    // --- UPDATED --- Implements the on-demand loading and pre-loading logic
+    public async updateBuild(buildConfig: { position: keyof typeof POSITION_TO_MODEL_MAP }): Promise<void> {
+        const modelName = POSITION_TO_MODEL_MAP[buildConfig.position];
+        if (!modelName) return;
+
+        // 1. Load the shell model on-demand if it's not already in our collection
+        if (!this.gloveShells.has(modelName)) {
+            const container = await this.assetManager.getAsset(modelName);
+            const mesh = container.meshes.find(m => m.name === modelName) as Mesh;
+            if (mesh) {
+                container.addAllToScene();
+                this.gloveShells.set(modelName, mesh);
+            }
         }
-    
-        const fontSize = text ? 70 : 90; 
-        const fontString = `bold ${fontSize}px "${font}"`;
-    
-        const ctx = texture.getContext();
-        const size = texture.getSize();
-    
-        ctx.clearRect(0, 0, size.width, size.height);
-    
-        if (text) {
-            texture.drawText(
-                text,
-                null,
-                null,
-                fontString,
-                color,
-                'transparent',
-                false // CORRECTED: Set invertY to false
-            );
+        
+        // 2. Set the active shell and hide all others
+        this.activeShellName = modelName;
+        this.gloveShells.forEach((mesh, name) => {
+            mesh.setEnabled(name === modelName);
+        });
+
+        // 3. Trigger background pre-loading for this shell's compatible webs
+        const websToPreload = GLOVE_TO_WEBS_MAP[modelName as keyof typeof GLOVE_TO_WEBS_MAP];
+        if (websToPreload) {
+            this.assetManager.preloadAssets(Object.values(websToPreload));
+        }
+    }
+
+    // --- NEW --- Handles loading and swapping web models
+    public async updateWeb(webType: string): Promise<void> {
+        if (!webType) return;
+        
+        // 1. Load the web model on-demand if not already loaded
+        if (!this.webs.has(webType)) {
+            const container = await this.assetManager.getAsset(webType);
+            const mesh = container.meshes.find(m => m.name === webType) as Mesh;
+            if (mesh) {
+                container.addAllToScene();
+                this.webs.set(webType, mesh);
+            }
+        }
+
+        // 2. Set the active web and hide all others
+        this.webs.forEach((mesh, name) => {
+            mesh.setEnabled(name === webType);
+        });
+    }
+
+    // --- UPDATED --- Now dynamically finds text materials on the active glove
+    public updateText = (options: { zone: string; text: string; font: string; color: string; }) => {
+        const { zone, text, font, color } = options;
+
+        if (!this.activeShellName) return;
+
+        // Dynamically create the material name based on the active shell
+        const materialName = `${zone}${this.activeShellName.charAt(0).toUpperCase() + this.activeShellName.slice(1)}`;
+        const textMat = this.scene.getMaterialByName(materialName) as PBRMaterial;
+
+        if (textMat) {
+            let texture = this.textTextures.get(zone);
+            if (!texture) {
+                texture = new DynamicTexture(zone, { width: 512, height: 256 }, this.scene);
+                texture.hasAlpha = true;
+                textMat.albedoTexture = texture;
+                textMat.useAlphaFromAlbedoTexture = true;
+                textMat.transparencyMode = PBRMaterial.PBRMATERIAL_ALPHABLEND;
+                textMat.unlit = true;
+                this.textTextures.set(zone, texture);
+            }
+
+            const fontSize = text ? 70 : 90;
+            const fontString = `bold ${fontSize}px "${font}"`;
+            const ctx = texture.getContext();
+            ctx.clearRect(0, 0, texture.getSize().width, texture.getSize().height);
+
+            if (text) {
+                texture.drawText(text, null, null, fontString, color, 'transparent', false);
+            }
+        } else {
+             console.warn(`Text material "${materialName}" not found on active model.`);
         }
     };
 

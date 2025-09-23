@@ -40,6 +40,7 @@ export interface GloveConfiguration {
 export interface AppState {
     configuration: GloveConfiguration;
     activeDualColorPart: (typeof DUAL_COLOR_SUB_PARTS)[keyof typeof DUAL_COLOR_SUB_PARTS];
+    isLoading: boolean; // Add this line
 }
 
 export type GloveAction =
@@ -48,7 +49,8 @@ export type GloveAction =
     | { type: typeof ACTION_TYPES.UPDATE_DUAL_COLOR; payload: { id: 'thumb' | 'middle' | 'ring' | 'pinky'; subPartId: (typeof DUAL_COLOR_SUB_PARTS)[keyof typeof DUAL_COLOR_SUB_PARTS]; color: HexColor } }
     | { type: typeof ACTION_TYPES.UPDATE_GALLERY; payload: WebPart }
     | { type: typeof ACTION_TYPES.UPDATE_TEXT; payload: { id: 'thumbName' | 'pinkyName'; data: TextPart } }
-    | { type: typeof ACTION_TYPES.APPLY_COLOR_TO_ALL; payload: { color: HexColor } };
+    | { type: typeof ACTION_TYPES.APPLY_COLOR_TO_ALL; payload: { color: HexColor } }
+    | { type: typeof ACTION_TYPES.SET_LOADING; payload: boolean };
 
 // --- END: Core Type Definitions ---
 
@@ -97,6 +99,7 @@ export const ACTION_TYPES = {
     UPDATE_GALLERY: 'UPDATE_GALLERY',
     UPDATE_TEXT: 'UPDATE_TEXT',
     APPLY_COLOR_TO_ALL: 'APPLY_COLOR_TO_ALL',
+    SET_LOADING: 'SET_LOADING', // Add this
 } as const;
 
 export const POSITIONS = {
@@ -181,6 +184,8 @@ const gloveConfigReducer = (state: AppState, action: GloveAction): AppState => {
 
             return { ...state, configuration: newConfig };
         }
+        case ACTION_TYPES.SET_LOADING:
+            return { ...state, isLoading: action.payload };
         default:
             const exhaustiveCheck: never = action;
             throw new Error(`Unhandled action: ${JSON.stringify(exhaustiveCheck)}`);
@@ -1209,9 +1214,9 @@ const AccordionDesktop = ({ options }: { options: OptionsConfigItem[] }) => {
                     </div>
                 );
             case 'dual':
-                return isAccordionOpen ? <span className="text-sm text-gray-400 font-semibold">{getColorDisplay(configValue, { format: FORMAT_TYPES.HEADER })}</span> : <div className="flex items-center space-x-2.5"><ColorIndicator color={configValue.inner} /><ColorIndicator color={configValue.outer} /></div>;
+                return isAccordionOpen ? <span className="text-sm text-gray-400 font-semibold">{getColorDisplay(configValue, { format: FORMAT_TYPES.HEADER })}</span> : <div className="flex items-center space-x-2.5"><ColorIndicator color={(configValue as DualColorPart).inner} /><ColorIndicator color={(configValue as DualColorPart).outer} /></div>;
             case 'single':
-                return isAccordionOpen ? <span className="text-sm text-gray-400 font-semibold">{getColorDisplay(configValue, { format: FORMAT_TYPES.HEADER })}</span> : <ColorIndicator color={configValue.color} />;
+                return isAccordionOpen ? <span className="text-sm text-gray-400 font-semibold">{getColorDisplay(configValue, { format: FORMAT_TYPES.HEADER })}</span> : <ColorIndicator color={(configValue as SingleColorPart).color} />;
             case 'text':
                 return <span className="text-sm text-gray-400 truncate max-w-[100px]">{configValue.text}</span>;
             default:
@@ -1360,6 +1365,7 @@ const AccordionMobile = React.forwardRef<HTMLElement, AccordionMobileProps>(
 const UI = () => {
     const isDesktop = useBreakpoint();
     const { state } = useGloveConfigurator();
+    const { isLoading } = state; // 1. Get the new flag from the state
     const [isVisualizationExpanded, setIsVisualizationExpanded] = useState(false);
     const [openAccordionOptionMobile, setOpenAccordionOptionMobile] = useState<MobileAccordionState>(null);
     const appContainerRef = useRef<HTMLDivElement>(null);
@@ -1557,6 +1563,14 @@ const UI = () => {
 
     return (
         <div ref={appContainerRef} className="flex flex-col lg:relative w-full h-full bg-transparent text-white">
+            
+            {/* --- 2. ADD THIS LOADING INDICATOR BLOCK --- */}
+            {isLoading && (
+                <div className="absolute inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 pointer-events-auto">
+                    <p className="text-white text-xl animate-pulse">Loading...</p>
+                </div>
+            )}
+
             {/* --- START: 2 of 2 ADDED SECTIONS --- */}
             {/* The ref={mainRef} is the only change in this entire <main> tag. */}
             <main ref={mainRef} className={`p-4 flex flex-col items-center justify-center relative bg-transparent overflow-auto h-full w-full ${isVisualizationExpanded ? 'flex-grow' : 'lg:absolute lg:inset-0'}`} style={!isDesktop && !isVisualizationExpanded ? { flexBasis: 'calc(61.8% - 66px)' } : {}}>
