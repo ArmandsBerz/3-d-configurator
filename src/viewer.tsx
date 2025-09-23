@@ -22,8 +22,8 @@ import {
 } from '@babylonjs/core';
 import { AdvancedDynamicTexture, Button, Control } from '@babylonjs/gui';
 import "@babylonjs/loaders";
-// --- NEW --- Import data maps from the logic layer
-import { GLOVE_TO_WEBS_MAP, POSITION_TO_MODEL_MAP } from './logic';
+// --- CORRECTED --- Import only what's necessary
+import { GLOVE_TO_WEBS_MAP } from './logic';
 
 // --- INTERFACE FOR PLUGIN CONFIGURATION ---
 interface ColorSwapConfig {
@@ -255,9 +255,8 @@ export class SceneManager {
         this.colorPlugin?.updateColor(index, color);
     };
     
-    // --- UPDATED --- Implements the on-demand loading and pre-loading logic
-    public async updateBuild(buildConfig: { position: keyof typeof POSITION_TO_MODEL_MAP }): Promise<void> {
-        const modelName = POSITION_TO_MODEL_MAP[buildConfig.position];
+    // --- CORRECTED ---
+    public async updateBuild(modelName: string): Promise<void> {
         if (!modelName) return;
 
         // 1. Load the shell model on-demand if it's not already in our collection

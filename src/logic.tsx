@@ -1,6 +1,7 @@
 import { useEffect, createContext, useContext } from 'react';
 import { Color3 } from '@babylonjs/core';
-import { useGloveConfigurator, GloveConfiguration, AppState, HexColor, ColorablePart, Font, WebPart, ACTION_TYPES } from './ui';
+// --- FIX #3: Correctly import BuildConfig ---
+import { useGloveConfigurator, GloveConfiguration, AppState, HexColor, ColorablePart, Font, WebPart, ACTION_TYPES, BuildConfig } from './ui';
 import { SceneManager } from './viewer';
 
 // --- CORE DATA CONSTANTS (MOVED FROM UI) ---
@@ -36,7 +37,6 @@ export const buildOptionsData = [
     { id: 'position', title: 'Position', options: [{id: 'INFIELD', label: 'INFIELD'}, {id: 'OUTFIELD', label: 'OUTFIELD'}, {id: 'PITCHER', label: 'PITCHER'}, {id: 'CATCHER', label: 'CATCHER'}, {id: 'FIRST BASE', label: 'FIRST BASE'}], layout: 'grid-cols-3' }, { id: 'size', title: 'Size', options: [{id: '11"', label: '11"'}, {id: '11.25"', label: '11.25"'}, {id: '11.5"', label: '11.5"'}, {id: '11.75"', label: '11.75"'}, {id: '12"', label: '12"'}], layout: 'grid-cols-3' }, { id: 'handOpeningSize', title: 'Hand Opening Size', options: [{id: 'ADULT', label: 'ADULT'}, {id: 'YOUTH', label: 'YOUTH'}], layout: 'grid-cols-2' }, { id: 'stiffness', title: 'Stiffness', options: [{id: 'STIFF', label: 'STIFF'}, {id: 'STANDARD', label: 'STANDARD'}, {id: 'SOFT', label: 'SOFT'}], layout: 'grid-cols-3' }, { id: 'throwingHand', title: 'Throwing Hand', options: [{id: 'RIGHT HAND', label: 'RIGHT HAND'}, {id: 'LEFT HAND', label: 'LEFT HAND'}], layout: 'grid-cols-2' }
 ];
 
-// --- UPDATED --- Expanded to include all web types discovered in the file list
 export const webTypeOptions = [
     { id: 'BASKET', title: 'Basket' },
     { id: 'BASKET_LACE', title: 'Basket Lace' },
@@ -57,16 +57,7 @@ export const webTypeOptions = [
     { id: 'TWO_PIECE', title: 'Two Piece' },
 ];
 
-// --- UPDATED --- Data maps to connect UI selections to 3D model names
-export const POSITION_TO_MODEL_MAP = {
-    'INFIELD': 'openBack',
-    'OUTFIELD': 'closeBack',
-    'PITCHER': 'closeBack',
-    'CATCHER': 'catchers',
-    'FIRST BASE': 'firstBase'
-};
-
-// --- UPDATED --- The complete mapping of glove shells to their compatible web models
+// --- The complete mapping of glove shells to their compatible web models ---
 export const GLOVE_TO_WEBS_MAP = {
     openBack: {
         BASKET: 'basketOB',
@@ -109,10 +100,10 @@ export const GLOVE_TO_WEBS_MAP = {
 };
 
 // --- DEFAULT BLUEPRINT ---
-
+// --- FIX #4: Add 'backStyle' to the default build configuration ---
 export const initialState: AppState = {
     configuration: {
-        build: { imageSelection: 'imgOpt1', position: 'OUTFIELD', size: '11"', handOpeningSize: 'ADULT', stiffness: 'STANDARD', throwingHand: 'RIGHT HAND' },
+        build: { imageSelection: 'imgOpt1', position: 'INFIELD', size: '11"', handOpeningSize: 'ADULT', stiffness: 'STANDARD', throwingHand: 'RIGHT HAND', backStyle: 'OPEN' },
         web: { type: 'web', webType: 'MOD_TRAP', color: '#C62828' },
         thumb: { type: 'dual', inner: '#C62828', outer: '#2E7D32' },
         index: { type: 'single', color: '#1565C0' },
@@ -148,7 +139,6 @@ export const getColorDisplay = (colorValue: ColorablePart | HexColor, options: G
             if (colorValue.type === 'dual') return `Inner: ${getColorName(colorValue.inner)}, Outer: ${getColorName(colorValue.outer)}`;
             if (colorValue.type === 'text') return getColorName(colorValue.color);
             if (colorValue.type === 'single' || colorValue.type === 'web') return `Color: ${getColorName(colorValue.color)}`;
-            // eslint-disable-next-line @typescript-eslint/no-unused-vars
             const exhaustiveCheck: never = colorValue;
             return 'N/A';
         default:
@@ -174,6 +164,27 @@ export const getActiveColor = (
     }
 };
 
+// --- FIX #5: Add the new logic function to determine the model name ---
+export const getModelNameForBuild = (buildConfig: BuildConfig): string => {
+    switch (buildConfig.position) {
+        case 'INFIELD':
+            return 'openBack'; // Infield is always open back
+
+        case 'OUTFIELD':
+        case 'PITCHER':
+            // If the style is CLOSE, use closeBack, otherwise default to openBack.
+            return buildConfig.backStyle === 'CLOSE' ? 'closeBack' : 'openBack';
+
+        case 'CATCHER':
+            return 'catchers';
+
+        case 'FIRST BASE':
+            return 'firstBase';
+
+        default:
+            return 'openBack'; // A safe default
+    }
+};
 
 // --- WIRING AND CONTROLLER LOGIC ---
 
@@ -201,10 +212,9 @@ const PART_TO_SHADER_INDEX_MAP = {
 };
 
 export const GloveLogicController = () => {
-    const { state, dispatch } = useGloveConfigurator(); // Get dispatch
+    const { state, dispatch } = useGloveConfigurator();
     const sceneManager = useContext(SceneContext);
 
-    // --- UPDATED --- Controller now handles asynchronous engine commands and loading state
     useEffect(() => {
         const updateSceneAsync = async () => {
             if (!sceneManager || !sceneManager.isReady()) {
@@ -215,16 +225,14 @@ export const GloveLogicController = () => {
             
             try {
                 const { configuration } = state;
-                const activeShell = POSITION_TO_MODEL_MAP[configuration.build.position];
                 
-                // Use the new map to find the correct web model filename
+                // --- FIX #6: Simplify the controller logic ---
+                const activeShell = getModelNameForBuild(configuration.build);
                 const webModelFilename = (GLOVE_TO_WEBS_MAP as any)[activeShell]?.[configuration.web.webType];
     
-                // Asynchronously update the 3D models first
-                await sceneManager.updateBuild(configuration.build);
+                await sceneManager.updateBuild(activeShell);
                 await sceneManager.updateWeb(webModelFilename);
         
-                // Update colors and text after models are loaded and visible
                 sceneManager.updateColor(PART_TO_SHADER_INDEX_MAP.thumb_inner, Color3.FromHexString(configuration.thumb.inner));
                 sceneManager.updateColor(PART_TO_SHADER_INDEX_MAP.thumb_outer, Color3.FromHexString(configuration.thumb.outer));
                 sceneManager.updateColor(PART_TO_SHADER_INDEX_MAP.index, Color3.FromHexString(configuration.index.color));
@@ -251,7 +259,6 @@ export const GloveLogicController = () => {
                 });
             } catch (error) {
                 console.error("Failed to update scene:", error);
-                // Optionally dispatch an error state to the UI
             } finally {
                 dispatch({ type: ACTION_TYPES.SET_LOADING, payload: false });
             }

@@ -16,13 +16,15 @@ export type WebPart = { type: 'web'; webType: string; color: HexColor };
 export type TextPart = { type: 'text'; text: string; font: Font; color: HexColor };
 export type ColorablePart = SingleColorPart | DualColorPart | WebPart | TextPart;
 
-interface BuildConfig {
+// --- FIX #1: Export the interface and add the 'backStyle' property ---
+export interface BuildConfig {
     imageSelection: 'imgOpt1' | 'imgOpt2';
     position: 'INFIELD' | 'OUTFIELD' | 'PITCHER' | 'CATCHER' | 'FIRST BASE';
     size: '11"' | '11.25"' | '11.5"' | '11.75"' | '12"';
     handOpeningSize: 'ADULT' | 'YOUTH';
     stiffness: 'STIFF' | 'STANDARD' | 'SOFT';
     throwingHand: 'RIGHT HAND' | 'LEFT HAND';
+    backStyle: 'OPEN' | 'CLOSE'; // <-- ADDED THIS
 }
 
 export interface GloveConfiguration {
@@ -40,7 +42,7 @@ export interface GloveConfiguration {
 export interface AppState {
     configuration: GloveConfiguration;
     activeDualColorPart: (typeof DUAL_COLOR_SUB_PARTS)[keyof typeof DUAL_COLOR_SUB_PARTS];
-    isLoading: boolean; // Add this line
+    isLoading: boolean;
 }
 
 export type GloveAction =
@@ -99,7 +101,7 @@ export const ACTION_TYPES = {
     UPDATE_GALLERY: 'UPDATE_GALLERY',
     UPDATE_TEXT: 'UPDATE_TEXT',
     APPLY_COLOR_TO_ALL: 'APPLY_COLOR_TO_ALL',
-    SET_LOADING: 'SET_LOADING', // Add this
+    SET_LOADING: 'SET_LOADING',
 } as const;
 
 export const POSITIONS = {
@@ -568,10 +570,16 @@ const ImageGroup = ({ title, options, layout, selectedOption, onSelectOption }: 
 interface BuildOptionProps {
     isDesktop: boolean;
 }
+
+// --- FIX #2: Update BuildOption to handle the new backStyle logic ---
 const BuildOption = ({ isDesktop }: BuildOptionProps) => {
     const { state, dispatch } = useGloveConfigurator();
     const { build: buildConfig } = state.configuration;
     const onBuildConfigChange = (newConfig: BuildConfig) => dispatch({ type: ACTION_TYPES.UPDATE_BUILD, payload: newConfig });
+
+    const positionGroup = buildOptionsData.find(g => g.id === 'position');
+    const otherGroups = buildOptionsData.filter(g => g.id !== 'position');
+
     return (
         <div className={`space-y-6 ${!isDesktop ? 'pb-4' : ''}`}>
             <ImageGroup
@@ -581,7 +589,48 @@ const BuildOption = ({ isDesktop }: BuildOptionProps) => {
                 selectedOption={buildConfig.imageSelection}
                 onSelectOption={(value) => onBuildConfigChange({ ...buildConfig, imageSelection: value as 'imgOpt1' | 'imgOpt2' })}
             />
-            {buildOptionsData.map((group) => <OptionGroup key={group.id} title={group.title} options={group.options} layout={group.layout} selectedOption={buildConfig[group.id as keyof Omit<BuildConfig, 'imageSelection'>]} onSelectOption={(value) => onBuildConfigChange({ ...buildConfig, [group.id]: value })} />)}
+            {positionGroup && (
+                 <OptionGroup
+                    key={positionGroup.id}
+                    title={positionGroup.title}
+                    options={positionGroup.options}
+                    layout={positionGroup.layout}
+                    selectedOption={buildConfig.position}
+                    onSelectOption={(value) => {
+                        const newConfig = { ...buildConfig, position: value as BuildConfig['position'] };
+                        // When user selects Outfield or Pitcher, default them to an OPEN back
+                        if (['OUTFIELD', 'PITCHER'].includes(value)) {
+                            newConfig.backStyle = 'OPEN';
+                        }
+                        onBuildConfigChange(newConfig);
+                    }}
+                />
+            )}
+            
+            {/* Conditionally render the Back Style selector */}
+            {['OUTFIELD', 'PITCHER'].includes(buildConfig.position) && (
+                <OptionGroup
+                    title="Back Style"
+                    options={[{id: 'OPEN', label: 'OPEN'}, {id: 'CLOSE', label: 'CLOSE'}]}
+                    layout="grid-cols-2"
+                    selectedOption={buildConfig.backStyle}
+                    onSelectOption={(value) => onBuildConfigChange({ 
+                        ...buildConfig, 
+                        backStyle: value as 'OPEN' | 'CLOSE' 
+                    })}
+                />
+            )}
+
+            {otherGroups.map((group) => (
+                <OptionGroup 
+                    key={group.id} 
+                    title={group.title} 
+                    options={group.options} 
+                    layout={group.layout} 
+                    selectedOption={buildConfig[group.id as keyof Omit<BuildConfig, 'imageSelection'|'position'|'backStyle'>]} 
+                    onSelectOption={(value) => onBuildConfigChange({ ...buildConfig, [group.id]: value })} 
+                />
+            ))}
         </div>
     );
 };
@@ -1134,7 +1183,7 @@ const AccordionDesktop = ({ options }: { options: OptionsConfigItem[] }) => {
         if (openAccordion === accordionId) {
             closingPanelIdRef.current = accordionId;
         }
-        setOpenAccordion(prev => (prev === accordionId ? null : accordionId));
+        setOpenAccordion(prev => (prev === accordionId ? null : prev));
     };
 
     const closeAccordion = useCallback(() => {
@@ -1365,13 +1414,11 @@ const AccordionMobile = React.forwardRef<HTMLElement, AccordionMobileProps>(
 const UI = () => {
     const isDesktop = useBreakpoint();
     const { state } = useGloveConfigurator();
-    const { isLoading } = state; // 1. Get the new flag from the state
+    const { isLoading } = state;
     const [isVisualizationExpanded, setIsVisualizationExpanded] = useState(false);
     const [openAccordionOptionMobile, setOpenAccordionOptionMobile] = useState<MobileAccordionState>(null);
     const appContainerRef = useRef<HTMLDivElement>(null);
 
-    // --- START: 1 of 2 ADDED SECTIONS ---
-    // This new ref and effect hook handle the resizing logic.
     const mainRef = useRef<HTMLElement>(null);
 
     useEffect(() => {
@@ -1383,12 +1430,9 @@ const UI = () => {
     }
 
     const observer = new ResizeObserver(entries => {
-        // Defer the DOM update to the next animation frame
         window.requestAnimationFrame(() => {
             for (let entry of entries) {
                 const { inlineSize: width, blockSize: height } = entry.borderBoxSize[0];
-
-                // Set the size using the original, precise values
                 babylonContainer.style.width = `${width}px`;
                 babylonContainer.style.height = `${height}px`;
             }
@@ -1400,10 +1444,8 @@ const UI = () => {
     return () => {
         observer.disconnect();
     };
-}, []); // The empty array ensures this effect runs only once.
-    // --- END: 1 of 2 ADDED SECTIONS ---
+}, []);
 
-    // --- Application-level Focus Containment ---
     useEffect(() => {
         const container = appContainerRef.current;
         if (!container) return;
@@ -1422,12 +1464,12 @@ const UI = () => {
             const firstElement = focusableElements[0];
             const lastElement = focusableElements[focusableElements.length - 1];
 
-            if (event.shiftKey) { // Shift + Tab
+            if (event.shiftKey) { 
                 if (document.activeElement === firstElement) {
                     lastElement.focus();
                     event.preventDefault();
                 }
-            } else { // Tab
+            } else { 
                 if (document.activeElement === lastElement) {
                     firstElement.focus();
                     event.preventDefault();
@@ -1441,9 +1483,8 @@ const UI = () => {
                 container.removeEventListener('keydown', handleKeyDown);
             }
         };
-    }, [isDesktop, openAccordionOptionMobile, isVisualizationExpanded]); // Re-run when layout changes might alter focusable elements
+    }, [isDesktop, openAccordionOptionMobile, isVisualizationExpanded]);
 
-    // --- START: Focus Management Implementation ---
     const mobileListRef = useRef<HTMLElement>(null);
     const panelHeaderRef = useRef<HTMLButtonElement | null>(null);
     const triggerButtonRef = useRef<HTMLButtonElement | null>(null);
@@ -1453,22 +1494,19 @@ const UI = () => {
         if (!listElement) return;
 
         if (openAccordionOptionMobile) {
-            // Panel is open, make list inert
             listElement.setAttribute('inert', '');
-            // Set focus immediately after DOM mutation but before paint
             panelHeaderRef.current?.focus();
         } else {
-            // Panel is closed, remove inert and return focus
             listElement.removeAttribute('inert');
             if (triggerButtonRef.current) {
                 triggerButtonRef.current.focus();
-                triggerButtonRef.current = null; // Clear ref after use
+                triggerButtonRef.current = null;
             }
         }
     }, [openAccordionOptionMobile]);
 
     const handleOpenPanel = (item: OptionsConfigItem, event: React.MouseEvent<HTMLButtonElement>) => {
-        triggerButtonRef.current = event.currentTarget; // Save the trigger button
+        triggerButtonRef.current = event.currentTarget;
         const { id, title, contentType } = item;
     
         let panelState: MobileAccordionState;
@@ -1554,27 +1592,20 @@ const UI = () => {
     const CONTROLS_PROPORTION = 1 - VIZ_PROPORTION;
 
     const handleReviewClick = (event: React.MouseEvent<HTMLButtonElement>) => {
-        // 1. Set the trigger ref, just like handleOpenPanel does
         triggerButtonRef.current = event.currentTarget;  
-
-        // 2. Open the summary panel
         setOpenAccordionOptionMobile({ name: CONTENT_TYPES.SUMMARY });
     };
 
     return (
         <div ref={appContainerRef} className="flex flex-col lg:relative w-full h-full bg-transparent text-white">
             
-            {/* --- 2. ADD THIS LOADING INDICATOR BLOCK --- */}
             {isLoading && (
                 <div className="absolute inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 pointer-events-auto">
                     <p className="text-white text-xl animate-pulse">Loading...</p>
                 </div>
             )}
 
-            {/* --- START: 2 of 2 ADDED SECTIONS --- */}
-            {/* The ref={mainRef} is the only change in this entire <main> tag. */}
             <main ref={mainRef} className={`p-4 flex flex-col items-center justify-center relative bg-transparent overflow-auto h-full w-full ${isVisualizationExpanded ? 'flex-grow' : 'lg:absolute lg:inset-0'}`} style={!isDesktop && !isVisualizationExpanded ? { flexBasis: 'calc(61.8% - 66px)' } : {}}>
-            {/* --- END: 2 of 2 ADDED SECTIONS --- */}
                 {!isDesktop && <div className="absolute top-[20px] left-[20px] w-[70px] h-[49px] bg-gray-300 bg-opacity-75 z-10 flex items-center justify-center pointer-events-auto"><p className="font-bold text-xl text-gray-900">LOGO</p></div>}
                 <button className="absolute top-[20px] right-[20px] z-20 p-2 hover:bg-gray-800 hover:bg-opacity-50 focus:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-white pointer-events-auto" aria-label="Share configuration" onClick={handleShare}>
                     <ShareIcon />
@@ -1639,18 +1670,14 @@ const UI = () => {
 };
 
 const App = () => {
-    // NEW: State to hold the SceneManager instance once it's ready.
     const [sceneManager, setSceneManager] = useState<SceneManager | null>(null);
 
     return (
         <GloveConfiguratorProvider>
-            {/* NEW: Provider that makes the sceneManager available to the logic controller */}
             <SceneContext.Provider value={sceneManager}>
 
-                {/* This part remains mostly the same */}
                 <div id="app-root" className="relative w-full h-[100dvh] bg-[#161616]">
                     <div id="babylon-container" className="absolute inset-0 z-10">
-                        {/* MODIFIED: Pass the onSceneReady callback to get the manager instance */}
                         <BabylonCanvas onSceneReady={setSceneManager} />
                     </div>
                     <div id="ui-container" className="absolute inset-0 z-20 pointer-events-none">
@@ -1658,7 +1685,6 @@ const App = () => {
                     </div>
                 </div>
 
-                {/* NEW: The non-visual logic controller that connects UI state to the 3D scene */}
                 <GloveLogicController />
 
             </SceneContext.Provider>
