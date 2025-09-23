@@ -16,7 +16,6 @@ export type WebPart = { type: 'web'; webType: string; color: HexColor };
 export type TextPart = { type: 'text'; text: string; font: Font; color: HexColor };
 export type ColorablePart = SingleColorPart | DualColorPart | WebPart | TextPart;
 
-// --- FIX #1: Export the interface and add the 'backStyle' property ---
 export interface BuildConfig {
     imageSelection: 'imgOpt1' | 'imgOpt2';
     position: 'INFIELD' | 'OUTFIELD' | 'PITCHER' | 'CATCHER' | 'FIRST BASE';
@@ -24,7 +23,7 @@ export interface BuildConfig {
     handOpeningSize: 'ADULT' | 'YOUTH';
     stiffness: 'STIFF' | 'STANDARD' | 'SOFT';
     throwingHand: 'RIGHT HAND' | 'LEFT HAND';
-    backStyle: 'OPEN' | 'CLOSE'; // <-- ADDED THIS
+    backStyle: 'OPEN' | 'CLOSE';
 }
 
 export interface GloveConfiguration {
@@ -571,7 +570,6 @@ interface BuildOptionProps {
     isDesktop: boolean;
 }
 
-// --- FIX #2: Update BuildOption to handle the new backStyle logic ---
 const BuildOption = ({ isDesktop }: BuildOptionProps) => {
     const { state, dispatch } = useGloveConfigurator();
     const { build: buildConfig } = state.configuration;
@@ -1183,7 +1181,8 @@ const AccordionDesktop = ({ options }: { options: OptionsConfigItem[] }) => {
         if (openAccordion === accordionId) {
             closingPanelIdRef.current = accordionId;
         }
-        setOpenAccordion(prev => (prev === accordionId ? null : prev));
+        // --- THE FIX IS HERE ---
+        setOpenAccordion(prev => (prev === accordionId ? null : accordionId));
     };
 
     const closeAccordion = useCallback(() => {
