@@ -203,7 +203,35 @@ export class SceneManager {
         this.resizeObserver.observe(canvas);
     }
 
-    // --- NEW --- Loads the default glove and preloads its webs
+    // --- STEP 1: Created the new "recipe" function ---
+    private _setupGloveMaterial(gloveMaterial: PBRMaterial, modelName: string) {
+        const rootUrl = `${process.env.PUBLIC_URL || ''}/assets/`;
+        
+        // --- STEP 2: Made texture loading dynamic ---
+        const colorIdTexture = new Texture(`${rootUrl}${modelName}.png`, this.scene, true, false, Constants.TEXTURE_NEAREST_SAMPLINGMODE);
+        gloveMaterial.albedoTexture = colorIdTexture;
+
+        const detailTexture = new Texture(`${rootUrl}details.png`, this.scene);
+        detailTexture.coordinatesIndex = 0;
+        detailTexture.uScale = 4;
+        detailTexture.vScale = 4;
+        gloveMaterial.detailMap.isEnabled = true;
+        gloveMaterial.detailMap.normalBlendMethod = 1;
+        gloveMaterial.detailMap.texture = detailTexture;
+        gloveMaterial.detailMap.diffuseBlendLevel = 0;
+        gloveMaterial.detailMap.roughnessBlendLevel = 0;
+        gloveMaterial.detailMap.bumpLevel = .6;
+
+        const gloveConfig: ColorSwapConfig = {
+             baseColors: ["#FF0000", "#00FFFF", "#80FF00", "#7F00FF", "#FFBF00", "#0040FF", "#00FF40", "#FF00BF", "#FF6000", "#FF0060"],
+             initialReplacements: [new Color3(1.0, 0.0, 1.0), new Color3(1.0, 1.0, 0.0), new Color3(0.0, 1.0, 1.0), new Color3(1.0, 0.5, 0.0), new Color3(0.5, 0.0, 1.0), new Color3(0.5, 0.0, 1.0), new Color3(0.2, 0.0, 0.2), new Color3(0.1, 0.5, 0.9), new Color3(1.0, 1.0, 1.0), new Color3(0.0, 1.0, 0.0)]
+        };
+
+        // --- STEP 3: Dispose of the old plugin to prevent leaks ---
+        this.colorPlugin?.dispose();
+        this.colorPlugin = new ColorSwapPlugin(gloveMaterial, gloveConfig);
+    }
+
     private async loadInitialAssets(onReady: (manager: SceneManager) => void) {
         const initialGloveName = 'openBack';
         const container = await this.assetManager.getAsset(initialGloveName);
@@ -214,30 +242,10 @@ export class SceneManager {
             this.gloveShells.set(initialGloveName, gloveMesh);
         }
 
-        // --- All the material and plugin setup from before, now more robust ---
         const gloveMaterial = container.materials.find(m => m.name === 'glove') as PBRMaterial;
         if (gloveMaterial) {
-            // ... (material setup code remains the same)
-            // This part can be refactored into a helper if you load multiple gloves with different materials
-            const rootUrl = `${process.env.PUBLIC_URL || ''}/assets/`;
-            const colorIdTexture = new Texture(`${rootUrl}openBack.png`, this.scene, true, false, Constants.TEXTURE_NEAREST_SAMPLINGMODE);
-            gloveMaterial.albedoTexture = colorIdTexture;
-            const detailTexture = new Texture(`${rootUrl}details.png`, this.scene);
-            detailTexture.coordinatesIndex = 0;
-            detailTexture.uScale = 4;
-            detailTexture.vScale = 4;
-            gloveMaterial.detailMap.isEnabled = true;
-            gloveMaterial.detailMap.normalBlendMethod = 1;
-            gloveMaterial.detailMap.texture = detailTexture;
-            gloveMaterial.detailMap.diffuseBlendLevel = 0;
-            gloveMaterial.detailMap.roughnessBlendLevel = 0;
-            gloveMaterial.detailMap.bumpLevel = .6;
-
-            const gloveConfig: ColorSwapConfig = {
-                 baseColors: ["#FF0000", "#00FFFF", "#80FF00", "#7F00FF", "#FFBF00", "#0040FF", "#00FF40", "#FF00BF", "#FF6000", "#FF0060"],
-                 initialReplacements: [new Color3(1.0, 0.0, 1.0), new Color3(1.0, 1.0, 0.0), new Color3(0.0, 1.0, 1.0), new Color3(1.0, 0.5, 0.0), new Color3(0.5, 0.0, 1.0), new Color3(0.5, 0.0, 1.0), new Color3(0.2, 0.0, 0.2), new Color3(0.1, 0.5, 0.9), new Color3(1.0, 1.0, 1.0), new Color3(0.0, 1.0, 0.0)]
-            };
-            this.colorPlugin = new ColorSwapPlugin(gloveMaterial, gloveConfig);
+            // --- STEP 4 (Initial Load): Call the new function ---
+            this._setupGloveMaterial(gloveMaterial, initialGloveName);
         }
 
         this.gloveShells.forEach(mesh => mesh.setEnabled(false));
@@ -255,7 +263,6 @@ export class SceneManager {
         this.colorPlugin?.updateColor(index, color);
     };
     
-    // --- CORRECTED ---
     public async updateBuild(modelName: string): Promise<void> {
         if (!modelName) return;
 
@@ -266,6 +273,12 @@ export class SceneManager {
             if (mesh) {
                 container.addAllToScene();
                 this.gloveShells.set(modelName, mesh);
+
+                // --- STEP 4 (On-Demand Load): Find and set up the new material ---
+                const gloveMaterial = container.materials.find(m => m.name === 'glove') as PBRMaterial;
+                if (gloveMaterial) {
+                    this._setupGloveMaterial(gloveMaterial, modelName);
+                }
             }
         }
         
@@ -282,11 +295,9 @@ export class SceneManager {
         }
     }
 
-    // --- NEW --- Handles loading and swapping web models
     public async updateWeb(webType: string): Promise<void> {
         if (!webType) return;
         
-        // 1. Load the web model on-demand if not already loaded
         if (!this.webs.has(webType)) {
             const container = await this.assetManager.getAsset(webType);
             const mesh = container.meshes.find(m => m.name === webType) as Mesh;
@@ -296,19 +307,16 @@ export class SceneManager {
             }
         }
 
-        // 2. Set the active web and hide all others
         this.webs.forEach((mesh, name) => {
             mesh.setEnabled(name === webType);
         });
     }
 
-    // --- UPDATED --- Now dynamically finds text materials on the active glove
     public updateText = (options: { zone: string; text: string; font: string; color: string; }) => {
         const { zone, text, font, color } = options;
 
         if (!this.activeShellName) return;
 
-        // Dynamically create the material name based on the active shell
         const materialName = `${zone}${this.activeShellName.charAt(0).toUpperCase() + this.activeShellName.slice(1)}`;
         const textMat = this.scene.getMaterialByName(materialName) as PBRMaterial;
 
