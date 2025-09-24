@@ -99,6 +99,14 @@ export const GLOVE_TO_WEBS_MAP = {
     }
 };
 
+/**
+ * A Type Guard that checks if a string is a valid key for GLOVE_TO_WEBS_MAP.
+ * If true, TypeScript narrows the type, enabling safe property access.
+ */
+const isValidShell = (shell: string): shell is keyof typeof GLOVE_TO_WEBS_MAP => {
+    return shell in GLOVE_TO_WEBS_MAP;
+};
+
 // --- DEFAULT BLUEPRINT ---
 // --- FIX #4: Add 'backStyle' to the default build configuration ---
 export const initialState: AppState = {
@@ -226,12 +234,28 @@ export const GloveLogicController = () => {
             try {
                 const { configuration } = state;
                 
-                // --- FIX #6: Simplify the controller logic ---
                 const activeShell = getModelNameForBuild(configuration.build);
-                const webModelFilename = (GLOVE_TO_WEBS_MAP as any)[activeShell]?.[configuration.web.webType];
+                
+                const webModelFilename = isValidShell(activeShell)
+                    ? GLOVE_TO_WEBS_MAP[activeShell][configuration.web.webType as keyof typeof GLOVE_TO_WEBS_MAP[typeof activeShell]]
+                    : (() => {
+                        // Only log warnings in the development environment to keep the production console clean.
+                        if (process.env.NODE_ENV === 'development') {
+                            console.warn(`[GloveConfig] Invalid shell type encountered: "${activeShell}". No web model will be displayed.`);
+                        }
+                        return undefined;
+                      })();
     
                 await sceneManager.updateBuild(activeShell);
-                await sceneManager.updateWeb(webModelFilename);
+
+                // --- FINAL FIX: Check if webModelFilename is valid before calling updateWeb ---
+                if (webModelFilename) {
+                    await sceneManager.updateWeb(webModelFilename);
+                } else {
+                    // If the filename is undefined, explicitly hide the current web
+                    // by calling updateWeb with an empty string.
+                    await sceneManager.updateWeb('');
+                }
         
                 sceneManager.updateColor(PART_TO_SHADER_INDEX_MAP.thumb_inner, Color3.FromHexString(configuration.thumb.inner));
                 sceneManager.updateColor(PART_TO_SHADER_INDEX_MAP.thumb_outer, Color3.FromHexString(configuration.thumb.outer));
