@@ -1,6 +1,5 @@
 import { useEffect, createContext, useContext } from 'react';
 import { Color3 } from '@babylonjs/core';
-// --- FIX #3: Correctly import BuildConfig ---
 import { useGloveConfigurator, GloveConfiguration, AppState, HexColor, ColorablePart, Font, WebPart, ACTION_TYPES, BuildConfig } from './ui';
 import { SceneManager } from './viewer';
 
@@ -57,58 +56,17 @@ export const webTypeOptions = [
     { id: 'TWO_PIECE', title: 'Two Piece' },
 ];
 
-// --- The complete mapping of glove shells to their compatible web models ---
 export const GLOVE_TO_WEBS_MAP = {
-    openBack: {
-        BASKET: 'basketOB',
-        BASKET_LACE: 'basketLaceOB',
-        CLOSED_V: 'closedVOB',
-        DUAL_HINGE: 'dualHingeOB',
-        FRAMED_MOD_TRAP: 'framedModTrapOB',
-        H_WEB: 'hOB',
-        I_WEB: 'iOB',
-        LACED_H: 'lacedHOB',
-        LACE_SEALING: 'laceSealingOB',
-        MOD_TRAP: 'modTrapOB',
-        ONE_PIECE: 'onePieceOB',
-        SEALING: 'sealingOB',
-        SINGLE_POST: 'singlePostOB',
-        SINGLE_POST_LACE: 'singlePostLaceOB',
-        TRAP: 'trapOB',
-        TWO_PIECE: 'twoPieceOB',
-    },
-    closeBack: {
-        BASKET: 'basketCB',
-        CLOSED_V: 'closedVCB',
-        DUAL_HINGE: 'dualHingeCB',
-        FRAMED_MOD_TRAP: 'framedModTrapCB',
-        H_WEB: 'hCB',
-        LACED_H: 'lacedHCB',
-        LACE_SEALING: 'laceSealingCB',
-        MOD_TRAP: 'modTrapCB',
-        ONE_PIECE: 'onePieceCB',
-        SEALING: 'sealingCB',
-        TRAP: 'trapCB',
-    },
-    firstBase: {
-        POST: 'postFB',
-        TWO_PIECE: 'twoPieceFB',
-    },
-    catchers: {
-        TWO_PIECE: 'twoPieceCM',
-    }
+    openBack: { BASKET: 'basketOB', BASKET_LACE: 'basketLaceOB', CLOSED_V: 'closedVOB', DUAL_HINGE: 'dualHingeOB', FRAMED_MOD_TRAP: 'framedModTrapOB', H_WEB: 'hOB', I_WEB: 'iOB', LACED_H: 'lacedHOB', LACE_SEALING: 'laceSealingOB', MOD_TRAP: 'modTrapOB', ONE_PIECE: 'onePieceOB', SEALING: 'sealingOB', SINGLE_POST: 'singlePostOB', SINGLE_POST_LACE: 'singlePostLaceOB', TRAP: 'trapOB', TWO_PIECE: 'twoPieceOB', },
+    closeBack: { BASKET: 'basketCB', CLOSED_V: 'closedVCB', DUAL_HINGE: 'dualHingeCB', FRAMED_MOD_TRAP: 'framedModTrapCB', H_WEB: 'hCB', LACED_H: 'lacedHCB', LACE_SEALING: 'laceSealingCB', MOD_TRAP: 'modTrapCB', ONE_PIECE: 'onePieceCB', SEALING: 'sealingCB', TRAP: 'trapCB', },
+    firstBase: { POST: 'postFB', TWO_PIECE: 'twoPieceFB', },
+    catchers: { TWO_PIECE: 'twoPieceCM', }
 };
 
-/**
- * A Type Guard that checks if a string is a valid key for GLOVE_TO_WEBS_MAP.
- * If true, TypeScript narrows the type, enabling safe property access.
- */
 const isValidShell = (shell: string): shell is keyof typeof GLOVE_TO_WEBS_MAP => {
     return shell in GLOVE_TO_WEBS_MAP;
 };
 
-// --- DEFAULT BLUEPRINT ---
-// --- FIX #4: Add 'backStyle' to the default build configuration ---
 export const initialState: AppState = {
     configuration: {
         build: { imageSelection: 'imgOpt1', position: 'INFIELD', size: '11"', handOpeningSize: 'ADULT', stiffness: 'STANDARD', throwingHand: 'RIGHT HAND', backStyle: 'OPEN' },
@@ -125,100 +83,118 @@ export const initialState: AppState = {
     isLoading: false,
 };
 
-// --- DATA TRANSFORMATION LOGIC ---
+// --- DATA TRANSFORMATION LOGIC (UNCHANGED) ---
 
-interface GetColorDisplayOptions {
-    format?: (typeof FORMAT_TYPES)[keyof typeof FORMAT_TYPES];
-}
-
+interface GetColorDisplayOptions { format?: (typeof FORMAT_TYPES)[keyof typeof FORMAT_TYPES]; }
 export const getColorDisplay = (colorValue: ColorablePart | HexColor, options: GetColorDisplayOptions = {}): string => {
     const { format = FORMAT_TYPES.DEFAULT } = options;
     const getColorName = (hex: HexColor) => colorSwatches.find(c => c.hex === hex)?.name || hex;
-
-    if (typeof colorValue === 'string') {
-        return getColorName(colorValue);
-    }
-
+    if (typeof colorValue === 'string') { return getColorName(colorValue); }
     switch (format) {
-        case FORMAT_TYPES.HEADER:
-            if (colorValue.type === 'dual') return `${getColorName(colorValue.inner)} · ${getColorName(colorValue.outer)}`;
-            return getColorName(colorValue.color);
-        case FORMAT_TYPES.SUMMARY:
-            if (colorValue.type === 'dual') return `Inner: ${getColorName(colorValue.inner)}, Outer: ${getColorName(colorValue.outer)}`;
-            if (colorValue.type === 'text') return getColorName(colorValue.color);
-            if (colorValue.type === 'single' || colorValue.type === 'web') return `Color: ${getColorName(colorValue.color)}`;
-            const exhaustiveCheck: never = colorValue;
-            return 'N/A';
-        default:
-            return JSON.stringify(colorValue);
+        case FORMAT_TYPES.HEADER: if (colorValue.type === 'dual') return `${getColorName(colorValue.inner)} · ${getColorName(colorValue.outer)}`; return getColorName(colorValue.color);
+        case FORMAT_TYPES.SUMMARY: if (colorValue.type === 'dual') return `Inner: ${getColorName(colorValue.inner)}, Outer: ${getColorName(colorValue.outer)}`; if (colorValue.type === 'text') return getColorName(colorValue.color); if (colorValue.type === 'single' || colorValue.type === 'web') return `Color: ${getColorName(colorValue.color)}`; const exhaustiveCheck: never = colorValue; return 'N/A';
+        default: return JSON.stringify(colorValue);
     }
 };
 
-export const getActiveColor = (
-    colorValue: ColorablePart | null | undefined,
-    activeSubPart: AppState['activeDualColorPart']
-): HexColor | undefined => {
+export const getActiveColor = (colorValue: ColorablePart | null | undefined, activeSubPart: AppState['activeDualColorPart']): HexColor | undefined => {
     if (!colorValue || typeof colorValue !== 'object') return undefined;
-
     switch (colorValue.type) {
-        case 'web':
-        case 'single':
-        case 'text':
-            return colorValue.color;
-        case 'dual':
-            return colorValue[activeSubPart];
-        default:
-            return undefined;
+        case 'web': case 'single': case 'text': return colorValue.color;
+        case 'dual': return colorValue[activeSubPart];
+        default: return undefined;
     }
 };
 
-// --- FIX #5: Add the new logic function to determine the model name ---
 export const getModelNameForBuild = (buildConfig: BuildConfig): string => {
     switch (buildConfig.position) {
-        case 'INFIELD':
-            return 'openBack'; // Infield is always open back
-
-        case 'OUTFIELD':
-        case 'PITCHER':
-            // If the style is CLOSE, use closeBack, otherwise default to openBack.
-            return buildConfig.backStyle === 'CLOSE' ? 'closeBack' : 'openBack';
-
-        case 'CATCHER':
-            return 'catchers';
-
-        case 'FIRST BASE':
-            return 'firstBase';
-
-        default:
-            return 'openBack'; // A safe default
+        case 'INFIELD': return 'openBack';
+        case 'OUTFIELD': case 'PITCHER': return buildConfig.backStyle === 'CLOSE' ? 'closeBack' : 'openBack';
+        case 'CATCHER': return 'catchers';
+        case 'FIRST BASE': return 'firstBase';
+        default: return 'openBack';
     }
 };
-
-// --- WIRING AND CONTROLLER LOGIC ---
 
 export const SceneContext = createContext<SceneManager | null>(null);
 
 export const useScene = () => {
     const context = useContext(SceneContext);
-    if (!context) {
-        throw new Error('useScene must be used within a SceneProvider');
-    }
+    if (!context) { throw new Error('useScene must be used within a SceneProvider'); }
     return context;
 };
 
-const PART_TO_SHADER_INDEX_MAP = {
-    thumb_inner: 0,
-    thumb_outer: 1,
-    index: 2,
-    middle_inner: 3,
-    middle_outer: 4,
-    ring_inner: 5,
-    ring_outer: 6,
-    pinky_inner: 7,
-    pinky_outer: 8,
-    web: 9,
+
+// ===================================================================
+// --- STEP 1: DEFINE THE MASTER CONFIGURATION OBJECT ---
+// ===================================================================
+export const GLOVE_PARTS_CONFIG = {
+    // --- TIER 3: Shell-Specific (for openBack) ---
+    'thumb_outer':  { shaderIndex: 0,  materialTarget: 'shell', displayNameByShell: { 'openBack': 'Outer Thumb' }},
+    'thumb_inner':  { shaderIndex: 1,  materialTarget: 'shell', displayNameByShell: { 'openBack': 'Inner Thumb' }},
+    'index_finger': { shaderIndex: 2,  materialTarget: 'shell', displayNameByShell: { 'openBack': 'Index Finger' }},
+    'middle_inner': { shaderIndex: 3,  materialTarget: 'shell', displayNameByShell: { 'openBack': 'Inner Middle' }},
+    'middle_outer': { shaderIndex: 4,  materialTarget: 'shell', displayNameByShell: { 'openBack': 'Outer Middle' }},
+    'ring_inner':   { shaderIndex: 5,  materialTarget: 'shell', displayNameByShell: { 'openBack': 'Inner Ring' }},
+    'ring_outer':   { shaderIndex: 6,  materialTarget: 'shell', displayNameByShell: { 'openBack': 'Outer Ring' }},
+    'pinky_inner':  { shaderIndex: 7,  materialTarget: 'shell', displayNameByShell: { 'openBack': 'Inner Pinky' }},
+    'pinky_outer':  { shaderIndex: 8,  materialTarget: 'shell', displayNameByShell: { 'openBack': 'Outer Pinky' }},
+  
+    // --- TIER 2: Shell Universal (Shell-Only) ---
+    'finger_logo':  { shaderIndex: 21, materialTarget: 'shell', displayName: 'Finger Logo' },
+    'wrist_logo':   { shaderIndex: 22, materialTarget: 'shell', displayName: 'Wrist Logo' },
+    'wrist_logo_2': { shaderIndex: 23, materialTarget: 'shell', displayName: 'Wrist Logo 2' },
+    'welting':      { shaderIndex: 24, materialTarget: 'shell', displayName: 'Welting' },
+    'binding':      { shaderIndex: 25, materialTarget: 'shell', displayName: 'Binding' },
+    'wrist':        { shaderIndex: 26, materialTarget: 'shell', displayName: 'Wrist' },
+    'palm':         { shaderIndex: 27, materialTarget: 'shell', displayName: 'Palm' },
+    'liner':        { shaderIndex: 28, materialTarget: 'shell', displayName: 'Liner' },
+  
+    // --- TIER 1: Truly Universal & Web ---
+    'lace':         { shaderIndex: 29, materialTarget: 'both',  displayName: 'Lace' },
+    'web':          { shaderIndex: 30, materialTarget: 'web',   displayName: 'Web' },
+    'stitching':    { shaderIndex: 31, materialTarget: 'both',  displayName: 'Stitching' },
 };
 
+// ===================================================================
+// --- STEP 2: CREATE THE "SMART" LOOKUP FUNCTION ---
+// ===================================================================
+export function getPartDetails(partKey: string, activeShell: string) {
+    const config = GLOVE_PARTS_CONFIG[partKey as keyof typeof GLOVE_PARTS_CONFIG];
+    if (!config) return null;
+  
+    const displayName = (config as any).displayNameByShell?.[activeShell] || (config as any).displayName;
+  
+    return {
+      shaderIndex: config.shaderIndex,
+      materialTarget: config.materialTarget,
+      displayName: displayName
+    };
+}
+
+// Helper to get the correct color from the complex state object based on our internal part key
+const getColorFromState = (partKey: string, configuration: GloveConfiguration): HexColor | undefined => {
+    switch (partKey) {
+        case 'thumb_outer': return configuration.thumb.outer;
+        case 'thumb_inner': return configuration.thumb.inner;
+        case 'index_finger': return configuration.index.color;
+        case 'middle_outer': return configuration.middle.outer;
+        case 'middle_inner': return configuration.middle.inner;
+        case 'ring_outer': return configuration.ring.outer;
+        case 'ring_inner': return configuration.ring.inner;
+        case 'pinky_outer': return configuration.pinky.outer;
+        case 'pinky_inner': return configuration.pinky.inner;
+        case 'web': return configuration.web.color;
+        // NOTE: Universal & Shell Universal parts would need to be added to the state object to be customizable.
+        // This example only maps the parts currently in the state.
+        default: return undefined;
+    }
+};
+
+
+// ===================================================================
+// --- STEP 3: UPDATE GLOVELOGICCONTROLLER ---
+// ===================================================================
 export const GloveLogicController = () => {
     const { state, dispatch } = useGloveConfigurator();
     const sceneManager = useContext(SceneContext);
@@ -233,41 +209,39 @@ export const GloveLogicController = () => {
             
             try {
                 const { configuration } = state;
-                
                 const activeShell = getModelNameForBuild(configuration.build);
                 
+                // Update 3D models for shell and web
+                await sceneManager.updateBuild(activeShell);
                 const webModelFilename = isValidShell(activeShell)
                     ? GLOVE_TO_WEBS_MAP[activeShell][configuration.web.webType as keyof typeof GLOVE_TO_WEBS_MAP[typeof activeShell]]
-                    : (() => {
-                        // Only log warnings in the development environment to keep the production console clean.
-                        if (process.env.NODE_ENV === 'development') {
-                            console.warn(`[GloveConfig] Invalid shell type encountered: "${activeShell}". No web model will be displayed.`);
-                        }
-                        return undefined;
-                      })();
+                    : undefined;
     
-                await sceneManager.updateBuild(activeShell);
-
-                // --- FINAL FIX: Check if webModelFilename is valid before calling updateWeb ---
                 if (webModelFilename) {
                     await sceneManager.updateWeb(webModelFilename);
                 } else {
-                    // If the filename is undefined, explicitly hide the current web
-                    // by calling updateWeb with an empty string.
                     await sceneManager.updateWeb('');
                 }
         
-                sceneManager.updateColor(PART_TO_SHADER_INDEX_MAP.thumb_inner, Color3.FromHexString(configuration.thumb.inner));
-                sceneManager.updateColor(PART_TO_SHADER_INDEX_MAP.thumb_outer, Color3.FromHexString(configuration.thumb.outer));
-                sceneManager.updateColor(PART_TO_SHADER_INDEX_MAP.index, Color3.FromHexString(configuration.index.color));
-                sceneManager.updateColor(PART_TO_SHADER_INDEX_MAP.middle_inner, Color3.FromHexString(configuration.middle.inner));
-                sceneManager.updateColor(PART_TO_SHADER_INDEX_MAP.middle_outer, Color3.FromHexString(configuration.middle.outer));
-                sceneManager.updateColor(PART_TO_SHADER_INDEX_MAP.ring_inner, Color3.FromHexString(configuration.ring.inner));
-                sceneManager.updateColor(PART_TO_SHADER_INDEX_MAP.ring_outer, Color3.FromHexString(configuration.ring.outer));
-                sceneManager.updateColor(PART_TO_SHADER_INDEX_MAP.pinky_inner, Color3.FromHexString(configuration.pinky.inner));
-                sceneManager.updateColor(PART_TO_SHADER_INDEX_MAP.pinky_outer, Color3.FromHexString(configuration.pinky.outer));
-                sceneManager.updateColor(PART_TO_SHADER_INDEX_MAP.web, Color3.FromHexString(configuration.web.color));
+                // --- NEW: Update colors using the master config ---
+                for (const partKey in GLOVE_PARTS_CONFIG) {
+                    const colorValue = getColorFromState(partKey, configuration);
+                    if (!colorValue) continue; // Skip parts not in the current state for now
+
+                    const details = getPartDetails(partKey, activeShell);
+                    if (!details) continue;
+
+                    const color3 = Color3.FromHexString(colorValue);
+
+                    if (details.materialTarget === 'shell' || details.materialTarget === 'both') {
+                        sceneManager.updateShellColor(details.shaderIndex, color3);
+                    }
+                    if (details.materialTarget === 'web' || details.materialTarget === 'both') {
+                        sceneManager.updateWebColor(details.shaderIndex, color3);
+                    }
+                }
         
+                // Text updates remain the same
                 sceneManager.updateText({
                     zone: 'thumbName',
                     text: configuration.thumbName.text,
@@ -281,6 +255,7 @@ export const GloveLogicController = () => {
                     font: configuration.pinkyName.font,
                     color: configuration.pinkyName.color,
                 });
+
             } catch (error) {
                 console.error("Failed to update scene:", error);
             } finally {

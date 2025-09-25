@@ -9,8 +9,6 @@ import {
     Color4,
     AssetContainer,
     SceneLoader,
-    Material,
-    Texture,
     PBRMaterial,
     MaterialPluginBase,
     PBRBaseMaterial,
@@ -18,11 +16,10 @@ import {
     UniformBuffer,
     Constants,
     Color3,
-    DynamicTexture
+    DynamicTexture,
+    Texture
 } from '@babylonjs/core';
-import { AdvancedDynamicTexture, Button, Control } from '@babylonjs/gui';
 import "@babylonjs/loaders";
-// --- CORRECTED --- Import only what's necessary
 import { GLOVE_TO_WEBS_MAP } from './logic';
 
 // --- INTERFACE FOR PLUGIN CONFIGURATION ---
@@ -55,7 +52,7 @@ class ColorSwapPlugin extends MaterialPluginBase {
     }
     public updateColor(index: number, newColor: Color3) {
         if (index < 0 || index >= this._replacements.length) {
-            console.warn(`ColorSwapPlugin: Invalid color index provided: ${index}`);
+            // console.warn(`ColorSwapPlugin: Invalid color index provided: ${index}`);
             return;
         }
         this._replacements[index] = newColor;
@@ -79,7 +76,7 @@ class ColorSwapPlugin extends MaterialPluginBase {
         defines["COLOR_SWAP"] = this._isEnabled;
     }
     getUniforms() {
-        const arraySize = this._baseColors?.length > 0 ? this._baseColors.length : 10;
+        const arraySize = this._baseColors?.length > 0 ? this._baseColors.length : 32;
         return {
             ubo: [
                 { name: "replacements", size: 3, type: "vec3", arraySize },
@@ -115,7 +112,7 @@ varying vec2 vAlbedoUV;
     }
     getCustomCode(shaderType: string) {
         if (shaderType === "fragment") {
-            const arraySize = this._baseColors?.length > 0 ? this._baseColors.length : 10;
+            const arraySize = this._baseColors?.length > 0 ? this._baseColors.length : 32;
             return {
                 "CUSTOM_FRAGMENT_BEFORE_LIGHTS": `
 #ifdef COLOR_SWAP
@@ -173,12 +170,18 @@ export class SceneManager {
     private scene: Scene;
     private resizeObserver: ResizeObserver;
     private assetManager: AssetManager;
-    private colorPlugin: ColorSwapPlugin | null = null;
     private isSceneReady = false;
     private textTextures = new Map<string, DynamicTexture>();
 
-    // --- NEW --- Properties to store and manage loaded models
+    // --- NEW: Properties for the two-material system ---
+    private shellMaterial: PBRMaterial | null = null;
+    private shellPlugin: ColorSwapPlugin | null = null;
+    private activeWebMaterial: PBRMaterial | null = null;
+    private activeWebPlugin: ColorSwapPlugin | null = null;
+
+    // --- Caches for efficiency ---
     private gloveShells = new Map<string, Mesh>();
+    private webMaterialsCache = new Map<string, { material: PBRMaterial, plugin: ColorSwapPlugin }>();
     private webs = new Map<string, Mesh>();
     private activeShellName: string | null = null;
 
@@ -193,80 +196,74 @@ export class SceneManager {
         camera.attachControl(canvas, true);
         new HemisphericLight("light", new Vector3(0, 1, 0), this.scene);
 
-        // --- UPDATED --- Load only the initial assets required for startup
         this.loadInitialAssets(onReady);
-
-        this.createUI();
 
         this.engine.runRenderLoop(() => this.scene.render());
         this.resizeObserver = new ResizeObserver(() => this.engine.resize());
         this.resizeObserver.observe(canvas);
     }
 
-    // --- STEP 1: Created the new "recipe" function ---
-    private _setupGloveMaterial(gloveMaterial: PBRMaterial, modelName: string) {
+    // --- NEW: Reusable "recipe" function to set up any material ---
+    private _setupMaterialWithPlugin(material: PBRMaterial, modelName: string): ColorSwapPlugin {
         const rootUrl = `${process.env.PUBLIC_URL || ''}/assets/`;
-        
-        // --- STEP 2: Made texture loading dynamic ---
-        const colorIdTexture = new Texture(`${rootUrl}${modelName}.png`, this.scene, true, false, Constants.TEXTURE_NEAREST_SAMPLINGMODE);
-        gloveMaterial.albedoTexture = colorIdTexture;
 
+        // Set unique Color ID texture for this model
+        const colorIdTexture = new Texture(`${rootUrl}${modelName}.png`, this.scene, true, false, Constants.TEXTURE_NEAREST_SAMPLINGMODE);
+        material.albedoTexture = colorIdTexture;
+
+        // NOTE: Here you would also set the unique normal map for the model
+        // const normalTexture = new Texture(`${rootUrl}${modelName}_normal.png`, this.scene);
+        // material.bumpTexture = normalTexture;
+
+        // Add other shared textures like the detail map
         const detailTexture = new Texture(`${rootUrl}details.png`, this.scene);
         detailTexture.coordinatesIndex = 0;
         detailTexture.uScale = 4;
         detailTexture.vScale = 4;
-        gloveMaterial.detailMap.isEnabled = true;
-        gloveMaterial.detailMap.normalBlendMethod = 1;
-        gloveMaterial.detailMap.texture = detailTexture;
-        gloveMaterial.detailMap.diffuseBlendLevel = 0;
-        gloveMaterial.detailMap.roughnessBlendLevel = 0;
-        gloveMaterial.detailMap.bumpLevel = .6;
-
+        material.detailMap.isEnabled = true;
+        material.detailMap.normalBlendMethod = 1;
+        material.detailMap.texture = detailTexture;
+        material.detailMap.diffuseBlendLevel = 0;
+        material.detailMap.roughnessBlendLevel = 0;
+        material.detailMap.bumpLevel = .6;
+        
+        // Create the color swap plugin instance with the full color palette
         const gloveConfig: ColorSwapConfig = {
-             baseColors: ["#FF0000", "#00FFFF", "#80FF00", "#7F00FF", "#FFBF00", "#0040FF", "#00FF40", "#FF00BF", "#FF6000", "#FF0060"],
-             initialReplacements: [new Color3(1.0, 0.0, 1.0), new Color3(1.0, 1.0, 0.0), new Color3(0.0, 1.0, 1.0), new Color3(1.0, 0.5, 0.0), new Color3(0.5, 0.0, 1.0), new Color3(0.5, 0.0, 1.0), new Color3(0.2, 0.0, 0.2), new Color3(0.1, 0.5, 0.9), new Color3(1.0, 1.0, 1.0), new Color3(0.0, 1.0, 0.0)]
+            baseColors: [
+                "#FF0000", "#00FFFF", "#80FF00", "#7F00FF", "#FFBF00", "#0040FF", "#00FF40", "#FF00BF",
+                "#FF6000", "#009FFF", "#20FF00", "#DF00FF", "#DFFF00", "#2000FF", "#00FF9F", "#FF0060",
+                "#FF3000", "#00CFFF", "#50FF00", "#AF00FF", "#FFEF00", "#0010FF", "#00FF70", "#FF008F",
+                "#FF8F00", "#0070FF", "#00FF10", "#FF00EF", "#AFFF00", "#5000FF", "#00FFCF", "#FF0030"
+            ],
+            initialReplacements: Array(32).fill(0).map(() => new Color3(Math.random(), Math.random(), Math.random()))
         };
 
-        // --- STEP 3: Dispose of the old plugin to prevent leaks ---
-        this.colorPlugin?.dispose();
-        this.colorPlugin = new ColorSwapPlugin(gloveMaterial, gloveConfig);
+        const plugin = new ColorSwapPlugin(material, gloveConfig);
+        return plugin;
     }
 
     private async loadInitialAssets(onReady: (manager: SceneManager) => void) {
         const initialGloveName = 'openBack';
-        const container = await this.assetManager.getAsset(initialGloveName);
-        
-        container.addAllToScene();
-        const gloveMesh = container.meshes.find(m => m.name === initialGloveName) as Mesh;
-        if (gloveMesh) {
-            this.gloveShells.set(initialGloveName, gloveMesh);
-        }
-
-        const gloveMaterial = container.materials.find(m => m.name === 'glove') as PBRMaterial;
-        if (gloveMaterial) {
-            // --- STEP 4 (Initial Load): Call the new function ---
-            this._setupGloveMaterial(gloveMaterial, initialGloveName);
-        }
-
-        this.gloveShells.forEach(mesh => mesh.setEnabled(false));
-
+        await this.updateBuild(initialGloveName); // Use the new updateBuild to handle initial setup
         this.isSceneReady = true;
         onReady(this);
     }
     
-    // Debug buttons remain for testing
-    private createUI() { /* ... unchanged ... */ }
-    
     public isReady = (): boolean => this.isSceneReady;
     
-    public updateColor = (index: number, color: Color3) => {
-        this.colorPlugin?.updateColor(index, color);
-    };
+    // --- NEW: Specific update methods for shell and web ---
+    public updateShellColor(index: number, color: Color3): void {
+        this.shellPlugin?.updateColor(index, color);
+    }
     
+    public updateWebColor(index: number, color: Color3): void {
+        this.activeWebPlugin?.updateColor(index, color);
+    }
+    
+    // --- UPDATED: updateBuild now only manages the shell ---
     public async updateBuild(modelName: string): Promise<void> {
-        if (!modelName) return;
+        if (!modelName || this.activeShellName === modelName) return;
 
-        // 1. Load the shell model on-demand if it's not already in our collection
         if (!this.gloveShells.has(modelName)) {
             const container = await this.assetManager.getAsset(modelName);
             const mesh = container.meshes.find(m => m.name === modelName) as Mesh;
@@ -274,52 +271,73 @@ export class SceneManager {
                 container.addAllToScene();
                 this.gloveShells.set(modelName, mesh);
 
-                // --- STEP 4 (On-Demand Load): Find and set up the new material ---
-                const gloveMaterial = container.materials.find(m => m.name === 'glove') as PBRMaterial;
+                // Find material named "gloveMat" from the new asset
+                const gloveMaterial = container.materials.find(m => m.name === 'gloveMat') as PBRMaterial;
                 if (gloveMaterial) {
-                    this._setupGloveMaterial(gloveMaterial, modelName);
+                    this.shellPlugin?.dispose(); // Dispose old plugin
+                    // Use reusable function to set up the new shell's material and plugin
+                    this.shellMaterial = gloveMaterial;
+                    this.shellPlugin = this._setupMaterialWithPlugin(this.shellMaterial, modelName);
                 }
             }
         }
         
-        // 2. Set the active shell and hide all others
         this.activeShellName = modelName;
         this.gloveShells.forEach((mesh, name) => {
             mesh.setEnabled(name === modelName);
         });
 
-        // 3. Trigger background pre-loading for this shell's compatible webs
         const websToPreload = GLOVE_TO_WEBS_MAP[modelName as keyof typeof GLOVE_TO_WEBS_MAP];
         if (websToPreload) {
             this.assetManager.preloadAssets(Object.values(websToPreload));
         }
     }
 
-    public async updateWeb(webType: string): Promise<void> {
-        if (!webType) return;
-        
-        if (!this.webs.has(webType)) {
-            const container = await this.assetManager.getAsset(webType);
-            const mesh = container.meshes.find(m => m.name === webType) as Mesh;
+    // --- OVERHAULED: updateWeb now manages its own material and plugin ---
+    public async updateWeb(webModelName: string): Promise<void> {
+        // If no web is selected, hide them all and clear active material/plugin
+        if (!webModelName) {
+            this.webs.forEach(mesh => mesh.setEnabled(false));
+            this.activeWebMaterial = null;
+            this.activeWebPlugin = null;
+            return;
+        }
+
+        // Check if we've already configured this web's material
+        if (this.webMaterialsCache.has(webModelName)) {
+            const cached = this.webMaterialsCache.get(webModelName)!;
+            this.activeWebMaterial = cached.material;
+            this.activeWebPlugin = cached.plugin;
+        } else {
+            // If not cached, load the asset and set up its material for the first time
+            const container = await this.assetManager.getAsset(webModelName);
+            const mesh = container.meshes.find(m => m.name === webModelName) as Mesh;
             if (mesh) {
                 container.addAllToScene();
-                this.webs.set(webType, mesh);
+                this.webs.set(webModelName, mesh);
+
+                const webMaterial = container.materials.find(m => m.name === 'webMat') as PBRMaterial;
+                if (webMaterial) {
+                    const webPlugin = this._setupMaterialWithPlugin(webMaterial, webModelName);
+                    
+                    this.activeWebMaterial = webMaterial;
+                    this.activeWebPlugin = webPlugin;
+                    this.webMaterialsCache.set(webModelName, { material: webMaterial, plugin: webPlugin });
+                }
             }
         }
 
+        // Finally, ensure only the correct web mesh is visible
         this.webs.forEach((mesh, name) => {
-            mesh.setEnabled(name === webType);
+            mesh.setEnabled(name === webModelName);
         });
     }
 
     public updateText = (options: { zone: string; text: string; font: string; color: string; }) => {
         const { zone, text, font, color } = options;
-
         if (!this.activeShellName) return;
-
         const materialName = `${zone}${this.activeShellName.charAt(0).toUpperCase() + this.activeShellName.slice(1)}`;
         const textMat = this.scene.getMaterialByName(materialName) as PBRMaterial;
-
         if (textMat) {
             let texture = this.textTextures.get(zone);
             if (!texture) {
@@ -331,12 +349,10 @@ export class SceneManager {
                 textMat.unlit = true;
                 this.textTextures.set(zone, texture);
             }
-
             const fontSize = text ? 70 : 90;
             const fontString = `bold ${fontSize}px "${font}"`;
             const ctx = texture.getContext();
             ctx.clearRect(0, 0, texture.getSize().width, texture.getSize().height);
-
             if (text) {
                 texture.drawText(text, null, null, fontString, color, 'transparent', false);
             }
@@ -346,7 +362,9 @@ export class SceneManager {
     };
 
     public dispose() {
-        this.colorPlugin?.dispose();
+        this.shellPlugin?.dispose();
+        this.webMaterialsCache.forEach(cached => cached.plugin.dispose());
+        this.webMaterialsCache.clear();
         this.resizeObserver.disconnect();
         this.engine.dispose();
     }

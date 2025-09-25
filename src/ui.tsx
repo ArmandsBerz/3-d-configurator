@@ -1,6 +1,6 @@
 import { SceneManager } from './viewer';
-import { SceneContext, GloveLogicController, leatherOptions, fontOptions, colorSwatches, buildOptionsData, webTypeOptions, initialState, getColorDisplay, getActiveColor, DUAL_COLOR_SUB_PARTS, FORMAT_TYPES } from './logic';
-import 'wicg-inert';
+import { SceneContext, GloveLogicController, leatherOptions, fontOptions, colorSwatches, buildOptionsData, webTypeOptions, initialState, getColorDisplay, getActiveColor, DUAL_COLOR_SUB_PARTS, FORMAT_TYPES, getPartDetails, getModelNameForBuild } from './logic';
+// import 'wicg-inert'; // Removed to resolve bundling issue
 import React, { useState, useRef, useLayoutEffect, useCallback, useEffect, createContext, useContext, useReducer, ReactNode, ReactElement } from 'react';
 import BabylonCanvas from './viewer';
 import { SummaryIcon, BackArrowIcon, CheckmarkIcon, LongArrowRightIcon, CaretRightIcon, CaretDownIcon, CaretUpIcon, ShareIcon, CollapseIcon, ExpandIcon, DragIcon, ZoomIcon } from './icons';
@@ -135,19 +135,26 @@ export const NUMERIC_CONSTANTS = {
 
 // --- Constants (Decoupled Data Sources) ---
 
-type OptionsConfigItem = { id: keyof GloveConfiguration | 'build'; title: string; contentType: Exclude<(typeof CONTENT_TYPES)[keyof typeof CONTENT_TYPES], 'summary'>; };
+// --- MODIFIED: Added partKey for dynamic title lookup ---
+type OptionsConfigItem = {
+    id: keyof Omit<GloveConfiguration, 'build'> | 'build';
+    partKey: string;
+    title: string; // Fallback title
+    contentType: Exclude<(typeof CONTENT_TYPES)[keyof typeof CONTENT_TYPES], 'summary'>;
+};
 
 const optionsConfig: OptionsConfigItem[] = [
-    { id: 'build', title: 'Build Options', contentType: CONTENT_TYPES.BUILD },
-    { id: 'web', title: 'Web', contentType: CONTENT_TYPES.GALLERY },
-    { id: 'thumb', title: 'Thumb Color', contentType: CONTENT_TYPES.DUAL_COLOR },
-    { id: 'index', title: 'Index Color', contentType: CONTENT_TYPES.COLOR },
-    { id: 'middle', title: 'Middle Color', contentType: CONTENT_TYPES.DUAL_COLOR },
-    { id: 'ring', title: 'Ring Color', contentType: CONTENT_TYPES.DUAL_COLOR },
-    { id: 'pinky', title: 'Pinky Color', contentType: CONTENT_TYPES.DUAL_COLOR },
-    { id: 'thumbName', title: 'Thumb Name', contentType: CONTENT_TYPES.TEXT },
-    { id: 'pinkyName', title: 'Pinky Name', contentType: CONTENT_TYPES.TEXT },
+    { id: 'build', partKey: 'build', title: 'Build Options', contentType: CONTENT_TYPES.BUILD },
+    { id: 'web', partKey: 'web', title: 'Web', contentType: CONTENT_TYPES.GALLERY },
+    { id: 'thumb', partKey: 'thumb_area', title: 'Thumb Color', contentType: CONTENT_TYPES.DUAL_COLOR },
+    { id: 'index', partKey: 'index_finger', title: 'Index Color', contentType: CONTENT_TYPES.COLOR },
+    { id: 'middle', partKey: 'middle_area', title: 'Middle Color', contentType: CONTENT_TYPES.DUAL_COLOR },
+    { id: 'ring', partKey: 'ring_area', title: 'Ring Color', contentType: CONTENT_TYPES.DUAL_COLOR },
+    { id: 'pinky', partKey: 'pinky_area', title: 'Pinky Color', contentType: CONTENT_TYPES.DUAL_COLOR },
+    { id: 'thumbName', partKey: 'thumbName', title: 'Thumb Name', contentType: CONTENT_TYPES.TEXT },
+    { id: 'pinkyName', partKey: 'pinkyName', title: 'Pinky Name', contentType: CONTENT_TYPES.TEXT },
 ];
+
 
 // --- Centralized State Management ---
 
@@ -903,7 +910,7 @@ const FooterMobile = ({ openPanelName, onClosePanel, onReviewClick, onCompleteOr
         }
 
         const { context } = openAccordionOptionMobile;
-        const configValue = state.configuration[context.id];
+        const configValue = state.configuration[context.id as keyof Omit<GloveConfiguration, 'build'>];
         return getActiveColor(configValue, state.activeDualColorPart);
     };
     const onApplyColorToAll = (color?: HexColor) => {
@@ -1170,7 +1177,8 @@ const OverviewDesktop = () => {
 const AccordionDesktop = ({ options }: { options: OptionsConfigItem[] }) => {
     const { state, dispatch } = useGloveConfigurator();
     const { configuration, activeDualColorPart } = state;
-    const [openAccordion, setOpenAccordion] = useState<string | null>(CONTENT_TYPES.BUILD);
+    const activeShell = getModelNameForBuild(configuration.build); // Get active shell
+    const [openAccordion, setOpenAccordion] = useState<string | null>('build'); // Changed to use id
     const closingPanelIdRef = useRef<string | null>(null);
     const accordionContainerRef = useRef<HTMLDivElement>(null);
     const [isTopGradientVisible, setTopGradientVisible] = useState(false);
@@ -1181,7 +1189,6 @@ const AccordionDesktop = ({ options }: { options: OptionsConfigItem[] }) => {
         if (openAccordion === accordionId) {
             closingPanelIdRef.current = accordionId;
         }
-        // --- THE FIX IS HERE ---
         setOpenAccordion(prev => (prev === accordionId ? null : accordionId));
     };
 
@@ -1199,19 +1206,18 @@ const AccordionDesktop = ({ options }: { options: OptionsConfigItem[] }) => {
         if (openAccordion === null && closingPanelIdRef.current) {
             const panelIdToFocus = closingPanelIdRef.current;
             const panelData = options.find(opt => opt.id === panelIdToFocus);
-
             if (panelData) {
-                const contentId = `content-${panelData.title.replace(/\s+/g, '-')}`;
+                const details = getPartDetails(panelData.partKey, activeShell);
+                const title = details?.displayName ? `${details.displayName} Color` : panelData.title;
+                const contentId = `content-${title.replace(/\s+/g, '-')}`;
                 const headerButtonToFocus = accordionContainerRef.current?.querySelector(`button[aria-controls="${contentId}"]`);
-                
                 if (headerButtonToFocus instanceof HTMLButtonElement) {
                     headerButtonToFocus.focus();
                 }
             }
-            
             closingPanelIdRef.current = null;
         }
-    }, [openAccordion, options]);
+    }, [openAccordion, options, activeShell]);
 
     const handleApplyColorToAll = (colorString?: HexColor) => {
         if (colorString) dispatch({ type: ACTION_TYPES.APPLY_COLOR_TO_ALL, payload: { color: colorString } });
@@ -1280,55 +1286,66 @@ const AccordionDesktop = ({ options }: { options: OptionsConfigItem[] }) => {
             <div className={`absolute ${isScrolled ? 'top-[82px]' : 'top-[142px]'} bottom-4 left-[40px] w-[400px] pointer-events-auto transition-all duration-30 ease-in-out overflow-hidden`}>
                 <ScrollGradient position={POSITIONS.TOP} isVisible={isTopGradientVisible} />
                 <div ref={accordionContainerRef} className="h-full overflow-y-auto space-y-4 focus:outline-none focus-visible:outline focus-visible:outline-4 focus-visible:outline-white focus-visible:outline-offset-[-4px]" onFocusCapture={handleReactiveScrollFix}>
-                    {options.map(item => (
-                        <AccordionOptionDesktop
-                            key={item.id}
-                            title={item.title}
-                            isOpen={openAccordion === item.id}
-                            onToggle={(e) => handleAccordionToggle(item.id, e)}
-                            headerContent={renderHeaderAccessory(item)}
-                            actionButton={
-                                (() => {
-                                    if (item.contentType === CONTENT_TYPES.COLOR || item.contentType === CONTENT_TYPES.DUAL_COLOR || item.contentType === CONTENT_TYPES.GALLERY) {
-                                        const configValue = configuration[item.id as keyof Omit<GloveConfiguration, 'build'>];
-                                        return (
-                                            <SecondaryButton
-                                                label="Apply to All"
-                                                onClick={() => handleApplyColorToAll(getActiveColor(configValue, activeDualColorPart))}
-                                                icon={<CheckmarkIcon />}
-                                            />
-                                        );
-                                    }
-                                    return null;
-                                })()
-                            }
-                        >
-                            {(() => {
-                                if (item.id === 'build') {
-                                    return <BuildOption isDesktop={true} />;
-                                }
-                                const configValue = configuration[item.id as keyof Omit<GloveConfiguration, 'build'>];
-                                switch (item.contentType) {
-                                    case CONTENT_TYPES.COLOR:
-                                        return <ColorContent
-                                            value={(configValue as SingleColorPart).color}
-                                            onChange={(color) => dispatch({ type: ACTION_TYPES.UPDATE_COLOR, payload: { id: item.id as ColorPartId, color } })}
-                                        />;
-                                    case CONTENT_TYPES.DUAL_COLOR:
-                                        return <DualColorContent
-                                            value={configValue as DualColorPart}
-                                            onChange={(subPart, color) => dispatch({ type: ACTION_TYPES.UPDATE_DUAL_COLOR, payload: { id: item.id as 'thumb' | 'middle' | 'ring' | 'pinky', subPartId: subPart, color } })}
-                                        />;
-                                    case CONTENT_TYPES.TEXT:
-                                        return <TextOption contextId={item.id as TextPartId} />;
-                                    case CONTENT_TYPES.GALLERY:
-                                        return <GalleryOption isDesktop={true} />;
-                                    default:
+                    {options.map(item => {
+                        // --- DYNAMIC TITLE LOGIC ---
+                        const details = getPartDetails(item.partKey, activeShell);
+                        let dynamicTitle = item.title;
+                        if (details?.displayName && item.contentType.includes('color')) {
+                            dynamicTitle = `${details.displayName} Color`;
+                        } else if (details?.displayName) {
+                             dynamicTitle = details.displayName;
+                        }
+
+                        return (
+                            <AccordionOptionDesktop
+                                key={item.id}
+                                title={dynamicTitle}
+                                isOpen={openAccordion === item.id}
+                                onToggle={(e) => handleAccordionToggle(item.id, e)}
+                                headerContent={renderHeaderAccessory(item)}
+                                actionButton={
+                                    (() => {
+                                        if (item.contentType === CONTENT_TYPES.COLOR || item.contentType === CONTENT_TYPES.DUAL_COLOR || item.contentType === CONTENT_TYPES.GALLERY) {
+                                            const configValue = configuration[item.id as keyof Omit<GloveConfiguration, 'build'>];
+                                            return (
+                                                <SecondaryButton
+                                                    label="Apply to All"
+                                                    onClick={() => handleApplyColorToAll(getActiveColor(configValue, activeDualColorPart))}
+                                                    icon={<CheckmarkIcon />}
+                                                />
+                                            );
+                                        }
                                         return null;
+                                    })()
                                 }
-                            })()}
-                        </AccordionOptionDesktop>
-                    ))}
+                            >
+                                {(() => {
+                                    if (item.id === 'build') {
+                                        return <BuildOption isDesktop={true} />;
+                                    }
+                                    const configValue = configuration[item.id as keyof Omit<GloveConfiguration, 'build'>];
+                                    switch (item.contentType) {
+                                        case CONTENT_TYPES.COLOR:
+                                            return <ColorContent
+                                                value={(configValue as SingleColorPart).color}
+                                                onChange={(color) => dispatch({ type: ACTION_TYPES.UPDATE_COLOR, payload: { id: item.id as ColorPartId, color } })}
+                                            />;
+                                        case CONTENT_TYPES.DUAL_COLOR:
+                                            return <DualColorContent
+                                                value={configValue as DualColorPart}
+                                                onChange={(subPart, color) => dispatch({ type: ACTION_TYPES.UPDATE_DUAL_COLOR, payload: { id: item.id as 'thumb' | 'middle' | 'ring' | 'pinky', subPartId: subPart, color } })}
+                                            />;
+                                        case CONTENT_TYPES.TEXT:
+                                            return <TextOption contextId={item.id as TextPartId} />;
+                                        case CONTENT_TYPES.GALLERY:
+                                            return <GalleryOption isDesktop={true} />;
+                                        default:
+                                            return null;
+                                    }
+                                })()}
+                            </AccordionOptionDesktop>
+                        );
+                    })}
                 </div>
                 <ScrollGradient position={POSITIONS.BOTTOM} isVisible={isBottomGradientVisible} />
             </div>
@@ -1346,6 +1363,7 @@ const AccordionMobile = React.forwardRef<HTMLElement, AccordionMobileProps>(
     ({ options, onOpenPanel, openAccordionOptionMobile }, ref) => {
         const { state } = useGloveConfigurator();
         const { configuration } = state;
+        const activeShell = getModelNameForBuild(configuration.build); // Get active shell
         const [topGradientVisible, setTopGradientVisible] = useState(false);
         const [bottomGradientVisible, setBottomGradientVisible] = useState(false);
 
@@ -1393,15 +1411,25 @@ const AccordionMobile = React.forwardRef<HTMLElement, AccordionMobileProps>(
         return (
             <section ref={ref} className={`px-4 bg-[#161616] h-full overflow-y-auto ${openAccordionOptionMobile ? 'opacity-50 pointer-events-none' : ''}`} tabIndex={-1}>
                 <ScrollGradient position={POSITIONS.TOP} isVisible={topGradientVisible} />
-                {options.map(item => (
-                    <button key={item.id} data-id={item.id} className="w-full h-[56px] bg-[#1C1C1C] flex items-center justify-between px-4 mb-[10px] cursor-pointer hover:bg-[#2A2A2A] focus:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-white" onClick={(e) => onOpenPanel(item, e)}>
-                        <div className="flex items-center">
-                            <CaretRightIcon className="h-4 w-auto mr-3" />
-                            <span className="text-lg">{item.title}</span>
-                        </div>
-                        {renderAccessory(item)}
-                    </button>
-                ))}
+                {options.map(item => {
+                    // --- DYNAMIC TITLE LOGIC ---
+                    const details = getPartDetails(item.partKey, activeShell);
+                    let dynamicTitle = item.title;
+                    if (details?.displayName && item.contentType.includes('color')) {
+                        dynamicTitle = `${details.displayName} Color`;
+                    } else if (details?.displayName) {
+                        dynamicTitle = details.displayName;
+                    }
+                    return (
+                        <button key={item.id} data-id={item.id} className="w-full h-[56px] bg-[#1C1C1C] flex items-center justify-between px-4 mb-[10px] cursor-pointer hover:bg-[#2A2A2A] focus:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-white" onClick={(e) => onOpenPanel(item, e)}>
+                            <div className="flex items-center">
+                                <CaretRightIcon className="h-4 w-auto mr-3" />
+                                <span className="text-lg">{dynamicTitle}</span>
+                            </div>
+                            {renderAccessory(item)}
+                        </button>
+                    )
+                })}
                 <ScrollGradient position={POSITIONS.BOTTOM} isVisible={bottomGradientVisible} />
             </section>
         );
@@ -1409,11 +1437,12 @@ const AccordionMobile = React.forwardRef<HTMLElement, AccordionMobileProps>(
 );
 
 
-// --- Main UI Component (THIS IS THE MODIFIED VERSION) ---
+// --- Main UI Component ---
 const UI = () => {
     const isDesktop = useBreakpoint();
     const { state } = useGloveConfigurator();
-    const { isLoading } = state;
+    const { isLoading, configuration } = state;
+    const activeShell = getModelNameForBuild(configuration.build); // Get active shell
     const [isVisualizationExpanded, setIsVisualizationExpanded] = useState(false);
     const [openAccordionOptionMobile, setOpenAccordionOptionMobile] = useState<MobileAccordionState>(null);
     const appContainerRef = useRef<HTMLDivElement>(null);
@@ -1506,35 +1535,32 @@ const UI = () => {
 
     const handleOpenPanel = (item: OptionsConfigItem, event: React.MouseEvent<HTMLButtonElement>) => {
         triggerButtonRef.current = event.currentTarget;
-        const { id, title, contentType } = item;
+        const { id, title, contentType, partKey } = item;
     
+        // --- DYNAMIC TITLE LOGIC FOR MOBILE PANEL ---
+        const details = getPartDetails(partKey, activeShell);
+        let dynamicTitle = title;
+        if (details?.displayName && contentType.includes('color')) {
+            dynamicTitle = `${details.displayName} Color`;
+        } else if (details?.displayName) {
+            dynamicTitle = details.displayName;
+        }
+
         let panelState: MobileAccordionState;
     
         switch (contentType) {
             case CONTENT_TYPES.BUILD:
-                panelState = {
-                    name: contentType,
-                    context: { id: id as 'build', title }
-                };
+                panelState = { name: contentType, context: { id: id as 'build', title } };
                 break;
             case CONTENT_TYPES.GALLERY:
-                panelState = {
-                    name: contentType,
-                    context: { id: id as GalleryPartId, title }
-                };
+                panelState = { name: contentType, context: { id: id as GalleryPartId, title: dynamicTitle } };
                 break;
             case CONTENT_TYPES.COLOR:
             case CONTENT_TYPES.DUAL_COLOR:
-                panelState = {
-                    name: contentType,
-                    context: { id: id as ColorPartId, title }
-                };
+                panelState = { name: contentType, context: { id: id as ColorPartId, title: dynamicTitle } };
                 break;
             case CONTENT_TYPES.TEXT:
-                panelState = {
-                    name: contentType,
-                    context: { id: id as TextPartId, title }
-                };
+                panelState = { name: contentType, context: { id: id as TextPartId, title } };
                 break;
             default:
                 const _exhaustiveCheck: never = contentType;
