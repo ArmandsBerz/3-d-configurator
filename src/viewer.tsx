@@ -190,11 +190,19 @@ export class SceneManager {
         this.scene = new Scene(this.engine);
         this.assetManager = new AssetManager(this.scene);
         this.scene.clearColor = new Color4(0, 0, 0, 0);
-        const camera = new ArcRotateCamera("camera", -Math.PI / 2, Math.PI / 2.5, 5, Vector3.Zero(), this.scene);
-        camera.minZ = 0.01;
-        camera.wheelDeltaPercentage = 0.002;
+
+        // --- CAMERA CONFIGURATION UPDATED ---
+        const camera = new ArcRotateCamera("camera", Math.PI / 2, Math.PI / 2, 3, Vector3.Zero(), this.scene);
+        camera.minZ = 0.1;
         camera.attachControl(canvas, true);
         new HemisphericLight("light", new Vector3(0, 1, 0), this.scene);
+
+        // --- APPLYING THE EXACT SETTINGS HERE ---
+        camera.fov = 0.3; // Narrows the field of view like a telephoto lens.
+        camera.lowerRadiusLimit = 1.5; // Prevents zooming in too close.
+        camera.upperRadiusLimit = 4; // Prevents zooming out too far.
+        camera.panningSensibility = 0; // Disables camera panning (click and drag).
+        camera.wheelPrecision = 150; // Controls zoom speed.
 
         this.loadInitialAssets(onReady);
 
