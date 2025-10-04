@@ -173,13 +173,14 @@ export class SceneManager {
     private isSceneReady = false;
     private textTextures = new Map<string, DynamicTexture>();
 
-    // --- NEW: Properties for the two-material system ---
-    private shellMaterial: PBRMaterial | null = null;
-    private shellPlugin: ColorSwapPlugin | null = null;
+    // --- Properties for the two-material system ---
+    private activeShellMaterial: PBRMaterial | null = null;
+    private activeShellPlugin: ColorSwapPlugin | null = null;
     private activeWebMaterial: PBRMaterial | null = null;
     private activeWebPlugin: ColorSwapPlugin | null = null;
 
     // --- Caches for efficiency ---
+    private shellMaterialsCache = new Map<string, { material: PBRMaterial, plugin: ColorSwapPlugin }>();
     private gloveShells = new Map<string, Mesh>();
     private webMaterialsCache = new Map<string, { material: PBRMaterial, plugin: ColorSwapPlugin }>();
     private webs = new Map<string, Mesh>();
@@ -261,35 +262,47 @@ export class SceneManager {
     
     // --- NEW: Specific update methods for shell and web ---
     public updateShellColor(index: number, color: Color3): void {
-        this.shellPlugin?.updateColor(index, color);
+        this.activeShellPlugin?.updateColor(index, color);
     }
     
     public updateWebColor(index: number, color: Color3): void {
         this.activeWebPlugin?.updateColor(index, color);
     }
     
-    // --- UPDATED: updateBuild now only manages the shell ---
+    // --- REFACTORED: updateBuild now uses the caching pattern ---
     public async updateBuild(modelName: string): Promise<void> {
         if (!modelName || this.activeShellName === modelName) return;
 
-        if (!this.gloveShells.has(modelName)) {
+        // 1. Check if the shell's material setup is already in the cache.
+        if (this.shellMaterialsCache.has(modelName)) {
+            // --- CACHE HIT (It's been loaded before) ---
+            const cached = this.shellMaterialsCache.get(modelName)!;
+            this.activeShellMaterial = cached.material; // Point to the cached material
+            this.activeShellPlugin = cached.plugin;   // Point to the cached plugin
+        } else {
+            // --- CACHE MISS (First time loading this shell) ---
             const container = await this.assetManager.getAsset(modelName);
             const mesh = container.meshes.find(m => m.name === modelName) as Mesh;
             if (mesh) {
                 container.addAllToScene();
                 this.gloveShells.set(modelName, mesh);
 
-                // Find material named "gloveMat" from the new asset
                 const gloveMaterial = container.materials.find(m => m.name === 'gloveMat') as PBRMaterial;
                 if (gloveMaterial) {
-                    this.shellPlugin?.dispose(); // Dispose old plugin
-                    // Use reusable function to set up the new shell's material and plugin
-                    this.shellMaterial = gloveMaterial;
-                    this.shellPlugin = this._setupMaterialWithPlugin(this.shellMaterial, modelName);
+                    // Create the setup ONCE using your factory function
+                    const newPlugin = this._setupMaterialWithPlugin(gloveMaterial, modelName);
+
+                    // Point the active properties to this new setup
+                    this.activeShellMaterial = gloveMaterial;
+                    this.activeShellPlugin = newPlugin;
+
+                    // CRITICAL: Save the new setup into the cache for next time
+                    this.shellMaterialsCache.set(modelName, { material: gloveMaterial, plugin: newPlugin });
                 }
             }
         }
         
+        // This logic below remains the same
         this.activeShellName = modelName;
         this.gloveShells.forEach((mesh, name) => {
             mesh.setEnabled(name === modelName);
@@ -370,7 +383,9 @@ export class SceneManager {
     };
 
     public dispose() {
-        this.shellPlugin?.dispose();
+        this.activeShellPlugin?.dispose();
+        this.shellMaterialsCache.forEach(cached => cached.plugin.dispose());
+        this.shellMaterialsCache.clear();
         this.webMaterialsCache.forEach(cached => cached.plugin.dispose());
         this.webMaterialsCache.clear();
         this.resizeObserver.disconnect();
