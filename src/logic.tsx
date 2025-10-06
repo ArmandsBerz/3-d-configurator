@@ -1,7 +1,21 @@
 import { useEffect, createContext, useContext } from 'react';
 import { Color3 } from '@babylonjs/core';
-import { useGloveConfigurator, GloveConfiguration, AppState, HexColor, ColorablePart, Font, WebPart, ACTION_TYPES, BuildConfig } from './ui';
+import { useGloveConfigurator, GloveConfiguration, AppState, ColorablePart, Font, WebPart, ACTION_TYPES, BuildConfig } from './ui';
 import { SceneManager } from './viewer';
+
+// --- NEW CORE TYPES (from Step 1) ---
+export type HexColor = string;
+export type ZoneKey = `zone${number}`; // e.g., 'zone1', 'zone2', etc.
+
+export interface SingleColorState {
+  type: 'single';
+  color: HexColor;
+}
+
+export interface PartConfig {
+  shaderIndex: number;
+  displayName: string;
+}
 
 // --- CORE DATA CONSTANTS (MOVED FROM UI) ---
 

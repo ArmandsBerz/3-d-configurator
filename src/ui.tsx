@@ -1,13 +1,34 @@
 import { SceneManager } from './viewer';
-import { SceneContext, GloveLogicController, leatherOptions, fontOptions, colorSwatches, buildOptionsData, webTypeOptions, initialState, getColorDisplay, getActiveColor, DUAL_COLOR_SUB_PARTS, FORMAT_TYPES, getPartDetails, getModelNameForBuild } from './logic';
+import { SceneContext, GloveLogicController, leatherOptions, fontOptions, colorSwatches, buildOptionsData, webTypeOptions, initialState, getColorDisplay, getActiveColor, DUAL_COLOR_SUB_PARTS, FORMAT_TYPES, getPartDetails, getModelNameForBuild, HexColor, ZoneKey } from './logic';
 // import 'wicg-inert'; // Removed to resolve bundling issue
 import React, { useState, useRef, useLayoutEffect, useCallback, useEffect, createContext, useContext, useReducer, ReactNode, ReactElement } from 'react';
 import BabylonCanvas from './viewer';
 import { SummaryIcon, BackArrowIcon, CheckmarkIcon, LongArrowRightIcon, CaretRightIcon, CaretDownIcon, CaretUpIcon, ShareIcon, CollapseIcon, ExpandIcon, DragIcon, ZoomIcon } from './icons';
 
+// --- NEW PRESENTATION TYPES (from Step 1) ---
+export interface UIPartGroupSingle {
+  id: string;
+  type: 'single';
+  title: string;
+  zoneKey: ZoneKey;
+}
+
+export interface UIPartGroupDual {
+  id: string;
+  type: 'dual';
+  title: string;
+  outerZoneKey: ZoneKey;
+  innerZoneKey: ZoneKey;
+}
+
+export type UIPartGroup = UIPartGroupSingle | UIPartGroupDual;
+
+export interface UIPresentationConfig {
+  [shellName: string]: UIPartGroup[]; // A dictionary of UI groups per shell
+}
+
 // --- START: Core Type Definitions ---
 
-export type HexColor = string;
 export type Font = 'SCRIPT' | 'BLOCK';
 
 export type SingleColorPart = { type: 'single'; color: HexColor };
@@ -596,20 +617,20 @@ const BuildOption = ({ isDesktop }: BuildOptionProps) => {
             />
             {positionGroup && (
                  <OptionGroup
-                    key={positionGroup.id}
-                    title={positionGroup.title}
-                    options={positionGroup.options}
-                    layout={positionGroup.layout}
-                    selectedOption={buildConfig.position}
-                    onSelectOption={(value) => {
-                        const newConfig = { ...buildConfig, position: value as BuildConfig['position'] };
-                        // When user selects Outfield or Pitcher, default them to an OPEN back
-                        if (['OUTFIELD', 'PITCHER'].includes(value)) {
-                            newConfig.backStyle = 'OPEN';
-                        }
-                        onBuildConfigChange(newConfig);
-                    }}
-                />
+                     key={positionGroup.id}
+                     title={positionGroup.title}
+                     options={positionGroup.options}
+                     layout={positionGroup.layout}
+                     selectedOption={buildConfig.position}
+                     onSelectOption={(value) => {
+                         const newConfig = { ...buildConfig, position: value as BuildConfig['position'] };
+                         // When user selects Outfield or Pitcher, default them to an OPEN back
+                         if (['OUTFIELD', 'PITCHER'].includes(value)) {
+                             newConfig.backStyle = 'OPEN';
+                         }
+                         onBuildConfigChange(newConfig);
+                     }}
+                 />
             )}
             
             {/* Conditionally render the Back Style selector */}
