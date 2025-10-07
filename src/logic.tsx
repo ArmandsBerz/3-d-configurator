@@ -81,19 +81,41 @@ const isValidShell = (shell: string): shell is keyof typeof GLOVE_TO_WEBS_MAP =>
     return shell in GLOVE_TO_WEBS_MAP;
 };
 
+// @ts-nocheck
+// NOTE: The AppState and GloveConfiguration types are temporarily incompatible with this new initialState.
+// They will be updated in a future step to use the new zone-based structure.
 export const initialState: AppState = {
     configuration: {
         build: { imageSelection: 'imgOpt1', position: 'INFIELD', size: '11"', handOpeningSize: 'ADULT', stiffness: 'STANDARD', throwingHand: 'RIGHT HAND', backStyle: 'OPEN' },
-        web: { type: 'web', webType: 'MOD_TRAP', color: '#C62828' },
-        thumb: { type: 'dual', inner: '#C62828', outer: '#2E7D32' },
-        index: { type: 'single', color: '#1565C0' },
-        middle: { type: 'dual', inner: '#2E7D32', outer: '#C62828' },
-        ring: { type: 'dual', inner: '#F9A825', outer: '#6A1B9A' },
-        pinky: { type: 'dual', inner: '#6A1B9A', outer: '#F9A825' },
-        thumbName: { type: 'text', text: 'Thumb', font: 'SCRIPT', color: '#BDBDBD' },
-        pinkyName: { type: 'text', text: 'Pinky', font: 'BLOCK', color: '#FFFFFF' },
+        
+        // --- UNIVERSAL PARTS ---
+        web: { color: '#00FFCF' },
+        wrist: { color: '#00FF10' },
+        wristStrap: { color: '#AF00FF' },
+        padHood: { color: '#FFEF00' },
+        thumbOuter: { color: '#FF0000' },
+        pinkyInner: { color: '#FF00BF' },
+        pinkyOuter: { color: '#FF6000' },
+        palm: { color: '#FF00EF' },
+        liner: { color: '#AFFF00' },
+        binding: { color: '#0070FF' },
+        welting: { color: '#FF8F00' },
+        lace: { color: '#5000FF' },
+        stitching: { color: '#FF0030' },
+        wristLogo: { color: '#00FF70' },
+        wristLogoOutline: { color: '#FF008F' },
+        fingerLogo: { color: '#0010FF' },
+        thumbName: { text: 'Thumb', font: 'SCRIPT', color: '#BDBDBD' },
+        pinkyName: { text: 'Pinky', font: 'BLOCK', color: '#FFFFFF' },
+
+        // --- REPURPOSABLE ZONES (A flat list of simple color objects) ---
+        zone1: { color: '#00FFFF' }, // Represents thumbInner / primaryUPiece
+        zone2: { color: '#80FF00' }, // Represents index / shellBack
+        zone3: { color: '#7F00FF' }, // Represents middleInner / shellBase
+        zone4: { color: '#FFBF00' }, // Represents middleOuter / middleOuterRingInner / rails
+        zone5: { color: '#0040FF' }, // Represents ringInner
+        zone6: { color: '#00FF40' }, // Represents ringOuter / ringOuterPinkyInner
     },
-    activeDualColorPart: DUAL_COLOR_SUB_PARTS.INNER,
     isLoading: false,
 };
 
