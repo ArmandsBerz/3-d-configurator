@@ -1,5 +1,5 @@
 import { SceneManager } from './viewer';
-import { SceneContext, GloveLogicController, leatherOptions, fontOptions, colorSwatches, buildOptionsData, webTypeOptions, initialState, getColorDisplay, getActiveColor, DUAL_COLOR_SUB_PARTS, FORMAT_TYPES, getPartDetails, getModelNameForBuild, HexColor, ZoneKey } from './logic';
+import { SceneContext, GloveLogicController, leatherOptions, fontOptions, colorSwatches, buildOptionsData, webTypeOptions, initialState, getColorDisplay, getActiveColor, DUAL_COLOR_SUB_PARTS, FORMAT_TYPES, getPartDetails, getModelNameForBuild, HexColor, ZoneKey, ZONES } from './logic';
 // import 'wicg-inert'; // Removed to resolve bundling issue
 import React, { useState, useRef, useLayoutEffect, useCallback, useEffect, createContext, useContext, useReducer, ReactNode, ReactElement } from 'react';
 import BabylonCanvas from './viewer';
@@ -153,6 +153,77 @@ export const NUMERIC_CONSTANTS = {
 } as const;
 
 // --- END: Application-Wide Constants ---
+
+// --- NEW SHELL-SPECIFIC UI PRESENTATION CONFIG (Step 5) ---
+const UI_PRESENTATION_CONFIG: UIPresentationConfig = {
+    openBack: [
+        { id: 'webGroup', type: 'single', title: 'Web Color', zoneKey: ZONES.WEB },
+        { id: 'thumbGroup', type: 'dual', title: 'Thumb Color', outerZoneKey: ZONES.THUMB_OUTER, innerZoneKey: ZONES.THUMB_INNER },
+        { id: 'indexGroup', type: 'single', title: 'Index Color', zoneKey: ZONES.INDEX },
+        { id: 'middleGroup', type: 'dual', title: 'Middle Color', outerZoneKey: ZONES.MIDDLE_OUTER, innerZoneKey: ZONES.MIDDLE_INNER },
+        { id: 'ringGroup', type: 'dual', title: 'Ring Color', outerZoneKey: ZONES.RING_OUTER, innerZoneKey: ZONES.RING_INNER },
+        { id: 'pinkyGroup', type: 'dual', title: 'Pinky Color', outerZoneKey: ZONES.PINKY_OUTER, innerZoneKey: ZONES.PINKY_INNER },
+        { id: 'laceGroup', type: 'single', title: 'Lace Color', zoneKey: ZONES.LACE },
+        { id: 'bindingGroup', type: 'single', title: 'Binding Color', zoneKey: ZONES.BINDING },
+        { id: 'weltingGroup', type: 'single', title: 'Welting Color', zoneKey: ZONES.WELTING },
+        { id: 'stitchingGroup', type: 'single', title: 'Stitching Color', zoneKey: ZONES.STITCHING },
+        { id: 'palmGroup', type: 'single', title: 'Palm Color', zoneKey: ZONES.PALM },
+        { id: 'linerGroup', type: 'single', title: 'Liner Color', zoneKey: ZONES.LINER },
+        { id: 'padHoodGroup', type: 'single', title: 'Pad/Hood Color', zoneKey: ZONES.PAD_HOOD },
+        { id: 'fingerLogoGroup', type: 'single', title: 'Finger Logo Color', zoneKey: ZONES.FINGER_LOGO },
+        { id: 'wristLogoGroup', type: 'single', title: 'Wrist Logo Color', zoneKey: ZONES.WRIST_LOGO },
+        { id: 'wristLogoOutlineGroup', type: 'single', title: 'Wrist Logo Outline Color', zoneKey: ZONES.WRIST_LOGO_OUTLINE },
+    ],
+    closeBack: [
+        { id: 'webGroup', type: 'single', title: 'Web Color', zoneKey: ZONES.WEB },
+        { id: 'thumbOuterGroup', type: 'single', title: 'Outer Thumb Color', zoneKey: ZONES.THUMB_OUTER },
+        { id: 'primaryUPieceGroup', type: 'single', title: 'Primary U-Piece Color', zoneKey: ZONES.THUMB_INNER },
+        { id: 'middleOuterRingInnerGroup', type: 'single', title: 'Middle/Ring Inner Color', zoneKey: ZONES.MIDDLE_OUTER },
+        { id: 'ringOuterPinkyInnerGroup', type: 'single', title: 'Ring/Pinky Inner Color', zoneKey: ZONES.RING_OUTER },
+        { id: 'pinkyOuterGroup', type: 'single', title: 'Outer Pinky Color', zoneKey: ZONES.PINKY_OUTER },
+        { id: 'wristStrapGroup', type: 'single', title: 'Wrist Strap Color', zoneKey: ZONES.WRIST_STRAP },
+        { id: 'laceGroup', type: 'single', title: 'Lace Color', zoneKey: ZONES.LACE },
+        { id: 'bindingGroup', type: 'single', title: 'Binding Color', zoneKey: ZONES.BINDING },
+        { id: 'stitchingGroup', type: 'single', title: 'Stitching Color', zoneKey: ZONES.STITCHING },
+        { id: 'palmGroup', type: 'single', title: 'Palm Color', zoneKey: ZONES.PALM },
+        { id: 'linerGroup', type: 'single', title: 'Liner Color', zoneKey: ZONES.LINER },
+        { id: 'fingerLogoGroup', type: 'single', title: 'Finger Logo Color', zoneKey: ZONES.FINGER_LOGO },
+        { id: 'wristLogoGroup', type: 'single', title: 'Wrist Logo Color', zoneKey: ZONES.WRIST_LOGO },
+        { id: 'wristLogoOutlineGroup', type: 'single', title: 'Wrist Logo Outline Color', zoneKey: ZONES.WRIST_LOGO_OUTLINE },
+    ],
+    firstBase: [
+        { id: 'webGroup', type: 'single', title: 'Web Color', zoneKey: ZONES.WEB },
+        { id: 'thumbOuterGroup', type: 'single', title: 'Outer Thumb Color', zoneKey: ZONES.THUMB_OUTER },
+        { id: 'primaryUPieceGroup', type: 'single', title: 'Primary U-Piece Color', zoneKey: ZONES.THUMB_INNER },
+        { id: 'shellBackGroup', type: 'single', title: 'Shell Back Color', zoneKey: ZONES.INDEX },
+        { id: 'wristGroup', type: 'single', title: 'Wrist Color', zoneKey: ZONES.WRIST },
+        { id: 'padHoodGroup', type: 'single', title: 'Pad/Hood Color', zoneKey: ZONES.PAD_HOOD },
+        { id: 'laceGroup', type: 'single', title: 'Lace Color', zoneKey: ZONES.LACE },
+        { id: 'bindingGroup', type: 'single', title: 'Binding Color', zoneKey: ZONES.BINDING },
+        { id: 'stitchingGroup', type: 'single', title: 'Stitching Color', zoneKey: ZONES.STITCHING },
+        { id: 'palmGroup', type: 'single', title: 'Palm Color', zoneKey: ZONES.PALM },
+        { id: 'linerGroup', type: 'single', title: 'Liner Color', zoneKey: ZONES.LINER },
+        { id: 'fingerLogoGroup', type: 'single', title: 'Finger Logo Color', zoneKey: ZONES.FINGER_LOGO },
+        { id: 'wristLogoGroup', type: 'single', title: 'Wrist Logo Color', zoneKey: ZONES.WRIST_LOGO },
+        { id: 'wristLogoOutlineGroup', type: 'single', title: 'Wrist Logo Outline Color', zoneKey: ZONES.WRIST_LOGO_OUTLINE },
+    ],
+    catchers: [
+        { id: 'webGroup', type: 'single', title: 'Web Color', zoneKey: ZONES.WEB },
+        { id: 'shellBackGroup', type: 'single', title: 'Shell Back Color', zoneKey: ZONES.INDEX },
+        { id: 'shellBaseGroup', type: 'single', title: 'Shell Base Color', zoneKey: ZONES.MIDDLE_INNER },
+        { id: 'railsGroup', type: 'single', title: 'Rails Color', zoneKey: ZONES.MIDDLE_OUTER },
+        { id: 'wristGroup', type: 'single', title: 'Wrist Color', zoneKey: ZONES.WRIST },
+        { id: 'padHoodGroup', type: 'single', title: 'Pad/Hood Color', zoneKey: ZONES.PAD_HOOD },
+        { id: 'laceGroup', type: 'single', title: 'Lace Color', zoneKey: ZONES.LACE },
+        { id: 'bindingGroup', type: 'single', title: 'Binding Color', zoneKey: ZONES.BINDING },
+        { id: 'stitchingGroup', type: 'single', title: 'Stitching Color', zoneKey: ZONES.STITCHING },
+        { id: 'palmGroup', type: 'single', title: 'Palm Color', zoneKey: ZONES.PALM },
+        { id: 'linerGroup', type: 'single', title: 'Liner Color', zoneKey: ZONES.LINER },
+        { id: 'fingerLogoGroup', type: 'single', title: 'Finger Logo Color', zoneKey: ZONES.FINGER_LOGO },
+        { id: 'wristLogoGroup', type: 'single', title: 'Wrist Logo Color', zoneKey: ZONES.WRIST_LOGO },
+        { id: 'wristLogoOutlineGroup', type: 'single', title: 'Wrist Logo Outline Color', zoneKey: ZONES.WRIST_LOGO_OUTLINE },
+    ]
+};
 
 // --- Constants (Decoupled Data Sources) ---
 
