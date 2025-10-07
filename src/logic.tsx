@@ -191,34 +191,54 @@ export const useScene = () => {
 
 
 // ===================================================================
-// --- STEP 1: DEFINE THE MASTER CONFIGURATION OBJECT ---
+// --- NEW "TRANSLATOR" CONFIGURATION OBJECT (Step 4) ---
 // ===================================================================
-export const GLOVE_PARTS_CONFIG = {
-    // --- TIER 3: Shell-Specific (for openBack) ---
-    'thumb_outer':  { shaderIndex: 0,  materialTarget: 'shell', displayNameByShell: { 'openBack': 'Outer Thumb' }},
-    'thumb_inner':  { shaderIndex: 1,  materialTarget: 'shell', displayNameByShell: { 'openBack': 'Inner Thumb' }},
-    'index_finger': { shaderIndex: 2,  materialTarget: 'shell', displayNameByShell: { 'openBack': 'Index Finger' }},
-    'middle_inner': { shaderIndex: 3,  materialTarget: 'shell', displayNameByShell: { 'openBack': 'Inner Middle' }},
-    'middle_outer': { shaderIndex: 4,  materialTarget: 'shell', displayNameByShell: { 'openBack': 'Outer Middle' }},
-    'ring_inner':   { shaderIndex: 5,  materialTarget: 'shell', displayNameByShell: { 'openBack': 'Inner Ring' }},
-    'ring_outer':   { shaderIndex: 6,  materialTarget: 'shell', displayNameByShell: { 'openBack': 'Outer Ring' }},
-    'pinky_inner':  { shaderIndex: 7,  materialTarget: 'shell', displayNameByShell: { 'openBack': 'Inner Pinky' }},
-    'pinky_outer':  { shaderIndex: 8,  materialTarget: 'shell', displayNameByShell: { 'openBack': 'Outer Pinky' }},
-  
-    // --- TIER 2: Shell Universal (Shell-Only) ---
-    'finger_logo':  { shaderIndex: 21, materialTarget: 'shell', displayName: 'Finger Logo' },
-    'wrist_logo':   { shaderIndex: 22, materialTarget: 'shell', displayName: 'Wrist Logo' },
-    'wrist_logo_2': { shaderIndex: 23, materialTarget: 'shell', displayName: 'Wrist Logo 2' },
-    'welting':      { shaderIndex: 24, materialTarget: 'shell', displayName: 'Welting' },
-    'binding':      { shaderIndex: 25, materialTarget: 'shell', displayName: 'Binding' },
-    'wrist':        { shaderIndex: 26, materialTarget: 'shell', displayName: 'Wrist' },
-    'palm':         { shaderIndex: 27, materialTarget: 'shell', displayName: 'Palm' },
-    'liner':        { shaderIndex: 28, materialTarget: 'shell', displayName: 'Liner' },
-  
-    // --- TIER 1: Truly Universal & Web ---
-    'lace':         { shaderIndex: 29, materialTarget: 'both',  displayName: 'Lace' },
-    'web':          { shaderIndex: 30, materialTarget: 'web',   displayName: 'Web' },
-    'stitching':    { shaderIndex: 31, materialTarget: 'both',  displayName: 'Stitching' },
+export const GLOVE_PARTS_CONFIG: {
+    universal: { [key: string]: PartConfig & { materialTarget: string } };
+    shellSpecific: { [shellName: string]: { [key in ZoneKey]?: PartConfig } };
+} = {
+    universal: {
+        [ZONES.WEB]:                { shaderIndex: 30, displayName: 'Web', materialTarget: 'web' },
+        [ZONES.WRIST]:              { shaderIndex: 26, displayName: 'Wrist', materialTarget: 'shell' },
+        [ZONES.WRIST_STRAP]:        { shaderIndex: 19, displayName: 'Wrist Strap', materialTarget: 'shell' },
+        [ZONES.PAD_HOOD]:           { shaderIndex: 20, displayName: 'Pad/Hood', materialTarget: 'shell' },
+        [ZONES.THUMB_OUTER]:        { shaderIndex: 0, displayName: 'Outer Thumb', materialTarget: 'shell' },
+        [ZONES.PINKY_INNER]:        { shaderIndex: 7, displayName: 'Inner Pinky', materialTarget: 'shell' },
+        [ZONES.PINKY_OUTER]:        { shaderIndex: 8, displayName: 'Outer Pinky', materialTarget: 'shell' },
+        [ZONES.PALM]:               { shaderIndex: 27, displayName: 'Palm', materialTarget: 'shell' },
+        [ZONES.LINER]:              { shaderIndex: 28, displayName: 'Liner', materialTarget: 'shell' },
+        [ZONES.BINDING]:            { shaderIndex: 25, displayName: 'Binding', materialTarget: 'shell' },
+        [ZONES.WELTING]:            { shaderIndex: 24, displayName: 'Welting', materialTarget: 'shell' },
+        [ZONES.LACE]:               { shaderIndex: 29, displayName: 'Lace', materialTarget: 'both' },
+        [ZONES.STITCHING]:          { shaderIndex: 31, displayName: 'Stitching', materialTarget: 'both' },
+        [ZONES.WRIST_LOGO]:         { shaderIndex: 22, displayName: 'Wrist Logo', materialTarget: 'shell' },
+        [ZONES.WRIST_LOGO_OUTLINE]: { shaderIndex: 23, displayName: 'Wrist Logo Outline', materialTarget: 'shell' },
+        [ZONES.FINGER_LOGO]:        { shaderIndex: 21, displayName: 'Finger Logo', materialTarget: 'shell' },
+    },
+    shellSpecific: {
+        openBack: {
+            [ZONES.THUMB_INNER]:    { shaderIndex: 1, displayName: 'Inner Thumb' },
+            [ZONES.INDEX]:          { shaderIndex: 2, displayName: 'Index Finger' },
+            [ZONES.MIDDLE_INNER]:   { shaderIndex: 3, displayName: 'Inner Middle' },
+            [ZONES.MIDDLE_OUTER]:   { shaderIndex: 4, displayName: 'Outer Middle' },
+            [ZONES.RING_INNER]:     { shaderIndex: 5, displayName: 'Inner Ring' },
+            [ZONES.RING_OUTER]:     { shaderIndex: 6, displayName: 'Outer Ring' },
+        },
+        closeBack: {
+            [ZONES.THUMB_INNER]:    { shaderIndex: 1, displayName: 'Primary U-Piece' },
+            [ZONES.MIDDLE_OUTER]:   { shaderIndex: 4, displayName: 'Middle Outer/Ring Inner' },
+            [ZONES.RING_OUTER]:     { shaderIndex: 6, displayName: 'Ring Outer/Pinky Inner' },
+        },
+        firstBase: {
+            [ZONES.THUMB_INNER]:    { shaderIndex: 1, displayName: 'Primary U-Piece' },
+            [ZONES.INDEX]:          { shaderIndex: 2, displayName: 'Shell Back' },
+        },
+        catchers: {
+            [ZONES.INDEX]:          { shaderIndex: 2, displayName: 'Shell Back' },
+            [ZONES.MIDDLE_INNER]:   { shaderIndex: 3, displayName: 'Shell Base' },
+            [ZONES.MIDDLE_OUTER]:   { shaderIndex: 4, displayName: 'Rails' },
+        }
+    }
 };
 
 // ===================================================================
