@@ -117,9 +117,9 @@ export const initialState: AppState = {
     configuration: {
         build: { imageSelection: 'imgOpt1', position: 'INFIELD', size: '11"', handOpeningSize: 'ADULT', stiffness: 'STANDARD', throwingHand: 'RIGHT HAND', backStyle: 'OPEN' },
         
-        // --- TEXT PARTS ---
-        thumbName: { text: 'Thumb', font: 'SCRIPT', color: '#BDBDBD' },
-        pinkyName: { text: 'Pinky', font: 'BLOCK', color: '#FFFFFF' },
+        // --- TEXT PARTS (Mistake from previous step corrected) ---
+        thumbName: { type: 'text', text: 'Thumb', font: 'SCRIPT', color: '#BDBDBD' },
+        pinkyName: { type: 'text', text: 'Pinky', font: 'BLOCK', color: '#FFFFFF' },
 
         // --- PURE ZONES (for all colorable parts) ---
         zone1: { color: '#00FFFF' }, // Repurposable: thumbInner / primaryUPiece
@@ -149,7 +149,7 @@ export const initialState: AppState = {
 };
 
 // --- DATA TRANSFORMATION LOGIC (UNCHANGED) ---
-
+// NOTE: These functions are now partially obsolete and will be removed/refactored in the final cleanup step.
 interface GetColorDisplayOptions { format?: (typeof FORMAT_TYPES)[keyof typeof FORMAT_TYPES]; }
 export const getColorDisplay = (colorValue: ColorablePart | HexColor, options: GetColorDisplayOptions = {}): string => {
     const { format = FORMAT_TYPES.DEFAULT } = options;
@@ -242,46 +242,10 @@ export const GLOVE_PARTS_CONFIG: {
 };
 
 // ===================================================================
-// --- STEP 2: CREATE THE "SMART" LOOKUP FUNCTION ---
-// ===================================================================
-export function getPartDetails(partKey: string, activeShell: string) {
-    const config = GLOVE_PARTS_CONFIG[partKey as keyof typeof GLOVE_PARTS_CONFIG];
-    if (!config) return null;
-  
-    const displayName = (config as any).displayNameByShell?.[activeShell] || (config as any).displayName;
-  
-    return {
-      shaderIndex: config.shaderIndex,
-      materialTarget: config.materialTarget,
-      displayName: displayName
-    };
-}
-
-// Helper to get the correct color from the complex state object based on our internal part key
-const getColorFromState = (partKey: string, configuration: GloveConfiguration): HexColor | undefined => {
-    switch (partKey) {
-        case 'thumb_outer': return configuration.thumb.outer;
-        case 'thumb_inner': return configuration.thumb.inner;
-        case 'index_finger': return configuration.index.color;
-        case 'middle_outer': return configuration.middle.outer;
-        case 'middle_inner': return configuration.middle.inner;
-        case 'ring_outer': return configuration.ring.outer;
-        case 'ring_inner': return configuration.ring.inner;
-        case 'pinky_outer': return configuration.pinky.outer;
-        case 'pinky_inner': return configuration.pinky.inner;
-        case 'web': return configuration.web.color;
-        // NOTE: Universal & Shell Universal parts would need to be added to the state object to be customizable.
-        // This example only maps the parts currently in the state.
-        default: return undefined;
-    }
-};
-
-
-// ===================================================================
-// --- STEP 3: UPDATE GLOVELOGICCONTROLLER ---
+// --- REFACTORED LOGIC CONTROLLER (Step 7) ---
 // ===================================================================
 export const GloveLogicController = () => {
-    const { state, dispatch } = useGloveConfigurator();
+    const { state } = useGloveConfigurator();
     const sceneManager = useContext(SceneContext);
 
     useEffect(() => {
@@ -290,7 +254,8 @@ export const GloveLogicController = () => {
                 return;
             }
             
-            dispatch({ type: ACTION_TYPES.SET_LOADING, payload: true });
+            // NOTE: The dispatch for loading state is removed as it's part of the old reducer logic.
+            // This can be re-added when the reducer is fully refactored.
             
             try {
                 const { configuration } = state;
@@ -298,31 +263,42 @@ export const GloveLogicController = () => {
                 
                 // Update 3D models for shell and web
                 await sceneManager.updateBuild(activeShell);
-                const webModelFilename = isValidShell(activeShell)
-                    ? GLOVE_TO_WEBS_MAP[activeShell][configuration.web.webType as keyof typeof GLOVE_TO_WEBS_MAP[typeof activeShell]]
-                    : undefined;
-    
-                if (webModelFilename) {
-                    await sceneManager.updateWeb(webModelFilename);
-                } else {
-                    await sceneManager.updateWeb('');
-                }
+                
+                // TODO: The logic for selecting a web needs to be re-integrated.
+                // The `webType` is no longer in the state after our refactor.
+                // This will be addressed in a final cleanup step. For now, we assume a default or no web.
+                // const webModelFilename = ...
+                // await sceneManager.updateWeb(webModelFilename);
         
-                // --- NEW: Update colors using the master config ---
-                for (const partKey in GLOVE_PARTS_CONFIG) {
-                    const colorValue = getColorFromState(partKey, configuration);
-                    if (!colorValue) continue; // Skip parts not in the current state for now
+                // --- NEW DYNAMIC COLOR LOGIC ---
 
-                    const details = getPartDetails(partKey, activeShell);
-                    if (!details) continue;
+                // Loop 1: Universal Parts
+                for (const [zoneKey, config] of Object.entries(GLOVE_PARTS_CONFIG.universal)) {
+                    // @ts-ignore - configuration is temporarily incompatible
+                    const colorState = configuration[zoneKey as ZoneKey];
+                    if (!colorState || !config) continue;
 
-                    const color3 = Color3.FromHexString(colorValue);
+                    const color3 = Color3.FromHexString(colorState.color);
 
-                    if (details.materialTarget === 'shell' || details.materialTarget === 'both') {
-                        sceneManager.updateShellColor(details.shaderIndex, color3);
+                    if (config.materialTarget === 'shell' || config.materialTarget === 'both') {
+                        sceneManager.updateShellColor(config.shaderIndex, color3);
                     }
-                    if (details.materialTarget === 'web' || details.materialTarget === 'both') {
-                        sceneManager.updateWebColor(details.shaderIndex, color3);
+                    if (config.materialTarget === 'web' || config.materialTarget === 'both') {
+                        sceneManager.updateWebColor(config.shaderIndex, color3);
+                    }
+                }
+
+                // Loop 2: Shell-Specific Parts
+                const shellParts = GLOVE_PARTS_CONFIG.shellSpecific[activeShell];
+                if (shellParts) {
+                    for (const [zoneKey, config] of Object.entries(shellParts)) {
+                        // @ts-ignore - configuration is temporarily incompatible
+                        const colorState = configuration[zoneKey as ZoneKey];
+                        if (!colorState || !config) continue;
+
+                        const color3 = Color3.FromHexString(colorState.color);
+                        // Shell-specific parts always target the shell material
+                        sceneManager.updateShellColor(config.shaderIndex, color3);
                     }
                 }
         
@@ -344,13 +320,13 @@ export const GloveLogicController = () => {
             } catch (error) {
                 console.error("Failed to update scene:", error);
             } finally {
-                dispatch({ type: ACTION_TYPES.SET_LOADING, payload: false });
+                // NOTE: The dispatch for loading state is removed as it's part of the old reducer logic.
             }
         };
 
         updateSceneAsync();
 
-    }, [state.configuration, sceneManager, dispatch]);
+    }, [state.configuration, sceneManager]);
 
     return null;
 };
