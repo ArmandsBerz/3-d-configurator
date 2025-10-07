@@ -8,7 +8,6 @@ export type HexColor = string;
 export type ZoneKey = `zone${number}`; // e.g., 'zone1', 'zone2', etc.
 
 export interface SingleColorState {
-  type: 'single';
   color: HexColor;
 }
 
@@ -16,6 +15,36 @@ export interface PartConfig {
   shaderIndex: number;
   displayName: string;
 }
+
+// --- NEW ZONE REGISTRY (Step 3 - "Pure Zone" Model) ---
+export const ZONES = {
+    // Repurposable Zones
+    THUMB_INNER: 'zone1',
+    INDEX: 'zone2',
+    MIDDLE_INNER: 'zone3',
+    MIDDLE_OUTER: 'zone4',
+    RING_INNER: 'zone5',
+    RING_OUTER: 'zone6',
+
+    // Universal Parts (as Zones)
+    WEB: 'zone7',
+    WRIST: 'zone8',
+    WRIST_STRAP: 'zone9',
+    PAD_HOOD: 'zone10',
+    THUMB_OUTER: 'zone11',
+    PINKY_INNER: 'zone12',
+    PINKY_OUTER: 'zone13',
+    PALM: 'zone14',
+    LINER: 'zone15',
+    BINDING: 'zone16',
+    WELTING: 'zone17',
+    LACE: 'zone18',
+    STITCHING: 'zone19',
+    WRIST_LOGO: 'zone20',
+    WRIST_LOGO_OUTLINE: 'zone21',
+    FINGER_LOGO: 'zone22',
+} as const;
+
 
 // --- CORE DATA CONSTANTS (MOVED FROM UI) ---
 
@@ -88,33 +117,33 @@ export const initialState: AppState = {
     configuration: {
         build: { imageSelection: 'imgOpt1', position: 'INFIELD', size: '11"', handOpeningSize: 'ADULT', stiffness: 'STANDARD', throwingHand: 'RIGHT HAND', backStyle: 'OPEN' },
         
-        // --- UNIVERSAL PARTS ---
-        web: { color: '#00FFCF' },
-        wrist: { color: '#00FF10' },
-        wristStrap: { color: '#AF00FF' },
-        padHood: { color: '#FFEF00' },
-        thumbOuter: { color: '#FF0000' },
-        pinkyInner: { color: '#FF00BF' },
-        pinkyOuter: { color: '#FF6000' },
-        palm: { color: '#FF00EF' },
-        liner: { color: '#AFFF00' },
-        binding: { color: '#0070FF' },
-        welting: { color: '#FF8F00' },
-        lace: { color: '#5000FF' },
-        stitching: { color: '#FF0030' },
-        wristLogo: { color: '#00FF70' },
-        wristLogoOutline: { color: '#FF008F' },
-        fingerLogo: { color: '#0010FF' },
+        // --- TEXT PARTS ---
         thumbName: { text: 'Thumb', font: 'SCRIPT', color: '#BDBDBD' },
         pinkyName: { text: 'Pinky', font: 'BLOCK', color: '#FFFFFF' },
 
-        // --- REPURPOSABLE ZONES (A flat list of simple color objects) ---
-        zone1: { color: '#00FFFF' }, // Represents thumbInner / primaryUPiece
-        zone2: { color: '#80FF00' }, // Represents index / shellBack
-        zone3: { color: '#7F00FF' }, // Represents middleInner / shellBase
-        zone4: { color: '#FFBF00' }, // Represents middleOuter / middleOuterRingInner / rails
-        zone5: { color: '#0040FF' }, // Represents ringInner
-        zone6: { color: '#00FF40' }, // Represents ringOuter / ringOuterPinkyInner
+        // --- PURE ZONES (for all colorable parts) ---
+        zone1: { color: '#00FFFF' }, // Repurposable: thumbInner / primaryUPiece
+        zone2: { color: '#80FF00' }, // Repurposable: index / shellBack
+        zone3: { color: '#7F00FF' }, // Repurposable: middleInner / shellBase
+        zone4: { color: '#FFBF00' }, // Repurposable: middleOuter / middleOuterRingInner / rails
+        zone5: { color: '#0040FF' }, // Repurposable: ringInner
+        zone6: { color: '#00FF40' }, // Repurposable: ringOuter / ringOuterPinkyInner
+        zone7: { color: '#00FFCF' }, // Universal: web
+        zone8: { color: '#00FF10' }, // Universal: wrist
+        zone9: { color: '#AF00FF' }, // Universal: wristStrap
+        zone10: { color: '#FFEF00' }, // Universal: padHood
+        zone11: { color: '#FF0000' }, // Universal: thumbOuter
+        zone12: { color: '#FF00BF' }, // Universal: pinkyInner
+        zone13: { color: '#FF6000' }, // Universal: pinkyOuter
+        zone14: { color: '#FF00EF' }, // Universal: palm
+        zone15: { color: '#AFFF00' }, // Universal: liner
+        zone16: { color: '#0070FF' }, // Universal: binding
+        zone17: { color: '#FF8F00' }, // Universal: welting
+        zone18: { color: '#5000FF' }, // Universal: lace
+        zone19: { color: '#FF0030' }, // Universal: stitching
+        zone20: { color: '#00FF70' }, // Universal: wristLogo
+        zone21: { color: '#FF008F' }, // Universal: wristLogoOutline
+        zone22: { color: '#0010FF' }, // Universal: fingerLogo
     },
     isLoading: false,
 };
