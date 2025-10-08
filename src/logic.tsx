@@ -1,6 +1,6 @@
 import { useEffect, createContext, useContext } from 'react';
 import { Color3 } from '@babylonjs/core';
-import { useGloveConfigurator, GloveConfiguration, AppState, Font, ACTION_TYPES, BuildConfig } from './ui';
+import { useGloveConfigurator, AppState, Font, BuildConfig } from './ui';
 import { SceneManager } from './viewer';
 
 // --- NEW CORE TYPES (from Step 1) ---
@@ -104,10 +104,6 @@ export const GLOVE_TO_WEBS_MAP = {
     closeBack: { BASKET: 'basketCB', CLOSED_V: 'closedVCB', DUAL_HINGE: 'dualHingeCB', FRAMED_MOD_TRAP: 'framedModTrapCB', H_WEB: 'hCB', LACED_H: 'lacedHCB', LACE_SEALING: 'laceSealingCB', MOD_TRAP: 'modTrapCB', ONE_PIECE: 'onePieceCB', SEALING: 'sealingCB', TRAP: 'trapCB', },
     firstBase: { POST: 'postFB', TWO_PIECE: 'twoPieceFB', },
     catchers: { TWO_PIECE: 'twoPieceCM', }
-};
-
-const isValidShell = (shell: string): shell is keyof typeof GLOVE_TO_WEBS_MAP => {
-    return shell in GLOVE_TO_WEBS_MAP;
 };
 
 // @ts-nocheck
@@ -304,7 +300,7 @@ export const GloveLogicController = () => {
 
         updateSceneAsync();
 
-    }, [state.configuration, sceneManager]);
+    }, [state, sceneManager]);
 
     return null;
 };

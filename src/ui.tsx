@@ -1,30 +1,30 @@
 import { SceneManager } from './viewer';
-import { SceneContext, GloveLogicController, leatherOptions, fontOptions, colorSwatches, buildOptionsData, webTypeOptions, initialState, ZONES, HexColor, ZoneKey, getModelNameForBuild } from './logic';
+import { SceneContext, GloveLogicController, leatherOptions, fontOptions, colorSwatches, buildOptionsData, initialState, ZONES, HexColor, ZoneKey, getModelNameForBuild } from './logic';
 // import 'wicg-inert'; // Removed to resolve bundling issue
-import React, { useState, useRef, useLayoutEffect, useCallback, useEffect, createContext, useContext, useReducer, ReactNode, ReactElement } from 'react';
+import React, { useState, useRef, useLayoutEffect, useCallback, useEffect, createContext, useContext, useReducer, ReactNode, ReactElement, useMemo } from 'react';
 import BabylonCanvas from './viewer';
 import { SummaryIcon, BackArrowIcon, CheckmarkIcon, LongArrowRightIcon, CaretRightIcon, CaretDownIcon, CaretUpIcon, ShareIcon, CollapseIcon, ExpandIcon, DragIcon, ZoomIcon } from './icons';
 
 // --- NEW PRESENTATION TYPES (from Step 1) ---
 export interface UIPartGroupSingle {
-  id: string;
-  type: 'single';
-  title: string;
-  zoneKey: ZoneKey;
+    id: string;
+    type: 'single';
+    title: string;
+    zoneKey: ZoneKey;
 }
 
 export interface UIPartGroupDual {
-  id: string;
-  type: 'dual';
-  title: string;
-  outerZoneKey: ZoneKey;
-  innerZoneKey: ZoneKey;
+    id: string;
+    type: 'dual';
+    title: string;
+    outerZoneKey: ZoneKey;
+    innerZoneKey: ZoneKey;
 }
 
 export type UIPartGroup = UIPartGroupSingle | UIPartGroupDual;
 
 export interface UIPresentationConfig {
-  [shellName: string]: UIPartGroup[]; // A dictionary of UI groups per shell
+    [shellName: string]: UIPartGroup[]; // A dictionary of UI groups per shell
 }
 
 // --- START: CORE TYPE DEFINITIONS (Refactored) ---
@@ -660,19 +660,19 @@ const BuildOption = ({ isDesktop }: BuildOptionProps) => {
             />
             {positionGroup && (
                  <OptionGroup
-                     key={positionGroup.id}
-                     title={positionGroup.title}
-                     options={positionGroup.options}
-                     layout={positionGroup.layout}
-                     selectedOption={buildConfig.position}
-                     onSelectOption={(value) => {
-                         const newConfig = { ...buildConfig, position: value as BuildConfig['position'] };
-                         // When user selects Outfield or Pitcher, default them to an OPEN back
-                         if (['OUTFIELD', 'PITCHER'].includes(value)) {
-                             newConfig.backStyle = 'OPEN';
-                         }
-                         onBuildConfigChange(newConfig);
-                     }}
+                       key={positionGroup.id}
+                       title={positionGroup.title}
+                       options={positionGroup.options}
+                       layout={positionGroup.layout}
+                       selectedOption={buildConfig.position}
+                       onSelectOption={(value) => {
+                           const newConfig = { ...buildConfig, position: value as BuildConfig['position'] };
+                           // When user selects Outfield or Pitcher, default them to an OPEN back
+                           if (['OUTFIELD', 'PITCHER'].includes(value)) {
+                               newConfig.backStyle = 'OPEN';
+                           }
+                           onBuildConfigChange(newConfig);
+                       }}
                  />
             )}
             
@@ -777,8 +777,6 @@ const ColorPanel = ({ context, onClose, headerRef }: ColorPanelProps) => {
 };
 
 const TextPanel = ({ context, onClose, headerRef }: TextPanelProps) => {
-    const { state } = useGloveConfigurator();
-    const headerAccessory = <span className="text-sm text-gray-400 truncate max-w-[100px]">{state.configuration[context.id].text}</span>;
     return (
         <AccordionOptionMobile title={context.title} onClose={onClose} headerRef={headerRef}>
             <TextOption contextId={context.id} />
@@ -1192,7 +1190,7 @@ const AccordionDesktop = () => {
     const [isBottomGradientVisible, setBottomGradientVisible] = useState(false);
     const [isScrolled, setIsScrolled] = useState(false);
 
-    const currentUiGroups = UI_PRESENTATION_CONFIG[activeShell] || [];
+    const currentUiGroups = useMemo(() => UI_PRESENTATION_CONFIG[activeShell] || [], [activeShell]);
     const buildGroup = { id: 'build', title: 'Build Options'}; // Special case for build options
 
     const handleAccordionToggle = (accordionId: string) => {
@@ -1348,7 +1346,7 @@ const AccordionMobile = ({ onOpenPanel, openAccordionOptionMobile }: {
 const UI = () => {
     const isDesktop = useBreakpoint();
     const { state } = useGloveConfigurator();
-    const { isLoading, configuration } = state;
+    const { isLoading } = state;
     const [isVisualizationExpanded, setIsVisualizationExpanded] = useState(false); // Bug Fix
     const [openAccordionOptionMobile, setOpenAccordionOptionMobile] = useState<MobileAccordionState>(null);
     const appContainerRef = useRef<HTMLDivElement>(null);
@@ -1358,7 +1356,6 @@ const UI = () => {
     useEffect(() => { /* ... resize observer logic ... */ }, []);
     useEffect(() => { /* ... focus trap logic ... */ }, [isDesktop, openAccordionOptionMobile]);
 
-    const mobileListRef = useRef<HTMLElement>(null);
     const panelHeaderRef = useRef<HTMLButtonElement | null>(null);
 
     const handleOpenPanel = (group: UIPartGroup | { id: 'build' | TextPartId, title: string }) => {
@@ -1375,7 +1372,7 @@ const UI = () => {
         setOpenAccordionOptionMobile(null);
     }, []);
 
-    const handleShare = useCallback(async () => { /* ... share logic ... */ }, [state.configuration]);
+    const handleShare = useCallback(async () => { /* ... share logic ... */ }, []);
 
     const renderMobilePanel = () => {
         if (!openAccordionOptionMobile) return null;
@@ -1398,8 +1395,6 @@ const UI = () => {
     const handleReviewClick = (event: React.MouseEvent<HTMLButtonElement>) => {
         setOpenAccordionOptionMobile({ name: 'SUMMARY' });
     };
-
-    const getColorName = (hex: HexColor) => colorSwatches.find(c => c.hex === hex)?.name || hex;
 
     return (
         <div ref={appContainerRef} className="flex flex-col lg:relative w-full h-full bg-transparent text-white">
