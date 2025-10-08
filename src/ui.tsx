@@ -246,7 +246,6 @@ interface GloveConfiguratorProviderProps {
 }
 
 const GloveConfiguratorProvider = ({ children }: GloveConfiguratorProviderProps) => {
-    // @ts-ignore - initialState is temporarily incompatible with AppState during transition
     const [state, dispatch] = useReducer(gloveConfigReducer, initialState);
     return <GloveConfiguratorContext.Provider value={{ state, dispatch }}>{children}</GloveConfiguratorContext.Provider>;
 };
@@ -505,7 +504,6 @@ interface SingleColorPickerProps {
 }
 const SingleColorPicker = ({ zoneKey }: SingleColorPickerProps) => {
     const { state, dispatch } = useGloveConfigurator();
-    // @ts-ignore - state.configuration is temporarily incompatible
     const color = state.configuration[zoneKey]?.color;
 
     const handleChange = (newColor: HexColor) => {
@@ -521,9 +519,7 @@ interface DualColorPickerProps {
 }
 const DualColorPicker = ({ outerZoneKey, innerZoneKey }: DualColorPickerProps) => {
     const { state, dispatch } = useGloveConfigurator();
-    // @ts-ignore - state.configuration is temporarily incompatible
     const outerColor = state.configuration[outerZoneKey]?.color;
-    // @ts-ignore - state.configuration is temporarily incompatible
     const innerColor = state.configuration[innerZoneKey]?.color;
 
     const handleOuterChange = (newColor: HexColor) => {
@@ -813,14 +809,11 @@ const OrderSummaryInfo = ({ getColorName }: { getColorName: (hex: HexColor) => s
                 <div className="space-y-1 pl-2">
                     {uiGroups.map(group => {
                         if (group.type === 'single') {
-                            // @ts-ignore
                             const color = configuration[group.zoneKey]?.color;
                             return <p key={group.id}><span className="font-semibold text-gray-400">{group.title.replace(' Color', '')}:</span> {getColorName(color)}</p>;
                         }
                         if (group.type === 'dual') {
-                             // @ts-ignore
                             const outerColor = configuration[group.outerZoneKey]?.color;
-                             // @ts-ignore
                             const innerColor = configuration[group.innerZoneKey]?.color;
                             return <p key={group.id}><span className="font-semibold text-gray-400">{group.title.replace(' Color', '')}:</span> Inner: {getColorName(innerColor)}, Outer: {getColorName(outerColor)}</p>;
                         }
@@ -1224,14 +1217,11 @@ const AccordionDesktop = () => {
     const renderHeaderAccessory = (group: UIPartGroup) => {
         const isAccordionOpen = openAccordion === group.id;
         if (group.type === 'single') {
-            // @ts-ignore
             const color = configuration[group.zoneKey]?.color;
             return isAccordionOpen ? <span className="text-sm text-gray-400 font-semibold">{getColorName(color)}</span> : <ColorIndicator color={color} />;
         }
         if (group.type === 'dual') {
-            // @ts-ignore
             const innerColor = configuration[group.innerZoneKey]?.color;
-            // @ts-ignore
             const outerColor = configuration[group.outerZoneKey]?.color;
             const innerName = getColorName(innerColor);
             const outerName = getColorName(outerColor);
@@ -1301,14 +1291,11 @@ const AccordionMobile = ({ onOpenPanel, openAccordionOptionMobile }: {
 
     const renderAccessory = (group: UIPartGroup) => {
         if (group.type === 'single') {
-            // @ts-ignore
             const color = configuration[group.zoneKey]?.color;
             return <ColorIndicator color={color} />;
         }
         if (group.type === 'dual') {
-            // @ts-ignore
             const innerColor = configuration[group.innerZoneKey]?.color;
-            // @ts-ignore
             const outerColor = configuration[group.outerZoneKey]?.color;
             return <div className="flex items-center space-x-2"><ColorIndicator color={innerColor} /><ColorIndicator color={outerColor} /></div>;
         }
@@ -1385,7 +1372,6 @@ const UI = () => {
             case 'COLOR':
                 return <ColorPanel context={openAccordionOptionMobile.context} onClose={handleClosePanel} headerRef={panelHeaderRef} />;
             case 'TEXT':
-                // @ts-ignore
                 return <TextPanel context={openAccordionOptionMobile.context} onClose={handleClosePanel} headerRef={panelHeaderRef} />;
             default:
                 return null;

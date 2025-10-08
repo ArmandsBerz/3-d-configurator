@@ -1,6 +1,6 @@
 import { useEffect, createContext, useContext } from 'react';
 import { Color3 } from '@babylonjs/core';
-import { useGloveConfigurator, AppState, Font, BuildConfig } from './ui';
+import { useGloveConfigurator } from './ui'; // AppState, Font, BuildConfig removed from import
 import { SceneManager } from './viewer';
 
 // --- NEW CORE TYPES (from Step 1) ---
@@ -14,6 +14,37 @@ export interface SingleColorState {
 export interface PartConfig {
   shaderIndex: number;
   displayName: string;
+}
+
+// --- NEW, CORRECTED CORE TYPES TO ACHIEVE TYPE SAFETY ---
+export type Font = 'SCRIPT' | 'BLOCK';
+
+export interface TextPart {
+    type: 'text';
+    text: string;
+    font: Font;
+    color: HexColor;
+}
+
+export interface BuildConfig {
+    imageSelection: 'imgOpt1' | 'imgOpt2';
+    position: 'INFIELD' | 'OUTFIELD' | 'PITCHER' | 'CATCHER' | 'FIRST BASE';
+    size: '11"' | '11.25"' | '11.5"' | '11.75"' | '12"';
+    handOpeningSize: 'ADULT' | 'YOUTH';
+    stiffness: 'STIFF' | 'STANDARD' | 'SOFT';
+    throwingHand: 'RIGHT HAND' | 'LEFT HAND';
+    backStyle: 'OPEN' | 'CLOSE';
+}
+
+export type GloveConfiguration = {
+    build: BuildConfig;
+    thumbName: TextPart;
+    pinkyName: TextPart;
+} & Record<ZoneKey, SingleColorState>;
+
+export interface AppState {
+    configuration: GloveConfiguration;
+    isLoading: boolean;
 }
 
 // --- NEW ZONE REGISTRY (Step 3 - "Pure Zone" Model) ---
@@ -106,9 +137,6 @@ export const GLOVE_TO_WEBS_MAP = {
     catchers: { TWO_PIECE: 'twoPieceCM', }
 };
 
-// @ts-nocheck
-// NOTE: The AppState and GloveConfiguration types are temporarily incompatible with this new initialState.
-// They will be updated in a future step to use the new zone-based structure.
 export const initialState: AppState = {
     configuration: {
         build: { imageSelection: 'imgOpt1', position: 'INFIELD', size: '11"', handOpeningSize: 'ADULT', stiffness: 'STANDARD', throwingHand: 'RIGHT HAND', backStyle: 'OPEN' },
@@ -227,11 +255,7 @@ export const GloveLogicController = () => {
                 return;
             }
             
-            // NOTE: The dispatch for loading state is removed as it's part of the old reducer logic.
-            // This can be re-added when the reducer is fully refactored.
-            
             try {
-                // @ts-ignore - configuration is temporarily incompatible
                 const { configuration } = state;
                 const activeShell = getModelNameForBuild(configuration.build);
                 
@@ -248,7 +272,6 @@ export const GloveLogicController = () => {
 
                 // Loop 1: Universal Parts
                 for (const [zoneKey, config] of Object.entries(GLOVE_PARTS_CONFIG.universal)) {
-                    // @ts-ignore - configuration is temporarily incompatible
                     const colorState = configuration[zoneKey as ZoneKey];
                     if (!colorState || !config) continue;
 
@@ -266,7 +289,6 @@ export const GloveLogicController = () => {
                 const shellParts = GLOVE_PARTS_CONFIG.shellSpecific[activeShell];
                 if (shellParts) {
                     for (const [zoneKey, config] of Object.entries(shellParts)) {
-                        // @ts-ignore - configuration is temporarily incompatible
                         const colorState = configuration[zoneKey as ZoneKey];
                         if (!colorState || !config) continue;
 
@@ -293,8 +315,6 @@ export const GloveLogicController = () => {
 
             } catch (error) {
                 console.error("Failed to update scene:", error);
-            } finally {
-                // NOTE: The dispatch for loading state is removed as it's part of the old reducer logic.
             }
         };
 
