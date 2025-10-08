@@ -263,11 +263,15 @@ export const GloveLogicController = () => {
                 // Update 3D models for shell and web
                 await sceneManager.updateBuild(activeShell);
                 
-                // TODO: The logic for selecting a web needs to be re-integrated.
-                // The `webType` is no longer in the state after our refactor.
-                // This will be addressed in a final cleanup step. For now, we assume a default or no web.
-                // const webModelFilename = ...
-                // await sceneManager.updateWeb(webModelFilename);
+                // ACTION: RE-INTEGRATED WEB SELECTION LOGIC
+                const compatibleWebsForShell = GLOVE_TO_WEBS_MAP[activeShell as keyof typeof GLOVE_TO_WEBS_MAP];
+                const webModelFilename = compatibleWebsForShell?.[configuration.build.webType as keyof typeof compatibleWebsForShell];
+
+                if (webModelFilename) {
+                    await sceneManager.updateWeb(webModelFilename);
+                } else {
+                    await sceneManager.updateWeb(''); // Hide web if not compatible
+                }
         
                 // --- NEW DYNAMIC COLOR LOGIC ---
 
