@@ -1,5 +1,25 @@
 import { SceneManager } from './viewer';
-import { SceneContext, GloveLogicController, leatherOptions, fontOptions, colorSwatches, buildOptionsData, initialState, ZONES, HexColor, ZoneKey, getModelNameForBuild } from './logic';
+import { 
+    SceneContext, 
+    GloveLogicController, 
+    leatherOptions, 
+    fontOptions, 
+    colorSwatches, 
+    buildOptionsData, 
+    initialState, 
+    ZONES, 
+    HexColor, 
+    ZoneKey, 
+    getModelNameForBuild,
+    webTypeOptions,
+    // Importing the correct, updated types from logic.tsx
+    Font,
+    SingleColorState,
+    TextPart,
+    BuildConfig,
+    GloveConfiguration,
+    AppState
+} from './logic';
 // import 'wicg-inert'; // Removed to resolve bundling issue
 import React, { useState, useRef, useLayoutEffect, useCallback, useEffect, createContext, useContext, useReducer, ReactNode, ReactElement, useMemo } from 'react';
 import BabylonCanvas from './viewer';
@@ -27,35 +47,7 @@ export interface UIPresentationConfig {
     [shellName: string]: UIPartGroup[]; // A dictionary of UI groups per shell
 }
 
-// --- START: CORE TYPE DEFINITIONS (Refactored) ---
-
-export type Font = 'SCRIPT' | 'BLOCK';
-
-export interface SingleColorState { color: HexColor; }
-export interface TextPart { type: 'text'; text: string; font: Font; color: HexColor; }
-
-export interface BuildConfig {
-    imageSelection: 'imgOpt1' | 'imgOpt2';
-    position: 'INFIELD' | 'OUTFIELD' | 'PITCHER' | 'CATCHER' | 'FIRST BASE';
-    size: '11"' | '11.25"' | '11.5"' | '11.75"' | '12"';
-    handOpeningSize: 'ADULT' | 'YOUTH';
-    stiffness: 'STIFF' | 'STANDARD' | 'SOFT';
-    throwingHand: 'RIGHT HAND' | 'LEFT HAND';
-    backStyle: 'OPEN' | 'CLOSE';
-    // TODO: webType needs to be reintegrated here
-}
-
-export type GloveConfiguration = {
-    build: BuildConfig;
-    thumbName: TextPart;
-    pinkyName: TextPart;
-} & Record<ZoneKey, SingleColorState>;
-
-
-export interface AppState {
-    configuration: GloveConfiguration;
-    isLoading: boolean;
-}
+// --- CORE TYPE DEFINITIONS ARE NOW IMPORTED FROM LOGIC.TSX ---
 
 export type GloveAction =
     | { type: typeof ACTION_TYPES.UPDATE_BUILD; payload: BuildConfig }
@@ -654,6 +646,14 @@ const BuildOption = ({ isDesktop }: BuildOptionProps) => {
                 selectedOption={buildConfig.imageSelection}
                 onSelectOption={(value) => onBuildConfigChange({ ...buildConfig, imageSelection: value as 'imgOpt1' | 'imgOpt2' })}
             />
+            {/* ACTION: ADDED WEB TYPE SELECTION UI */}
+            <ImageGroup
+                title="Web Type"
+                layout="grid-cols-3"
+                options={webTypeOptions}
+                selectedOption={buildConfig.webType}
+                onSelectOption={(value) => onBuildConfigChange({ ...buildConfig, webType: value })}
+            />
             {positionGroup && (
                  <OptionGroup
                        key={positionGroup.id}
@@ -692,7 +692,7 @@ const BuildOption = ({ isDesktop }: BuildOptionProps) => {
                     title={group.title} 
                     options={group.options} 
                     layout={group.layout} 
-                    selectedOption={buildConfig[group.id as keyof Omit<BuildConfig, 'imageSelection'|'position'|'backStyle'>]} 
+                    selectedOption={buildConfig[group.id as keyof Omit<BuildConfig, 'imageSelection'|'position'|'backStyle'|'webType'>]} 
                     onSelectOption={(value) => onBuildConfigChange({ ...buildConfig, [group.id]: value })} 
                 />
             ))}
@@ -791,17 +791,24 @@ const OrderSummaryInfo = ({ getColorName }: { getColorName: (hex: HexColor) => s
 
     const getBuildLabel = (key: string, value: string) => {
         if (key === 'imageSelection') return leatherOptions.find(opt => opt.id === value)?.title || value;
+        // Add a case for the new webType
+        if (key === 'webType') return webTypeOptions.find(opt => opt.id === value)?.title || value;
         const group = buildOptionsData.find(g => g.id === key);
         return group?.options.find(o => o.id === value)?.label || value;
     };
-    const getBuildTitle = (key: string) => key === 'imageSelection' ? "Glove Leather" : buildOptionsData.find(g => g.id === key)?.title || key;
+    const getBuildTitle = (key: string) => {
+        if (key === 'imageSelection') return "Glove Leather";
+        // Add a case for the new webType
+        if (key === 'webType') return "Web Type";
+        return buildOptionsData.find(g => g.id === key)?.title || key;
+    };
     
     return (
         <div className="text-base text-gray-300 space-y-4 p-1">
             <div>
                 <h3 className="text-lg font-semibold text-white mb-2">Glove Foundation</h3>
                 <div className="space-y-1 pl-2">
-                    {Object.entries(build).map(([key, value]) => <p key={key}><span className="font-semibold text-gray-400">{getBuildTitle(key)}:</span> {getBuildLabel(key, value)}</p>)}
+                    {Object.entries(build).map(([key, value]) => <p key={key}><span className="font-semibold text-gray-400">{getBuildTitle(key)}:</span> {getBuildLabel(key, value as string)}</p>)}
                 </div>
             </div>
             <div>
