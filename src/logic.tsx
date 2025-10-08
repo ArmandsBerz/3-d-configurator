@@ -1,6 +1,6 @@
 import { useEffect, createContext, useContext } from 'react';
 import { Color3 } from '@babylonjs/core';
-import { useGloveConfigurator, GloveConfiguration, AppState, ColorablePart, Font, WebPart, ACTION_TYPES, BuildConfig } from './ui';
+import { useGloveConfigurator, GloveConfiguration, AppState, Font, ACTION_TYPES, BuildConfig } from './ui';
 import { SceneManager } from './viewer';
 
 // --- NEW CORE TYPES (from Step 1) ---
@@ -148,29 +148,6 @@ export const initialState: AppState = {
     isLoading: false,
 };
 
-// --- DATA TRANSFORMATION LOGIC (UNCHANGED) ---
-// NOTE: These functions are now partially obsolete and will be removed/refactored in the final cleanup step.
-interface GetColorDisplayOptions { format?: (typeof FORMAT_TYPES)[keyof typeof FORMAT_TYPES]; }
-export const getColorDisplay = (colorValue: ColorablePart | HexColor, options: GetColorDisplayOptions = {}): string => {
-    const { format = FORMAT_TYPES.DEFAULT } = options;
-    const getColorName = (hex: HexColor) => colorSwatches.find(c => c.hex === hex)?.name || hex;
-    if (typeof colorValue === 'string') { return getColorName(colorValue); }
-    switch (format) {
-        case FORMAT_TYPES.HEADER: if (colorValue.type === 'dual') return `${getColorName(colorValue.inner)} · ${getColorName(colorValue.outer)}`; return getColorName(colorValue.color);
-        case FORMAT_TYPES.SUMMARY: if (colorValue.type === 'dual') return `Inner: ${getColorName(colorValue.inner)}, Outer: ${getColorName(colorValue.outer)}`; if (colorValue.type === 'text') return getColorName(colorValue.color); if (colorValue.type === 'single' || colorValue.type === 'web') return `Color: ${getColorName(colorValue.color)}`; const exhaustiveCheck: never = colorValue; return 'N/A';
-        default: return JSON.stringify(colorValue);
-    }
-};
-
-export const getActiveColor = (colorValue: ColorablePart | null | undefined, activeSubPart: AppState['activeDualColorPart']): HexColor | undefined => {
-    if (!colorValue || typeof colorValue !== 'object') return undefined;
-    switch (colorValue.type) {
-        case 'web': case 'single': case 'text': return colorValue.color;
-        case 'dual': return colorValue[activeSubPart];
-        default: return undefined;
-    }
-};
-
 export const getModelNameForBuild = (buildConfig: BuildConfig): string => {
     switch (buildConfig.position) {
         case 'INFIELD': return 'openBack';
@@ -258,6 +235,7 @@ export const GloveLogicController = () => {
             // This can be re-added when the reducer is fully refactored.
             
             try {
+                // @ts-ignore - configuration is temporarily incompatible
                 const { configuration } = state;
                 const activeShell = getModelNameForBuild(configuration.build);
                 

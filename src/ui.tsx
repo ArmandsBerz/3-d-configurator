@@ -1,5 +1,5 @@
 import { SceneManager } from './viewer';
-import { SceneContext, GloveLogicController, leatherOptions, fontOptions, colorSwatches, buildOptionsData, webTypeOptions, initialState, getColorDisplay, getActiveColor, DUAL_COLOR_SUB_PARTS, FORMAT_TYPES, getPartDetails, getModelNameForBuild, HexColor, ZoneKey, ZONES } from './logic';
+import { SceneContext, GloveLogicController, leatherOptions, fontOptions, colorSwatches, buildOptionsData, webTypeOptions, initialState, ZONES, HexColor, ZoneKey, getModelNameForBuild } from './logic';
 // import 'wicg-inert'; // Removed to resolve bundling issue
 import React, { useState, useRef, useLayoutEffect, useCallback, useEffect, createContext, useContext, useReducer, ReactNode, ReactElement } from 'react';
 import BabylonCanvas from './viewer';
@@ -27,12 +27,12 @@ export interface UIPresentationConfig {
   [shellName: string]: UIPartGroup[]; // A dictionary of UI groups per shell
 }
 
-// --- START: Core Type Definitions ---
+// --- START: CORE TYPE DEFINITIONS (Refactored) ---
 
 export type Font = 'SCRIPT' | 'BLOCK';
 
-export type SingleColorPart = { color: HexColor }; // Simplified
-export type TextPart = { type: 'text'; text: string; font: Font; color: HexColor };
+export interface SingleColorState { color: HexColor; }
+export interface TextPart { type: 'text'; text: string; font: Font; color: HexColor; }
 
 export interface BuildConfig {
     imageSelection: 'imgOpt1' | 'imgOpt2';
@@ -42,15 +42,15 @@ export interface BuildConfig {
     stiffness: 'STIFF' | 'STANDARD' | 'SOFT';
     throwingHand: 'RIGHT HAND' | 'LEFT HAND';
     backStyle: 'OPEN' | 'CLOSE';
+    // TODO: webType needs to be reintegrated here
 }
 
-// NOTE: This will be updated in a later step
-export interface GloveConfiguration {
+export type GloveConfiguration = {
     build: BuildConfig;
     thumbName: TextPart;
     pinkyName: TextPart;
-    [key: ZoneKey]: SingleColorPart;
-}
+} & Record<ZoneKey, SingleColorState>;
+
 
 export interface AppState {
     configuration: GloveConfiguration;
@@ -66,8 +66,7 @@ export type GloveAction =
 
 // --- END: Core Type Definitions ---
 
-// --- START: ADD NEW PANEL PROP TYPES ---
-// NOTE: These will be refactored or removed when panel logic is updated.
+// --- START: ADD NEW PANEL PROP TYPES (Refactored) ---
 type TextPartId = 'thumbName' | 'pinkyName';
 
 interface BuildPanelProps {
@@ -98,7 +97,7 @@ export const CONTENT_TYPES = {
 
 export const ACTION_TYPES = {
     UPDATE_BUILD: 'UPDATE_BUILD',
-    UPDATE_ZONE_COLOR: 'UPDATE_ZONE_COLOR', // New action
+    UPDATE_ZONE_COLOR: 'UPDATE_ZONE_COLOR',
     UPDATE_TEXT: 'UPDATE_TEXT',
     APPLY_COLOR_TO_ALL: 'APPLY_COLOR_TO_ALL',
     SET_LOADING: 'SET_LOADING',
@@ -224,10 +223,14 @@ const gloveConfigReducer = (state: AppState, action: GloveAction): AppState => {
         case ACTION_TYPES.APPLY_COLOR_TO_ALL: {
             const { color } = action.payload;
             if (!color) return state;
-            const newConfig = { ...state.configuration };
-            // This logic will need to be updated to loop through all zones
-            // For now, it's left as-is to be fixed in a later step.
-            return { ...state, configuration: newConfig };
+            
+            const newConfiguration = { ...state.configuration };
+            // Loop through all defined zone keys and update their color
+            Object.values(ZONES).forEach(zoneKey => {
+                newConfiguration[zoneKey] = { color: color };
+            });
+
+            return { ...state, configuration: newConfiguration };
         }
         case ACTION_TYPES.SET_LOADING:
             return { ...state, isLoading: action.payload };
@@ -243,7 +246,7 @@ interface GloveConfiguratorProviderProps {
 }
 
 const GloveConfiguratorProvider = ({ children }: GloveConfiguratorProviderProps) => {
-    // @ts-ignore - initialState is temporarily incompatible with AppState
+    // @ts-ignore - initialState is temporarily incompatible with AppState during transition
     const [state, dispatch] = useReducer(gloveConfigReducer, initialState);
     return <GloveConfiguratorContext.Provider value={{ state, dispatch }}>{children}</GloveConfiguratorContext.Provider>;
 };
@@ -777,7 +780,7 @@ const TextPanel = ({ context, onClose, headerRef }: TextPanelProps) => {
     const { state } = useGloveConfigurator();
     const headerAccessory = <span className="text-sm text-gray-400 truncate max-w-[100px]">{state.configuration[context.id].text}</span>;
     return (
-        <AccordionOptionMobile title={context.title} onClose={onClose} headerAccessory={headerAccessory} headerRef={headerRef}>
+        <AccordionOptionMobile title={context.title} onClose={onClose} headerRef={headerRef}>
             <TextOption contextId={context.id} />
         </AccordionOptionMobile>
     );
@@ -785,12 +788,13 @@ const TextPanel = ({ context, onClose, headerRef }: TextPanelProps) => {
 
 // --- Other UI Components ---
 
-const OrderSummaryInfo = () => {
+const OrderSummaryInfo = ({ getColorName }: { getColorName: (hex: HexColor) => string }) => {
     const { state } = useGloveConfigurator();
     const { configuration } = state;
-    // This component will need a significant refactor in a later step to work with the new zone-based state.
-    // For now, it will not display color information correctly.
     const { build, thumbName, pinkyName } = configuration;
+    const activeShell = getModelNameForBuild(build);
+    const uiGroups = UI_PRESENTATION_CONFIG[activeShell] || [];
+
     const getBuildLabel = (key: string, value: string) => {
         if (key === 'imageSelection') return leatherOptions.find(opt => opt.id === value)?.title || value;
         const group = buildOptionsData.find(g => g.id === key);
@@ -809,14 +813,28 @@ const OrderSummaryInfo = () => {
             <div>
                 <h3 className="text-lg font-semibold text-white mb-2">Color Scheme</h3>
                 <div className="space-y-1 pl-2">
-                    <p>Color summary will be updated in a later step.</p>
+                    {uiGroups.map(group => {
+                        if (group.type === 'single') {
+                            // @ts-ignore
+                            const color = configuration[group.zoneKey]?.color;
+                            return <p key={group.id}><span className="font-semibold text-gray-400">{group.title.replace(' Color', '')}:</span> {getColorName(color)}</p>;
+                        }
+                        if (group.type === 'dual') {
+                             // @ts-ignore
+                            const outerColor = configuration[group.outerZoneKey]?.color;
+                             // @ts-ignore
+                            const innerColor = configuration[group.innerZoneKey]?.color;
+                            return <p key={group.id}><span className="font-semibold text-gray-400">{group.title.replace(' Color', '')}:</span> Inner: {getColorName(innerColor)}, Outer: {getColorName(outerColor)}</p>;
+                        }
+                        return null;
+                    })}
                 </div>
             </div>
             <div>
                 <h3 className="text-lg font-semibold text-white mb-2">Personalization</h3>
                 <div className="space-y-1 pl-2">
-                    <p><span className="font-semibold text-gray-400">Thumb Name:</span> "{thumbName.text}" ({thumbName.font}, {getColorDisplay(thumbName.color)})</p>
-                    <p><span className="font-semibold text-gray-400">Pinky Name:</span> "{pinkyName.text}" ({pinkyName.font}, {getColorDisplay(pinkyName.color)})</p>
+                    <p><span className="font-semibold text-gray-400">Thumb Name:</span> "{thumbName.text}" ({thumbName.font}, {getColorName(thumbName.color)})</p>
+                    <p><span className="font-semibold text-gray-400">Pinky Name:</span> "{pinkyName.text}" ({pinkyName.font}, {getColorName(pinkyName.color)})</p>
                 </div>
             </div>
         </div>
@@ -825,7 +843,7 @@ const OrderSummaryInfo = () => {
 
 const OverviewMobile = ({ onClose, headerRef }: { onClose: () => void, headerRef: React.RefObject<HTMLButtonElement | null> }) => (
     <AccordionOptionMobile title="Order Summary" onClose={onClose} headerRef={headerRef}>
-        <OrderSummaryInfo />
+        <OrderSummaryInfo getColorName={(hex) => colorSwatches.find(c => c.hex === hex)?.name || hex} />
     </AccordionOptionMobile>
 );
 
@@ -905,9 +923,8 @@ const OverviewActionController = ({ isOpen, onOpen, onClose }: OverviewActionCon
 
 
 const FooterMobile = ({ openPanelName, onClosePanel, onReviewClick, onCompleteOrder, isDesktop, openAccordionOptionMobile }: FooterMobileProps) => {
-    const { state, dispatch } = useGloveConfigurator();
+    const { dispatch } = useGloveConfigurator();
     
-    // This logic needs refactoring based on the new state
     const onApplyColorToAll = (color?: HexColor) => {
         if (color) dispatch({ type: ACTION_TYPES.APPLY_COLOR_TO_ALL, payload: { color } });
     };
@@ -938,6 +955,7 @@ const FooterMobile = ({ openPanelName, onClosePanel, onReviewClick, onCompleteOr
         case 'COLOR':
             panelSpecificFooter = (
                 <div className="w-full grid grid-cols-[1fr_1.618fr] gap-[10px]">
+                    {/* TODO: Add logic to get the currently selected color for 'Apply to All' */}
                     <SecondaryButton label="Apply to All" onClick={() => onApplyColorToAll('#C62828')} variant={VARIANTS.THEME.DARK} icon={<CheckmarkIcon />} />
                     <SecondaryButton label="Continue" onClick={onClosePanel} variant={VARIANTS.THEME.LIGHT} icon={<CheckmarkIcon />} />
                 </div>
@@ -1147,7 +1165,7 @@ const OverviewDesktop = () => {
                     className={`bg-[#222222] transition-[height] duration-300 ease-in ${agnosticAccordionOpen ? 'overflow-y-scroll h-auto lg:h-[calc(100vh-335px)]' : 'overflow-hidden h-0'} focus:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-white show-thin-scrollbar`}
                 >
                     <div className="text-base py-3.5 px-6">
-                        <OrderSummaryInfo />
+                        <OrderSummaryInfo getColorName={(hex) => colorSwatches.find(c => c.hex === hex)?.name || hex} />
                     </div>
                 </div>
             </div>
@@ -1165,7 +1183,7 @@ const OverviewDesktop = () => {
 // --- Main Accordion Components (Refactored for Step 6) ---
 
 const AccordionDesktop = () => {
-    const { state, dispatch } = useGloveConfigurator();
+    const { state } = useGloveConfigurator();
     const { configuration } = state;
     const activeShell = getModelNameForBuild(configuration.build);
     const [openAccordion, setOpenAccordion] = useState<string | null>('build'); 
@@ -1181,10 +1199,6 @@ const AccordionDesktop = () => {
         setOpenAccordion(prev => (prev === accordionId ? null : accordionId));
     };
 
-    const handleApplyColorToAll = (colorString?: HexColor) => {
-        if (colorString) dispatch({ type: ACTION_TYPES.APPLY_COLOR_TO_ALL, payload: { color: colorString } });
-    };
-
     const checkAndSetGradients = useCallback(() => {
         const element = accordionContainerRef.current;
         if (!element) return;
@@ -1194,22 +1208,35 @@ const AccordionDesktop = () => {
         setIsScrolled(element.scrollTop > 0);
     }, []);
 
-    useEffect(() => { checkAndSetGradients(); }, [checkAndSetGradients, openAccordion]);
+    useEffect(() => {
+        const element = accordionContainerRef.current;
+        if (!element) return;
+        const handler = () => checkAndSetGradients();
+        element.addEventListener('scroll', handler);
+        window.addEventListener('resize', handler);
+        handler(); // Initial check
+        return () => {
+            element.removeEventListener('scroll', handler);
+            window.removeEventListener('resize', handler);
+        };
+    }, [checkAndSetGradients, currentUiGroups]);
+
+    const getColorName = (hex: HexColor) => colorSwatches.find(c => c.hex === hex)?.name || hex;
 
     const renderHeaderAccessory = (group: UIPartGroup) => {
         const isAccordionOpen = openAccordion === group.id;
         if (group.type === 'single') {
             // @ts-ignore
             const color = configuration[group.zoneKey]?.color;
-            return isAccordionOpen ? <span className="text-sm text-gray-400 font-semibold">{getColorDisplay(color)}</span> : <ColorIndicator color={color} />;
+            return isAccordionOpen ? <span className="text-sm text-gray-400 font-semibold">{getColorName(color)}</span> : <ColorIndicator color={color} />;
         }
         if (group.type === 'dual') {
             // @ts-ignore
             const innerColor = configuration[group.innerZoneKey]?.color;
             // @ts-ignore
             const outerColor = configuration[group.outerZoneKey]?.color;
-            const innerName = getColorDisplay(innerColor);
-            const outerName = getColorDisplay(outerColor);
+            const innerName = getColorName(innerColor);
+            const outerName = getColorName(outerColor);
             return isAccordionOpen ? <span className="text-sm text-gray-400 font-semibold">{`${innerName} · ${outerName}`}</span> : <div className="flex items-center space-x-2.5"><ColorIndicator color={innerColor} /><ColorIndicator color={outerColor} /></div>;
         }
         return null;
@@ -1270,14 +1297,9 @@ const AccordionMobile = ({ onOpenPanel, openAccordionOptionMobile }: {
     const { configuration } = state;
     const activeShell = getModelNameForBuild(configuration.build);
     const listRef = useRef<HTMLElement>(null);
-    const [topGradientVisible, setTopGradientVisible] = useState(false);
-    const [bottomGradientVisible, setBottomGradientVisible] = useState(false);
     
     const currentUiGroups = UI_PRESENTATION_CONFIG[activeShell] || [];
-    const buildGroup = { id: 'build', title: 'Build Options'};
-
-    const checkAndSetGradients = useCallback(() => { /* ... gradient logic ... */ }, []);
-    useEffect(() => { checkAndSetGradients(); }, [checkAndSetGradients]);
+    const buildGroup = { id: 'build' as const, title: 'Build Options'}; // Corrected type
 
     const renderAccessory = (group: UIPartGroup) => {
         if (group.type === 'single') {
@@ -1297,7 +1319,7 @@ const AccordionMobile = ({ onOpenPanel, openAccordionOptionMobile }: {
 
     return (
         <section ref={listRef} className={`px-4 bg-[#161616] h-full overflow-y-auto ${openAccordionOptionMobile ? 'opacity-50 pointer-events-none' : ''}`} tabIndex={-1}>
-            <ScrollGradient position={POSITIONS.TOP} isVisible={topGradientVisible} />
+            <ScrollGradient position={POSITIONS.TOP} isVisible={false} />
             {/* Build Options Button */}
             <button key={buildGroup.id} className="w-full h-[56px] bg-[#1C1C1C] flex items-center justify-between px-4 mb-[10px]" onClick={() => onOpenPanel(buildGroup)}>
                 <div className="flex items-center">
@@ -1316,7 +1338,7 @@ const AccordionMobile = ({ onOpenPanel, openAccordionOptionMobile }: {
                     {renderAccessory(group)}
                 </button>
             ))}
-            <ScrollGradient position={POSITIONS.BOTTOM} isVisible={bottomGradientVisible} />
+            <ScrollGradient position={POSITIONS.BOTTOM} isVisible={false} />
         </section>
     );
 };
@@ -1327,7 +1349,7 @@ const UI = () => {
     const isDesktop = useBreakpoint();
     const { state } = useGloveConfigurator();
     const { isLoading, configuration } = state;
-    const activeShell = getModelNameForBuild(configuration.build);
+    const [isVisualizationExpanded, setIsVisualizationExpanded] = useState(false); // Bug Fix
     const [openAccordionOptionMobile, setOpenAccordionOptionMobile] = useState<MobileAccordionState>(null);
     const appContainerRef = useRef<HTMLDivElement>(null);
 
@@ -1343,7 +1365,7 @@ const UI = () => {
         if (group.id === 'build') {
             setOpenAccordionOptionMobile({ name: 'BUILD' });
         } else if ('zoneKey' in group || 'outerZoneKey' in group) {
-            setOpenAccordionOptionMobile({ name: 'COLOR', context: group });
+            setOpenAccordionOptionMobile({ name: 'COLOR', context: group as UIPartGroup });
         } else {
              // Handle Text parts if needed
         }
@@ -1377,6 +1399,8 @@ const UI = () => {
         setOpenAccordionOptionMobile({ name: 'SUMMARY' });
     };
 
+    const getColorName = (hex: HexColor) => colorSwatches.find(c => c.hex === hex)?.name || hex;
+
     return (
         <div ref={appContainerRef} className="flex flex-col lg:relative w-full h-full bg-transparent text-white">
             
@@ -1387,7 +1411,34 @@ const UI = () => {
             )}
 
             <main ref={mainRef} className={`p-4 flex flex-col items-center justify-center relative bg-transparent overflow-auto h-full w-full ${isVisualizationExpanded ? 'flex-grow' : 'lg:absolute lg:inset-0'}`}>
-                {/* ... Main content like share button, hints etc. ... */}
+                {!isDesktop && <div className="absolute top-[20px] left-[20px] w-[70px] h-[49px] bg-gray-300 bg-opacity-75 z-10 flex items-center justify-center pointer-events-auto"><p className="font-bold text-xl text-gray-900">LOGO</p></div>}
+                <button className="absolute top-[20px] right-[20px] z-20 p-2 hover:bg-gray-800 hover:bg-opacity-50 focus:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-white pointer-events-auto" aria-label="Share configuration" onClick={handleShare}>
+                    <ShareIcon />
+                </button>
+            
+                <div className="absolute bottom-4 inset-x-0 h-8 z-10 pointer-events-none" aria-hidden="true">
+                    {!isDesktop && (
+                        <button
+                            className="absolute left-5 bottom-0 p-1 hover:bg-gray-800 hover:bg-opacity-50 cursor-pointer focus:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-white pointer-events-auto"
+                            onClick={() => setIsVisualizationExpanded(!isVisualizationExpanded)}
+                            aria-label={isVisualizationExpanded ? "Collapse visualization" : "Expand visualization"}
+                        >
+                            {isVisualizationExpanded ? <CollapseIcon /> : <ExpandIcon />}
+                        </button>
+                    )}
+                    <div className="flex justify-center items-center h-full">
+                        <div className="flex items-center space-x-4 text-xs text-gray-400 pointer-events-auto">
+                            <div className="flex items-center space-x-1.5">
+                                <DragIcon />
+                                <span>Drag to Rotate</span>
+                            </div>
+                            <div className="flex items-center space-x-1.5">
+                                <ZoomIcon />
+                                <span>Pinch to Zoom</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </main>
 
             {!isVisualizationExpanded && (
