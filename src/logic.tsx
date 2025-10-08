@@ -34,6 +34,7 @@ export interface BuildConfig {
     stiffness: 'STIFF' | 'STANDARD' | 'SOFT';
     throwingHand: 'RIGHT HAND' | 'LEFT HAND';
     backStyle: 'OPEN' | 'CLOSE';
+    webType: string; // <-- ACTION 1: ADDED webType to BuildConfig
 }
 
 export type GloveConfiguration = {
@@ -139,7 +140,7 @@ export const GLOVE_TO_WEBS_MAP = {
 
 export const initialState: AppState = {
     configuration: {
-        build: { imageSelection: 'imgOpt1', position: 'INFIELD', size: '11"', handOpeningSize: 'ADULT', stiffness: 'STANDARD', throwingHand: 'RIGHT HAND', backStyle: 'OPEN' },
+        build: { imageSelection: 'imgOpt1', position: 'INFIELD', size: '11"', handOpeningSize: 'ADULT', stiffness: 'STANDARD', throwingHand: 'RIGHT HAND', backStyle: 'OPEN', webType: 'MOD_TRAP' }, // <-- ACTION 2: ADDED default webType
         
         // --- TEXT PARTS (Mistake from previous step corrected) ---
         thumbName: { type: 'text', text: 'Thumb', font: 'SCRIPT', color: '#BDBDBD' },
