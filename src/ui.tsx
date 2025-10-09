@@ -506,13 +506,15 @@ const AccordionOptionMobile = ({ title, onClose, headerAccessory = null, childre
 
 interface SingleColorPickerProps {
     zoneKey: ZoneKey;
+    onSwatchSelect?: (color: HexColor) => void;
 }
-const SingleColorPicker = ({ zoneKey }: SingleColorPickerProps) => {
+const SingleColorPicker = ({ zoneKey, onSwatchSelect }: SingleColorPickerProps) => {
     const { state, dispatch } = useGloveConfigurator();
     const color = state.configuration[zoneKey]?.color;
 
     const handleChange = (newColor: HexColor) => {
         dispatch({ type: ACTION_TYPES.UPDATE_ZONE_COLOR, payload: { zoneKey, color: newColor } });
+        onSwatchSelect?.(newColor);
     };
 
     return <ColorSwatchGrid swatches={colorSwatches} selectedColor={color} onColorSelect={handleChange} />;
@@ -521,17 +523,20 @@ const SingleColorPicker = ({ zoneKey }: SingleColorPickerProps) => {
 interface DualColorPickerProps {
     outerZoneKey: ZoneKey;
     innerZoneKey: ZoneKey;
+    onSwatchSelect?: (color: HexColor) => void;
 }
-const DualColorPicker = ({ outerZoneKey, innerZoneKey }: DualColorPickerProps) => {
+const DualColorPicker = ({ outerZoneKey, innerZoneKey, onSwatchSelect }: DualColorPickerProps) => {
     const { state, dispatch } = useGloveConfigurator();
     const outerColor = state.configuration[outerZoneKey]?.color;
     const innerColor = state.configuration[innerZoneKey]?.color;
 
     const handleOuterChange = (newColor: HexColor) => {
         dispatch({ type: ACTION_TYPES.UPDATE_ZONE_COLOR, payload: { zoneKey: outerZoneKey, color: newColor } });
+        onSwatchSelect?.(newColor);
     };
     const handleInnerChange = (newColor: HexColor) => {
         dispatch({ type: ACTION_TYPES.UPDATE_ZONE_COLOR, payload: { zoneKey: innerZoneKey, color: newColor } });
+        onSwatchSelect?.(newColor);
     };
 
     return (
@@ -751,7 +756,7 @@ const TextOption = ({ contextId }: TextOptionProps) => {
 };
 
 // ACTION: CREATED NEW WEB OPTIONS COMPONENT
-const WebOptions = () => {
+const WebOptions = ({ onSwatchSelect }: { onSwatchSelect?: (color: HexColor) => void }) => {
     const { state, dispatch } = useGloveConfigurator();
     const { build: buildConfig } = state.configuration;
 
@@ -771,7 +776,7 @@ const WebOptions = () => {
             />
             <div className="option-group-container">
                 <h3 className="text-sm font-semibold text-gray-400 mb-2">Web Color</h3>
-                <SingleColorPicker zoneKey={ZONES.WEB} />
+                <SingleColorPicker zoneKey={ZONES.WEB} onSwatchSelect={onSwatchSelect} />
             </div>
         </div>
     );
@@ -1256,7 +1261,7 @@ const AccordionDesktop = () => {
             setLastSelectedColor(configuration[ZONES.WEB]?.color);
         }
     }, [openAccordion, configuration, currentUiGroups]);
-    
+   
     const checkAndSetGradients = useCallback(() => {
         const element = accordionContainerRef.current;
         if (!element) return;
