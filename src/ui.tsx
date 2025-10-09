@@ -1220,7 +1220,7 @@ const OverviewDesktop = () => {
 // --- Main Accordion Components (Refactored for Step 6) ---
 
 const AccordionDesktop = () => {
-    const { state } = useGloveConfigurator();
+    const { state, dispatch } = useGloveConfigurator();
     const { configuration } = state;
     const [lastSelectedColor, setLastSelectedColor] = useState<HexColor | undefined>();
     const activeShell = getModelNameForBuild(configuration.build);
@@ -1237,6 +1237,26 @@ const AccordionDesktop = () => {
         setOpenAccordion(prev => (prev === accordionId ? null : accordionId));
     };
 
+    // --- NEW: This effect sets the default "Apply to All" color when a panel opens ---
+    useEffect(() => {
+        if (!openAccordion) {
+            setLastSelectedColor(undefined); // Reset when all panels are closed
+            return;
+        }
+
+        const openGroup = currentUiGroups.find(g => g.id === openAccordion);
+        if (!openGroup) return;
+
+        if (openGroup.type === 'dual') {
+            // THE RULE: Default to the 'inner' color when a dual panel is opened
+            setLastSelectedColor(configuration[openGroup.innerZoneKey]?.color);
+        } else if (openGroup.type === 'single') {
+            setLastSelectedColor(configuration[openGroup.zoneKey]?.color);
+        } else if (openGroup.type === 'gallery') {
+            setLastSelectedColor(configuration[ZONES.WEB]?.color);
+        }
+    }, [openAccordion, configuration, currentUiGroups]);
+    
     const checkAndSetGradients = useCallback(() => {
         const element = accordionContainerRef.current;
         if (!element) return;
@@ -1393,6 +1413,33 @@ const UI = () => {
     useEffect(() => { /* ... resize observer logic ... */ }, []);
     useEffect(() => { /* ... focus trap logic ... */ }, [isDesktop, openAccordionOptionMobile]);
 
+    // --- NEW: This effect sets the default "Apply to All" color when a mobile panel opens ---
+    useEffect(() => {
+        if (!openAccordionOptionMobile) {
+            setMobileActiveColor(undefined);
+            return;
+        }
+
+        switch (openAccordionOptionMobile.name) {
+            case 'COLOR': {
+                const { context } = openAccordionOptionMobile;
+                if (context.type === 'dual') {
+                    // THE RULE: Default to the 'inner' color
+                    setMobileActiveColor(state.configuration[context.innerZoneKey]?.color);
+                } else if (context.type === 'single') {
+                    setMobileActiveColor(state.configuration[context.zoneKey]?.color);
+                }
+                break;
+            }
+            case 'GALLERY':
+                setMobileActiveColor(state.configuration[ZONES.WEB]?.color);
+                break;
+            default:
+                setMobileActiveColor(undefined); // No color context for other panels
+                break;
+        }
+    }, [openAccordionOptionMobile, state.configuration]);
+
     const panelHeaderRef = useRef<HTMLButtonElement | null>(null);
 
     const handleOpenPanel = (group: UIPartGroup | { id: 'build' | TextPartId, title: string }) => {
@@ -1409,7 +1456,7 @@ const UI = () => {
 
     const handleClosePanel = useCallback(() => {
         setOpenAccordionOptionMobile(null);
-        setMobileActiveColor(undefined);
+        // The useEffect above will handle resetting the color state now
     }, []);
 
     const handleShare = useCallback(async () => { /* ... share logic ... */ }, []);
