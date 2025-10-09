@@ -654,14 +654,6 @@ const BuildOption = ({ isDesktop }: BuildOptionProps) => {
                 selectedOption={buildConfig.imageSelection}
                 onSelectOption={(value) => onBuildConfigChange({ ...buildConfig, imageSelection: value as 'imgOpt1' | 'imgOpt2' })}
             />
-            {/* ACTION: ADDED WEB TYPE SELECTION UI */}
-            <ImageGroup
-                title="Web Type"
-                layout="grid-cols-3"
-                options={webTypeOptions}
-                selectedOption={buildConfig.webType}
-                onSelectOption={(value) => onBuildConfigChange({ ...buildConfig, webType: value })}
-            />
             {positionGroup && (
                  <OptionGroup
                        key={positionGroup.id}
