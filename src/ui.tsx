@@ -136,7 +136,7 @@ export const NUMERIC_CONSTANTS = {
 // --- NEW SHELL-SPECIFIC UI PRESENTATION CONFIG (Step 5) ---
 const UI_PRESENTATION_CONFIG: UIPresentationConfig = {
     openBack: [
-        { id: 'webGroup', type: 'single', title: 'Web Color', zoneKey: ZONES.WEB },
+        { id: 'web', type: 'gallery', title: 'Web' },
         { id: 'thumbGroup', type: 'dual', title: 'Thumb Color', outerZoneKey: ZONES.THUMB_OUTER, innerZoneKey: ZONES.THUMB_INNER },
         { id: 'indexGroup', type: 'single', title: 'Index Color', zoneKey: ZONES.INDEX },
         { id: 'middleGroup', type: 'dual', title: 'Middle Color', outerZoneKey: ZONES.MIDDLE_OUTER, innerZoneKey: ZONES.MIDDLE_INNER },
@@ -154,7 +154,7 @@ const UI_PRESENTATION_CONFIG: UIPresentationConfig = {
         { id: 'wristLogoOutlineGroup', type: 'single', title: 'Wrist Logo Outline Color', zoneKey: ZONES.WRIST_LOGO_OUTLINE },
     ],
     closeBack: [
-        { id: 'webGroup', type: 'single', title: 'Web Color', zoneKey: ZONES.WEB },
+        { id: 'web', type: 'gallery', title: 'Web' },
         { id: 'thumbOuterGroup', type: 'single', title: 'Outer Thumb Color', zoneKey: ZONES.THUMB_OUTER },
         { id: 'primaryUPieceGroup', type: 'single', title: 'Primary U-Piece Color', zoneKey: ZONES.THUMB_INNER },
         { id: 'middleOuterRingInnerGroup', type: 'single', title: 'Middle/Ring Inner Color', zoneKey: ZONES.MIDDLE_OUTER },
@@ -171,7 +171,7 @@ const UI_PRESENTATION_CONFIG: UIPresentationConfig = {
         { id: 'wristLogoOutlineGroup', type: 'single', title: 'Wrist Logo Outline Color', zoneKey: ZONES.WRIST_LOGO_OUTLINE },
     ],
     firstBase: [
-        { id: 'webGroup', type: 'single', title: 'Web Color', zoneKey: ZONES.WEB },
+        { id: 'web', type: 'gallery', title: 'Web' },
         { id: 'thumbOuterGroup', type: 'single', title: 'Outer Thumb Color', zoneKey: ZONES.THUMB_OUTER },
         { id: 'primaryUPieceGroup', type: 'single', title: 'Primary U-Piece Color', zoneKey: ZONES.THUMB_INNER },
         { id: 'shellBackGroup', type: 'single', title: 'Shell Back Color', zoneKey: ZONES.INDEX },
@@ -187,7 +187,7 @@ const UI_PRESENTATION_CONFIG: UIPresentationConfig = {
         { id: 'wristLogoOutlineGroup', type: 'single', title: 'Wrist Logo Outline Color', zoneKey: ZONES.WRIST_LOGO_OUTLINE },
     ],
     catchers: [
-        { id: 'webGroup', type: 'single', title: 'Web Color', zoneKey: ZONES.WEB },
+        { id: 'web', type: 'gallery', title: 'Web' },
         { id: 'shellBackGroup', type: 'single', title: 'Shell Back Color', zoneKey: ZONES.INDEX },
         { id: 'shellBaseGroup', type: 'single', title: 'Shell Base Color', zoneKey: ZONES.MIDDLE_INNER },
         { id: 'railsGroup', type: 'single', title: 'Rails Color', zoneKey: ZONES.MIDDLE_OUTER },
