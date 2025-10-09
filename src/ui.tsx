@@ -1222,6 +1222,7 @@ const OverviewDesktop = () => {
 const AccordionDesktop = () => {
     const { state } = useGloveConfigurator();
     const { configuration } = state;
+    const [lastSelectedColor, setLastSelectedColor] = useState<HexColor | undefined>();
     const activeShell = getModelNameForBuild(configuration.build);
     const [openAccordion, setOpenAccordion] = useState<string | null>('build');
     const accordionContainerRef = useRef<HTMLDivElement>(null);
@@ -1384,6 +1385,7 @@ const UI = () => {
     const { isLoading } = state;
     const [isVisualizationExpanded, setIsVisualizationExpanded] = useState(false); // Bug Fix
     const [openAccordionOptionMobile, setOpenAccordionOptionMobile] = useState<MobileAccordionState>(null);
+    const [mobileActiveColor, setMobileActiveColor] = useState<HexColor | undefined>();
     const appContainerRef = useRef<HTMLDivElement>(null);
 
     const mainRef = useRef<HTMLElement>(null);
@@ -1407,6 +1409,7 @@ const UI = () => {
 
     const handleClosePanel = useCallback(() => {
         setOpenAccordionOptionMobile(null);
+        setMobileActiveColor(undefined);
     }, []);
 
     const handleShare = useCallback(async () => { /* ... share logic ... */ }, []);
