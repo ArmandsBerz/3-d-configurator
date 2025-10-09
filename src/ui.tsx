@@ -41,7 +41,15 @@ export interface UIPartGroupDual {
     innerZoneKey: ZoneKey;
 }
 
-export type UIPartGroup = UIPartGroupSingle | UIPartGroupDual;
+// ACTION: ADDED UIPartGroupGallery INTERFACE
+export interface UIPartGroupGallery {
+    id: string;
+    type: 'gallery';
+    title: string;
+}
+
+// ACTION: UPDATED UIPartGroup to include the new gallery type
+export type UIPartGroup = UIPartGroupSingle | UIPartGroupDual | UIPartGroupGallery;
 
 export interface UIPresentationConfig {
     [shellName: string]: UIPartGroup[]; // A dictionary of UI groups per shell
