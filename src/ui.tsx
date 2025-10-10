@@ -18,7 +18,7 @@ import {
     TextPart,
     BuildConfig,
     GloveConfiguration,
-    AppState
+    AppState as ImportedAppState // Rename to avoid conflict with local extension
 } from './logic';
 // import 'wicg-inert'; // Removed to resolve bundling issue
 import React, { useState, useRef, useLayoutEffect, useCallback, useEffect, createContext, useContext, useReducer, ReactNode, ReactElement, useMemo } from 'react';
@@ -55,12 +55,28 @@ export interface UIPresentationConfig {
 
 // --- CORE TYPE DEFINITIONS ARE NOW IMPORTED FROM LOGIC.TSX ---
 
+// --- MODIFIED PER PLAN ---
+// This AppState extends the imported one to include our new field.
+// Ideally, this change would be made directly in logic.tsx.
+type AppState = ImportedAppState & {
+    lastActivatedPartType: 'inner' | 'outer' | 'single' | null;
+};
+
 export type GloveAction =
     | { type: typeof ACTION_TYPES.UPDATE_BUILD; payload: BuildConfig }
-    | { type: typeof ACTION_TYPES.UPDATE_ZONE_COLOR; payload: { zoneKey: ZoneKey; color: HexColor } }
+    | { 
+        type: typeof ACTION_TYPES.UPDATE_ZONE_COLOR; 
+        payload: { 
+            zoneKey: ZoneKey; 
+            color: HexColor;
+            partType: 'inner' | 'outer' | 'single'; // ADDED THIS
+        } 
+      }
     | { type: typeof ACTION_TYPES.UPDATE_TEXT; payload: { id: 'thumbName' | 'pinkyName'; data: TextPart } }
     | { type: typeof ACTION_TYPES.APPLY_COLOR_TO_ALL; payload: { color: HexColor } }
-    | { type: typeof ACTION_TYPES.SET_LOADING; payload: boolean };
+    | { type: typeof ACTION_TYPES.SET_LOADING; payload: boolean }
+    | { type: 'RESET_LAST_ACTIVATED_PART_TYPE' }; // ADDED THIS FOR RESETTING
+// --- END MODIFICATION ---
 
 // --- END: Core Type Definitions ---
 
@@ -75,7 +91,6 @@ interface ColorPanelProps {
     context: UIPartGroup;
     onClose: () => void;
     headerRef: React.RefObject<HTMLButtonElement | null>;
-    onSwatchSelect?: (color: HexColor) => void;
 }
 interface TextPanelProps {
     context: { id: TextPartId; title: string };
@@ -87,7 +102,6 @@ interface GalleryPanelProps {
     context: UIPartGroupGallery;
     onClose: () => void;
     headerRef: React.RefObject<HTMLButtonElement | null>;
-    onSwatchSelect?: (color: HexColor) => void;
 }
 
 // --- END: ADD NEW PANEL PROP TYPES ---
@@ -213,6 +227,7 @@ const UI_PRESENTATION_CONFIG: UIPresentationConfig = {
 
 // --- Centralized State Management ---
 
+// --- MODIFIED PER PLAN ---
 const gloveConfigReducer = (state: AppState, action: GloveAction): AppState => {
     switch (action.type) {
         case ACTION_TYPES.UPDATE_BUILD:
@@ -223,7 +238,13 @@ const gloveConfigReducer = (state: AppState, action: GloveAction): AppState => {
                 configuration: {
                     ...state.configuration,
                     [action.payload.zoneKey]: { color: action.payload.color },
-                }
+                },
+                lastActivatedPartType: action.payload.partType,
+            };
+        case 'RESET_LAST_ACTIVATED_PART_TYPE':
+            return {
+                ...state,
+                lastActivatedPartType: null
             };
         case ACTION_TYPES.UPDATE_TEXT:
             return { ...state, configuration: { ...state.configuration, [action.payload.id]: action.payload.data } };
@@ -245,6 +266,7 @@ const gloveConfigReducer = (state: AppState, action: GloveAction): AppState => {
             return state;
     }
 };
+// --- END MODIFICATION ---
 
 const GloveConfiguratorContext = createContext<{ state: AppState; dispatch: React.Dispatch<GloveAction> } | undefined>(undefined);
 
@@ -253,7 +275,8 @@ interface GloveConfiguratorProviderProps {
 }
 
 const GloveConfiguratorProvider = ({ children }: GloveConfiguratorProviderProps) => {
-    const [state, dispatch] = useReducer(gloveConfigReducer, initialState);
+    // Note: The initial state from logic.tsx needs `lastActivatedPartType: null` added
+    const [state, dispatch] = useReducer(gloveConfigReducer, { ...initialState, lastActivatedPartType: null } as AppState);
     return <GloveConfiguratorContext.Provider value={{ state, dispatch }}>{children}</GloveConfiguratorContext.Provider>;
 };
 
@@ -506,17 +529,19 @@ const AccordionOptionMobile = ({ title, onClose, headerAccessory = null, childre
 
 // --- Content Components (Refactored for Step 6) ---
 
+// --- MODIFIED PER PLAN ---
 interface SingleColorPickerProps {
     zoneKey: ZoneKey;
-    onSwatchSelect?: (color: HexColor) => void;
 }
-const SingleColorPicker = ({ zoneKey, onSwatchSelect }: SingleColorPickerProps) => {
+const SingleColorPicker = ({ zoneKey }: SingleColorPickerProps) => {
     const { state, dispatch } = useGloveConfigurator();
     const color = state.configuration[zoneKey]?.color;
 
     const handleChange = (newColor: HexColor) => {
-        dispatch({ type: ACTION_TYPES.UPDATE_ZONE_COLOR, payload: { zoneKey, color: newColor } });
-        onSwatchSelect?.(newColor);
+        dispatch({ 
+            type: ACTION_TYPES.UPDATE_ZONE_COLOR, 
+            payload: { zoneKey, color: newColor, partType: 'single' } 
+        });
     };
 
     return <ColorSwatchGrid swatches={colorSwatches} selectedColor={color} onColorSelect={handleChange} />;
@@ -525,21 +550,25 @@ const SingleColorPicker = ({ zoneKey, onSwatchSelect }: SingleColorPickerProps) 
 interface DualColorPickerProps {
     outerZoneKey: ZoneKey;
     innerZoneKey: ZoneKey;
-    onSwatchSelect?: (color: HexColor) => void;
 }
-const DualColorPicker = ({ outerZoneKey, innerZoneKey, onSwatchSelect }: DualColorPickerProps) => {
+const DualColorPicker = ({ outerZoneKey, innerZoneKey }: DualColorPickerProps) => {
     const { state, dispatch } = useGloveConfigurator();
     const outerColor = state.configuration[outerZoneKey]?.color;
     const innerColor = state.configuration[innerZoneKey]?.color;
 
     const handleOuterChange = (newColor: HexColor) => {
-        dispatch({ type: ACTION_TYPES.UPDATE_ZONE_COLOR, payload: { zoneKey: outerZoneKey, color: newColor } });
-        onSwatchSelect?.(newColor);
+        dispatch({ 
+            type: ACTION_TYPES.UPDATE_ZONE_COLOR, 
+            payload: { zoneKey: outerZoneKey, color: newColor, partType: 'outer' } 
+        });
     };
     const handleInnerChange = (newColor: HexColor) => {
-        dispatch({ type: ACTION_TYPES.UPDATE_ZONE_COLOR, payload: { zoneKey: innerZoneKey, color: newColor } });
-        onSwatchSelect?.(newColor);
+        dispatch({ 
+            type: ACTION_TYPES.UPDATE_ZONE_COLOR, 
+            payload: { zoneKey: innerZoneKey, color: newColor, partType: 'inner' } 
+        });
     };
+// --- END MODIFICATION ---
 
     return (
         <div className="space-y-4">
@@ -668,20 +697,20 @@ const BuildOption = ({ isDesktop }: BuildOptionProps) => {
             />
             {positionGroup && (
                  <OptionGroup
-                         key={positionGroup.id}
-                         title={positionGroup.title}
-                         options={positionGroup.options}
-                         layout={positionGroup.layout}
-                         selectedOption={buildConfig.position}
-                         onSelectOption={(value) => {
-                            const newConfig = { ...buildConfig, position: value as BuildConfig['position'] };
-                            // When user selects Outfield or Pitcher, default them to an OPEN back
-                            if (['OUTFIELD', 'PITCHER'].includes(value)) {
-                                newConfig.backStyle = 'OPEN';
-                            }
-                            onBuildConfigChange(newConfig);
-                         }}
-                 />
+                       key={positionGroup.id}
+                       title={positionGroup.title}
+                       options={positionGroup.options}
+                       layout={positionGroup.layout}
+                       selectedOption={buildConfig.position}
+                       onSelectOption={(value) => {
+                           const newConfig = { ...buildConfig, position: value as BuildConfig['position'] };
+                           // When user selects Outfield or Pitcher, default them to an OPEN back
+                           if (['OUTFIELD', 'PITCHER'].includes(value)) {
+                               newConfig.backStyle = 'OPEN';
+                           }
+                           onBuildConfigChange(newConfig);
+                       }}
+               />
             )}
             
             {/* Conditionally render the Back Style selector */}
@@ -757,8 +786,8 @@ const TextOption = ({ contextId }: TextOptionProps) => {
     );
 };
 
-// ACTION: CREATED NEW WEB OPTIONS COMPONENT
-const WebOptions = ({ onSwatchSelect }: { onSwatchSelect?: (color: HexColor) => void }) => {
+// --- MODIFIED PER PLAN ---
+const WebOptions = () => {
     const { state, dispatch } = useGloveConfigurator();
     const { build: buildConfig } = state.configuration;
 
@@ -778,11 +807,12 @@ const WebOptions = ({ onSwatchSelect }: { onSwatchSelect?: (color: HexColor) => 
             />
             <div className="option-group-container">
                 <h3 className="text-sm font-semibold text-gray-400 mb-2">Web Color</h3>
-                <SingleColorPicker zoneKey={ZONES.WEB} onSwatchSelect={onSwatchSelect} />
+                <SingleColorPicker zoneKey={ZONES.WEB} />
             </div>
         </div>
     );
 };
+// --- END MODIFICATION ---
 
 // --- Panel Components (Refactored for Step 6) ---
 
@@ -794,30 +824,30 @@ const BuildPanel = ({ onClose, headerRef }: BuildPanelProps) => (
     </AccordionOptionMobile>
 );
 
-const ColorPanel = ({ context, onClose, headerRef, onSwatchSelect }: ColorPanelProps) => {
+// --- MODIFIED PER PLAN ---
+const ColorPanel = ({ context, onClose, headerRef }: ColorPanelProps) => {
     return (
         <AccordionOptionMobile title={context.title} onClose={onClose} headerRef={headerRef}>
             {context.type === 'dual' ? (
                 <DualColorPicker
                     outerZoneKey={context.outerZoneKey}
                     innerZoneKey={context.innerZoneKey}
-                    onSwatchSelect={onSwatchSelect}
                 />
             ) : (
                 <SingleColorPicker
                     zoneKey={(context as UIPartGroupSingle).zoneKey}
-                    onSwatchSelect={onSwatchSelect}
                 />
             )}
         </AccordionOptionMobile>
     );
 };
 
-const GalleryPanel = ({ context, onClose, headerRef, onSwatchSelect }: GalleryPanelProps) => (
+const GalleryPanel = ({ context, onClose, headerRef }: GalleryPanelProps) => (
     <AccordionOptionMobile title={context.title} onClose={onClose} headerRef={headerRef}>
-        <WebOptions onSwatchSelect={onSwatchSelect} />
+        <WebOptions />
     </AccordionOptionMobile>
 );
+// --- END MODIFICATION ---
 
 const TextPanel = ({ context, onClose, headerRef }: TextPanelProps) => {
     return (
@@ -930,8 +960,6 @@ interface FooterMobileProps {
     onClosePanel: () => void;
     onReviewClick: (event: React.MouseEvent<HTMLButtonElement>) => void;
     onCompleteOrder: () => void;
-    isDesktop: boolean;
-    openAccordionOptionMobile: MobileAccordionState;
     activeColor?: HexColor;
 }
 
@@ -969,7 +997,7 @@ const OverviewActionController = ({ isOpen, onOpen, onClose }: OverviewActionCon
 };
 
 
-const FooterMobile = ({ openPanelName, onClosePanel, onReviewClick, onCompleteOrder, isDesktop, openAccordionOptionMobile, activeColor }: FooterMobileProps) => {
+const FooterMobile = ({ openPanelName, onClosePanel, onReviewClick, onCompleteOrder, activeColor }: FooterMobileProps) => {
     const { dispatch } = useGloveConfigurator();
     
     const onApplyColorToAll = (color?: HexColor) => {
@@ -1227,45 +1255,26 @@ const OverviewDesktop = () => {
     );
 };
 
-// --- Main Accordion Components (Refactored for Step 6) ---
-
-const AccordionDesktop = () => {
+// --- Main Accordion Components ---
+const AccordionDesktop = ({ openAccordion, setOpenAccordion, colorForApplyAll }: {
+    openAccordion: string | null;
+    setOpenAccordion: (id: string | null) => void;
+    colorForApplyAll?: HexColor;
+}) => {
     const { state, dispatch } = useGloveConfigurator();
     const { configuration } = state;
-    const [lastSelectedColor, setLastSelectedColor] = useState<HexColor | undefined>();
     const activeShell = getModelNameForBuild(configuration.build);
-    const [openAccordion, setOpenAccordion] = useState<string | null>('build');
     const accordionContainerRef = useRef<HTMLDivElement>(null);
     const [isTopGradientVisible, setTopGradientVisible] = useState(false);
     const [isBottomGradientVisible, setBottomGradientVisible] = useState(false);
     const [isScrolled, setIsScrolled] = useState(false);
 
     const currentUiGroups = useMemo(() => UI_PRESENTATION_CONFIG[activeShell] || [], [activeShell]);
-    const buildGroup = { id: 'build', title: 'Build Options'}; // Special case for build options
+    const buildGroup = { id: 'build', title: 'Build Options'};
 
     const handleAccordionToggle = (accordionId: string) => {
-        setOpenAccordion(prev => (prev === accordionId ? null : accordionId));
+        setOpenAccordion(openAccordion === accordionId ? null : accordionId);
     };
-
-    // --- NEW: This effect sets the default "Apply to All" color when a panel opens ---
-    useEffect(() => {
-        if (!openAccordion) {
-            setLastSelectedColor(undefined); // Reset when all panels are closed
-            return;
-        }
-
-        const openGroup = currentUiGroups.find(g => g.id === openAccordion);
-        if (!openGroup) return;
-
-        if (openGroup.type === 'dual') {
-            // THE RULE: Default to the 'inner' color when a dual panel is opened
-            setLastSelectedColor(configuration[openGroup.innerZoneKey]?.color);
-        } else if (openGroup.type === 'single') {
-            setLastSelectedColor(configuration[openGroup.zoneKey]?.color);
-        } else if (openGroup.type === 'gallery') {
-            setLastSelectedColor(configuration[ZONES.WEB]?.color);
-        }
-    }, [openAccordion, configuration, currentUiGroups]);
     
     const checkAndSetGradients = useCallback(() => {
         const element = accordionContainerRef.current;
@@ -1282,7 +1291,7 @@ const AccordionDesktop = () => {
         const handler = () => checkAndSetGradients();
         element.addEventListener('scroll', handler);
         window.addEventListener('resize', handler);
-        handler(); // Initial check
+        handler();
         return () => {
             element.removeEventListener('scroll', handler);
             window.removeEventListener('resize', handler);
@@ -1313,7 +1322,6 @@ const AccordionDesktop = () => {
             <div className={`absolute ${isScrolled ? 'top-[82px]' : 'top-[142px]'} bottom-4 left-[40px] w-[400px] pointer-events-auto transition-all duration-30 ease-in-out overflow-hidden`}>
                 <ScrollGradient position={POSITIONS.TOP} isVisible={isTopGradientVisible} />
                 <div ref={accordionContainerRef} className="h-full overflow-y-auto space-y-4 focus:outline-none">
-                    {/* Build Options - Special Case */}
                     <AccordionOptionDesktop
                         key={buildGroup.id}
                         title={buildGroup.title}
@@ -1324,21 +1332,19 @@ const AccordionDesktop = () => {
                         <BuildOption isDesktop={true} />
                     </AccordionOptionDesktop>
 
-                    {/* Dynamic Color/Part Options */}
                     {currentUiGroups.map(group => {
-
                         let actionButton: ReactElement | null = null;
                         if (group.type === 'single' || group.type === 'dual' || group.type === 'gallery') {
                             actionButton = (
                                 <SecondaryButton
                                     label="Apply to All"
                                     onClick={() => {
-                                        if (lastSelectedColor) {
-                                            dispatch({ type: ACTION_TYPES.APPLY_COLOR_TO_ALL, payload: { color: lastSelectedColor } });
+                                        if (colorForApplyAll) {
+                                            dispatch({ type: ACTION_TYPES.APPLY_COLOR_TO_ALL, payload: { color: colorForApplyAll } });
                                         }
                                     }}
                                     icon={<CheckmarkIcon />}
-                                    disabled={!lastSelectedColor} // Disable if no color has been selected yet in this panel
+                                    disabled={!colorForApplyAll}
                                 />
                             );
                         }
@@ -1355,11 +1361,11 @@ const AccordionDesktop = () => {
                                 {(() => {
                                     switch (group.type) {
                                         case 'gallery':
-                                            return <WebOptions onSwatchSelect={setLastSelectedColor} />;
+                                            return <WebOptions />;
                                         case 'dual':
-                                            return <DualColorPicker outerZoneKey={group.outerZoneKey} innerZoneKey={group.innerZoneKey} onSwatchSelect={setLastSelectedColor} />;
+                                            return <DualColorPicker outerZoneKey={group.outerZoneKey} innerZoneKey={group.innerZoneKey} />;
                                         case 'single':
-                                            return <SingleColorPicker zoneKey={group.zoneKey} onSwatchSelect={setLastSelectedColor} />;
+                                            return <SingleColorPicker zoneKey={group.zoneKey} />;
                                         default:
                                             return null;
                                     }
@@ -1384,7 +1390,7 @@ const AccordionMobile = ({ onOpenPanel, openAccordionOptionMobile }: {
     const listRef = useRef<HTMLElement>(null);
     
     const currentUiGroups = UI_PRESENTATION_CONFIG[activeShell] || [];
-    const buildGroup = { id: 'build' as const, title: 'Build Options'}; // Corrected type
+    const buildGroup = { id: 'build' as const, title: 'Build Options'};
 
     const renderAccessory = (group: UIPartGroup) => {
         if (group.type === 'single') {
@@ -1402,7 +1408,6 @@ const AccordionMobile = ({ onOpenPanel, openAccordionOptionMobile }: {
     return (
         <section ref={listRef} className={`px-4 bg-[#161616] h-full overflow-y-auto ${openAccordionOptionMobile ? 'opacity-50 pointer-events-none' : ''}`} tabIndex={-1}>
             <ScrollGradient position={POSITIONS.TOP} isVisible={false} />
-            {/* Build Options Button */}
             <button key={buildGroup.id} className="w-full h-[56px] bg-[#1C1C1C] flex items-center justify-between px-4 mb-[10px]" onClick={() => onOpenPanel(buildGroup)}>
                 <div className="flex items-center">
                     <CaretRightIcon className="h-4 w-auto mr-3" />
@@ -1410,7 +1415,6 @@ const AccordionMobile = ({ onOpenPanel, openAccordionOptionMobile }: {
                 </div>
             </button>
 
-            {/* Dynamic Buttons */}
             {currentUiGroups.map(group => (
                 <button key={group.id} className="w-full h-[56px] bg-[#1C1C1C] flex items-center justify-between px-4 mb-[10px]" onClick={() => onOpenPanel(group)}>
                     <div className="flex items-center">
@@ -1429,44 +1433,57 @@ const AccordionMobile = ({ onOpenPanel, openAccordionOptionMobile }: {
 // --- Main UI Component ---
 const UI = () => {
     const isDesktop = useBreakpoint();
-    const { state } = useGloveConfigurator();
-    const { isLoading } = state;
-    const [isVisualizationExpanded, setIsVisualizationExpanded] = useState(false); // Bug Fix
+    const { state, dispatch } = useGloveConfigurator();
+    const { configuration, isLoading, lastActivatedPartType } = state as AppState; // Cast to our extended AppState
+    const [isVisualizationExpanded, setIsVisualizationExpanded] = useState(false);
     const [openAccordionOptionMobile, setOpenAccordionOptionMobile] = useState<MobileAccordionState>(null);
-    const [mobileActiveColor, setMobileActiveColor] = useState<HexColor | undefined>();
     const appContainerRef = useRef<HTMLDivElement>(null);
-
     const mainRef = useRef<HTMLElement>(null);
+
+    // For Desktop state
+    const [openAccordion, setOpenAccordion] = useState<string | null>('build');
+    
+    const activeShell = getModelNameForBuild(configuration.build);
+    const currentUiGroups = useMemo(() => UI_PRESENTATION_CONFIG[activeShell] || [], [activeShell]);
+
+    // --- MODIFIED PER PLAN ---
+    const colorForApplyAll = useMemo(() => {
+        const openPanelId = isDesktop ? openAccordion : (openAccordionOptionMobile && 'context' in openAccordionOptionMobile ? openAccordionOptionMobile.context.id : null);
+        const openPanelInfo = currentUiGroups.find(g => g.id === openPanelId);
+
+        if (!lastActivatedPartType) {
+            // Default logic: If no interaction yet, default to inner color if the current panel is dual
+            if (openPanelInfo?.type === 'dual') {
+                return configuration[openPanelInfo.innerZoneKey]?.color;
+            }
+            return undefined; // No default for single/gallery unless explicitly clicked
+        }
+
+        if (!openPanelInfo) return undefined;
+
+        if (openPanelInfo.type === 'dual') {
+            if (lastActivatedPartType === 'inner') {
+                return configuration[openPanelInfo.innerZoneKey]?.color;
+            }
+            if (lastActivatedPartType === 'outer') {
+                return configuration[openPanelInfo.outerZoneKey]?.color;
+            }
+        }
+        
+        if (openPanelInfo.type === 'single' && lastActivatedPartType === 'single') {
+            return configuration[openPanelInfo.zoneKey]?.color;
+        }
+
+        if (openPanelInfo.type === 'gallery' && lastActivatedPartType === 'single') {
+            return configuration[ZONES.WEB]?.color;
+        }
+
+        return undefined; // Last click doesn't match the context of the currently open panel
+    }, [isDesktop, openAccordion, openAccordionOptionMobile, currentUiGroups, configuration, lastActivatedPartType]);
+    // --- END MODIFICATION ---
 
     useEffect(() => { /* ... resize observer logic ... */ }, []);
     useEffect(() => { /* ... focus trap logic ... */ }, [isDesktop, openAccordionOptionMobile]);
-
-    // --- NEW: This effect sets the default "Apply to All" color when a mobile panel opens ---
-    useEffect(() => {
-        if (!openAccordionOptionMobile) {
-            setMobileActiveColor(undefined);
-            return;
-        }
-
-        switch (openAccordionOptionMobile.name) {
-            case 'COLOR': {
-                const { context } = openAccordionOptionMobile;
-                if (context.type === 'dual') {
-                    // THE RULE: Default to the 'inner' color
-                    setMobileActiveColor(state.configuration[context.innerZoneKey]?.color);
-                } else if (context.type === 'single') {
-                    setMobileActiveColor(state.configuration[context.zoneKey]?.color);
-                }
-                break;
-            }
-            case 'GALLERY':
-                setMobileActiveColor(state.configuration[ZONES.WEB]?.color);
-                break;
-            default:
-                setMobileActiveColor(undefined); // No color context for other panels
-                break;
-        }
-    }, [openAccordionOptionMobile, state.configuration]);
 
     const panelHeaderRef = useRef<HTMLButtonElement | null>(null);
 
@@ -1483,11 +1500,12 @@ const UI = () => {
     };
 
     const handleClosePanel = useCallback(() => {
+        // When a mobile panel closes, reset the last activated part memory
+        dispatch({ type: 'RESET_LAST_ACTIVATED_PART_TYPE' as any }); 
         setOpenAccordionOptionMobile(null);
-        setMobileActiveColor(undefined); 
-    }, []);
+    }, [dispatch]);
 
-    const handleShare = useCallback(async () => { /* ... share logic ... */ }, []);
+    const handleShare = useCallback(async () => { /* ... share logic ... */ }, [state.configuration]);
 
     const renderMobilePanel = () => {
         if (!openAccordionOptionMobile) return null;
@@ -1498,9 +1516,9 @@ const UI = () => {
             case 'BUILD':
                 return <BuildPanel onClose={handleClosePanel} headerRef={panelHeaderRef} />;
             case 'COLOR':
-                return <ColorPanel context={openAccordionOptionMobile.context} onClose={handleClosePanel} headerRef={panelHeaderRef} onSwatchSelect={setMobileActiveColor} />;
+                return <ColorPanel context={openAccordionOptionMobile.context} onClose={handleClosePanel} headerRef={panelHeaderRef} />;
             case 'GALLERY':
-                return <GalleryPanel context={openAccordionOptionMobile.context} onClose={handleClosePanel} headerRef={panelHeaderRef} onSwatchSelect={setMobileActiveColor} />;
+                return <GalleryPanel context={openAccordionOptionMobile.context} onClose={handleClosePanel} headerRef={panelHeaderRef} />;
             case 'TEXT':
                 return <TextPanel context={openAccordionOptionMobile.context} onClose={handleClosePanel} headerRef={panelHeaderRef} />;
             default:
@@ -1555,7 +1573,11 @@ const UI = () => {
             {!isVisualizationExpanded && (
                 isDesktop ? (
                     <>
-                        <AccordionDesktop />
+                        <AccordionDesktop 
+                            openAccordion={openAccordion}
+                            setOpenAccordion={setOpenAccordion}
+                            colorForApplyAll={colorForApplyAll}
+                        />
                         <OverviewDesktop />
                     </>
                 ) : (
@@ -1572,9 +1594,7 @@ const UI = () => {
                             onClosePanel={handleClosePanel}
                             onCompleteOrder={() => alert('Complete Order clicked!')}
                             onReviewClick={handleReviewClick}
-                            isDesktop={isDesktop}
-                            openAccordionOptionMobile={openAccordionOptionMobile}
-                            activeColor={mobileActiveColor}
+                            activeColor={colorForApplyAll}
                         />
                     </div>
                 )
