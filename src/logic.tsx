@@ -7,9 +7,11 @@ import { SceneManager } from './viewer';
 export type HexColor = string;
 export type ZoneKey = `zone${number}`; // e.g., 'zone1', 'zone2', etc.
 
+// --- MODIFIED PER PLAN ---
 export interface SingleColorState {
-  color: HexColor;
+  colorName: ColorName; // Now it must be one of the valid names
 }
+// --- END MODIFICATION ---
 
 export interface PartConfig {
   shaderIndex: number;
@@ -107,6 +109,16 @@ export const colorSwatches: { name: string, hex: HexColor }[] = [
     { name: 'Red', hex: '#C62828' }, { name: 'Pink', hex: '#AD1457' }, { name: 'Purple', hex: '#6A1B9A' }, { name: 'Indigo', hex: '#4527A0' }, { name: 'Royal', hex: '#283593' }, { name: 'Blue', hex: '#1565C0' }, { name: 'Light Blue', hex: '#0277BD' }, { name: 'Teal', hex: '#00838F' }, { name: 'Green', hex: '#00695C' }, { name: 'Forest', hex: '#2E7D32' }, { name: 'Lime', hex: '#558B2F' }, { name: 'Olive', hex: '#9E9D24' }, { name: 'Gold', hex: '#F9A825' }, { name: 'Orange', hex: '#FF8F00' }, { name: 'Burnt Orange', hex: '#EF6C00' }, { name: 'Red Orange', hex: '#D84315' }, { name: 'Brown', hex: '#4E342E' }, { name: 'Charcoal', hex: '#424242' }, { name: 'Grey', hex: '#BDBDBD' }, { name: 'Slate', hex: '#37474F' },
 ];
 
+// --- MODIFIED PER PLAN ---
+// Create a master list of names and a strict type from it
+export const COLOR_NAMES = colorSwatches.map(swatch => swatch.name) as const;
+export type ColorName = typeof COLOR_NAMES[number]; // 'Red' | 'Pink' | 'Purple' | ...
+
+// Create the Lookup Mechanism
+const colorMap = new Map(colorSwatches.map(swatch => [swatch.name, swatch.hex]));
+export const getHexByName = (name: string): HexColor => colorMap.get(name) || '#FFFFFF'; // Default to white
+// --- END MODIFICATION ---
+
 export const buildOptionsData = [
     { id: 'position', title: 'Position', options: [{id: 'INFIELD', label: 'INFIELD'}, {id: 'OUTFIELD', label: 'OUTFIELD'}, {id: 'PITCHER', label: 'PITCHER'}, {id: 'CATCHER', label: 'CATCHER'}, {id: 'FIRST BASE', label: 'FIRST BASE'}], layout: 'grid-cols-3' }, { id: 'size', title: 'Size', options: [{id: '11"', label: '11"'}, {id: '11.25"', label: '11.25"'}, {id: '11.5"', label: '11.5"'}, {id: '11.75"', label: '11.75"'}, {id: '12"', label: '12"'}], layout: 'grid-cols-3' }, { id: 'handOpeningSize', title: 'Hand Opening Size', options: [{id: 'ADULT', label: 'ADULT'}, {id: 'YOUTH', label: 'YOUTH'}], layout: 'grid-cols-2' }, { id: 'stiffness', title: 'Stiffness', options: [{id: 'STIFF', label: 'STIFF'}, {id: 'STANDARD', label: 'STANDARD'}, {id: 'SOFT', label: 'SOFT'}], layout: 'grid-cols-3' }, { id: 'throwingHand', title: 'Throwing Hand', options: [{id: 'RIGHT HAND', label: 'RIGHT HAND'}, {id: 'LEFT HAND', label: 'LEFT HAND'}], layout: 'grid-cols-2' }
 ];
@@ -140,35 +152,34 @@ export const GLOVE_TO_WEBS_MAP = {
 
 export const initialState: AppState = {
     configuration: {
-        build: { imageSelection: 'imgOpt1', position: 'INFIELD', size: '11"', handOpeningSize: 'ADULT', stiffness: 'STANDARD', throwingHand: 'RIGHT HAND', backStyle: 'OPEN', webType: 'MOD_TRAP' }, // <-- ACTION 2: ADDED default webType
+        build: { imageSelection: 'imgOpt1', position: 'INFIELD', size: '11"', handOpeningSize: 'ADULT', stiffness: 'STANDARD', throwingHand: 'RIGHT HAND', backStyle: 'OPEN', webType: 'MOD_TRAP' },
         
-        // --- TEXT PARTS (Mistake from previous step corrected) ---
         thumbName: { type: 'text', text: 'Thumb', font: 'SCRIPT', color: '#BDBDBD' },
         pinkyName: { type: 'text', text: 'Pinky', font: 'BLOCK', color: '#FFFFFF' },
 
-        // --- PURE ZONES (for all colorable parts) ---
-        zone1: { color: '#00FFFF' }, // Repurposable: thumbInner / primaryUPiece
-        zone2: { color: '#80FF00' }, // Repurposable: index / shellBack
-        zone3: { color: '#7F00FF' }, // Repurposable: middleInner / shellBase
-        zone4: { color: '#FFBF00' }, // Repurposable: middleOuter / middleOuterRingInner / rails
-        zone5: { color: '#0040FF' }, // Repurposable: ringInner
-        zone6: { color: '#00FF40' }, // Repurposable: ringOuter / ringOuterPinkyInner
-        zone7: { color: '#00FFCF' }, // Universal: web
-        zone8: { color: '#00FF10' }, // Universal: wrist
-        zone9: { color: '#AF00FF' }, // Universal: wristStrap
-        zone10: { color: '#FFEF00' }, // Universal: padHood
-        zone11: { color: '#FF0000' }, // Universal: thumbOuter
-        zone12: { color: '#FF00BF' }, // Universal: pinkyInner
-        zone13: { color: '#FF6000' }, // Universal: pinkyOuter
-        zone14: { color: '#FF00EF' }, // Universal: palm
-        zone15: { color: '#AFFF00' }, // Universal: liner
-        zone16: { color: '#0070FF' }, // Universal: binding
-        zone17: { color: '#FF8F00' }, // Universal: welting
-        zone18: { color: '#5000FF' }, // Universal: lace
-        zone19: { color: '#FF0030' }, // Universal: stitching
-        zone20: { color: '#00FF70' }, // Universal: wristLogo
-        zone21: { color: '#FF008F' }, // Universal: wristLogoOutline
-        zone22: { color: '#0010FF' }, // Universal: fingerLogo
+        // A cohesive, valid initial state using only available color names
+        [ZONES.THUMB_INNER]:    { colorName: 'Red' },
+        [ZONES.INDEX]:          { colorName: 'Blue' },
+        [ZONES.MIDDLE_INNER]:   { colorName: 'Forest' },
+        [ZONES.MIDDLE_OUTER]:   { colorName: 'Red' },
+        [ZONES.RING_INNER]:     { colorName: 'Gold' },
+        [ZONES.RING_OUTER]:     { colorName: 'Purple' },
+        [ZONES.WEB]:            { colorName: 'Red' },
+        [ZONES.WRIST]:          { colorName: 'Slate' },
+        [ZONES.WRIST_STRAP]:    { colorName: 'Slate' },
+        [ZONES.PAD_HOOD]:       { colorName: 'Brown' },
+        [ZONES.THUMB_OUTER]:    { colorName: 'Forest' },
+        [ZONES.PINKY_INNER]:    { colorName: 'Purple' },
+        [ZONES.PINKY_OUTER]:    { colorName: 'Gold' },
+        [ZONES.PALM]:           { colorName: 'Brown' },
+        [ZONES.LINER]:          { colorName: 'Charcoal' },
+        [ZONES.BINDING]:        { colorName: 'Brown' },
+        [ZONES.WELTING]:        { colorName: 'Brown' },
+        [ZONES.LACE]:           { colorName: 'Brown' },
+        [ZONES.STITCHING]:      { colorName: 'Gold' },
+        [ZONES.WRIST_LOGO]:     { colorName: 'Gold' },
+        [ZONES.WRIST_LOGO_OUTLINE]: { colorName: 'Slate' },
+        [ZONES.FINGER_LOGO]:    { colorName: 'Gold' },
     },
     isLoading: false,
 };
