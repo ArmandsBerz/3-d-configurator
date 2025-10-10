@@ -75,6 +75,7 @@ interface ColorPanelProps {
     context: UIPartGroup;
     onClose: () => void;
     headerRef: React.RefObject<HTMLButtonElement | null>;
+    onSwatchSelect?: (color: HexColor) => void;
 }
 interface TextPanelProps {
     context: { id: TextPartId; title: string };
@@ -86,6 +87,7 @@ interface GalleryPanelProps {
     context: UIPartGroupGallery;
     onClose: () => void;
     headerRef: React.RefObject<HTMLButtonElement | null>;
+    onSwatchSelect?: (color: HexColor) => void;
 }
 
 // --- END: ADD NEW PANEL PROP TYPES ---
@@ -792,26 +794,28 @@ const BuildPanel = ({ onClose, headerRef }: BuildPanelProps) => (
     </AccordionOptionMobile>
 );
 
-const ColorPanel = ({ context, onClose, headerRef }: ColorPanelProps) => {
+const ColorPanel = ({ context, onClose, headerRef, onSwatchSelect }: ColorPanelProps) => {
     return (
         <AccordionOptionMobile title={context.title} onClose={onClose} headerRef={headerRef}>
             {context.type === 'dual' ? (
                 <DualColorPicker
                     outerZoneKey={context.outerZoneKey}
                     innerZoneKey={context.innerZoneKey}
+                    onSwatchSelect={onSwatchSelect}
                 />
             ) : (
                 <SingleColorPicker
                     zoneKey={(context as UIPartGroupSingle).zoneKey}
+                    onSwatchSelect={onSwatchSelect}
                 />
             )}
         </AccordionOptionMobile>
     );
 };
 
-const GalleryPanel = ({ context, onClose, headerRef }: GalleryPanelProps) => (
+const GalleryPanel = ({ context, onClose, headerRef, onSwatchSelect }: GalleryPanelProps) => (
     <AccordionOptionMobile title={context.title} onClose={onClose} headerRef={headerRef}>
-        <WebOptions />
+        <WebOptions onSwatchSelect={onSwatchSelect} />
     </AccordionOptionMobile>
 );
 
@@ -928,6 +932,7 @@ interface FooterMobileProps {
     onCompleteOrder: () => void;
     isDesktop: boolean;
     openAccordionOptionMobile: MobileAccordionState;
+    activeColor?: HexColor;
 }
 
 interface OverviewActionControllerProps {
@@ -964,7 +969,7 @@ const OverviewActionController = ({ isOpen, onOpen, onClose }: OverviewActionCon
 };
 
 
-const FooterMobile = ({ openPanelName, onClosePanel, onReviewClick, onCompleteOrder, isDesktop, openAccordionOptionMobile }: FooterMobileProps) => {
+const FooterMobile = ({ openPanelName, onClosePanel, onReviewClick, onCompleteOrder, isDesktop, openAccordionOptionMobile, activeColor }: FooterMobileProps) => {
     const { dispatch } = useGloveConfigurator();
     
     const onApplyColorToAll = (color?: HexColor) => {
@@ -995,10 +1000,10 @@ const FooterMobile = ({ openPanelName, onClosePanel, onReviewClick, onCompleteOr
     let panelSpecificFooter: ReactElement;
     switch (openPanelName) {
         case 'COLOR':
+        case 'GALLERY':
             panelSpecificFooter = (
                 <div className="w-full grid grid-cols-[1fr_1.618fr] gap-[10px]">
-                    {/* TODO: Add logic to get the currently selected color for 'Apply to All' */}
-                    <SecondaryButton label="Apply to All" onClick={() => onApplyColorToAll('#C62828')} variant={VARIANTS.THEME.DARK} icon={<CheckmarkIcon />} />
+                    <SecondaryButton label="Apply to All" onClick={() => onApplyColorToAll(activeColor)} variant={VARIANTS.THEME.DARK} icon={<CheckmarkIcon />} disabled={!activeColor} />
                     <SecondaryButton label="Continue" onClick={onClosePanel} variant={VARIANTS.THEME.LIGHT} icon={<CheckmarkIcon />} />
                 </div>
             );
@@ -1479,7 +1484,7 @@ const UI = () => {
 
     const handleClosePanel = useCallback(() => {
         setOpenAccordionOptionMobile(null);
-        // The useEffect above will handle resetting the color state now
+        setMobileActiveColor(undefined); 
     }, []);
 
     const handleShare = useCallback(async () => { /* ... share logic ... */ }, []);
@@ -1493,9 +1498,9 @@ const UI = () => {
             case 'BUILD':
                 return <BuildPanel onClose={handleClosePanel} headerRef={panelHeaderRef} />;
             case 'COLOR':
-                return <ColorPanel context={openAccordionOptionMobile.context} onClose={handleClosePanel} headerRef={panelHeaderRef} />;
+                return <ColorPanel context={openAccordionOptionMobile.context} onClose={handleClosePanel} headerRef={panelHeaderRef} onSwatchSelect={setMobileActiveColor} />;
             case 'GALLERY':
-                return <GalleryPanel context={openAccordionOptionMobile.context} onClose={handleClosePanel} headerRef={panelHeaderRef} />;
+                return <GalleryPanel context={openAccordionOptionMobile.context} onClose={handleClosePanel} headerRef={panelHeaderRef} onSwatchSelect={setMobileActiveColor} />;
             case 'TEXT':
                 return <TextPanel context={openAccordionOptionMobile.context} onClose={handleClosePanel} headerRef={panelHeaderRef} />;
             default:
@@ -1569,6 +1574,7 @@ const UI = () => {
                             onReviewClick={handleReviewClick}
                             isDesktop={isDesktop}
                             openAccordionOptionMobile={openAccordionOptionMobile}
+                            activeColor={mobileActiveColor}
                         />
                     </div>
                 )
