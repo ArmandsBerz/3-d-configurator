@@ -228,7 +228,7 @@ const gloveConfigReducer = (state: AppState, action: GloveAction): AppState => {
         case ACTION_TYPES.APPLY_COLOR_TO_ALL: {
             const { color } = action.payload;
             if (!color) return state;
-           
+            
             const newConfiguration = { ...state.configuration };
             // Loop through all defined zone keys and update their color
             Object.values(ZONES).forEach(zoneKey => {
@@ -666,22 +666,22 @@ const BuildOption = ({ isDesktop }: BuildOptionProps) => {
             />
             {positionGroup && (
                  <OptionGroup
-                        key={positionGroup.id}
-                        title={positionGroup.title}
-                        options={positionGroup.options}
-                        layout={positionGroup.layout}
-                        selectedOption={buildConfig.position}
-                        onSelectOption={(value) => {
-                           const newConfig = { ...buildConfig, position: value as BuildConfig['position'] };
-                           // When user selects Outfield or Pitcher, default them to an OPEN back
-                           if (['OUTFIELD', 'PITCHER'].includes(value)) {
-                               newConfig.backStyle = 'OPEN';
-                           }
-                           onBuildConfigChange(newConfig);
-                        }}
+                         key={positionGroup.id}
+                         title={positionGroup.title}
+                         options={positionGroup.options}
+                         layout={positionGroup.layout}
+                         selectedOption={buildConfig.position}
+                         onSelectOption={(value) => {
+                            const newConfig = { ...buildConfig, position: value as BuildConfig['position'] };
+                            // When user selects Outfield or Pitcher, default them to an OPEN back
+                            if (['OUTFIELD', 'PITCHER'].includes(value)) {
+                                newConfig.backStyle = 'OPEN';
+                            }
+                            onBuildConfigChange(newConfig);
+                         }}
                  />
             )}
-           
+            
             {/* Conditionally render the Back Style selector */}
             {['OUTFIELD', 'PITCHER'].includes(buildConfig.position) && (
                 <OptionGroup
@@ -845,7 +845,7 @@ const OrderSummaryInfo = ({ getColorName }: { getColorName: (hex: HexColor) => s
         if (key === 'webType') return "Web Type";
         return buildOptionsData.find(g => g.id === key)?.title || key;
     };
-   
+    
     return (
         <div className="text-base text-gray-300 space-y-4 p-1">
             <div>
@@ -966,7 +966,7 @@ const OverviewActionController = ({ isOpen, onOpen, onClose }: OverviewActionCon
 
 const FooterMobile = ({ openPanelName, onClosePanel, onReviewClick, onCompleteOrder, isDesktop, openAccordionOptionMobile }: FooterMobileProps) => {
     const { dispatch } = useGloveConfigurator();
-   
+    
     const onApplyColorToAll = (color?: HexColor) => {
         if (color) dispatch({ type: ACTION_TYPES.APPLY_COLOR_TO_ALL, payload: { color } });
     };
@@ -1003,7 +1003,7 @@ const FooterMobile = ({ openPanelName, onClosePanel, onReviewClick, onCompleteOr
                 </div>
             );
             break;
-       
+        
         case 'BUILD':
         case 'TEXT':
             panelSpecificFooter = (
@@ -1105,7 +1105,7 @@ const useGridNavigation = <T extends HTMLElement>(itemCount: number) => {
 
         const container = containerRef.current;
         if (!container) return;
-       
+        
         const numColumns = window.getComputedStyle(container).gridTemplateColumns.split(' ').length;
         if (numColumns === 0) return;
 
@@ -1125,7 +1125,7 @@ const useGridNavigation = <T extends HTMLElement>(itemCount: number) => {
                 nextIndex = focusedIndex + numColumns;
                 break;
         }
-       
+        
         if (key === 'ArrowLeft' || key === 'ArrowRight') {
             const currentRow = Math.floor(focusedIndex / numColumns);
             const nextRow = Math.floor(nextIndex / numColumns);
@@ -1139,7 +1139,7 @@ const useGridNavigation = <T extends HTMLElement>(itemCount: number) => {
             setActiveIndex(nextIndex);
         }
     };
-   
+    
     const gridEventHandlers = {
         onFocus: handleFocus,
         onMouseDown: handleMouseDown,
@@ -1175,7 +1175,7 @@ const OverviewDesktop = () => {
     const [agnosticAccordionOpen, setAgnosticAccordionOpen] = useState(false);
     const triggerButtonRef = useRef<HTMLButtonElement | null>(null);
     const containerRef = useRef<HTMLDivElement>(null);
-   
+    
     const closeOverview = useCallback(() => setAgnosticAccordionOpen(false), []);
     useEscapeKey(containerRef, closeOverview, agnosticAccordionOpen);
 
@@ -1261,7 +1261,7 @@ const AccordionDesktop = () => {
             setLastSelectedColor(configuration[ZONES.WEB]?.color);
         }
     }, [openAccordion, configuration, currentUiGroups]);
-   
+    
     const checkAndSetGradients = useCallback(() => {
         const element = accordionContainerRef.current;
         if (!element) return;
@@ -1321,6 +1321,23 @@ const AccordionDesktop = () => {
 
                     {/* Dynamic Color/Part Options */}
                     {currentUiGroups.map(group => {
+
+                        let actionButton: ReactElement | null = null;
+                        if (group.type === 'single' || group.type === 'dual' || group.type === 'gallery') {
+                            actionButton = (
+                                <SecondaryButton
+                                    label="Apply to All"
+                                    onClick={() => {
+                                        if (lastSelectedColor) {
+                                            dispatch({ type: ACTION_TYPES.APPLY_COLOR_TO_ALL, payload: { color: lastSelectedColor } });
+                                        }
+                                    }}
+                                    icon={<CheckmarkIcon />}
+                                    disabled={!lastSelectedColor} // Disable if no color has been selected yet in this panel
+                                />
+                            );
+                        }
+                    
                         return (
                             <AccordionOptionDesktop
                                 key={group.id}
@@ -1328,15 +1345,16 @@ const AccordionDesktop = () => {
                                 isOpen={openAccordion === group.id}
                                 onToggle={() => handleAccordionToggle(group.id)}
                                 headerContent={renderHeaderAccessory(group)}
+                                actionButton={actionButton}
                             >
                                 {(() => {
                                     switch (group.type) {
                                         case 'gallery':
-                                            return <WebOptions />;
+                                            return <WebOptions onSwatchSelect={setLastSelectedColor} />;
                                         case 'dual':
-                                            return <DualColorPicker outerZoneKey={group.outerZoneKey} innerZoneKey={group.innerZoneKey} />;
+                                            return <DualColorPicker outerZoneKey={group.outerZoneKey} innerZoneKey={group.innerZoneKey} onSwatchSelect={setLastSelectedColor} />;
                                         case 'single':
-                                            return <SingleColorPicker zoneKey={group.zoneKey} />;
+                                            return <SingleColorPicker zoneKey={group.zoneKey} onSwatchSelect={setLastSelectedColor} />;
                                         default:
                                             return null;
                                     }
@@ -1359,7 +1377,7 @@ const AccordionMobile = ({ onOpenPanel, openAccordionOptionMobile }: {
     const { configuration } = state;
     const activeShell = getModelNameForBuild(configuration.build);
     const listRef = useRef<HTMLElement>(null);
-   
+    
     const currentUiGroups = UI_PRESENTATION_CONFIG[activeShell] || [];
     const buildGroup = { id: 'build' as const, title: 'Build Options'}; // Corrected type
 
@@ -1491,7 +1509,7 @@ const UI = () => {
 
     return (
         <div ref={appContainerRef} className="flex flex-col lg:relative w-full h-full bg-transparent text-white">
-           
+            
             {isLoading && (
                 <div className="absolute inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 pointer-events-auto">
                     <p className="text-white text-xl animate-pulse">Loading...</p>
@@ -1503,7 +1521,7 @@ const UI = () => {
                 <button className="absolute top-[20px] right-[20px] z-20 p-2 hover:bg-gray-800 hover:bg-opacity-50 focus:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-white pointer-events-auto" aria-label="Share configuration" onClick={handleShare}>
                     <ShareIcon />
                 </button>
-               
+                
                 <div className="absolute bottom-4 inset-x-0 h-8 z-10 pointer-events-none" aria-hidden="true">
                     {!isDesktop && (
                         <button
