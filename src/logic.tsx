@@ -89,6 +89,19 @@ export const ZONES = {
     FINGER_LOGO: 'zone22',
 } as const;
 
+// --- NEW BUSINESS LOGIC FOR UX RULES ---
+const THREAD_BASED_ZONES = new Set<ZoneKey>([
+    ZONES.STITCHING,
+    ZONES.WRIST_LOGO,
+    ZONES.WRIST_LOGO_OUTLINE,
+    ZONES.FINGER_LOGO,
+]);
+
+export const isApplyToAllEligible = (zoneKey: ZoneKey): boolean => {
+    return !THREAD_BASED_ZONES.has(zoneKey);
+};
+// --- END NEW BUSINESS LOGIC ---
+
 
 // --- CORE DATA CONSTANTS (MOVED FROM UI) ---
 

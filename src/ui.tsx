@@ -12,14 +12,13 @@ import {
     ZoneKey,
     getModelNameForBuild,
     webTypeOptions,
-    // --- MODIFIED PER PLAN ---
     getHexByName,
     ColorName,
-    // --- END MODIFICATION ---
     Font,
     TextPart,
     BuildConfig,
-    AppState as ImportedAppState // Rename to avoid conflict with local extension
+    AppState as ImportedAppState,
+    isApplyToAllEligible // Import the new helper function
 } from './logic';
 import React, { useState, useRef, useLayoutEffect, useCallback, useEffect, createContext, useContext, useReducer, ReactNode, ReactElement, useMemo } from 'react';
 import BabylonCanvas from './viewer';
@@ -252,7 +251,10 @@ const gloveConfigReducer = (state: AppState, action: GloveAction): AppState => {
             const newConfiguration = { ...state.configuration };
             // Loop through all defined zone keys and update their color
             Object.values(ZONES).forEach((zoneKey: ZoneKey) => {
-                newConfiguration[zoneKey] = { colorName: colorName };
+                // MODIFICATION: Use the helper to respect exclusion rules
+                if (isApplyToAllEligible(zoneKey)) {
+                    newConfiguration[zoneKey] = { colorName: colorName };
+                }
             });
 
             return { ...state, configuration: newConfiguration };
@@ -962,6 +964,8 @@ interface FooterMobileProps {
     onReviewClick: (event: React.MouseEvent<HTMLButtonElement>) => void;
     onCompleteOrder: () => void;
     activeColor?: ColorName;
+    // --- NEW PROP TO CONTROL BUTTON VISIBILITY ---
+    showApplyToAllButton: boolean;
 }
 
 interface OverviewActionControllerProps {
@@ -998,7 +1002,7 @@ const OverviewActionController = ({ isOpen, onOpen, onClose }: OverviewActionCon
 };
 
 
-const FooterMobile = ({ openPanelName, onClosePanel, onReviewClick, onCompleteOrder, activeColor }: FooterMobileProps) => {
+const FooterMobile = ({ openPanelName, onClosePanel, onReviewClick, onCompleteOrder, activeColor, showApplyToAllButton }: FooterMobileProps) => {
     const { dispatch } = useGloveConfigurator();
     
     const onApplyColorToAll = (colorName?: ColorName) => {
@@ -1032,7 +1036,12 @@ const FooterMobile = ({ openPanelName, onClosePanel, onReviewClick, onCompleteOr
         case 'GALLERY':
             panelSpecificFooter = (
                 <div className="w-full grid grid-cols-[1fr_1.618fr] gap-[10px]">
-                    <SecondaryButton label="Apply to All" onClick={() => onApplyColorToAll(activeColor)} variant={VARIANTS.THEME.DARK} icon={<CheckmarkIcon />} disabled={!activeColor} />
+                    {/* --- MODIFICATION: Conditionally render based on prop --- */}
+                    {showApplyToAllButton ? (
+                        <SecondaryButton label="Apply to All" onClick={() => onApplyColorToAll(activeColor)} variant={VARIANTS.THEME.DARK} icon={<CheckmarkIcon />} disabled={!activeColor} />
+                    ) : (
+                        <div></div> // Empty div to maintain grid structure
+                    )}
                     <SecondaryButton label="Continue" onClick={onClosePanel} variant={VARIANTS.THEME.LIGHT} icon={<CheckmarkIcon />} />
                 </div>
             );
@@ -1272,13 +1281,16 @@ const AccordionDesktop = ({ openAccordion, setOpenAccordion, colorForApplyAll }:
 
     const currentUiGroups = useMemo(() => UI_PRESENTATION_CONFIG[activeShell] || [], [activeShell]);
     const buildGroup = { id: 'build', title: 'Build Options'};
+    // --- MODIFICATION: Define personalization panels separately ---
+    const personalizationGroups = [
+        { id: 'thumbName' as TextPartId, title: 'Thumb Name' },
+        { id: 'pinkyName' as TextPartId, title: 'Pinky Name' },
+    ];
 
     const handleAccordionToggle = (accordionId: string) => {
-        // --- MODIFIED PER PLAN ---
         if (openAccordion !== accordionId) {
             dispatch({ type: 'RESET_LAST_ACTIVATED_PART_TYPE' } as any);
         }
-        // --- END MODIFICATION ---
         setOpenAccordion(openAccordion === accordionId ? null : accordionId);
     };
     
@@ -1304,7 +1316,6 @@ const AccordionDesktop = ({ openAccordion, setOpenAccordion, colorForApplyAll }:
         };
     }, [checkAndSetGradients, currentUiGroups]);
 
-    // --- MODIFIED PER PLAN ---
     const renderHeaderAccessory = (group: UIPartGroup) => {
         const isAccordionOpen = openAccordion === group.id;
         if (group.type === 'single' || group.type === 'gallery') {
@@ -1319,7 +1330,6 @@ const AccordionDesktop = ({ openAccordion, setOpenAccordion, colorForApplyAll }:
         }
         return null;
     };
-    // --- END MODIFICATION ---
 
     return (
         <div className="absolute top-0 left-0 bottom-0 w-[440px] z-10 bg-[#161616] p-10 pointer-events-none">
@@ -1338,8 +1348,16 @@ const AccordionDesktop = ({ openAccordion, setOpenAccordion, colorForApplyAll }:
                     </AccordionOptionDesktop>
 
                     {currentUiGroups.map((group: UIPartGroup) => {
+                        // --- MODIFICATION: Conditional button logic ---
                         let actionButton: ReactElement | null = null;
-                        if (group.type === 'single' || group.type === 'dual' || group.type === 'gallery') {
+                        let isEligible = false;
+                        if (group.type === 'single') {
+                            isEligible = isApplyToAllEligible(group.zoneKey);
+                        } else if (group.type === 'dual' || group.type === 'gallery') {
+                            isEligible = true; // Leather and web parts are always eligible
+                        }
+
+                        if (isEligible) {
                             actionButton = (
                                 <SecondaryButton
                                     label="Apply to All"
@@ -1353,7 +1371,7 @@ const AccordionDesktop = ({ openAccordion, setOpenAccordion, colorForApplyAll }:
                                 />
                             );
                         }
-                    
+                        
                         return (
                             <AccordionOptionDesktop
                                 key={group.id}
@@ -1378,6 +1396,20 @@ const AccordionDesktop = ({ openAccordion, setOpenAccordion, colorForApplyAll }:
                             </AccordionOptionDesktop>
                         );
                     })}
+
+                    {/* --- MODIFICATION: Render personalization panels separately --- */}
+                    {personalizationGroups.map(group => (
+                        <AccordionOptionDesktop
+                            key={group.id}
+                            title={group.title}
+                            isOpen={openAccordion === group.id}
+                            onToggle={() => handleAccordionToggle(group.id)}
+                            headerContent={<span className="text-sm text-gray-400 truncate max-w-[100px]">{configuration[group.id].text}</span>}
+                            actionButton={null} // No action button for text panels
+                        >
+                            <TextOption contextId={group.id} />
+                        </AccordionOptionDesktop>
+                    ))}
                 </div>
                 <ScrollGradient position={POSITIONS.BOTTOM} isVisible={isBottomGradientVisible} />
             </div>
@@ -1386,7 +1418,7 @@ const AccordionDesktop = ({ openAccordion, setOpenAccordion, colorForApplyAll }:
 };
 
 const AccordionMobile = ({ onOpenPanel, openAccordionOptionMobile }: {
-    onOpenPanel: (group: UIPartGroup | {id: 'build', title: string}) => void;
+    onOpenPanel: (group: UIPartGroup | { id: 'build' | TextPartId, title: string }) => void;
     openAccordionOptionMobile: MobileAccordionState;
 }) => {
     const { state } = useGloveConfigurator();
@@ -1396,8 +1428,12 @@ const AccordionMobile = ({ onOpenPanel, openAccordionOptionMobile }: {
     
     const currentUiGroups = useMemo(() => UI_PRESENTATION_CONFIG[activeShell] || [], [activeShell]);
     const buildGroup = { id: 'build' as const, title: 'Build Options'};
+    // --- MODIFICATION: Define personalization panels separately ---
+    const personalizationGroups = [
+        { id: 'thumbName' as TextPartId, title: 'Thumb Name' },
+        { id: 'pinkyName' as TextPartId, title: 'Pinky Name' },
+    ];
 
-    // --- MODIFIED PER PLAN ---
     const renderAccessory = (group: UIPartGroup) => {
         if (group.type === 'single' || group.type === 'gallery') {
             const zone = group.type === 'gallery' ? ZONES.WEB : group.zoneKey;
@@ -1411,7 +1447,6 @@ const AccordionMobile = ({ onOpenPanel, openAccordionOptionMobile }: {
         }
         return null;
     };
-    // --- END MODIFICATION ---
 
     return (
         <section ref={listRef} className={`px-4 bg-[#161616] h-full overflow-y-auto ${openAccordionOptionMobile ? 'opacity-50 pointer-events-none' : ''}`} tabIndex={-1}>
@@ -1432,6 +1467,18 @@ const AccordionMobile = ({ onOpenPanel, openAccordionOptionMobile }: {
                     {renderAccessory(group)}
                 </button>
             ))}
+            
+            {/* --- MODIFICATION: Render personalization panels separately --- */}
+            {personalizationGroups.map(group => (
+                <button key={group.id} className="w-full h-[56px] bg-[#1C1C1C] flex items-center justify-between px-4 mb-[10px]" onClick={() => onOpenPanel(group)}>
+                    <div className="flex items-center">
+                        <CaretRightIcon className="h-4 w-auto mr-3" />
+                        <span className="text-lg">{group.title}</span>
+                    </div>
+                    <span className="text-sm text-gray-400 truncate max-w-[100px]">{configuration[group.id].text}</span>
+                </button>
+            ))}
+
             <ScrollGradient position={POSITIONS.BOTTOM} isVisible={false} />
         </section>
     );
@@ -1454,13 +1501,28 @@ const UI = () => {
     const activeShell = getModelNameForBuild(configuration.build);
     const currentUiGroups = useMemo(() => UI_PRESENTATION_CONFIG[activeShell] || [], [activeShell]);
 
-    // --- MODIFIED PER PLAN ---
+    // --- MODIFICATION: Use helper to determine button eligibility ---
     const colorForApplyAll = useMemo((): ColorName | undefined => {
         let openPanelContext: UIPartGroup | null = null;
         if (isDesktop) {
             openPanelContext = currentUiGroups.find(g => g.id === openAccordion) || null;
-        } else if (openAccordionOptionMobile && 'context' in openAccordionOptionMobile) {
+        } else if (openAccordionOptionMobile && 'context' in openAccordionOptionMobile && 'type' in (openAccordionOptionMobile.context as any)) {
             openPanelContext = openAccordionOptionMobile.context as UIPartGroup;
+        }
+
+        if (!openPanelContext) return undefined;
+
+        let representativeZoneKey: ZoneKey;
+        if (openPanelContext.type === 'single') {
+            representativeZoneKey = openPanelContext.zoneKey;
+        } else if (openPanelContext.type === 'dual') {
+            representativeZoneKey = openPanelContext.innerZoneKey;
+        } else { // gallery
+            representativeZoneKey = ZONES.WEB;
+        }
+
+        if (!isApplyToAllEligible(representativeZoneKey)) {
+            return undefined; // If not eligible, no color is available.
         }
 
         // Default logic: If no interaction yet, default to the most relevant color of the open panel
@@ -1476,8 +1538,6 @@ const UI = () => {
             }
             return undefined;
         }
-
-        if (!openPanelContext) return undefined;
 
         if (openPanelContext.type === 'dual') {
             if (lastActivatedPartType === 'inner') {
@@ -1498,6 +1558,19 @@ const UI = () => {
 
         return undefined;
     }, [isDesktop, openAccordion, openAccordionOptionMobile, currentUiGroups, configuration, lastActivatedPartType]);
+
+    // --- NEW PROP FOR MOBILE FOOTER ---
+    const showApplyToAllButton = useMemo((): boolean => {
+        if (isDesktop || !openAccordionOptionMobile || !('context' in openAccordionOptionMobile)) return false;
+
+        const context = openAccordionOptionMobile.context as any;
+        if ('type' in context) { // It's a UIPartGroup
+            if (context.type === 'single') return isApplyToAllEligible(context.zoneKey);
+            if (context.type === 'dual') return true;
+            if (context.type === 'gallery') return isApplyToAllEligible(ZONES.WEB);
+        }
+        return false;
+    }, [isDesktop, openAccordionOptionMobile]);
     // --- END MODIFICATION ---
 
     useEffect(() => { /* ... resize observer logic ... */ }, []);
@@ -1513,7 +1586,10 @@ const UI = () => {
         } else if ('zoneKey' in group || 'outerZoneKey' in group) {
             setOpenAccordionOptionMobile({ name: 'COLOR', context: group as UIPartGroup });
         } else {
-             // Handle Text parts if needed
+             // --- MODIFICATION: Handle Text parts ---
+            if (group.id === 'thumbName' || group.id === 'pinkyName') {
+                setOpenAccordionOptionMobile({ name: 'TEXT', context: { id: group.id, title: group.title } });
+            }
         }
     };
 
@@ -1612,6 +1688,7 @@ const UI = () => {
                             onCompleteOrder={() => alert('Complete Order clicked!')}
                             onReviewClick={handleReviewClick}
                             activeColor={colorForApplyAll}
+                            showApplyToAllButton={showApplyToAllButton}
                         />
                     </div>
                 )
