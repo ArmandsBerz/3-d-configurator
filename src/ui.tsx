@@ -1621,7 +1621,15 @@ const UI = () => {
         setOpenAccordionOptionMobile(null);
     }, [dispatch]);
 
-    const handleShare = useCallback(async () => { /* ... share logic ... */ }, [state.configuration]);
+    const handleShare = useCallback(async () => {
+        const configUrl = `${window.location.origin}?config=${encodeURIComponent(JSON.stringify(state.configuration))}`;
+        const shareData = { title: 'My Custom Glove', text: 'Check out the glove I designed!', url: configUrl };
+        if (navigator.share) {
+            try { await navigator.share(shareData); } catch (err) { console.log('Share failed', err); }
+        } else {
+            try { await navigator.clipboard.writeText(configUrl); alert('Sharable link copied to clipboard!'); } catch (err) { alert('Failed to copy link.'); }
+        }
+    }, [state.configuration]);
 
     const renderMobilePanel = () => {
         if (!openAccordionOptionMobile) return null;
