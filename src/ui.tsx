@@ -1034,17 +1034,18 @@ const FooterMobile = ({ openPanelName, onClosePanel, onReviewClick, onCompleteOr
     switch (openPanelName) {
         case 'COLOR':
         case 'GALLERY':
-            panelSpecificFooter = (
-                <div className="w-full grid grid-cols-[1fr_1.618fr] gap-[10px]">
-                    {/* --- MODIFICATION: Conditionally render based on prop --- */}
-                    {showApplyToAllButton ? (
+            if (showApplyToAllButton) {
+                panelSpecificFooter = (
+                    <div className="w-full grid grid-cols-[1fr_1.618fr] gap-[10px]">
                         <SecondaryButton label="Apply to All" onClick={() => onApplyColorToAll(activeColor)} variant={VARIANTS.THEME.DARK} icon={<CheckmarkIcon />} disabled={!activeColor} />
-                    ) : (
-                        <div></div> // Empty div to maintain grid structure
-                    )}
+                        <SecondaryButton label="Continue" onClick={onClosePanel} variant={VARIANTS.THEME.LIGHT} icon={<CheckmarkIcon />} />
+                    </div>
+                );
+            } else {
+                panelSpecificFooter = (
                     <SecondaryButton label="Continue" onClick={onClosePanel} variant={VARIANTS.THEME.LIGHT} icon={<CheckmarkIcon />} />
-                </div>
-            );
+                );
+            }
             break;
         
         case 'BUILD':
