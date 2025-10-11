@@ -1,6 +1,6 @@
 import { useEffect, createContext, useContext } from 'react';
 import { Color3 } from '@babylonjs/core';
-import { useGloveConfigurator } from './ui'; // AppState, Font, BuildConfig removed from import
+import { useGloveConfigurator } from './ui';
 import { SceneManager } from './viewer';
 
 // --- NEW CORE TYPES (from Step 1) ---
@@ -8,8 +8,15 @@ export type HexColor = string;
 export type ZoneKey = `zone${number}`; // e.g., 'zone1', 'zone2', etc.
 
 // --- MODIFIED PER PLAN ---
+export const colorSwatches: { name: string, hex: HexColor }[] = [
+    { name: 'Red', hex: '#C62828' }, { name: 'Pink', hex: '#AD1457' }, { name: 'Purple', hex: '#6A1B9A' }, { name: 'Indigo', hex: '#4527A0' }, { name: 'Royal', hex: '#283593' }, { name: 'Blue', hex: '#1565C0' }, { name: 'Light Blue', hex: '#0277BD' }, { name: 'Teal', hex: '#00838F' }, { name: 'Green', hex: '#00695C' }, { name: 'Forest', hex: '#2E7D32' }, { name: 'Lime', hex: '#558B2F' }, { name: 'Olive', hex: '#9E9D24' }, { name: 'Gold', hex: '#F9A825' }, { name: 'Orange', hex: '#FF8F00' }, { name: 'Burnt Orange', hex: '#EF6C00' }, { name: 'Red Orange', hex: '#D84315' }, { name: 'Brown', hex: '#4E342E' }, { name: 'Charcoal', hex: '#424242' }, { name: 'Grey', hex: '#BDBDBD' }, { name: 'Slate', hex: '#37474F' },
+];
+
+export const COLOR_NAMES = colorSwatches.map(swatch => swatch.name) as const;
+export type ColorName = typeof COLOR_NAMES[number];
+
 export interface SingleColorState {
-  colorName: ColorName; // Now it must be one of the valid names
+  colorName: ColorName; 
 }
 // --- END MODIFICATION ---
 
@@ -21,12 +28,14 @@ export interface PartConfig {
 // --- NEW, CORRECTED CORE TYPES TO ACHIEVE TYPE SAFETY ---
 export type Font = 'SCRIPT' | 'BLOCK';
 
+// --- MODIFIED PER PLAN ---
 export interface TextPart {
     type: 'text';
     text: string;
     font: Font;
-    color: HexColor;
+    colorName: ColorName;
 }
+// --- END MODIFICATION ---
 
 export interface BuildConfig {
     imageSelection: 'imgOpt1' | 'imgOpt2';
@@ -36,7 +45,7 @@ export interface BuildConfig {
     stiffness: 'STIFF' | 'STANDARD' | 'SOFT';
     throwingHand: 'RIGHT HAND' | 'LEFT HAND';
     backStyle: 'OPEN' | 'CLOSE';
-    webType: string; // <-- ACTION 1: ADDED webType to BuildConfig
+    webType: string;
 }
 
 export type GloveConfiguration = {
@@ -48,6 +57,7 @@ export type GloveConfiguration = {
 export interface AppState {
     configuration: GloveConfiguration;
     isLoading: boolean;
+    lastActivatedPartType: 'inner' | 'outer' | 'single' | null;
 }
 
 // --- NEW ZONE REGISTRY (Step 3 - "Pure Zone" Model) ---
@@ -105,18 +115,10 @@ export const fontOptions: { id: Font, label: string }[] = [
     { id: 'BLOCK', label: 'BLOCK' }
 ];
 
-export const colorSwatches: { name: string, hex: HexColor }[] = [
-    { name: 'Red', hex: '#C62828' }, { name: 'Pink', hex: '#AD1457' }, { name: 'Purple', hex: '#6A1B9A' }, { name: 'Indigo', hex: '#4527A0' }, { name: 'Royal', hex: '#283593' }, { name: 'Blue', hex: '#1565C0' }, { name: 'Light Blue', hex: '#0277BD' }, { name: 'Teal', hex: '#00838F' }, { name: 'Green', hex: '#00695C' }, { name: 'Forest', hex: '#2E7D32' }, { name: 'Lime', hex: '#558B2F' }, { name: 'Olive', hex: '#9E9D24' }, { name: 'Gold', hex: '#F9A825' }, { name: 'Orange', hex: '#FF8F00' }, { name: 'Burnt Orange', hex: '#EF6C00' }, { name: 'Red Orange', hex: '#D84315' }, { name: 'Brown', hex: '#4E342E' }, { name: 'Charcoal', hex: '#424242' }, { name: 'Grey', hex: '#BDBDBD' }, { name: 'Slate', hex: '#37474F' },
-];
-
 // --- MODIFIED PER PLAN ---
-// Create a master list of names and a strict type from it
-export const COLOR_NAMES = colorSwatches.map(swatch => swatch.name) as const;
-export type ColorName = typeof COLOR_NAMES[number]; // 'Red' | 'Pink' | 'Purple' | ...
-
 // Create the Lookup Mechanism
 const colorMap = new Map(colorSwatches.map(swatch => [swatch.name, swatch.hex]));
-export const getHexByName = (name: string): HexColor => colorMap.get(name) || '#FFFFFF'; // Default to white
+export const getHexByName = (name: ColorName): HexColor => colorMap.get(name) || '#FFFFFF'; // Default to white
 // --- END MODIFICATION ---
 
 export const buildOptionsData = [
@@ -150,12 +152,13 @@ export const GLOVE_TO_WEBS_MAP = {
     catchers: { TWO_PIECE: 'twoPieceCM', }
 };
 
+// --- MODIFIED PER PLAN ---
 export const initialState: AppState = {
     configuration: {
         build: { imageSelection: 'imgOpt1', position: 'INFIELD', size: '11"', handOpeningSize: 'ADULT', stiffness: 'STANDARD', throwingHand: 'RIGHT HAND', backStyle: 'OPEN', webType: 'MOD_TRAP' },
         
-        thumbName: { type: 'text', text: 'Thumb', font: 'SCRIPT', color: '#BDBDBD' },
-        pinkyName: { type: 'text', text: 'Pinky', font: 'BLOCK', color: '#FFFFFF' },
+        thumbName: { type: 'text', text: 'Thumb', font: 'SCRIPT', colorName: 'Grey' },
+        pinkyName: { type: 'text', text: 'Pinky', font: 'BLOCK', colorName: 'Slate' }, // Assuming white is not in the palette, using a valid name
 
         // A cohesive, valid initial state using only available color names
         [ZONES.THUMB_INNER]:    { colorName: 'Red' },
@@ -182,7 +185,10 @@ export const initialState: AppState = {
         [ZONES.FINGER_LOGO]:    { colorName: 'Gold' },
     },
     isLoading: false,
+    lastActivatedPartType: null,
 };
+// --- END MODIFICATION ---
+
 
 export const getModelNameForBuild = (buildConfig: BuildConfig): string => {
     switch (buildConfig.position) {
@@ -274,7 +280,6 @@ export const GloveLogicController = () => {
                 // Update 3D models for shell and web
                 await sceneManager.updateBuild(activeShell);
                 
-                // ACTION: RE-INTEGRATED WEB SELECTION LOGIC
                 const compatibleWebsForShell = GLOVE_TO_WEBS_MAP[activeShell as keyof typeof GLOVE_TO_WEBS_MAP];
                 const webModelFilename = compatibleWebsForShell?.[configuration.build.webType as keyof typeof compatibleWebsForShell];
 
@@ -284,14 +289,14 @@ export const GloveLogicController = () => {
                     await sceneManager.updateWeb(''); // Hide web if not compatible
                 }
         
-                // --- NEW DYNAMIC COLOR LOGIC ---
-
+                // --- MODIFIED PER PLAN ---
                 // Loop 1: Universal Parts
                 for (const [zoneKey, config] of Object.entries(GLOVE_PARTS_CONFIG.universal)) {
                     const colorState = configuration[zoneKey as ZoneKey];
                     if (!colorState || !config) continue;
 
-                    const color3 = Color3.FromHexString(colorState.color);
+                    const hexColor = getHexByName(colorState.colorName);
+                    const color3 = Color3.FromHexString(hexColor);
 
                     if (config.materialTarget === 'shell' || config.materialTarget === 'both') {
                         sceneManager.updateShellColor(config.shaderIndex, color3);
@@ -308,26 +313,27 @@ export const GloveLogicController = () => {
                         const colorState = configuration[zoneKey as ZoneKey];
                         if (!colorState || !config) continue;
 
-                        const color3 = Color3.FromHexString(colorState.color);
-                        // Shell-specific parts always target the shell material
+                        const hexColor = getHexByName(colorState.colorName);
+                        const color3 = Color3.FromHexString(hexColor);
                         sceneManager.updateShellColor(config.shaderIndex, color3);
                     }
                 }
         
-                // Text updates remain the same
+                // Text updates also need to use the lookup.
                 sceneManager.updateText({
                     zone: 'thumbName',
                     text: configuration.thumbName.text,
                     font: configuration.thumbName.font,
-                    color: configuration.thumbName.color,
+                    color: getHexByName(configuration.thumbName.colorName),
                 });
         
                 sceneManager.updateText({
                     zone: 'pinkyName',
                     text: configuration.pinkyName.text,
                     font: configuration.pinkyName.font,
-                    color: configuration.pinkyName.color,
+                    color: getHexByName(configuration.pinkyName.colorName),
                 });
+                // --- END MODIFICATION ---
 
             } catch (error) {
                 console.error("Failed to update scene:", error);

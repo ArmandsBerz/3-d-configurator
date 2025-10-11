@@ -12,7 +12,10 @@ import {
     ZoneKey,
     getModelNameForBuild,
     webTypeOptions,
-    // Importing the correct, updated types from logic.tsx
+    // --- MODIFIED PER PLAN ---
+    getHexByName,
+    ColorName,
+    // --- END MODIFICATION ---
     Font,
     SingleColorState,
     TextPart,
@@ -20,7 +23,6 @@ import {
     GloveConfiguration,
     AppState as ImportedAppState // Rename to avoid conflict with local extension
 } from './logic';
-// import 'wicg-inert'; // Removed to resolve bundling issue
 import React, { useState, useRef, useLayoutEffect, useCallback, useEffect, createContext, useContext, useReducer, ReactNode, ReactElement, useMemo } from 'react';
 import BabylonCanvas from './viewer';
 import { SummaryIcon, BackArrowIcon, CheckmarkIcon, LongArrowRightIcon, CaretRightIcon, CaretDownIcon, CaretUpIcon, ShareIcon, CollapseIcon, ExpandIcon, DragIcon, ZoomIcon } from './icons';
@@ -56,8 +58,6 @@ export interface UIPresentationConfig {
 // --- CORE TYPE DEFINITIONS ARE NOW IMPORTED FROM LOGIC.TSX ---
 
 // --- MODIFIED PER PLAN ---
-// This AppState extends the imported one to include our new field.
-// Ideally, this change would be made directly in logic.tsx.
 type AppState = ImportedAppState & {
     lastActivatedPartType: 'inner' | 'outer' | 'single' | null;
 };
@@ -68,14 +68,14 @@ export type GloveAction =
         type: typeof ACTION_TYPES.UPDATE_ZONE_COLOR; 
         payload: { 
             zoneKey: ZoneKey; 
-            color: HexColor;
-            partType: 'inner' | 'outer' | 'single'; // ADDED THIS
+            colorName: ColorName; 
+            partType: 'inner' | 'outer' | 'single';
         } 
       }
     | { type: typeof ACTION_TYPES.UPDATE_TEXT; payload: { id: 'thumbName' | 'pinkyName'; data: TextPart } }
-    | { type: typeof ACTION_TYPES.APPLY_COLOR_TO_ALL; payload: { color: HexColor } }
+    | { type: typeof ACTION_TYPES.APPLY_COLOR_TO_ALL; payload: { colorName: ColorName } }
     | { type: typeof ACTION_TYPES.SET_LOADING; payload: boolean }
-    | { type: 'RESET_LAST_ACTIVATED_PART_TYPE' }; // ADDED THIS FOR RESETTING
+    | { type: 'RESET_LAST_ACTIVATED_PART_TYPE' };
 // --- END MODIFICATION ---
 
 // --- END: Core Type Definitions ---
@@ -97,7 +97,6 @@ interface TextPanelProps {
     onClose: () => void;
     headerRef: React.RefObject<HTMLButtonElement | null>;
 }
-// ACTION: Added GalleryPanelProps for mobile view
 interface GalleryPanelProps {
     context: UIPartGroupGallery;
     onClose: () => void;
@@ -113,7 +112,7 @@ export const CONTENT_TYPES = {
     COLOR: 'color',
     TEXT: 'text',
     SUMMARY: 'summary',
-    GALLERY: 'gallery', // ACTION: Add gallery content type for mobile state
+    GALLERY: 'gallery',
 } as const;
 
 export const ACTION_TYPES = {
@@ -237,7 +236,7 @@ const gloveConfigReducer = (state: AppState, action: GloveAction): AppState => {
                 ...state,
                 configuration: {
                     ...state.configuration,
-                    [action.payload.zoneKey]: { color: action.payload.color },
+                    [action.payload.zoneKey]: { colorName: action.payload.colorName },
                 },
                 lastActivatedPartType: action.payload.partType,
             };
@@ -249,13 +248,13 @@ const gloveConfigReducer = (state: AppState, action: GloveAction): AppState => {
         case ACTION_TYPES.UPDATE_TEXT:
             return { ...state, configuration: { ...state.configuration, [action.payload.id]: action.payload.data } };
         case ACTION_TYPES.APPLY_COLOR_TO_ALL: {
-            const { color } = action.payload;
-            if (!color) return state;
+            const { colorName } = action.payload;
+            if (!colorName) return state;
             
             const newConfiguration = { ...state.configuration };
             // Loop through all defined zone keys and update their color
-            Object.values(ZONES).forEach(zoneKey => {
-                newConfiguration[zoneKey] = { color: color };
+            Object.values(ZONES).forEach((zoneKey: ZoneKey) => {
+                newConfiguration[zoneKey] = { colorName: colorName };
             });
 
             return { ...state, configuration: newConfiguration };
@@ -275,7 +274,6 @@ interface GloveConfiguratorProviderProps {
 }
 
 const GloveConfiguratorProvider = ({ children }: GloveConfiguratorProviderProps) => {
-    // Note: The initial state from logic.tsx needs `lastActivatedPartType: null` added
     const [state, dispatch] = useReducer(gloveConfigReducer, { ...initialState, lastActivatedPartType: null } as AppState);
     return <GloveConfiguratorContext.Provider value={{ state, dispatch }}>{children}</GloveConfiguratorContext.Provider>;
 };
@@ -297,12 +295,14 @@ const ScrollGradient = ({ position, isVisible }: ScrollGradientProps) => {
     return <div className={`absolute left-0 right-0 h-[63px] ${isTop ? 'top-0 bg-gradient-to-b' : 'bottom-0 bg-gradient-to-t'} from-[#161616] to-transparent pointer-events-none z-10 transition-opacity duration-200 ${isVisible ? 'opacity-100' : 'opacity-0'}`} aria-hidden="true" />;
 };
 
-const ColorIndicator = ({ color }: { color: HexColor }) => (
+// --- MODIFIED PER PLAN ---
+const ColorIndicator = ({ colorName }: { colorName: ColorName }) => (
     <span
         className="w-5 h-5 rounded-full border border-white/20"
-        style={{ backgroundColor: color }}
+        style={{ backgroundColor: getHexByName(colorName) }}
     ></span>
 );
+// --- END MODIFICATION ---
 
 interface ImageOptionProps {
     id: string;
@@ -390,12 +390,13 @@ const ColorSwatch = ({ color, name, isSelected, onSelect, tabIndex, elRef }: Col
     />
 );
 
+// --- MODIFIED PER PLAN ---
 interface ColorSwatchGridProps {
     swatches: { name: string, hex: HexColor }[];
-    selectedColor: HexColor | undefined;
-    onColorSelect: (color: HexColor) => void;
+    selectedColorName: ColorName | undefined;
+    onColorSelect: (colorName: ColorName) => void;
 }
-const ColorSwatchGrid = ({ swatches, selectedColor, onColorSelect }: ColorSwatchGridProps) => {
+const ColorSwatchGrid = ({ swatches, selectedColorName, onColorSelect }: ColorSwatchGridProps) => {
     const { containerRef, itemRefs, showNavigationHint, gridEventHandlers, activeIndex, setActiveIndex } = useGridNavigation<HTMLDivElement>(swatches.length);
     const itemRefsCasted = itemRefs as React.MutableRefObject<React.RefObject<HTMLButtonElement>[]>;
 
@@ -408,7 +409,7 @@ const ColorSwatchGrid = ({ swatches, selectedColor, onColorSelect }: ColorSwatch
         >
             <NavigationHint isVisible={showNavigationHint} />
             {swatches.map((swatch, index) => {
-                const isSelected = selectedColor === swatch.hex;
+                const isSelected = selectedColorName === swatch.name;
                 return (
                     <ColorSwatch
                         key={swatch.hex}
@@ -417,7 +418,7 @@ const ColorSwatchGrid = ({ swatches, selectedColor, onColorSelect }: ColorSwatch
                         name={swatch.name}
                         isSelected={isSelected}
                         onSelect={() => {
-                            onColorSelect(swatch.hex);
+                            onColorSelect(swatch.name as ColorName);
                             setActiveIndex(index);
                         }}
                         tabIndex={index === activeIndex ? 0 : -1}
@@ -427,6 +428,7 @@ const ColorSwatchGrid = ({ swatches, selectedColor, onColorSelect }: ColorSwatch
         </div>
     );
 };
+// --- END MODIFICATION ---
 
 // --- Accordion Containers ---
 
@@ -527,7 +529,7 @@ const AccordionOptionMobile = ({ title, onClose, headerAccessory = null, childre
     );
 };
 
-// --- Content Components (Refactored for Step 6) ---
+// --- Content Components ---
 
 // --- MODIFIED PER PLAN ---
 interface SingleColorPickerProps {
@@ -535,16 +537,16 @@ interface SingleColorPickerProps {
 }
 const SingleColorPicker = ({ zoneKey }: SingleColorPickerProps) => {
     const { state, dispatch } = useGloveConfigurator();
-    const color = state.configuration[zoneKey]?.color;
+    const colorName = state.configuration[zoneKey]?.colorName;
 
-    const handleChange = (newColor: HexColor) => {
+    const handleChange = (newColorName: ColorName) => {
         dispatch({ 
             type: ACTION_TYPES.UPDATE_ZONE_COLOR, 
-            payload: { zoneKey, color: newColor, partType: 'single' } 
+            payload: { zoneKey, colorName: newColorName, partType: 'single' } 
         });
     };
 
-    return <ColorSwatchGrid swatches={colorSwatches} selectedColor={color} onColorSelect={handleChange} />;
+    return <ColorSwatchGrid swatches={colorSwatches} selectedColorName={colorName} onColorSelect={handleChange} />;
 };
 
 interface DualColorPickerProps {
@@ -553,19 +555,19 @@ interface DualColorPickerProps {
 }
 const DualColorPicker = ({ outerZoneKey, innerZoneKey }: DualColorPickerProps) => {
     const { state, dispatch } = useGloveConfigurator();
-    const outerColor = state.configuration[outerZoneKey]?.color;
-    const innerColor = state.configuration[innerZoneKey]?.color;
+    const outerColorName = state.configuration[outerZoneKey]?.colorName;
+    const innerColorName = state.configuration[innerZoneKey]?.colorName;
 
-    const handleOuterChange = (newColor: HexColor) => {
+    const handleOuterChange = (newColorName: ColorName) => {
         dispatch({ 
             type: ACTION_TYPES.UPDATE_ZONE_COLOR, 
-            payload: { zoneKey: outerZoneKey, color: newColor, partType: 'outer' } 
+            payload: { zoneKey: outerZoneKey, colorName: newColorName, partType: 'outer' } 
         });
     };
-    const handleInnerChange = (newColor: HexColor) => {
+    const handleInnerChange = (newColorName: ColorName) => {
         dispatch({ 
             type: ACTION_TYPES.UPDATE_ZONE_COLOR, 
-            payload: { zoneKey: innerZoneKey, color: newColor, partType: 'inner' } 
+            payload: { zoneKey: innerZoneKey, colorName: newColorName, partType: 'inner' } 
         });
     };
 // --- END MODIFICATION ---
@@ -574,11 +576,11 @@ const DualColorPicker = ({ outerZoneKey, innerZoneKey }: DualColorPickerProps) =
         <div className="space-y-4">
             <div className="option-group-container">
                 <h3 className="text-sm font-semibold text-gray-400 mb-2">Outer</h3>
-                <ColorSwatchGrid swatches={colorSwatches} selectedColor={outerColor} onColorSelect={handleOuterChange} />
+                <ColorSwatchGrid swatches={colorSwatches} selectedColorName={outerColorName} onColorSelect={handleOuterChange} />
             </div>
             <div className="option-group-container">
                 <h3 className="text-sm font-semibold text-gray-400 mb-2">Inner</h3>
-                <ColorSwatchGrid swatches={colorSwatches} selectedColor={innerColor} onColorSelect={handleInnerChange} />
+                <ColorSwatchGrid swatches={colorSwatches} selectedColorName={innerColorName} onColorSelect={handleInnerChange} />
             </div>
         </div>
     );
@@ -683,8 +685,8 @@ const BuildOption = ({ isDesktop }: BuildOptionProps) => {
     const { build: buildConfig } = state.configuration;
     const onBuildConfigChange = (newConfig: BuildConfig) => dispatch({ type: ACTION_TYPES.UPDATE_BUILD, payload: newConfig });
 
-    const positionGroup = buildOptionsData.find(g => g.id === 'position');
-    const otherGroups = buildOptionsData.filter(g => g.id !== 'position');
+    const positionGroup = buildOptionsData.find((g: { id: string; }) => g.id === 'position');
+    const otherGroups = buildOptionsData.filter((g: { id: string; }) => g.id !== 'position');
 
     return (
         <div className={`space-y-6 ${!isDesktop ? 'pb-4' : ''}`}>
@@ -727,7 +729,7 @@ const BuildOption = ({ isDesktop }: BuildOptionProps) => {
                 />
             )}
 
-            {otherGroups.map((group) => (
+            {otherGroups.map((group: { id: string; title: string; options: {id: string, label: string}[]; layout: string; }) => (
                 <OptionGroup
                     key={group.id}
                     title={group.title}
@@ -762,7 +764,7 @@ const TextOption = ({ contextId }: TextOptionProps) => {
                 <h3 className="text-sm font-semibold text-gray-400 mb-2">Font</h3>
                 <div ref={containerRef} className="relative grid grid-cols-2 gap-3" {...gridEventHandlers}>
                     <NavigationHint isVisible={showNavigationHint} />
-                    {fontOptions.map((font, index) => (
+                    {fontOptions.map((font: { id: Font; label: string; }, index: number) => (
                         <button
                             key={font.id}
                             ref={itemRefsCasted.current[index]}
@@ -780,7 +782,7 @@ const TextOption = ({ contextId }: TextOptionProps) => {
             </div>
             <div className="option-group-container">
                 <h3 className="text-sm font-semibold text-gray-400 mb-2">Color</h3>
-                <ColorSwatchGrid swatches={colorSwatches} selectedColor={value.color} onColorSelect={(color) => onChange({ ...value, color: color })} />
+                <ColorSwatchGrid swatches={colorSwatches} selectedColorName={value.colorName} onColorSelect={(colorName) => onChange({ ...value, colorName: colorName })} />
             </div>
         </div>
     );
@@ -814,7 +816,7 @@ const WebOptions = () => {
 };
 // --- END MODIFICATION ---
 
-// --- Panel Components (Refactored for Step 6) ---
+// --- Panel Components ---
 
 const SummaryPanel = ({ onClose, headerRef }: { onClose: () => void, headerRef: React.RefObject<HTMLButtonElement | null> }) => <OverviewMobile onClose={onClose} headerRef={headerRef} />;
 
@@ -859,25 +861,24 @@ const TextPanel = ({ context, onClose, headerRef }: TextPanelProps) => {
 
 // --- Other UI Components ---
 
-const OrderSummaryInfo = ({ getColorName }: { getColorName: (hex: HexColor) => string }) => {
+// --- MODIFIED PER PLAN ---
+const OrderSummaryInfo = () => {
     const { state } = useGloveConfigurator();
     const { configuration } = state;
     const { build, thumbName, pinkyName } = configuration;
     const activeShell = getModelNameForBuild(build);
     const uiGroups = UI_PRESENTATION_CONFIG[activeShell] || [];
 
-    const getBuildLabel = (key: string, value: string) => {
-        if (key === 'imageSelection') return leatherOptions.find(opt => opt.id === value)?.title || value;
-        // Add a case for the new webType
-        if (key === 'webType') return webTypeOptions.find(opt => opt.id === value)?.title || value;
-        const group = buildOptionsData.find(g => g.id === key);
-        return group?.options.find(o => o.id === value)?.label || value;
+    const getBuildLabel = (key: string, value: string): string => {
+        if (key === 'imageSelection') return leatherOptions.find((opt: {id: string}) => opt.id === value)?.title || value;
+        if (key === 'webType') return webTypeOptions.find((opt: {id: string}) => opt.id === value)?.title || value;
+        const group = buildOptionsData.find((g: {id: string}) => g.id === key);
+        return group?.options.find((o: {id: string}) => o.id === value)?.label || value;
     };
-    const getBuildTitle = (key: string) => {
+    const getBuildTitle = (key: string): string => {
         if (key === 'imageSelection') return "Glove Leather";
-        // Add a case for the new webType
         if (key === 'webType') return "Web Type";
-        return buildOptionsData.find(g => g.id === key)?.title || key;
+        return buildOptionsData.find((g: {id: string}) => g.id === key)?.title || key;
     };
     
     return (
@@ -891,15 +892,16 @@ const OrderSummaryInfo = ({ getColorName }: { getColorName: (hex: HexColor) => s
             <div>
                 <h3 className="text-lg font-semibold text-white mb-2">Color Scheme</h3>
                 <div className="space-y-1 pl-2">
-                    {uiGroups.map(group => {
-                        if (group.type === 'single') {
-                            const color = configuration[group.zoneKey]?.color;
-                            return <p key={group.id}><span className="font-semibold text-gray-400">{group.title.replace(' Color', '')}:</span> {getColorName(color)}</p>;
+                    {uiGroups.map((group: UIPartGroup) => {
+                        if (group.type === 'single' || group.type === 'gallery') {
+                            const zone = group.type === 'gallery' ? ZONES.WEB : group.zoneKey;
+                            const colorName = configuration[zone]?.colorName;
+                            return <p key={group.id}><span className="font-semibold text-gray-400">{group.title.replace(' Color', '')}:</span> {colorName}</p>;
                         }
                         if (group.type === 'dual') {
-                            const outerColor = configuration[group.outerZoneKey]?.color;
-                            const innerColor = configuration[group.innerZoneKey]?.color;
-                            return <p key={group.id}><span className="font-semibold text-gray-400">{group.title.replace(' Color', '')}:</span> Inner: {getColorName(innerColor)}, Outer: {getColorName(outerColor)}</p>;
+                            const outerColorName = configuration[group.outerZoneKey]?.colorName;
+                            const innerColorName = configuration[group.innerZoneKey]?.colorName;
+                            return <p key={group.id}><span className="font-semibold text-gray-400">{group.title.replace(' Color', '')}:</span> Inner: {innerColorName}, Outer: {outerColorName}</p>;
                         }
                         return null;
                     })}
@@ -908,8 +910,8 @@ const OrderSummaryInfo = ({ getColorName }: { getColorName: (hex: HexColor) => s
             <div>
                 <h3 className="text-lg font-semibold text-white mb-2">Personalization</h3>
                 <div className="space-y-1 pl-2">
-                    <p><span className="font-semibold text-gray-400">Thumb Name:</span> "{thumbName.text}" ({thumbName.font}, {getColorName(thumbName.color)})</p>
-                    <p><span className="font-semibold text-gray-400">Pinky Name:</span> "{pinkyName.text}" ({pinkyName.font}, {getColorName(pinkyName.color)})</p>
+                    <p><span className="font-semibold text-gray-400">Thumb Name:</span> "{thumbName.text}" ({thumbName.font}, {thumbName.colorName})</p>
+                    <p><span className="font-semibold text-gray-400">Pinky Name:</span> "{pinkyName.text}" ({pinkyName.font}, {pinkyName.colorName})</p>
                 </div>
             </div>
         </div>
@@ -918,9 +920,10 @@ const OrderSummaryInfo = ({ getColorName }: { getColorName: (hex: HexColor) => s
 
 const OverviewMobile = ({ onClose, headerRef }: { onClose: () => void, headerRef: React.RefObject<HTMLButtonElement | null> }) => (
     <AccordionOptionMobile title="Order Summary" onClose={onClose} headerRef={headerRef}>
-        <OrderSummaryInfo getColorName={(hex) => colorSwatches.find(c => c.hex === hex)?.name || hex} />
+        <OrderSummaryInfo />
     </AccordionOptionMobile>
 );
+// --- END MODIFICATION ---
 
 interface OverviewButtonProps {
     onClick: (event: React.MouseEvent<HTMLButtonElement>) => void;
@@ -960,7 +963,7 @@ interface FooterMobileProps {
     onClosePanel: () => void;
     onReviewClick: (event: React.MouseEvent<HTMLButtonElement>) => void;
     onCompleteOrder: () => void;
-    activeColor?: HexColor;
+    activeColor?: ColorName;
 }
 
 interface OverviewActionControllerProps {
@@ -1000,8 +1003,8 @@ const OverviewActionController = ({ isOpen, onOpen, onClose }: OverviewActionCon
 const FooterMobile = ({ openPanelName, onClosePanel, onReviewClick, onCompleteOrder, activeColor }: FooterMobileProps) => {
     const { dispatch } = useGloveConfigurator();
     
-    const onApplyColorToAll = (color?: HexColor) => {
-        if (color) dispatch({ type: ACTION_TYPES.APPLY_COLOR_TO_ALL, payload: { color } });
+    const onApplyColorToAll = (colorName?: ColorName) => {
+        if (colorName) dispatch({ type: ACTION_TYPES.APPLY_COLOR_TO_ALL, payload: { colorName } });
     };
 
     const isSummaryOpen = openPanelName === 'SUMMARY';
@@ -1240,7 +1243,7 @@ const OverviewDesktop = () => {
                     className={`bg-[#222222] transition-[height] duration-300 ease-in ${agnosticAccordionOpen ? 'overflow-y-scroll h-auto lg:h-[calc(100vh-335px)]' : 'overflow-hidden h-0'} focus:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-white show-thin-scrollbar`}
                 >
                     <div className="text-base py-3.5 px-6">
-                        <OrderSummaryInfo getColorName={(hex) => colorSwatches.find(c => c.hex === hex)?.name || hex} />
+                        <OrderSummaryInfo />
                     </div>
                 </div>
             </div>
@@ -1259,20 +1262,25 @@ const OverviewDesktop = () => {
 const AccordionDesktop = ({ openAccordion, setOpenAccordion, colorForApplyAll }: {
     openAccordion: string | null;
     setOpenAccordion: (id: string | null) => void;
-    colorForApplyAll?: HexColor;
+    colorForApplyAll?: ColorName;
 }) => {
     const { state, dispatch } = useGloveConfigurator();
     const { configuration } = state;
     const activeShell = getModelNameForBuild(configuration.build);
     const accordionContainerRef = useRef<HTMLDivElement>(null);
-    const [isTopGradientVisible, setTopGradientVisible] = useState(false);
-    const [isBottomGradientVisible, setBottomGradientVisible] = useState(false);
+    const [isTopGradientVisible, setIsTopGradientVisible] = useState(false);
+    const [isBottomGradientVisible, setIsBottomGradientVisible] = useState(false);
     const [isScrolled, setIsScrolled] = useState(false);
 
     const currentUiGroups = useMemo(() => UI_PRESENTATION_CONFIG[activeShell] || [], [activeShell]);
     const buildGroup = { id: 'build', title: 'Build Options'};
 
     const handleAccordionToggle = (accordionId: string) => {
+        // --- MODIFIED PER PLAN ---
+        if (openAccordion !== accordionId) {
+            dispatch({ type: 'RESET_LAST_ACTIVATED_PART_TYPE' } as any);
+        }
+        // --- END MODIFICATION ---
         setOpenAccordion(openAccordion === accordionId ? null : accordionId);
     };
     
@@ -1280,8 +1288,8 @@ const AccordionDesktop = ({ openAccordion, setOpenAccordion, colorForApplyAll }:
         const element = accordionContainerRef.current;
         if (!element) return;
         const hasOverflow = element.scrollHeight > element.clientHeight;
-        setTopGradientVisible(hasOverflow && element.scrollTop > 0);
-        setBottomGradientVisible(hasOverflow && Math.abs(element.scrollHeight - element.clientHeight - element.scrollTop) >= NUMERIC_CONSTANTS.SCROLL_THRESHOLD);
+        setIsTopGradientVisible(hasOverflow && element.scrollTop > 0);
+        setIsBottomGradientVisible(hasOverflow && Math.abs(element.scrollHeight - element.clientHeight - element.scrollTop) >= NUMERIC_CONSTANTS.SCROLL_THRESHOLD);
         setIsScrolled(element.scrollTop > 0);
     }, []);
 
@@ -1298,23 +1306,22 @@ const AccordionDesktop = ({ openAccordion, setOpenAccordion, colorForApplyAll }:
         };
     }, [checkAndSetGradients, currentUiGroups]);
 
-    const getColorName = (hex: HexColor) => colorSwatches.find(c => c.hex === hex)?.name || hex;
-
+    // --- MODIFIED PER PLAN ---
     const renderHeaderAccessory = (group: UIPartGroup) => {
         const isAccordionOpen = openAccordion === group.id;
-        if (group.type === 'single') {
-            const color = configuration[group.zoneKey]?.color;
-            return isAccordionOpen ? <span className="text-sm text-gray-400 font-semibold">{getColorName(color)}</span> : <ColorIndicator color={color} />;
+        if (group.type === 'single' || group.type === 'gallery') {
+            const zone = group.type === 'gallery' ? ZONES.WEB : group.zoneKey;
+            const colorName = configuration[zone]?.colorName;
+            return isAccordionOpen ? <span className="text-sm text-gray-400 font-semibold">{colorName}</span> : <ColorIndicator colorName={colorName} />;
         }
         if (group.type === 'dual') {
-            const innerColor = configuration[group.innerZoneKey]?.color;
-            const outerColor = configuration[group.outerZoneKey]?.color;
-            const innerName = getColorName(innerColor);
-            const outerName = getColorName(outerColor);
-            return isAccordionOpen ? <span className="text-sm text-gray-400 font-semibold">{`${innerName} · ${outerName}`}</span> : <div className="flex items-center space-x-2.5"><ColorIndicator color={innerColor} /><ColorIndicator color={outerColor} /></div>;
+            const innerColorName = configuration[group.innerZoneKey]?.colorName;
+            const outerColorName = configuration[group.outerZoneKey]?.colorName;
+            return isAccordionOpen ? <span className="text-sm text-gray-400 font-semibold">{`${innerColorName} · ${outerColorName}`}</span> : <div className="flex items-center space-x-2.5"><ColorIndicator colorName={innerColorName} /><ColorIndicator colorName={outerColorName} /></div>;
         }
         return null;
     };
+    // --- END MODIFICATION ---
 
     return (
         <div className="absolute top-0 left-0 bottom-0 w-[440px] z-10 bg-[#161616] p-10 pointer-events-none">
@@ -1332,7 +1339,7 @@ const AccordionDesktop = ({ openAccordion, setOpenAccordion, colorForApplyAll }:
                         <BuildOption isDesktop={true} />
                     </AccordionOptionDesktop>
 
-                    {currentUiGroups.map(group => {
+                    {currentUiGroups.map((group: UIPartGroup) => {
                         let actionButton: ReactElement | null = null;
                         if (group.type === 'single' || group.type === 'dual' || group.type === 'gallery') {
                             actionButton = (
@@ -1340,7 +1347,7 @@ const AccordionDesktop = ({ openAccordion, setOpenAccordion, colorForApplyAll }:
                                     label="Apply to All"
                                     onClick={() => {
                                         if (colorForApplyAll) {
-                                            dispatch({ type: ACTION_TYPES.APPLY_COLOR_TO_ALL, payload: { color: colorForApplyAll } });
+                                            dispatch({ type: ACTION_TYPES.APPLY_COLOR_TO_ALL, payload: { colorName: colorForApplyAll } });
                                         }
                                     }}
                                     icon={<CheckmarkIcon />}
@@ -1389,21 +1396,24 @@ const AccordionMobile = ({ onOpenPanel, openAccordionOptionMobile }: {
     const activeShell = getModelNameForBuild(configuration.build);
     const listRef = useRef<HTMLElement>(null);
     
-    const currentUiGroups = UI_PRESENTATION_CONFIG[activeShell] || [];
+    const currentUiGroups = useMemo(() => UI_PRESENTATION_CONFIG[activeShell] || [], [activeShell]);
     const buildGroup = { id: 'build' as const, title: 'Build Options'};
 
+    // --- MODIFIED PER PLAN ---
     const renderAccessory = (group: UIPartGroup) => {
-        if (group.type === 'single') {
-            const color = configuration[group.zoneKey]?.color;
-            return <ColorIndicator color={color} />;
+        if (group.type === 'single' || group.type === 'gallery') {
+            const zone = group.type === 'gallery' ? ZONES.WEB : group.zoneKey;
+            const colorName = configuration[zone]?.colorName;
+            return <ColorIndicator colorName={colorName} />;
         }
         if (group.type === 'dual') {
-            const innerColor = configuration[group.innerZoneKey]?.color;
-            const outerColor = configuration[group.outerZoneKey]?.color;
-            return <div className="flex items-center space-x-2"><ColorIndicator color={innerColor} /><ColorIndicator color={outerColor} /></div>;
+            const innerColorName = configuration[group.innerZoneKey]?.colorName;
+            const outerColorName = configuration[group.outerZoneKey]?.colorName;
+            return <div className="flex items-center space-x-2"><ColorIndicator colorName={innerColorName} /><ColorIndicator colorName={outerColorName} /></div>;
         }
         return null;
     };
+    // --- END MODIFICATION ---
 
     return (
         <section ref={listRef} className={`px-4 bg-[#161616] h-full overflow-y-auto ${openAccordionOptionMobile ? 'opacity-50 pointer-events-none' : ''}`} tabIndex={-1}>
@@ -1415,7 +1425,7 @@ const AccordionMobile = ({ onOpenPanel, openAccordionOptionMobile }: {
                 </div>
             </button>
 
-            {currentUiGroups.map(group => (
+            {currentUiGroups.map((group: UIPartGroup) => (
                 <button key={group.id} className="w-full h-[56px] bg-[#1C1C1C] flex items-center justify-between px-4 mb-[10px]" onClick={() => onOpenPanel(group)}>
                     <div className="flex items-center">
                         <CaretRightIcon className="h-4 w-auto mr-3" />
@@ -1447,38 +1457,48 @@ const UI = () => {
     const currentUiGroups = useMemo(() => UI_PRESENTATION_CONFIG[activeShell] || [], [activeShell]);
 
     // --- MODIFIED PER PLAN ---
-    const colorForApplyAll = useMemo(() => {
-        const openPanelId = isDesktop ? openAccordion : (openAccordionOptionMobile && 'context' in openAccordionOptionMobile ? openAccordionOptionMobile.context.id : null);
-        const openPanelInfo = currentUiGroups.find(g => g.id === openPanelId);
-
-        if (!lastActivatedPartType) {
-            // Default logic: If no interaction yet, default to inner color if the current panel is dual
-            if (openPanelInfo?.type === 'dual') {
-                return configuration[openPanelInfo.innerZoneKey]?.color;
-            }
-            return undefined; // No default for single/gallery unless explicitly clicked
+    const colorForApplyAll = useMemo((): ColorName | undefined => {
+        let openPanelContext: UIPartGroup | null = null;
+        if (isDesktop) {
+            openPanelContext = currentUiGroups.find(g => g.id === openAccordion) || null;
+        } else if (openAccordionOptionMobile && 'context' in openAccordionOptionMobile) {
+            openPanelContext = openAccordionOptionMobile.context as UIPartGroup;
         }
 
-        if (!openPanelInfo) return undefined;
+        // Default logic: If no interaction yet, default to the most relevant color of the open panel
+        if (!lastActivatedPartType) {
+            if (openPanelContext?.type === 'dual') {
+                return configuration[openPanelContext.innerZoneKey]?.colorName;
+            }
+            if (openPanelContext?.type === 'single') {
+                return configuration[openPanelContext.zoneKey]?.colorName;
+            }
+            if (openPanelContext?.type === 'gallery') {
+                return configuration[ZONES.WEB]?.colorName;
+            }
+            return undefined;
+        }
 
-        if (openPanelInfo.type === 'dual') {
+        if (!openPanelContext) return undefined;
+
+        if (openPanelContext.type === 'dual') {
             if (lastActivatedPartType === 'inner') {
-                return configuration[openPanelInfo.innerZoneKey]?.color;
+                return configuration[openPanelContext.innerZoneKey]?.colorName;
             }
             if (lastActivatedPartType === 'outer') {
-                return configuration[openPanelInfo.outerZoneKey]?.color;
+                return configuration[openPanelContext.outerZoneKey]?.colorName;
             }
         }
         
-        if (openPanelInfo.type === 'single' && lastActivatedPartType === 'single') {
-            return configuration[openPanelInfo.zoneKey]?.color;
+        if (openPanelContext.type === 'single' && lastActivatedPartType === 'single') {
+            return configuration[openPanelContext.zoneKey]?.colorName;
         }
 
-        if (openPanelInfo.type === 'gallery' && lastActivatedPartType === 'single') {
-            return configuration[ZONES.WEB]?.color;
+        if (openPanelContext.type === 'gallery' && lastActivatedPartType === 'single') {
+            return configuration[ZONES.WEB]?.colorName;
         }
 
-        return undefined; // Last click doesn't match the context of the currently open panel
+        return undefined;
     }, [isDesktop, openAccordion, openAccordionOptionMobile, currentUiGroups, configuration, lastActivatedPartType]);
     // --- END MODIFICATION ---
 
@@ -1500,7 +1520,6 @@ const UI = () => {
     };
 
     const handleClosePanel = useCallback(() => {
-        // When a mobile panel closes, reset the last activated part memory
         dispatch({ type: 'RESET_LAST_ACTIVATED_PART_TYPE' as any }); 
         setOpenAccordionOptionMobile(null);
     }, [dispatch]);
