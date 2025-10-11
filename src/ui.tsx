@@ -17,10 +17,8 @@ import {
     ColorName,
     // --- END MODIFICATION ---
     Font,
-    SingleColorState,
     TextPart,
     BuildConfig,
-    GloveConfiguration,
     AppState as ImportedAppState // Rename to avoid conflict with local extension
 } from './logic';
 import React, { useState, useRef, useLayoutEffect, useCallback, useEffect, createContext, useContext, useReducer, ReactNode, ReactElement, useMemo } from 'react';
@@ -64,13 +62,13 @@ type AppState = ImportedAppState & {
 
 export type GloveAction =
     | { type: typeof ACTION_TYPES.UPDATE_BUILD; payload: BuildConfig }
-    | { 
-        type: typeof ACTION_TYPES.UPDATE_ZONE_COLOR; 
-        payload: { 
-            zoneKey: ZoneKey; 
-            colorName: ColorName; 
+    | {
+        type: typeof ACTION_TYPES.UPDATE_ZONE_COLOR;
+        payload: {
+            zoneKey: ZoneKey;
+            colorName: ColorName;
             partType: 'inner' | 'outer' | 'single';
-        } 
+        }
       }
     | { type: typeof ACTION_TYPES.UPDATE_TEXT; payload: { id: 'thumbName' | 'pinkyName'; data: TextPart } }
     | { type: typeof ACTION_TYPES.APPLY_COLOR_TO_ALL; payload: { colorName: ColorName } }
@@ -698,20 +696,20 @@ const BuildOption = ({ isDesktop }: BuildOptionProps) => {
                 onSelectOption={(value) => onBuildConfigChange({ ...buildConfig, imageSelection: value as 'imgOpt1' | 'imgOpt2' })}
             />
             {positionGroup && (
-                 <OptionGroup
-                       key={positionGroup.id}
-                       title={positionGroup.title}
-                       options={positionGroup.options}
-                       layout={positionGroup.layout}
-                       selectedOption={buildConfig.position}
-                       onSelectOption={(value) => {
-                           const newConfig = { ...buildConfig, position: value as BuildConfig['position'] };
-                           // When user selects Outfield or Pitcher, default them to an OPEN back
-                           if (['OUTFIELD', 'PITCHER'].includes(value)) {
-                               newConfig.backStyle = 'OPEN';
-                           }
-                           onBuildConfigChange(newConfig);
-                       }}
+               <OptionGroup
+                    key={positionGroup.id}
+                    title={positionGroup.title}
+                    options={positionGroup.options}
+                    layout={positionGroup.layout}
+                    selectedOption={buildConfig.position}
+                    onSelectOption={(value) => {
+                        const newConfig = { ...buildConfig, position: value as BuildConfig['position'] };
+                        // When user selects Outfield or Pitcher, default them to an OPEN back
+                        if (['OUTFIELD', 'PITCHER'].includes(value)) {
+                            newConfig.backStyle = 'OPEN';
+                        }
+                        onBuildConfigChange(newConfig);
+                    }}
                />
             )}
             
