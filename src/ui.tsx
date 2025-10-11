@@ -1573,7 +1573,30 @@ const UI = () => {
     }, [isDesktop, openAccordionOptionMobile]);
     // --- END MODIFICATION ---
 
-    useEffect(() => { /* ... resize observer logic ... */ }, []);
+    useEffect(() => {
+        const babylonContainer = document.getElementById('babylon-container');
+        const mainEl = mainRef.current;
+    
+        if (!babylonContainer || !mainEl) {
+            return;
+        }
+    
+        const observer = new ResizeObserver(entries => {
+            window.requestAnimationFrame(() => {
+                for (let entry of entries) {
+                    const { inlineSize: width, blockSize: height } = entry.borderBoxSize[0];
+                    babylonContainer.style.width = `${width}px`;
+                    babylonContainer.style.height = `${height}px`;
+                }
+            });
+        });
+    
+        observer.observe(mainEl);
+    
+        return () => {
+            observer.disconnect();
+        };
+    }, []);
     useEffect(() => { /* ... focus trap logic ... */ }, [isDesktop, openAccordionOptionMobile]);
 
     const panelHeaderRef = useRef<HTMLButtonElement | null>(null);
@@ -1632,7 +1655,7 @@ const UI = () => {
                 </div>
             )}
 
-            <main ref={mainRef} className={`p-4 flex flex-col items-center justify-center relative bg-transparent overflow-auto h-full w-full ${isVisualizationExpanded ? 'flex-grow' : 'lg:absolute lg:inset-0'}`}>
+            <main ref={mainRef} className={`p-4 flex flex-col items-center justify-center relative bg-transparent overflow-auto h-full w-full ${isVisualizationExpanded ? 'flex-grow' : 'lg:absolute lg:inset-0'}`} style={!isDesktop && !isVisualizationExpanded ? { flexBasis: 'calc(61.8% - 66px)' } : {}}>
                 {!isDesktop && <div className="absolute top-[20px] left-[20px] w-[70px] h-[49px] bg-gray-300 bg-opacity-75 z-10 flex items-center justify-center pointer-events-auto"><p className="font-bold text-xl text-gray-900">LOGO</p></div>}
                 <button className="absolute top-[20px] right-[20px] z-20 p-2 hover:bg-gray-800 hover:bg-opacity-50 focus:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-white pointer-events-auto" aria-label="Share configuration" onClick={handleShare}>
                     <ShareIcon />
