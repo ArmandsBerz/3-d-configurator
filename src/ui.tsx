@@ -23,7 +23,9 @@ import {
     AppState as ImportedAppState,
     isApplyToAllEligible,
     // MODIFICATION: Import the lookup map for display names
-    colorLookupMap
+    colorLookupMap,
+    loadConfigurationFromURL,
+    generateShareableURL
 } from './logic';
 import React, { useState, useRef, useLayoutEffect, useCallback, useEffect, createContext, useContext, useReducer, ReactNode, ReactElement, useMemo } from 'react';
 import BabylonCanvas from './viewer';
@@ -283,9 +285,23 @@ interface GloveConfiguratorProviderProps {
     children: ReactNode;
 }
 
+// --- UPDATE APP INITIALIZATION ---
+
+// 1. Get the starting configuration by reading the URL ONCE.
+const startingConfiguration = loadConfigurationFromURL();
+
+// 2. Update your provider to use this starting configuration.
 const GloveConfiguratorProvider = ({ children }: GloveConfiguratorProviderProps) => {
-    const [state, dispatch] = useReducer(gloveConfigReducer, { ...initialState, lastActivatedPartType: null } as AppState);
-    return <GloveConfiguratorContext.Provider value={{ state, dispatch }}>{children}</GloveConfiguratorContext.Provider>;
+  const [state, dispatch] = useReducer(gloveConfigReducer, {
+      ...initialState,
+      configuration: startingConfiguration
+  });
+  
+  return (
+    <GloveConfiguratorContext.Provider value={{ state, dispatch }}>
+      {children}
+    </GloveConfiguratorContext.Provider>
+  );
 };
 
 export const useGloveConfigurator = () => {
@@ -439,6 +455,37 @@ const ColorSwatchGrid = ({ swatches, selectedColorId, onColorSelect }: ColorSwat
     );
 };
 // --- END MODIFICATION ---
+
+// --- NEW URL SYNC CONTROLLER (Corrected Version) ---
+
+// Debounce utility to prevent excessive URL updates
+function debounce(func: (...args: any[]) => void, delay: number) {
+  let timeoutId: NodeJS.Timeout;
+  // This is the corrected part
+  return (...args: any[]) => {
+    clearTimeout(timeoutId);
+    timeoutId = setTimeout(() => {
+      func(...args);
+    }, delay);
+  };
+}
+
+const URLSyncController = () => {
+  const { state } = useGloveConfigurator();
+
+  const debouncedUpdateURL = useRef(
+    debounce((newUrl: string) => {
+      window.history.replaceState({}, '', newUrl);
+    }, 300)
+  ).current;
+
+  useEffect(() => {
+    const newUrl = generateShareableURL(state.configuration);
+    debouncedUpdateURL(newUrl);
+  }, [state.configuration, debouncedUpdateURL]);
+
+  return null; // This component renders nothing.
+};
 
 // --- Accordion Containers ---
 
@@ -1632,7 +1679,7 @@ const UI = () => {
         } else if ('zoneKey' in group || 'outerZoneKey' in group) {
             setOpenAccordionOptionMobile({ name: 'COLOR', context: group as UIPartGroup });
         } else {
-             // --- MODIFICATION: Handle Text parts ---
+           // --- MODIFICATION: Handle Text parts ---
             if (group.id === 'thumbName' || group.id === 'pinkyName') {
                 setOpenAccordionOptionMobile({ name: 'TEXT', context: { id: group.id, title: group.title } });
             }
@@ -1751,27 +1798,31 @@ const UI = () => {
     );
 };
 
+// 3. Update your main App component to include the controller.
 const App = () => {
-    const [sceneManager, setSceneManager] = useState<SceneManager | null>(null);
+  const [sceneManager, setSceneManager] = useState<SceneManager | null>(null);
 
-    return (
-        <GloveConfiguratorProvider>
-            <SceneContext.Provider value={sceneManager}>
+  return (
+    <GloveConfiguratorProvider>
+      <SceneContext.Provider value={sceneManager}>
 
-                <div id="app-root" className="relative w-full h-[100dvh] bg-[#161616]">
-                    <div id="babylon-container" className="absolute inset-0 z-10">
-                        <BabylonCanvas onSceneReady={setSceneManager} />
-                    </div>
-                    <div id="ui-container" className="absolute inset-0 z-20 pointer-events-none">
-                        <UI />
-                    </div>
-                </div>
+        <div id="app-root" className="relative w-full h-[100dvh] bg-[#161616]">
+            <div id="babylon-container" className="absolute inset-0 z-10">
+                <BabylonCanvas onSceneReady={setSceneManager} />
+            </div>
+            <div id="ui-container" className="absolute inset-0 z-20 pointer-events-none">
+                <UI />
+            </div>
+        </div>
+        
+        <GloveLogicController />
 
-                <GloveLogicController />
+        {/* This component will now automatically sync the state to the URL */}
+        <URLSyncController />
 
-            </SceneContext.Provider>
-        </GloveConfiguratorProvider>
-    );
+      </SceneContext.Provider>
+    </GloveConfiguratorProvider>
+  );
 };
 
 export default App;

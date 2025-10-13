@@ -2,6 +2,7 @@ import { useEffect, createContext, useContext } from 'react';
 import { Color3 } from '@babylonjs/core';
 import { useGloveConfigurator } from './ui';
 import { SceneManager } from './viewer';
+import LZString from 'lz-string';
 
 // --- NEW CORE TYPES (from Step 1) ---
 export type HexColor = string;
@@ -276,6 +277,55 @@ export const deserialize = (compact: CompactConfig): GloveConfiguration => {
 export const colorLookupMap = new Map(COLOR_OPTIONS.map(option => [option.id, option]));
 export const getHexById = (id: ColorId): HexColor => colorLookupMap.get(id)?.hex || '#FFFFFF'; // Default to white
 // --- END MODIFICATION ---
+
+// --- NEW URL LOGIC ---
+
+const CONFIG_VERSION = 'v1';
+
+/**
+ * Creates a brittle, versioned, and compressed shareable URL from the app state.
+ */
+export const generateShareableURL = (config: GloveConfiguration): string => {
+  const compactObject = serialize(config);
+  const jsonString = JSON.stringify(compactObject);
+  const compressedData = LZString.compressToEncodedURIComponent(jsonString);
+  const versionedPayload = `${CONFIG_VERSION}:${compressedData}`;
+  const baseURL = window.location.origin + window.location.pathname;
+  return `${baseURL}?config=${versionedPayload}`;
+};
+
+/**
+ * Safely decodes the URL from the browser's address bar.
+ * If the URL is missing, invalid, or corrupted, it returns the default state.
+ */
+export const loadConfigurationFromURL = (): GloveConfiguration => {
+  try {
+    const urlParams = new URLSearchParams(window.location.search);
+    const versionedPayload = urlParams.get('config');
+
+    if (!versionedPayload) {
+      return initialState.configuration;
+    }
+
+    const [version, compressedData] = versionedPayload.split(':');
+
+    if (version !== CONFIG_VERSION) {
+      throw new Error(`Unsupported config version: ${version}`);
+    }
+
+    const jsonString = LZString.decompressFromEncodedURIComponent(compressedData);
+    if (!jsonString) {
+      throw new Error('Decompression failed');
+    }
+
+    const compactObject = JSON.parse(jsonString);
+    return deserialize(compactObject);
+
+  } catch (error) {
+    console.warn('Could not load config from URL. Using default.', error);
+    return initialState.configuration;
+  }
+};
 
 // --- MODIFIED PER PLAN: GLOVE_TO_WEBS_MAP uses new webtype IDs as keys ---
 export const GLOVE_TO_WEBS_MAP = {
