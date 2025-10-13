@@ -4,7 +4,8 @@ import {
     GloveLogicController,
     leatherOptions,
     fontOptions,
-    colorSwatches,
+    // MODIFICATION: Import COLOR_OPTIONS instead of colorSwatches
+    COLOR_OPTIONS,
     buildOptionsData,
     initialState,
     ZONES,
@@ -12,13 +13,17 @@ import {
     ZoneKey,
     getModelNameForBuild,
     webTypeOptions,
-    getHexByName,
-    ColorName,
+    // MODIFICATION: Import getHexById and the new ColorId type
+    getHexById,
+    ColorId,
+    WebTypeId,
     Font,
     TextPart,
     BuildConfig,
     AppState as ImportedAppState,
-    isApplyToAllEligible // Import the new helper function
+    isApplyToAllEligible,
+    // MODIFICATION: Import the lookup map for display names
+    colorLookupMap
 } from './logic';
 import React, { useState, useRef, useLayoutEffect, useCallback, useEffect, createContext, useContext, useReducer, ReactNode, ReactElement, useMemo } from 'react';
 import BabylonCanvas from './viewer';
@@ -65,12 +70,14 @@ export type GloveAction =
         type: typeof ACTION_TYPES.UPDATE_ZONE_COLOR;
         payload: {
             zoneKey: ZoneKey;
-            colorName: ColorName;
+            // MODIFICATION: Use colorId
+            colorId: ColorId;
             partType: 'inner' | 'outer' | 'single';
         }
       }
     | { type: typeof ACTION_TYPES.UPDATE_TEXT; payload: { id: 'thumbName' | 'pinkyName'; data: TextPart } }
-    | { type: typeof ACTION_TYPES.APPLY_COLOR_TO_ALL; payload: { colorName: ColorName } }
+    // MODIFICATION: Use colorId
+    | { type: typeof ACTION_TYPES.APPLY_COLOR_TO_ALL; payload: { colorId: ColorId } }
     | { type: typeof ACTION_TYPES.SET_LOADING; payload: boolean }
     | { type: 'RESET_LAST_ACTIVATED_PART_TYPE' };
 // --- END MODIFICATION ---
@@ -233,7 +240,8 @@ const gloveConfigReducer = (state: AppState, action: GloveAction): AppState => {
                 ...state,
                 configuration: {
                     ...state.configuration,
-                    [action.payload.zoneKey]: { colorName: action.payload.colorName },
+                    // MODIFICATION: Use colorId
+                    [action.payload.zoneKey]: { colorId: action.payload.colorId },
                 },
                 lastActivatedPartType: action.payload.partType,
             };
@@ -245,15 +253,17 @@ const gloveConfigReducer = (state: AppState, action: GloveAction): AppState => {
         case ACTION_TYPES.UPDATE_TEXT:
             return { ...state, configuration: { ...state.configuration, [action.payload.id]: action.payload.data } };
         case ACTION_TYPES.APPLY_COLOR_TO_ALL: {
-            const { colorName } = action.payload;
-            if (!colorName) return state;
+            // MODIFICATION: Use colorId
+            const { colorId } = action.payload;
+            if (!colorId) return state;
             
             const newConfiguration = { ...state.configuration };
             // Loop through all defined zone keys and update their color
             Object.values(ZONES).forEach((zoneKey: ZoneKey) => {
                 // MODIFICATION: Use the helper to respect exclusion rules
                 if (isApplyToAllEligible(zoneKey)) {
-                    newConfiguration[zoneKey] = { colorName: colorName };
+                    // MODIFICATION: Use colorId
+                    newConfiguration[zoneKey] = { colorId: colorId };
                 }
             });
 
@@ -296,10 +306,10 @@ const ScrollGradient = ({ position, isVisible }: ScrollGradientProps) => {
 };
 
 // --- MODIFIED PER PLAN ---
-const ColorIndicator = ({ colorName }: { colorName: ColorName }) => (
+const ColorIndicator = ({ colorId }: { colorId: ColorId }) => (
     <span
         className="w-5 h-5 rounded-full border border-white/20"
-        style={{ backgroundColor: getHexByName(colorName) }}
+        style={{ backgroundColor: getHexById(colorId) }}
     ></span>
 );
 // --- END MODIFICATION ---
@@ -392,11 +402,11 @@ const ColorSwatch = ({ color, name, isSelected, onSelect, tabIndex, elRef }: Col
 
 // --- MODIFIED PER PLAN ---
 interface ColorSwatchGridProps {
-    swatches: { name: string, hex: HexColor }[];
-    selectedColorName: ColorName | undefined;
-    onColorSelect: (colorName: ColorName) => void;
+    swatches: Readonly<Array<{ id: ColorId, name: string, hex: HexColor }>>;
+    selectedColorId: ColorId | undefined;
+    onColorSelect: (colorId: ColorId) => void;
 }
-const ColorSwatchGrid = ({ swatches, selectedColorName, onColorSelect }: ColorSwatchGridProps) => {
+const ColorSwatchGrid = ({ swatches, selectedColorId, onColorSelect }: ColorSwatchGridProps) => {
     const { containerRef, itemRefs, showNavigationHint, gridEventHandlers, activeIndex, setActiveIndex } = useGridNavigation<HTMLDivElement>(swatches.length);
     const itemRefsCasted = itemRefs as React.MutableRefObject<React.RefObject<HTMLButtonElement>[]>;
 
@@ -409,16 +419,16 @@ const ColorSwatchGrid = ({ swatches, selectedColorName, onColorSelect }: ColorSw
         >
             <NavigationHint isVisible={showNavigationHint} />
             {swatches.map((swatch, index) => {
-                const isSelected = selectedColorName === swatch.name;
+                const isSelected = selectedColorId === swatch.id;
                 return (
                     <ColorSwatch
-                        key={swatch.hex}
+                        key={swatch.id}
                         elRef={itemRefsCasted.current[index]}
                         color={swatch.hex}
                         name={swatch.name}
                         isSelected={isSelected}
                         onSelect={() => {
-                            onColorSelect(swatch.name as ColorName);
+                            onColorSelect(swatch.id);
                             setActiveIndex(index);
                         }}
                         tabIndex={index === activeIndex ? 0 : -1}
@@ -537,16 +547,16 @@ interface SingleColorPickerProps {
 }
 const SingleColorPicker = ({ zoneKey }: SingleColorPickerProps) => {
     const { state, dispatch } = useGloveConfigurator();
-    const colorName = state.configuration[zoneKey]?.colorName;
+    const colorId = state.configuration[zoneKey]?.colorId;
 
-    const handleChange = (newColorName: ColorName) => {
+    const handleChange = (newColorId: ColorId) => {
         dispatch({ 
             type: ACTION_TYPES.UPDATE_ZONE_COLOR, 
-            payload: { zoneKey, colorName: newColorName, partType: 'single' } 
+            payload: { zoneKey, colorId: newColorId, partType: 'single' } 
         });
     };
 
-    return <ColorSwatchGrid swatches={colorSwatches} selectedColorName={colorName} onColorSelect={handleChange} />;
+    return <ColorSwatchGrid swatches={COLOR_OPTIONS} selectedColorId={colorId} onColorSelect={handleChange} />;
 };
 
 interface DualColorPickerProps {
@@ -555,19 +565,19 @@ interface DualColorPickerProps {
 }
 const DualColorPicker = ({ outerZoneKey, innerZoneKey }: DualColorPickerProps) => {
     const { state, dispatch } = useGloveConfigurator();
-    const outerColorName = state.configuration[outerZoneKey]?.colorName;
-    const innerColorName = state.configuration[innerZoneKey]?.colorName;
+    const outerColorId = state.configuration[outerZoneKey]?.colorId;
+    const innerColorId = state.configuration[innerZoneKey]?.colorId;
 
-    const handleOuterChange = (newColorName: ColorName) => {
+    const handleOuterChange = (newColorId: ColorId) => {
         dispatch({ 
             type: ACTION_TYPES.UPDATE_ZONE_COLOR, 
-            payload: { zoneKey: outerZoneKey, colorName: newColorName, partType: 'outer' } 
+            payload: { zoneKey: outerZoneKey, colorId: newColorId, partType: 'outer' } 
         });
     };
-    const handleInnerChange = (newColorName: ColorName) => {
+    const handleInnerChange = (newColorId: ColorId) => {
         dispatch({ 
             type: ACTION_TYPES.UPDATE_ZONE_COLOR, 
-            payload: { zoneKey: innerZoneKey, colorName: newColorName, partType: 'inner' } 
+            payload: { zoneKey: innerZoneKey, colorId: newColorId, partType: 'inner' } 
         });
     };
 // --- END MODIFICATION ---
@@ -576,11 +586,11 @@ const DualColorPicker = ({ outerZoneKey, innerZoneKey }: DualColorPickerProps) =
         <div className="space-y-4">
             <div className="option-group-container">
                 <h3 className="text-sm font-semibold text-gray-400 mb-2">Outer</h3>
-                <ColorSwatchGrid swatches={colorSwatches} selectedColorName={outerColorName} onColorSelect={handleOuterChange} />
+                <ColorSwatchGrid swatches={COLOR_OPTIONS} selectedColorId={outerColorId} onColorSelect={handleOuterChange} />
             </div>
             <div className="option-group-container">
                 <h3 className="text-sm font-semibold text-gray-400 mb-2">Inner</h3>
-                <ColorSwatchGrid swatches={colorSwatches} selectedColorName={innerColorName} onColorSelect={handleInnerChange} />
+                <ColorSwatchGrid swatches={COLOR_OPTIONS} selectedColorId={innerColorId} onColorSelect={handleInnerChange} />
             </div>
         </div>
     );
@@ -707,8 +717,8 @@ const BuildOption = ({ isDesktop }: BuildOptionProps) => {
                     onSelectOption={(value) => {
                         const newConfig = { ...buildConfig, position: value as BuildConfig['position'] };
                         // When user selects Outfield or Pitcher, default them to an OPEN back
-                        if (['OUTFIELD', 'PITCHER'].includes(value)) {
-                            newConfig.backStyle = 'OPEN';
+                        if (['out', 'pit'].includes(value)) {
+                            newConfig.backStyle = 'opn';
                         }
                         onBuildConfigChange(newConfig);
                     }}
@@ -716,15 +726,15 @@ const BuildOption = ({ isDesktop }: BuildOptionProps) => {
             )}
             
             {/* Conditionally render the Back Style selector */}
-            {['OUTFIELD', 'PITCHER'].includes(buildConfig.position) && (
+            {['out', 'pit'].includes(buildConfig.position) && (
                 <OptionGroup
                     title="Back Style"
-                    options={[{id: 'OPEN', label: 'OPEN'}, {id: 'CLOSE', label: 'CLOSE'}]}
+                    options={[{id: 'opn', label: 'OPEN'}, {id: 'cls', label: 'CLOSE'}]}
                     layout="grid-cols-2"
                     selectedOption={buildConfig.backStyle}
                     onSelectOption={(value) => onBuildConfigChange({
                         ...buildConfig,
-                        backStyle: value as 'OPEN' | 'CLOSE'
+                        backStyle: value as 'opn' | 'cls'
                     })}
                 />
             )}
@@ -782,7 +792,8 @@ const TextOption = ({ contextId }: TextOptionProps) => {
             </div>
             <div className="option-group-container">
                 <h3 className="text-sm font-semibold text-gray-400 mb-2">Color</h3>
-                <ColorSwatchGrid swatches={colorSwatches} selectedColorName={value.colorName} onColorSelect={(colorName) => onChange({ ...value, colorName: colorName })} />
+                {/* MODIFICATION: Use colorId */}
+                <ColorSwatchGrid swatches={COLOR_OPTIONS} selectedColorId={value.colorId} onColorSelect={(colorId) => onChange({ ...value, colorId: colorId })} />
             </div>
         </div>
     );
@@ -793,7 +804,7 @@ const WebOptions = () => {
     const { state, dispatch } = useGloveConfigurator();
     const { build: buildConfig } = state.configuration;
 
-    const handleWebTypeChange = (newWebType: string) => {
+    const handleWebTypeChange = (newWebType: WebTypeId) => {
         const newBuildConfig = { ...state.configuration.build, webType: newWebType };
         dispatch({ type: ACTION_TYPES.UPDATE_BUILD, payload: newBuildConfig });
     };
@@ -881,6 +892,9 @@ const OrderSummaryInfo = () => {
         return buildOptionsData.find((g: {id: string}) => g.id === key)?.title || key;
     };
     
+    // Helper to get color name from ID
+    const getColorName = (colorId: ColorId) => colorLookupMap.get(colorId)?.name || 'Unknown';
+
     return (
         <div className="text-base text-gray-300 space-y-4 p-1">
             <div>
@@ -895,13 +909,13 @@ const OrderSummaryInfo = () => {
                     {uiGroups.map((group: UIPartGroup) => {
                         if (group.type === 'single' || group.type === 'gallery') {
                             const zone = group.type === 'gallery' ? ZONES.WEB : group.zoneKey;
-                            const colorName = configuration[zone]?.colorName;
-                            return <p key={group.id}><span className="font-semibold text-gray-400">{group.title.replace(' Color', '')}:</span> {colorName}</p>;
+                            const colorId = configuration[zone]?.colorId;
+                            return <p key={group.id}><span className="font-semibold text-gray-400">{group.title.replace(' Color', '')}:</span> {getColorName(colorId)}</p>;
                         }
                         if (group.type === 'dual') {
-                            const outerColorName = configuration[group.outerZoneKey]?.colorName;
-                            const innerColorName = configuration[group.innerZoneKey]?.colorName;
-                            return <p key={group.id}><span className="font-semibold text-gray-400">{group.title.replace(' Color', '')}:</span> Inner: {innerColorName}, Outer: {outerColorName}</p>;
+                            const outerColorId = configuration[group.outerZoneKey]?.colorId;
+                            const innerColorId = configuration[group.innerZoneKey]?.colorId;
+                            return <p key={group.id}><span className="font-semibold text-gray-400">{group.title.replace(' Color', '')}:</span> Inner: {getColorName(innerColorId)}, Outer: {getColorName(outerColorId)}</p>;
                         }
                         return null;
                     })}
@@ -910,8 +924,8 @@ const OrderSummaryInfo = () => {
             <div>
                 <h3 className="text-lg font-semibold text-white mb-2">Personalization</h3>
                 <div className="space-y-1 pl-2">
-                    <p><span className="font-semibold text-gray-400">Thumb Name:</span> "{thumbName.text}" ({thumbName.font}, {thumbName.colorName})</p>
-                    <p><span className="font-semibold text-gray-400">Pinky Name:</span> "{pinkyName.text}" ({pinkyName.font}, {pinkyName.colorName})</p>
+                    <p><span className="font-semibold text-gray-400">Thumb Name:</span> "{thumbName.text}" ({thumbName.font}, {getColorName(thumbName.colorId)})</p>
+                    <p><span className="font-semibold text-gray-400">Pinky Name:</span> "{pinkyName.text}" ({pinkyName.font}, {getColorName(pinkyName.colorId)})</p>
                 </div>
             </div>
         </div>
@@ -963,7 +977,8 @@ interface FooterMobileProps {
     onClosePanel: () => void;
     onReviewClick: (event: React.MouseEvent<HTMLButtonElement>) => void;
     onCompleteOrder: () => void;
-    activeColor?: ColorName;
+    // MODIFICATION: Use colorId
+    activeColor?: ColorId;
     // --- NEW PROP TO CONTROL BUTTON VISIBILITY ---
     showApplyToAllButton: boolean;
 }
@@ -1005,8 +1020,9 @@ const OverviewActionController = ({ isOpen, onOpen, onClose }: OverviewActionCon
 const FooterMobile = ({ openPanelName, onClosePanel, onReviewClick, onCompleteOrder, activeColor, showApplyToAllButton }: FooterMobileProps) => {
     const { dispatch } = useGloveConfigurator();
     
-    const onApplyColorToAll = (colorName?: ColorName) => {
-        if (colorName) dispatch({ type: ACTION_TYPES.APPLY_COLOR_TO_ALL, payload: { colorName } });
+    // MODIFICATION: Use colorId
+    const onApplyColorToAll = (colorId?: ColorId) => {
+        if (colorId) dispatch({ type: ACTION_TYPES.APPLY_COLOR_TO_ALL, payload: { colorId } });
     };
 
     const isSummaryOpen = openPanelName === 'SUMMARY';
@@ -1270,7 +1286,8 @@ const OverviewDesktop = () => {
 const AccordionDesktop = ({ openAccordion, setOpenAccordion, colorForApplyAll }: {
     openAccordion: string | null;
     setOpenAccordion: (id: string | null) => void;
-    colorForApplyAll?: ColorName;
+    // MODIFICATION: Use colorId
+    colorForApplyAll?: ColorId;
 }) => {
     const { state, dispatch } = useGloveConfigurator();
     const { configuration } = state;
@@ -1317,17 +1334,21 @@ const AccordionDesktop = ({ openAccordion, setOpenAccordion, colorForApplyAll }:
         };
     }, [checkAndSetGradients, currentUiGroups]);
 
+    // MODIFICATION: Use colorId and lookup map
     const renderHeaderAccessory = (group: UIPartGroup) => {
         const isAccordionOpen = openAccordion === group.id;
         if (group.type === 'single' || group.type === 'gallery') {
             const zone = group.type === 'gallery' ? ZONES.WEB : group.zoneKey;
-            const colorName = configuration[zone]?.colorName;
-            return isAccordionOpen ? <span className="text-sm text-gray-400 font-semibold">{colorName}</span> : <ColorIndicator colorName={colorName} />;
+            const colorId = configuration[zone]?.colorId;
+            const colorName = colorLookupMap.get(colorId)?.name;
+            return isAccordionOpen ? <span className="text-sm text-gray-400 font-semibold">{colorName}</span> : <ColorIndicator colorId={colorId} />;
         }
         if (group.type === 'dual') {
-            const innerColorName = configuration[group.innerZoneKey]?.colorName;
-            const outerColorName = configuration[group.outerZoneKey]?.colorName;
-            return isAccordionOpen ? <span className="text-sm text-gray-400 font-semibold">{`${innerColorName} · ${outerColorName}`}</span> : <div className="flex items-center space-x-2.5"><ColorIndicator colorName={innerColorName} /><ColorIndicator colorName={outerColorName} /></div>;
+            const innerColorId = configuration[group.innerZoneKey]?.colorId;
+            const outerColorId = configuration[group.outerZoneKey]?.colorId;
+            const innerColorName = colorLookupMap.get(innerColorId)?.name;
+            const outerColorName = colorLookupMap.get(outerColorId)?.name;
+            return isAccordionOpen ? <span className="text-sm text-gray-400 font-semibold">{`${innerColorName} · ${outerColorName}`}</span> : <div className="flex items-center space-x-2.5"><ColorIndicator colorId={innerColorId} /><ColorIndicator colorId={outerColorId} /></div>;
         }
         return null;
     };
@@ -1364,7 +1385,7 @@ const AccordionDesktop = ({ openAccordion, setOpenAccordion, colorForApplyAll }:
                                     label="Apply to All"
                                     onClick={() => {
                                         if (colorForApplyAll) {
-                                            dispatch({ type: ACTION_TYPES.APPLY_COLOR_TO_ALL, payload: { colorName: colorForApplyAll } });
+                                            dispatch({ type: ACTION_TYPES.APPLY_COLOR_TO_ALL, payload: { colorId: colorForApplyAll } });
                                         }
                                     }}
                                     icon={<CheckmarkIcon />}
@@ -1435,16 +1456,17 @@ const AccordionMobile = ({ onOpenPanel, openAccordionOptionMobile }: {
         { id: 'pinkyName' as TextPartId, title: 'Pinky Name' },
     ];
 
+    // MODIFICATION: Use colorId and lookup map
     const renderAccessory = (group: UIPartGroup) => {
         if (group.type === 'single' || group.type === 'gallery') {
             const zone = group.type === 'gallery' ? ZONES.WEB : group.zoneKey;
-            const colorName = configuration[zone]?.colorName;
-            return <ColorIndicator colorName={colorName} />;
+            const colorId = configuration[zone]?.colorId;
+            return <ColorIndicator colorId={colorId} />;
         }
         if (group.type === 'dual') {
-            const innerColorName = configuration[group.innerZoneKey]?.colorName;
-            const outerColorName = configuration[group.outerZoneKey]?.colorName;
-            return <div className="flex items-center space-x-2"><ColorIndicator colorName={innerColorName} /><ColorIndicator colorName={outerColorName} /></div>;
+            const innerColorId = configuration[group.innerZoneKey]?.colorId;
+            const outerColorId = configuration[group.outerZoneKey]?.colorId;
+            return <div className="flex items-center space-x-2"><ColorIndicator colorId={innerColorId} /><ColorIndicator colorId={outerColorId} /></div>;
         }
         return null;
     };
@@ -1503,7 +1525,7 @@ const UI = () => {
     const currentUiGroups = useMemo(() => UI_PRESENTATION_CONFIG[activeShell] || [], [activeShell]);
 
     // --- MODIFICATION: Use helper to determine button eligibility ---
-    const colorForApplyAll = useMemo((): ColorName | undefined => {
+    const colorForApplyAll = useMemo((): ColorId | undefined => {
         let openPanelContext: UIPartGroup | null = null;
         if (isDesktop) {
             openPanelContext = currentUiGroups.find(g => g.id === openAccordion) || null;
@@ -1529,32 +1551,32 @@ const UI = () => {
         // Default logic: If no interaction yet, default to the most relevant color of the open panel
         if (!lastActivatedPartType) {
             if (openPanelContext?.type === 'dual') {
-                return configuration[openPanelContext.innerZoneKey]?.colorName;
+                return configuration[openPanelContext.innerZoneKey]?.colorId;
             }
             if (openPanelContext?.type === 'single') {
-                return configuration[openPanelContext.zoneKey]?.colorName;
+                return configuration[openPanelContext.zoneKey]?.colorId;
             }
             if (openPanelContext?.type === 'gallery') {
-                return configuration[ZONES.WEB]?.colorName;
+                return configuration[ZONES.WEB]?.colorId;
             }
             return undefined;
         }
 
         if (openPanelContext.type === 'dual') {
             if (lastActivatedPartType === 'inner') {
-                return configuration[openPanelContext.innerZoneKey]?.colorName;
+                return configuration[openPanelContext.innerZoneKey]?.colorId;
             }
             if (lastActivatedPartType === 'outer') {
-                return configuration[openPanelContext.outerZoneKey]?.colorName;
+                return configuration[openPanelContext.outerZoneKey]?.colorId;
             }
         }
         
         if (openPanelContext.type === 'single' && lastActivatedPartType === 'single') {
-            return configuration[openPanelContext.zoneKey]?.colorName;
+            return configuration[openPanelContext.zoneKey]?.colorId;
         }
 
         if (openPanelContext.type === 'gallery' && lastActivatedPartType === 'single') {
-            return configuration[ZONES.WEB]?.colorName;
+            return configuration[ZONES.WEB]?.colorId;
         }
 
         return undefined;

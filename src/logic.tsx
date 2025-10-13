@@ -8,15 +8,13 @@ export type HexColor = string;
 export type ZoneKey = `zone${number}`; // e.g., 'zone1', 'zone2', etc.
 
 // --- MODIFIED PER PLAN ---
-export const COLOR_NAMES = ['Red', 'Pink', 'Purple', 'Indigo', 'Royal', 'Blue', 'Light Blue', 'Teal', 'Green', 'Forest', 'Lime', 'Olive', 'Gold', 'Orange', 'Burnt Orange', 'Red Orange', 'Brown', 'Charcoal', 'Grey', 'Slate'] as const;
-export type ColorName = typeof COLOR_NAMES[number];
-
-export const colorSwatches: { name: ColorName, hex: HexColor }[] = [
-    { name: 'Red', hex: '#C62828' }, { name: 'Pink', hex: '#AD1457' }, { name: 'Purple', hex: '#6A1B9A' }, { name: 'Indigo', hex: '#4527A0' }, { name: 'Royal', hex: '#283593' }, { name: 'Blue', hex: '#1565C0' }, { name: 'Light Blue', hex: '#0277BD' }, { name: 'Teal', hex: '#00838F' }, { name: 'Green', hex: '#00695C' }, { name: 'Forest', hex: '#2E7D32' }, { name: 'Lime', hex: '#558B2F' }, { name: 'Olive', hex: '#9E9D24' }, { name: 'Gold', hex: '#F9A825' }, { name: 'Orange', hex: '#FF8F00' }, { name: 'Burnt Orange', hex: '#EF6C00' }, { name: 'Red Orange', hex: '#D84315' }, { name: 'Brown', hex: '#4E342E' }, { name: 'Charcoal', hex: '#424242' }, { name: 'Grey', hex: '#BDBDBD' }, { name: 'Slate', hex: '#37474F' },
-];
+export const COLOR_OPTIONS = [
+    { id: 'rd', name: 'Red', hex: '#C62828' }, { id: 'pk', name: 'Pink', hex: '#AD1457' }, { id: 'pu', name: 'Purple', hex: '#6A1B9A' }, { id: 'in', name: 'Indigo', hex: '#4527A0' }, { id: 'ry', name: 'Royal', hex: '#283593' }, { id: 'bl', name: 'Blue', hex: '#1565C0' }, { id: 'lb', name: 'Light Blue', hex: '#0277BD' }, { id: 'tl', name: 'Teal', hex: '#00838F' }, { id: 'gn', name: 'Green', hex: '#00695C' }, { id: 'fr', name: 'Forest', hex: '#2E7D32' }, { id: 'lm', name: 'Lime', hex: '#558B2F' }, { id: 'ol', name: 'Olive', hex: '#9E9D24' }, { id: 'gd', name: 'Gold', hex: '#F9A825' }, { id: 'or', name: 'Orange', hex: '#FF8F00' }, { id: 'bo', name: 'Burnt Orange', hex: '#EF6C00' }, { id: 'ro', name: 'Red Orange', hex: '#D84315' }, { id: 'br', name: 'Brown', hex: '#4E342E' }, { id: 'ch', name: 'Charcoal', hex: '#424242' }, { id: 'gy', name: 'Grey', hex: '#BDBDBD' }, { id: 'sl', name: 'Slate', hex: '#37474F' },
+] as const;
+export type ColorId = typeof COLOR_OPTIONS[number]['id'];
 
 export interface SingleColorState {
-  colorName: ColorName;
+  colorId: ColorId;
 }
 // --- END MODIFICATION ---
 
@@ -33,20 +31,44 @@ export interface TextPart {
     type: 'text';
     text: string;
     font: Font;
-    colorName: ColorName;
+    colorId: ColorId;
 }
 // --- END MODIFICATION ---
 
+// --- MODIFIED PER PLAN: DEFINE ID TYPES FIRST ---
+// This requires moving buildOptionsData and webTypeOptions up before BuildConfig
+export const buildOptionsData = [
+    { id: 'position', title: 'Position', options: [{id: 'inf', label: 'INFIELD'}, {id: 'out', label: 'OUTFIELD'}, {id: 'pit', label: 'PITCHER'}, {id: 'cat', label: 'CATCHER'}, {id: 'fb', label: 'FIRST BASE'}], layout: 'grid-cols-3' },
+    { id: 'size', title: 'Size', options: [{id: '1100', label: '11"'}, {id: '1125', label: '11.25"'}, {id: '1150', label: '11.5"'}, {id: '1175', label: '11.75"'}, {id: '1200', label: '12"'}], layout: 'grid-cols-3' },
+    { id: 'handOpeningSize', title: 'Hand Opening Size', options: [{id: 'adt', label: 'ADULT'}, {id: 'yth', label: 'YOUTH'}], layout: 'grid-cols-2' },
+    { id: 'stiffness', title: 'Stiffness', options: [{id: 'stf', label: 'STIFF'}, {id: 'std', label: 'STANDARD'}, {id: 'sft', label: 'SOFT'}], layout: 'grid-cols-3' },
+    { id: 'throwingHand', title: 'Throwing Hand', options: [{id: 'rh', label: 'RIGHT HAND'}, {id: 'lh', label: 'LEFT HAND'}], layout: 'grid-cols-2' }
+];
+
+export const webTypeOptions = [
+    { id: 'bsk', title: 'Basket' }, { id: 'bsl', title: 'Basket Lace' }, { id: 'clv', title: 'Closed V' }, { id: 'dhn', title: 'Dual Hinge' }, { id: 'fmt', title: 'Framed Mod Trap' }, { id: 'hwb', title: 'H-Web' }, { id: 'iwb', title: 'I-Web' }, { id: 'lch', title: 'Laced H-Web' }, { id: 'lcs', title: 'Lace Sealing' }, { id: 'mtp', title: 'Mod Trap' }, { id: '1pc', title: 'One Piece' }, { id: 'pst', title: 'Post' }, { id: 'slg', title: 'Sealing' }, { id: 'sp', title: 'Single Post' }, { id: 'spl', title: 'Single Post Lace' }, { id: 'trp', title: 'Trap' }, { id: '2pc', title: 'Two Piece' },
+];
+
+// Helper types derived from the data constants
+export type BuildPositionId = typeof buildOptionsData[0]['options'][number]['id'];
+export type BuildSizeId = typeof buildOptionsData[1]['options'][number]['id'];
+export type BuildHandId = typeof buildOptionsData[2]['options'][number]['id'];
+export type BuildStiffnessId = typeof buildOptionsData[3]['options'][number]['id'];
+export type BuildThrowingId = typeof buildOptionsData[4]['options'][number]['id'];
+export type BuildBackId = 'opn' | 'cls';
+export type WebTypeId = typeof webTypeOptions[number]['id'];
+
 export interface BuildConfig {
     imageSelection: 'imgOpt1' | 'imgOpt2';
-    position: 'INFIELD' | 'OUTFIELD' | 'PITCHER' | 'CATCHER' | 'FIRST BASE';
-    size: '11"' | '11.25"' | '11.5"' | '11.75"' | '12"';
-    handOpeningSize: 'ADULT' | 'YOUTH';
-    stiffness: 'STIFF' | 'STANDARD' | 'SOFT';
-    throwingHand: 'RIGHT HAND' | 'LEFT HAND';
-    backStyle: 'OPEN' | 'CLOSE';
-    webType: string;
+    position: BuildPositionId;
+    size: BuildSizeId;
+    handOpeningSize: BuildHandId;
+    stiffness: BuildStiffnessId;
+    throwingHand: BuildThrowingId;
+    backStyle: BuildBackId;
+    webType: WebTypeId;
 }
+// --- END MODIFICATION ---
 
 export type GloveConfiguration = {
     build: BuildConfig;
@@ -128,74 +150,172 @@ export const fontOptions: { id: Font, label: string }[] = [
     { id: 'BLOCK', label: 'BLOCK' }
 ];
 
+// ===================================================================
+// --- NEW SERIALIZATION LAYER ---
+// ===================================================================
+
+// The dictionary of long keys to short keys for the URL
+export const URL_KEY_MAP = {
+    // Top-level
+    build: 'b',
+    thumbName: 'tn',
+    pinkyName: 'pn',
+    // BuildConfig
+    imageSelection: 'is',
+    position: 'po',
+    size: 'sz',
+    handOpeningSize: 'ho',
+    stiffness: 'sf',
+    throwingHand: 'th',
+    backStyle: 'bs',
+    webType: 'wt',
+    // TextPart
+    text: 't',
+    font: 'f',
+    // SingleColorState (and TextPart color)
+    colorId: 'c',
+    // Zones (dynamically generated: zone1 -> z1, etc.)
+    ...Object.fromEntries(Object.values(ZONES).map(zone => [zone, zone.replace('zone', 'z')]))
+} as const;
+
+// A reverse map for deserializing, created automatically to stay in sync
+const REVERSE_URL_KEY_MAP = Object.fromEntries(
+    Object.entries(URL_KEY_MAP).map(([key, value]) => [value, key])
+);
+
+// Define the type for the compact object (can be anything, so 'any' is appropriate here)
+export type CompactConfig = Record<string, any>;
+
+// Function to serialize the readable state into a compact object for the URL
+export const serialize = (config: GloveConfiguration): CompactConfig => {
+    const compact: CompactConfig = {};
+
+    // Helper to process nested objects by swapping their keys
+    const processObject = (obj: Record<string, any>): Record<string, any> => {
+        const processed: Record<string, any> = {};
+        for (const key in obj) {
+            const shortKey = URL_KEY_MAP[key as keyof typeof URL_KEY_MAP];
+            if (shortKey) {
+                processed[shortKey] = obj[key];
+            } else {
+                // Keep keys that don't have a short version (like 'type' in TextPart)
+                processed[key] = obj[key];
+            }
+        }
+        return processed;
+    };
+    
+    // Process build, thumbName, and pinkyName
+    compact[URL_KEY_MAP.build] = processObject(config.build);
+    compact[URL_KEY_MAP.thumbName] = processObject(config.thumbName);
+    compact[URL_KEY_MAP.pinkyName] = processObject(config.pinkyName);
+
+    // Process all zone colors
+    Object.values(ZONES).forEach(zoneKey => {
+        const colorState = config[zoneKey];
+        if (colorState) {
+            const shortKey = zoneKey.replace('zone', 'z');
+            if (shortKey) {
+                compact[shortKey] = processObject(colorState);
+            }
+        }
+    });
+
+    return compact;
+};
+
+// Function to deserialize the compact object from the URL into the readable state
+export const deserialize = (compact: CompactConfig): GloveConfiguration => {
+    // Start with a deep copy of the default state to ensure a valid structure
+    const readable = JSON.parse(JSON.stringify(initialState.configuration)); 
+
+    // Helper to process nested objects by swapping their keys back
+    const processObject = (compactObj: Record<string, any>, targetObj: Record<string, any>) => {
+        for (const shortKey in compactObj) {
+            const longKey = REVERSE_URL_KEY_MAP[shortKey];
+            if (longKey && longKey in targetObj) {
+                targetObj[longKey] = compactObj[shortKey];
+            } else if (shortKey in targetObj) {
+                // Keep keys that don't have a short version
+                targetObj[shortKey] = compactObj[shortKey];
+            }
+        }
+    };
+    
+    // Process build, thumbName, and pinkyName if they exist in the compact object
+    const shortBuildKey = URL_KEY_MAP.build;
+    if (compact[shortBuildKey]) {
+        processObject(compact[shortBuildKey], readable.build);
+    }
+    const shortThumbNameKey = URL_KEY_MAP.thumbName;
+    if (compact[shortThumbNameKey]) {
+        processObject(compact[shortThumbNameKey], readable.thumbName);
+    }
+    const shortPinkyNameKey = URL_KEY_MAP.pinkyName;
+    if (compact[shortPinkyNameKey]) {
+        processObject(compact[shortPinkyNameKey], readable.pinkyName);
+    }
+
+    // Process all zone colors
+    for (const shortKey in compact) {
+        if (shortKey.startsWith('z')) {
+            const longKey = REVERSE_URL_KEY_MAP[shortKey] as ZoneKey;
+            if (longKey) {
+                // Ensure the target object for the zone exists before processing
+                if (!readable[longKey]) readable[longKey] = {};
+                processObject(compact[shortKey], readable[longKey]);
+            }
+        }
+    }
+
+    return readable;
+};
+
 // --- MODIFIED PER PLAN ---
 // Create the Lookup Mechanism
-const colorMap = new Map(colorSwatches.map(swatch => [swatch.name, swatch.hex]));
-export const getHexByName = (name: ColorName): HexColor => colorMap.get(name) || '#FFFFFF'; // Default to white
+export const colorLookupMap = new Map(COLOR_OPTIONS.map(option => [option.id, option]));
+export const getHexById = (id: ColorId): HexColor => colorLookupMap.get(id)?.hex || '#FFFFFF'; // Default to white
 // --- END MODIFICATION ---
 
-export const buildOptionsData = [
-    { id: 'position', title: 'Position', options: [{id: 'INFIELD', label: 'INFIELD'}, {id: 'OUTFIELD', label: 'OUTFIELD'}, {id: 'PITCHER', label: 'PITCHER'}, {id: 'CATCHER', label: 'CATCHER'}, {id: 'FIRST BASE', label: 'FIRST BASE'}], layout: 'grid-cols-3' }, { id: 'size', title: 'Size', options: [{id: '11"', label: '11"'}, {id: '11.25"', label: '11.25"'}, {id: '11.5"', label: '11.5"'}, {id: '11.75"', label: '11.75"'}, {id: '12"', label: '12"'}], layout: 'grid-cols-3' }, { id: 'handOpeningSize', title: 'Hand Opening Size', options: [{id: 'ADULT', label: 'ADULT'}, {id: 'YOUTH', label: 'YOUTH'}], layout: 'grid-cols-2' }, { id: 'stiffness', title: 'Stiffness', options: [{id: 'STIFF', label: 'STIFF'}, {id: 'STANDARD', label: 'STANDARD'}, {id: 'SOFT', label: 'SOFT'}], layout: 'grid-cols-3' }, { id: 'throwingHand', title: 'Throwing Hand', options: [{id: 'RIGHT HAND', label: 'RIGHT HAND'}, {id: 'LEFT HAND', label: 'LEFT HAND'}], layout: 'grid-cols-2' }
-];
-
-export const webTypeOptions = [
-    { id: 'BASKET', title: 'Basket' },
-    { id: 'BASKET_LACE', title: 'Basket Lace' },
-    { id: 'CLOSED_V', title: 'Closed V' },
-    { id: 'DUAL_HINGE', title: 'Dual Hinge' },
-    { id: 'FRAMED_MOD_TRAP', title: 'Framed Mod Trap' },
-    { id: 'H_WEB', title: 'H-Web' },
-    { id: 'I_WEB', title: 'I-Web' },
-    { id: 'LACED_H', title: 'Laced H-Web' },
-    { id: 'LACE_SEALING', title: 'Lace Sealing' },
-    { id: 'MOD_TRAP', title: 'Mod Trap' },
-    { id: 'ONE_PIECE', title: 'One Piece' },
-    { id: 'POST', title: 'Post' },
-    { id: 'SEALING', title: 'Sealing' },
-    { id: 'SINGLE_POST', title: 'Single Post' },
-    { id: 'SINGLE_POST_LACE', title: 'Single Post Lace' },
-    { id: 'TRAP', title: 'Trap' },
-    { id: 'TWO_PIECE', title: 'Two Piece' },
-];
-
+// --- MODIFIED PER PLAN: GLOVE_TO_WEBS_MAP uses new webtype IDs as keys ---
 export const GLOVE_TO_WEBS_MAP = {
-    openBack: { BASKET: 'basketOB', BASKET_LACE: 'basketLaceOB', CLOSED_V: 'closedVOB', DUAL_HINGE: 'dualHingeOB', FRAMED_MOD_TRAP: 'framedModTrapOB', H_WEB: 'hOB', I_WEB: 'iOB', LACED_H: 'lacedHOB', LACE_SEALING: 'laceSealingOB', MOD_TRAP: 'modTrapOB', ONE_PIECE: 'onePieceOB', SEALING: 'sealingOB', SINGLE_POST: 'singlePostOB', SINGLE_POST_LACE: 'singlePostLaceOB', TRAP: 'trapOB', TWO_PIECE: 'twoPieceOB', },
-    closeBack: { BASKET: 'basketCB', CLOSED_V: 'closedVCB', DUAL_HINGE: 'dualHingeCB', FRAMED_MOD_TRAP: 'framedModTrapCB', H_WEB: 'hCB', LACED_H: 'lacedHCB', LACE_SEALING: 'laceSealingCB', MOD_TRAP: 'modTrapCB', ONE_PIECE: 'onePieceCB', SEALING: 'sealingCB', TRAP: 'trapCB', },
-    firstBase: { POST: 'postFB', TWO_PIECE: 'twoPieceFB', },
-    catchers: { TWO_PIECE: 'twoPieceCM', }
+    openBack: { bsk: 'basketOB', bsl: 'basketLaceOB', clv: 'closedVOB', dhn: 'dualHingeOB', fmt: 'framedModTrapOB', hwb: 'hOB', iwb: 'iOB', lch: 'lacedHOB', lcs: 'laceSealingOB', mtp: 'modTrapOB', '1pc': 'onePieceOB', slg: 'sealingOB', sp: 'singlePostOB', spl: 'singlePostLaceOB', trp: 'trapOB', '2pc': 'twoPieceOB', },
+    closeBack: { bsk: 'basketCB', clv: 'closedVCB', dhn: 'dualHingeCB', fmt: 'framedModTrapCB', hwb: 'hCB', lch: 'lacedHCB', lcs: 'laceSealingCB', mtp: 'modTrapCB', '1pc': 'onePieceCB', slg: 'sealingCB', trp: 'trapCB', },
+    firstBase: { pst: 'postFB', '2pc': 'twoPieceFB', },
+    catchers: { '2pc': 'twoPieceCM', }
 };
+// --- END MODIFICATION ---
 
 // --- MODIFIED PER PLAN ---
 export const initialState: AppState = {
     configuration: {
-        build: { imageSelection: 'imgOpt1', position: 'INFIELD', size: '11"', handOpeningSize: 'ADULT', stiffness: 'STANDARD', throwingHand: 'RIGHT HAND', backStyle: 'OPEN', webType: 'MOD_TRAP' },
+        build: { imageSelection: 'imgOpt1', position: 'inf', size: '1100', handOpeningSize: 'adt', stiffness: 'std', throwingHand: 'rh', backStyle: 'opn', webType: 'mtp' },
 
-        thumbName: { type: 'text', text: 'Thumb', font: 'SCRIPT', colorName: 'Grey' },
-        pinkyName: { type: 'text', text: 'Pinky', font: 'BLOCK', colorName: 'Slate' }, // Assuming white is not in the palette, using a valid name
+        thumbName: { type: 'text', text: 'Thumb', font: 'SCRIPT', colorId: 'gy' },
+        pinkyName: { type: 'text', text: 'Pinky', font: 'BLOCK', colorId: 'sl' },
 
-        // A cohesive, valid initial state using only available color names
-        [ZONES.THUMB_INNER]:    { colorName: 'Red' },
-        [ZONES.INDEX]:          { colorName: 'Blue' },
-        [ZONES.MIDDLE_INNER]:   { colorName: 'Forest' },
-        [ZONES.MIDDLE_OUTER]:   { colorName: 'Red' },
-        [ZONES.RING_INNER]:     { colorName: 'Gold' },
-        [ZONES.RING_OUTER]:     { colorName: 'Purple' },
-        [ZONES.WEB]:            { colorName: 'Red' },
-        [ZONES.WRIST]:          { colorName: 'Slate' },
-        [ZONES.WRIST_STRAP]:    { colorName: 'Slate' },
-        [ZONES.PAD_HOOD]:       { colorName: 'Brown' },
-        [ZONES.THUMB_OUTER]:    { colorName: 'Forest' },
-        [ZONES.PINKY_INNER]:    { colorName: 'Purple' },
-        [ZONES.PINKY_OUTER]:    { colorName: 'Gold' },
-        [ZONES.PALM]:           { colorName: 'Brown' },
-        [ZONES.LINER]:          { colorName: 'Charcoal' },
-        [ZONES.BINDING]:        { colorName: 'Brown' },
-        [ZONES.WELTING]:        { colorName: 'Brown' },
-        [ZONES.LACE]:           { colorName: 'Brown' },
-        [ZONES.STITCHING]:      { colorName: 'Gold' },
-        [ZONES.WRIST_LOGO]:     { colorName: 'Gold' },
-        [ZONES.WRIST_LOGO_OUTLINE]: { colorName: 'Slate' },
-        [ZONES.FINGER_LOGO]:    { colorName: 'Gold' },
+        [ZONES.THUMB_INNER]:    { colorId: 'rd' },
+        [ZONES.INDEX]:          { colorId: 'bl' },
+        [ZONES.MIDDLE_INNER]:   { colorId: 'fr' },
+        [ZONES.MIDDLE_OUTER]:   { colorId: 'rd' },
+        [ZONES.RING_INNER]:     { colorId: 'gd' },
+        [ZONES.RING_OUTER]:     { colorId: 'pu' },
+        [ZONES.WEB]:            { colorId: 'rd' },
+        [ZONES.WRIST]:          { colorId: 'sl' },
+        [ZONES.WRIST_STRAP]:    { colorId: 'sl' },
+        [ZONES.PAD_HOOD]:       { colorId: 'br' },
+        [ZONES.THUMB_OUTER]:    { colorId: 'fr' },
+        [ZONES.PINKY_INNER]:    { colorId: 'pu' },
+        [ZONES.PINKY_OUTER]:    { colorId: 'gd' },
+        [ZONES.PALM]:           { colorId: 'br' },
+        [ZONES.LINER]:          { colorId: 'ch' },
+        [ZONES.BINDING]:        { colorId: 'br' },
+        [ZONES.WELTING]:        { colorId: 'br' },
+        [ZONES.LACE]:           { colorId: 'br' },
+        [ZONES.STITCHING]:      { colorId: 'gd' },
+        [ZONES.WRIST_LOGO]:     { colorId: 'gd' },
+        [ZONES.WRIST_LOGO_OUTLINE]: { colorId: 'sl' },
+        [ZONES.FINGER_LOGO]:    { colorId: 'gd' },
     },
     isLoading: false,
     lastActivatedPartType: null,
@@ -205,10 +325,10 @@ export const initialState: AppState = {
 
 export const getModelNameForBuild = (buildConfig: BuildConfig): string => {
     switch (buildConfig.position) {
-        case 'INFIELD': return 'openBack';
-        case 'OUTFIELD': case 'PITCHER': return buildConfig.backStyle === 'CLOSE' ? 'closeBack' : 'openBack';
-        case 'CATCHER': return 'catchers';
-        case 'FIRST BASE': return 'firstBase';
+        case 'inf': return 'openBack';
+        case 'out': case 'pit': return buildConfig.backStyle === 'cls' ? 'closeBack' : 'openBack';
+        case 'cat': return 'catchers';
+        case 'fb': return 'firstBase';
         default: return 'openBack';
     }
 };
@@ -308,7 +428,7 @@ export const GloveLogicController = () => {
                     const colorState = configuration[zoneKey as ZoneKey];
                     if (!colorState || !config) continue;
 
-                    const hexColor = getHexByName(colorState.colorName);
+                    const hexColor = getHexById(colorState.colorId);
                     const color3 = Color3.FromHexString(hexColor);
 
                     if (config.materialTarget === 'shell' || config.materialTarget === 'both') {
@@ -326,7 +446,7 @@ export const GloveLogicController = () => {
                         const colorState = configuration[zoneKey as ZoneKey];
                         if (!colorState || !config) continue;
 
-                        const hexColor = getHexByName(colorState.colorName);
+                        const hexColor = getHexById(colorState.colorId);
                         const color3 = Color3.FromHexString(hexColor);
                         sceneManager.updateShellColor(config.shaderIndex, color3);
                     }
@@ -337,14 +457,14 @@ export const GloveLogicController = () => {
                     zone: 'thumbName',
                     text: configuration.thumbName.text,
                     font: configuration.thumbName.font,
-                    color: getHexByName(configuration.thumbName.colorName),
+                    color: getHexById(configuration.thumbName.colorId),
                 });
 
                 sceneManager.updateText({
                     zone: 'pinkyName',
                     text: configuration.pinkyName.text,
                     font: configuration.pinkyName.font,
-                    color: getHexByName(configuration.pinkyName.colorName),
+                    color: getHexById(configuration.pinkyName.colorId),
                 });
                 // --- END MODIFICATION ---
 
