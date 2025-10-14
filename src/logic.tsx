@@ -152,13 +152,12 @@ export const fontOptions: { id: Font, label: string }[] = [
 ];
 
 // ===================================================================
-// --- NEW SERIALIZATION LAYER ---
+// --- SERIALIZATION LAYER REPLACEMENT ---
 // ===================================================================
 
 // The dictionary of long keys to short keys for the URL
-export const URL_KEY_MAP = {
+export const URL_KEY_MAP: { [key in ZoneKey | keyof Omit<GloveConfiguration, ZoneKey> | keyof BuildConfig]?: string } = {
     // Top-level
-    build: 'b',
     thumbName: 'tn',
     pinkyName: 'pn',
     // BuildConfig
@@ -170,106 +169,110 @@ export const URL_KEY_MAP = {
     throwingHand: 'th',
     backStyle: 'bs',
     webType: 'wt',
-    // TextPart
-    text: 't',
-    font: 'f',
-    // SingleColorState (and TextPart color)
-    colorId: 'c',
     // Zones (dynamically generated: zone1 -> z1, etc.)
     ...Object.fromEntries(Object.values(ZONES).map(zone => [zone, zone.replace('zone', 'z')]))
-} as const;
-
-// A reverse map for deserializing, created automatically to stay in sync
-const REVERSE_URL_KEY_MAP = Object.fromEntries(
-    Object.entries(URL_KEY_MAP).map(([key, value]) => [value, key])
-);
-
-// Define the type for the compact object (can be anything, so 'any' is appropriate here)
-export type CompactConfig = Record<string, any>;
-
-// Function to serialize the readable state into a compact object for the URL
-export const serialize = (config: GloveConfiguration): CompactConfig => {
-    const compact: CompactConfig = {};
-
-    // Helper to process nested objects by swapping their keys
-    const processObject = (obj: Record<string, any>): Record<string, any> => {
-        const processed: Record<string, any> = {};
-        for (const key in obj) {
-            const shortKey = URL_KEY_MAP[key as keyof typeof URL_KEY_MAP];
-            if (shortKey) {
-                processed[shortKey] = obj[key];
-            } else {
-                // Keep keys that don't have a short version (like 'type' in TextPart)
-                processed[key] = obj[key];
-            }
-        }
-        return processed;
-    };
-    
-    // Process build, thumbName, and pinkyName
-    compact[URL_KEY_MAP.build] = processObject(config.build);
-    compact[URL_KEY_MAP.thumbName] = processObject(config.thumbName);
-    compact[URL_KEY_MAP.pinkyName] = processObject(config.pinkyName);
-
-    // Process all zone colors
-    Object.values(ZONES).forEach(zoneKey => {
-        const colorState = config[zoneKey];
-        if (colorState) {
-            const shortKey = zoneKey.replace('zone', 'z');
-            if (shortKey) {
-                compact[shortKey] = processObject(colorState);
-            }
-        }
-    });
-
-    return compact;
 };
 
-// Function to deserialize the compact object from the URL into the readable state
-export const deserialize = (compact: CompactConfig): GloveConfiguration => {
-    // Start with a deep copy of the default state to ensure a valid structure
-    const readable = JSON.parse(JSON.stringify(initialState.configuration)); 
+// A reverse map for deserializing, created automatically to stay in sync
+const REVERSE_URL_KEY_MAP: { [key: string]: string } = Object.fromEntries(
+    Object.entries(URL_KEY_MAP).map(([key, value]) => [value as string, key])
+);
 
-    // Helper to process nested objects by swapping their keys back
-    const processObject = (compactObj: Record<string, any>, targetObj: Record<string, any>) => {
-        for (const shortKey in compactObj) {
-            const longKey = REVERSE_URL_KEY_MAP[shortKey];
-            if (longKey && longKey in targetObj) {
-                targetObj[longKey] = compactObj[shortKey];
-            } else if (shortKey in targetObj) {
-                // Keep keys that don't have a short version
-                targetObj[shortKey] = compactObj[shortKey];
-            }
+// Helper to encode text to a URL-safe Base64 string
+const encodeText = (text: string): string => {
+    // btoa can have issues with unicode, this is a robust way to handle it.
+    const utf8Bytes = new TextEncoder().encode(text);
+    const base64 = btoa(String.fromCharCode(...utf8Bytes));
+    // Make it URL-safe: replace +, /, = which are not URL-safe
+    return base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+};
+
+// Helper to decode text from a URL-safe Base64 string
+const decodeText = (encoded: string): string => {
+    try {
+        let base64 = encoded.replace(/-/g, '+').replace(/_/g, '/');
+        // Pad with '=' until length is a multiple of 4
+        while (base64.length % 4) {
+            base64 += '=';
         }
-    };
-    
-    // Process build, thumbName, and pinkyName if they exist in the compact object
-    const shortBuildKey = URL_KEY_MAP.build;
-    if (compact[shortBuildKey]) {
-        processObject(compact[shortBuildKey], readable.build);
+        const binaryString = atob(base64);
+        const bytes = Uint8Array.from(binaryString, c => c.charCodeAt(0));
+        return new TextDecoder().decode(bytes);
+    } catch (e) {
+        // If decoding fails (e.g., old link or malformed), return the original string
+        return encoded;
     }
-    const shortThumbNameKey = URL_KEY_MAP.thumbName;
-    if (compact[shortThumbNameKey]) {
-        processObject(compact[shortThumbNameKey], readable.thumbName);
-    }
-    const shortPinkyNameKey = URL_KEY_MAP.pinkyName;
-    if (compact[shortPinkyNameKey]) {
-        processObject(compact[shortPinkyNameKey], readable.pinkyName);
-    }
+};
 
-    // Process all zone colors
-    for (const shortKey in compact) {
-        if (shortKey.startsWith('z')) {
-            const longKey = REVERSE_URL_KEY_MAP[shortKey] as ZoneKey;
-            if (longKey) {
-                // Ensure the target object for the zone exists before processing
-                if (!readable[longKey]) readable[longKey] = {};
-                processObject(compact[shortKey], readable[longKey]);
-            }
+export const serialize = (config: GloveConfiguration): string => {
+    const pairs: string[] = [];
+
+    // 1. Serialize Build Configuration
+    for (const [key, value] of Object.entries(config.build)) {
+        const shortKey = URL_KEY_MAP[key as keyof typeof URL_KEY_MAP];
+        if (shortKey) {
+            pairs.push(`${shortKey}-${value}`);
         }
     }
 
-    return readable;
+    // 2. Serialize Text Parts (hyper-compact format: key-text~font~color)
+    const { thumbName, pinkyName } = config;
+    const encodedThumbText = encodeText(thumbName.text);
+    pairs.push(`${URL_KEY_MAP.thumbName}-${encodedThumbText}~${thumbName.font}~${thumbName.colorId}`);
+
+    const encodedPinkyText = encodeText(pinkyName.text);
+    pairs.push(`${URL_KEY_MAP.pinkyName}-${encodedPinkyText}~${pinkyName.font}~${pinkyName.colorId}`);
+
+    // 3. Serialize Zone Colors
+    for (const key in config) {
+        if (key.startsWith('zone')) {
+            const zoneKey = key as ZoneKey;
+            const shortKey = URL_KEY_MAP[zoneKey];
+            if (shortKey) {
+                pairs.push(`${shortKey}-${config[zoneKey].colorId}`);
+            }
+        }
+    }
+
+    return pairs.join('_');
+};
+
+export const deserialize = (encodedString: string): GloveConfiguration => {
+    // Start with a deep copy of the default state to ensure a valid object
+    const config = JSON.parse(JSON.stringify(initialState.configuration));
+    const pairs = encodedString.split('_');
+
+    for (const pair of pairs) {
+        const separatorIndex = pair.indexOf('-');
+        if (separatorIndex === -1) continue; // Skip malformed pairs
+
+        const key = pair.substring(0, separatorIndex);
+        const value = pair.substring(separatorIndex + 1);
+
+        const longKey = REVERSE_URL_KEY_MAP[key];
+        if (!longKey) continue;
+
+        // Handle Text Parts (hyper-compact format)
+        if (longKey === 'thumbName' || longKey === 'pinkyName') {
+            const [text, font, colorId] = value.split('~');
+            if (text !== undefined) config[longKey].text = decodeText(text);
+            if (font !== undefined) config[longKey].font = font as Font;
+            if (colorId !== undefined) config[longKey].colorId = colorId as ColorId;
+            continue;
+        }
+
+        // Handle Zone Colors
+        if (longKey.startsWith('zone')) {
+            config[longKey as ZoneKey] = { colorId: value as ColorId };
+        }
+        // Handle Build Config
+        else if (longKey in config.build) {
+            // @ts-ignore - This is safe due to the check above
+            config.build[longKey] = value;
+        }
+    }
+
+    return config;
 };
 
 // --- MODIFIED PER PLAN ---
@@ -278,18 +281,24 @@ export const colorLookupMap = new Map(COLOR_OPTIONS.map(option => [option.id, op
 export const getHexById = (id: ColorId): HexColor => colorLookupMap.get(id)?.hex || '#FFFFFF'; // Default to white
 // --- END MODIFICATION ---
 
-// --- NEW URL LOGIC ---
+// --- URL LOGIC (MODIFIED TO USE NEW SERIALIZER) ---
 
 const CONFIG_VERSION = 'v1';
 
 /**
- * Creates a brittle, versioned, and compressed shareable URL from the app state.
+ * Creates a versioned, shareable URL from the app state using the new custom string format.
  */
 export const generateShareableURL = (config: GloveConfiguration): string => {
-  const compactObject = serialize(config);
-  const jsonString = JSON.stringify(compactObject);
-  const compressedData = LZString.compressToEncodedURIComponent(jsonString);
-  const versionedPayload = `${CONFIG_VERSION}:${compressedData}`;
+  const serializedString = serialize(config);
+
+  // --- COMPRESSION IS OFF ---
+  // To re-enable, comment out the line below.
+  const processedData = serializedString;
+  
+  // To re-enable, uncomment the line below.
+  // const processedData = LZString.compressToEncodedURIComponent(serializedString);
+  
+  const versionedPayload = `${CONFIG_VERSION}:${processedData}`;
   const baseURL = window.location.origin + window.location.pathname;
   return `${baseURL}?config=${versionedPayload}`;
 };
@@ -307,19 +316,28 @@ export const loadConfigurationFromURL = (): GloveConfiguration => {
       return initialState.configuration;
     }
 
-    const [version, compressedData] = versionedPayload.split(':');
+    const [version, data] = versionedPayload.split(':', 2);
 
     if (version !== CONFIG_VERSION) {
       throw new Error(`Unsupported config version: ${version}`);
     }
 
-    const jsonString = LZString.decompressFromEncodedURIComponent(compressedData);
-    if (!jsonString) {
-      throw new Error('Decompression failed');
+    if (!data) {
+        throw new Error('No data in payload');
     }
 
-    const compactObject = JSON.parse(jsonString);
-    return deserialize(compactObject);
+    // --- COMPRESSION IS OFF ---
+    // To re-enable, comment out the line below.
+    const serializedString = data;
+
+    // To re-enable, uncomment the line below.
+    // const serializedString = LZString.decompressFromEncodedURIComponent(data);
+
+    if (!serializedString) {
+      throw new Error('Processing failed');
+    }
+
+    return deserialize(serializedString);
 
   } catch (error) {
     console.warn('Could not load config from URL. Using default.', error);
