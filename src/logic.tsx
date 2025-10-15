@@ -2,7 +2,7 @@ import { useEffect, createContext, useContext } from 'react';
 import { Color3 } from '@babylonjs/core';
 import { useGloveConfigurator } from './ui';
 import { SceneManager } from './viewer';
-import LZString from 'lz-string';
+import * as fflate from 'fflate';
 
 // --- NEW CORE TYPES (from Step 1) ---
 export type HexColor = string;
@@ -291,12 +291,12 @@ const CONFIG_VERSION = 'v1';
 export const generateShareableURL = (config: GloveConfiguration): string => {
   const serializedString = serialize(config);
 
-  // --- COMPRESSION IS OFF ---
-  // To re-enable, comment out the line below.
-  const processedData = serializedString;
-  
-  // To re-enable, uncomment the line below.
-  // const processedData = LZString.compressToEncodedURIComponent(serializedString);
+  const stringAsBytes = fflate.strToU8(serializedString);
+  const compressed = fflate.deflateSync(stringAsBytes);
+  const processedData = btoa(fflate.strFromU8(compressed, true))
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=/g, '');
   
   const versionedPayload = `${CONFIG_VERSION}:${processedData}`;
   const baseURL = window.location.origin + window.location.pathname;
@@ -325,13 +325,11 @@ export const loadConfigurationFromURL = (): GloveConfiguration => {
     if (!data) {
         throw new Error('No data in payload');
     }
+    
+    const base64 = data.replace(/-/g, '+').replace(/_/g, '/');
+    const compressed = fflate.strToU8(atob(base64), true);
+    const serializedString = fflate.strFromU8(fflate.inflateSync(compressed));
 
-    // --- COMPRESSION IS OFF ---
-    // To re-enable, comment out the line below.
-    const serializedString = data;
-
-    // To re-enable, uncomment the line below.
-    // const serializedString = LZString.decompressFromEncodedURIComponent(data);
 
     if (!serializedString) {
       throw new Error('Processing failed');
