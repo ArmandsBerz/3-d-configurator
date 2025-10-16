@@ -31,6 +31,46 @@ import React, { useState, useRef, useLayoutEffect, useCallback, useEffect, creat
 import BabylonCanvas from './viewer';
 import { SummaryIcon, BackArrowIcon, CheckmarkIcon, LongArrowRightIcon, CaretRightIcon, CaretDownIcon, CaretUpIcon, ShareIcon, CollapseIcon, ExpandIcon, DragIcon, ZoomIcon } from './icons';
 
+// --- START: NEW SCROLL GRADIENT HOOK ---
+export const useScrollGradients = (scrollableRef: React.RefObject<HTMLElement | null>) => {
+    const [isTopGradientVisible, setIsTopGradientVisible] = useState(false);
+    const [isBottomGradientVisible, setIsBottomGradientVisible] = useState(false);
+
+    const checkGradients = useCallback(() => {
+        const element = scrollableRef.current;
+        if (!element) return;
+
+        const hasOverflow = element.scrollHeight > element.clientHeight;
+        setIsTopGradientVisible(hasOverflow && element.scrollTop > 0);
+        setIsBottomGradientVisible(hasOverflow && Math.abs(element.scrollHeight - element.clientHeight - element.scrollTop) >= NUMERIC_CONSTANTS.SCROLL_THRESHOLD);
+    }, [scrollableRef]);
+
+    useLayoutEffect(() => {
+        checkGradients();
+    }, [checkGradients]);
+
+    useEffect(() => {
+        const element = scrollableRef.current;
+        const handler = checkGradients;
+
+        window.addEventListener('resize', handler);
+        if (element) {
+            element.addEventListener('scroll', handler);
+        }
+
+        return () => {
+            window.removeEventListener('resize', handler);
+            if (element) {
+                element.removeEventListener('scroll', handler);
+            }
+        };
+    }, [scrollableRef, checkGradients]);
+
+    return { isTopGradientVisible, isBottomGradientVisible };
+};
+// --- END: NEW SCROLL GRADIENT HOOK ---
+
+
 // --- NEW PRESENTATION TYPES (from Step 1) ---
 export interface UIPartGroupSingle {
     id: string;
@@ -76,7 +116,7 @@ export type GloveAction =
             colorId: ColorId;
             partType: 'inner' | 'outer' | 'single';
         }
-      }
+    }
     | { type: typeof ACTION_TYPES.UPDATE_TEXT; payload: { id: 'thumbName' | 'pinkyName'; data: TextPart } }
     // MODIFICATION: Use colorId
     | { type: typeof ACTION_TYPES.APPLY_COLOR_TO_ALL; payload: { colorId: ColorId } }
@@ -258,7 +298,7 @@ const gloveConfigReducer = (state: AppState, action: GloveAction): AppState => {
             // MODIFICATION: Use colorId
             const { colorId } = action.payload;
             if (!colorId) return state;
-            
+
             const newConfiguration = { ...state.configuration };
             // Loop through all defined zone keys and update their color
             Object.values(ZONES).forEach((zoneKey: ZoneKey) => {
@@ -292,16 +332,16 @@ const startingConfiguration = loadConfigurationFromURL();
 
 // 2. Update your provider to use this starting configuration.
 const GloveConfiguratorProvider = ({ children }: GloveConfiguratorProviderProps) => {
-  const [state, dispatch] = useReducer(gloveConfigReducer, {
-      ...initialState,
-      configuration: startingConfiguration
-  });
-  
-  return (
-    <GloveConfiguratorContext.Provider value={{ state, dispatch }}>
-      {children}
-    </GloveConfiguratorContext.Provider>
-  );
+    const [state, dispatch] = useReducer(gloveConfigReducer, {
+        ...initialState,
+        configuration: startingConfiguration
+    });
+
+    return (
+        <GloveConfiguratorContext.Provider value={{ state, dispatch }}>
+            {children}
+        </GloveConfiguratorContext.Provider>
+    );
 };
 
 export const useGloveConfigurator = () => {
@@ -460,31 +500,31 @@ const ColorSwatchGrid = ({ swatches, selectedColorId, onColorSelect }: ColorSwat
 
 // Debounce utility to prevent excessive URL updates
 function debounce(func: (...args: any[]) => void, delay: number) {
-  let timeoutId: NodeJS.Timeout;
-  // This is the corrected part
-  return (...args: any[]) => {
-    clearTimeout(timeoutId);
-    timeoutId = setTimeout(() => {
-      func(...args);
-    }, delay);
-  };
+    let timeoutId: NodeJS.Timeout;
+    // This is the corrected part
+    return (...args: any[]) => {
+        clearTimeout(timeoutId);
+        timeoutId = setTimeout(() => {
+            func(...args);
+        }, delay);
+    };
 }
 
 const URLSyncController = () => {
-  const { state } = useGloveConfigurator();
+    const { state } = useGloveConfigurator();
 
-  const debouncedUpdateURL = useRef(
-    debounce((newUrl: string) => {
-      window.history.replaceState({}, '', newUrl);
-    }, 300)
-  ).current;
+    const debouncedUpdateURL = useRef(
+        debounce((newUrl: string) => {
+            window.history.replaceState({}, '', newUrl);
+        }, 300)
+    ).current;
 
-  useEffect(() => {
-    const newUrl = generateShareableURL(state.configuration);
-    debouncedUpdateURL(newUrl);
-  }, [state.configuration, debouncedUpdateURL]);
+    useEffect(() => {
+        const newUrl = generateShareableURL(state.configuration);
+        debouncedUpdateURL(newUrl);
+    }, [state.configuration, debouncedUpdateURL]);
 
-  return null; // This component renders nothing.
+    return null; // This component renders nothing.
 };
 
 // --- Accordion Containers ---
@@ -500,19 +540,19 @@ interface AccordionOptionHeaderProps {
 }
 const AccordionOptionHeader = React.forwardRef<HTMLButtonElement, AccordionOptionHeaderProps>(
     ({ title, onClick, accessoryContent, icon, isOpen, variant, controlsId }, ref) => {
-    const baseClasses = "w-full flex justify-between items-center text-left focus:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-white";
-    const variantClasses = variant === VARIANTS.LAYOUT.DESKTOP ? "p-4 h-[56px] hover:bg-[#2A2A2A] transition-colors" : "py-3 h-[56px] mb-3 text-white";
-    return (
-        <button ref={ref} onClick={onClick} className={`${baseClasses} ${variantClasses}`} aria-expanded={isOpen} aria-controls={controlsId}>
-            <div className="flex items-center space-x-3">
-                {icon === ICONS.DESKTOP && <CaretRightIcon className={`h-[15px] w-auto transform transition-transform duration-300 ${isOpen ? 'rotate-90' : 'rotate-0'}`} />}
-                {icon === ICONS.MOBILE && <CaretDownIcon className="w-5 h-5 mr-2 transform rotate-90" />}
-                <h3 className="text-lg font-semibold">{title}</h3>
-            </div>
-            <div className="flex items-center">{accessoryContent}</div>
-        </button>
-    );
-});
+        const baseClasses = "w-full flex justify-between items-center text-left focus:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-white";
+        const variantClasses = variant === VARIANTS.LAYOUT.DESKTOP ? "p-4 h-[56px] hover:bg-[#2A2A2A] transition-colors" : "py-3 h-[56px] mb-3 text-white";
+        return (
+            <button ref={ref} onClick={onClick} className={`${baseClasses} ${variantClasses}`} aria-expanded={isOpen} aria-controls={controlsId}>
+                <div className="flex items-center space-x-3">
+                    {icon === ICONS.DESKTOP && <CaretRightIcon className={`h-[15px] w-auto transform transition-transform duration-300 ${isOpen ? 'rotate-90' : 'rotate-0'}`} />}
+                    {icon === ICONS.MOBILE && <CaretDownIcon className="w-5 h-5 mr-2 transform rotate-90" />}
+                    <h3 className="text-lg font-semibold">{title}</h3>
+                </div>
+                <div className="flex items-center">{accessoryContent}</div>
+            </button>
+        );
+    });
 
 interface AccordionOptionDesktopProps {
     title: string;
@@ -543,15 +583,7 @@ interface AccordionOptionMobileProps {
 }
 const AccordionOptionMobile = ({ title, onClose, headerAccessory = null, children, headerRef }: AccordionOptionMobileProps) => {
     const scrollContainerRef = useRef<HTMLDivElement | null>(null);
-    const [isTopGradientVisible, setIsTopGradientVisible] = useState(false);
-    const [isBottomGradientVisible, setIsBottomGradientVisible] = useState(false);
-    const checkAndSetGradients = useCallback(() => {
-        const element = scrollContainerRef.current;
-        if (!element) return;
-        const hasOverflow = element.scrollHeight > element.clientHeight;
-        setIsTopGradientVisible(hasOverflow && element.scrollTop > 0);
-        setIsBottomGradientVisible(hasOverflow && Math.abs(element.scrollHeight - element.clientHeight - element.scrollTop) >= NUMERIC_CONSTANTS.SCROLL_THRESHOLD);
-    }, []);
+    const { isTopGradientVisible, isBottomGradientVisible } = useScrollGradients(scrollContainerRef);
 
     const handleReactiveScrollFix = (event: React.FocusEvent<HTMLDivElement>) => {
         const parentGroup = (event.target as HTMLElement).closest('.option-group-container');
@@ -563,17 +595,6 @@ const AccordionOptionMobile = ({ title, onClose, headerAccessory = null, childre
         }
     };
 
-    useLayoutEffect(() => { checkAndSetGradients(); }, [children, checkAndSetGradients]);
-    useEffect(() => {
-        const element = scrollContainerRef.current;
-        const handler = checkAndSetGradients;
-        window.addEventListener('resize', handler);
-        if (element) element.addEventListener('scroll', handler);
-        return () => {
-            window.removeEventListener('resize', handler);
-            if (element) element.removeEventListener('scroll', handler);
-        };
-    }, [checkAndSetGradients]);
     return (
         <div className="absolute inset-0 bg-[#161616] z-20 h-full flex flex-col px-[19px]">
             <AccordionOptionHeader ref={headerRef} variant={VARIANTS.LAYOUT.MOBILE} title={title} onClick={onClose} accessoryContent={headerAccessory} icon={ICONS.MOBILE} isOpen={true} controlsId={`mobile-panel-${title.replace(/\s+/g, '-')}`} />
@@ -597,9 +618,9 @@ const SingleColorPicker = ({ zoneKey }: SingleColorPickerProps) => {
     const colorId = state.configuration[zoneKey]?.colorId;
 
     const handleChange = (newColorId: ColorId) => {
-        dispatch({ 
-            type: ACTION_TYPES.UPDATE_ZONE_COLOR, 
-            payload: { zoneKey, colorId: newColorId, partType: 'single' } 
+        dispatch({
+            type: ACTION_TYPES.UPDATE_ZONE_COLOR,
+            payload: { zoneKey, colorId: newColorId, partType: 'single' }
         });
     };
 
@@ -616,18 +637,18 @@ const DualColorPicker = ({ outerZoneKey, innerZoneKey }: DualColorPickerProps) =
     const innerColorId = state.configuration[innerZoneKey]?.colorId;
 
     const handleOuterChange = (newColorId: ColorId) => {
-        dispatch({ 
-            type: ACTION_TYPES.UPDATE_ZONE_COLOR, 
-            payload: { zoneKey: outerZoneKey, colorId: newColorId, partType: 'outer' } 
+        dispatch({
+            type: ACTION_TYPES.UPDATE_ZONE_COLOR,
+            payload: { zoneKey: outerZoneKey, colorId: newColorId, partType: 'outer' }
         });
     };
     const handleInnerChange = (newColorId: ColorId) => {
-        dispatch({ 
-            type: ACTION_TYPES.UPDATE_ZONE_COLOR, 
-            payload: { zoneKey: innerZoneKey, colorId: newColorId, partType: 'inner' } 
+        dispatch({
+            type: ACTION_TYPES.UPDATE_ZONE_COLOR,
+            payload: { zoneKey: innerZoneKey, colorId: newColorId, partType: 'inner' }
         });
     };
-// --- END MODIFICATION ---
+    // --- END MODIFICATION ---
 
     return (
         <div className="space-y-4">
@@ -755,7 +776,7 @@ const BuildOption = ({ isDesktop }: BuildOptionProps) => {
                 onSelectOption={(value) => onBuildConfigChange({ ...buildConfig, imageSelection: value as 'imgOpt1' | 'imgOpt2' })}
             />
             {positionGroup && (
-               <OptionGroup
+                <OptionGroup
                     key={positionGroup.id}
                     title={positionGroup.title}
                     options={positionGroup.options}
@@ -765,34 +786,34 @@ const BuildOption = ({ isDesktop }: BuildOptionProps) => {
                         const newConfig = { ...buildConfig, position: value as BuildConfig['position'] };
                         // When user selects Outfield or Pitcher, default them to an OPEN back
                         if (['out', 'pit'].includes(value)) {
-                            newConfig.backStyle = 'opn';
+                            (newConfig as any).backStyle = 'opn';
                         }
                         onBuildConfigChange(newConfig);
                     }}
-               />
+                />
             )}
-            
+
             {/* Conditionally render the Back Style selector */}
             {['out', 'pit'].includes(buildConfig.position) && (
                 <OptionGroup
                     title="Back Style"
-                    options={[{id: 'opn', label: 'OPEN'}, {id: 'cls', label: 'CLOSE'}]}
+                    options={[{ id: 'opn', label: 'OPEN' }, { id: 'cls', label: 'CLOSE' }]}
                     layout="grid-cols-2"
-                    selectedOption={buildConfig.backStyle}
+                    selectedOption={(buildConfig as any).backStyle}
                     onSelectOption={(value) => onBuildConfigChange({
                         ...buildConfig,
                         backStyle: value as 'opn' | 'cls'
-                    })}
+                    } as any)}
                 />
             )}
 
-            {otherGroups.map((group: { id: string; title: string; options: {id: string, label: string}[]; layout: string; }) => (
+            {otherGroups.map((group: { id: string; title: string; options: { id: string, label: string }[]; layout: string; }) => (
                 <OptionGroup
                     key={group.id}
                     title={group.title}
                     options={group.options}
                     layout={group.layout}
-                    selectedOption={buildConfig[group.id as keyof Omit<BuildConfig, 'imageSelection'|'position'|'backStyle'|'webType'>]}
+                    selectedOption={buildConfig[group.id as keyof Omit<BuildConfig, 'imageSelection' | 'position' | 'backStyle' | 'webType'>]}
                     onSelectOption={(value) => onBuildConfigChange({ ...buildConfig, [group.id]: value })}
                 />
             ))}
@@ -928,17 +949,17 @@ const OrderSummaryInfo = () => {
     const uiGroups = UI_PRESENTATION_CONFIG[activeShell] || [];
 
     const getBuildLabel = (key: string, value: string): string => {
-        if (key === 'imageSelection') return leatherOptions.find((opt: {id: string}) => opt.id === value)?.title || value;
-        if (key === 'webType') return webTypeOptions.find((opt: {id: string}) => opt.id === value)?.title || value;
-        const group = buildOptionsData.find((g: {id: string}) => g.id === key);
-        return group?.options.find((o: {id: string}) => o.id === value)?.label || value;
+        if (key === 'imageSelection') return leatherOptions.find((opt: { id: string }) => opt.id === value)?.title || value;
+        if (key === 'webType') return webTypeOptions.find((opt: { id: string }) => opt.id === value)?.title || value;
+        const group = buildOptionsData.find((g: { id: string }) => g.id === key);
+        return group?.options.find((o: { id: string }) => o.id === value)?.label || value;
     };
     const getBuildTitle = (key: string): string => {
         if (key === 'imageSelection') return "Glove Leather";
         if (key === 'webType') return "Web Type";
-        return buildOptionsData.find((g: {id: string}) => g.id === key)?.title || key;
+        return buildOptionsData.find((g: { id: string }) => g.id === key)?.title || key;
     };
-    
+
     // Helper to get color name from ID
     const getColorName = (colorId: ColorId) => colorLookupMap.get(colorId)?.name || 'Unknown';
 
@@ -1066,7 +1087,7 @@ const OverviewActionController = ({ isOpen, onOpen, onClose }: OverviewActionCon
 
 const FooterMobile = ({ openPanelName, onClosePanel, onReviewClick, onCompleteOrder, activeColor, showApplyToAllButton }: FooterMobileProps) => {
     const { dispatch } = useGloveConfigurator();
-    
+
     // MODIFICATION: Use colorId
     const onApplyColorToAll = (colorId?: ColorId) => {
         if (colorId) dispatch({ type: ACTION_TYPES.APPLY_COLOR_TO_ALL, payload: { colorId } });
@@ -1110,7 +1131,7 @@ const FooterMobile = ({ openPanelName, onClosePanel, onReviewClick, onCompleteOr
                 );
             }
             break;
-        
+
         case 'BUILD':
         case 'TEXT':
             panelSpecificFooter = (
@@ -1212,7 +1233,7 @@ const useGridNavigation = <T extends HTMLElement>(itemCount: number) => {
 
         const container = containerRef.current;
         if (!container) return;
-        
+
         const numColumns = window.getComputedStyle(container).gridTemplateColumns.split(' ').length;
         if (numColumns === 0) return;
 
@@ -1232,7 +1253,7 @@ const useGridNavigation = <T extends HTMLElement>(itemCount: number) => {
                 nextIndex = focusedIndex + numColumns;
                 break;
         }
-        
+
         if (key === 'ArrowLeft' || key === 'ArrowRight') {
             const currentRow = Math.floor(focusedIndex / numColumns);
             const nextRow = Math.floor(nextIndex / numColumns);
@@ -1246,7 +1267,7 @@ const useGridNavigation = <T extends HTMLElement>(itemCount: number) => {
             setActiveIndex(nextIndex);
         }
     };
-    
+
     const gridEventHandlers = {
         onFocus: handleFocus,
         onMouseDown: handleMouseDown,
@@ -1282,7 +1303,7 @@ const OverviewDesktop = () => {
     const [agnosticAccordionOpen, setAgnosticAccordionOpen] = useState(false);
     const triggerButtonRef = useRef<HTMLButtonElement | null>(null);
     const containerRef = useRef<HTMLDivElement>(null);
-    
+
     const closeOverview = useCallback(() => setAgnosticAccordionOpen(false), []);
     useEscapeKey(containerRef, closeOverview, agnosticAccordionOpen);
 
@@ -1309,7 +1330,7 @@ const OverviewDesktop = () => {
         <div ref={containerRef} className="flex lg:absolute lg:bottom-[60px] lg:right-[60px] fixed w-full bottom-[-1rem] flex-row items-center gap-4 lg:flex-col lg:justify-end lg:w-auto lg:h-auto lg:gap-0 pointer-events-auto">
             <div className="lg:w-[400px] text-[#999999] font-black text-[1.3rem] my-0 lg:mb-2.5 mx-0 flex flex-col justify-end lg:h-auto h-[80.8vh]">
                 <OverviewButton onClick={handleToggle} isDesktop={true} isOpen={agnosticAccordionOpen} />
-                <div  
+                <div
                     id="overview-content"
                     className={`bg-[#222222] transition-[height] duration-300 ease-in ${agnosticAccordionOpen ? 'overflow-y-scroll h-auto lg:h-[calc(100vh-335px)]' : 'overflow-hidden h-0'} focus:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-white show-thin-scrollbar`}
                 >
@@ -1319,10 +1340,10 @@ const OverviewDesktop = () => {
                 </div>
             </div>
             <div className="lg:w-[400px] w-full self-end mb-[1.9rem] mr-[2.5rem] lg:m-0 z-[1]">
-                <OrderButtonController  
-                    isSummaryVisible={agnosticAccordionOpen}  
-                    onReviewClick={handleOpen}  
-                    onCompleteClick={() => alert('Proceeding to next step...')}  
+                <OrderButtonController
+                    isSummaryVisible={agnosticAccordionOpen}
+                    onReviewClick={handleOpen}
+                    onCompleteClick={() => alert('Proceeding to next step...')}
                 />
             </div>
         </div>
@@ -1340,12 +1361,11 @@ const AccordionDesktop = ({ openAccordion, setOpenAccordion, colorForApplyAll }:
     const { configuration } = state;
     const activeShell = getModelNameForBuild(configuration.build);
     const accordionContainerRef = useRef<HTMLDivElement>(null);
-    const [isTopGradientVisible, setIsTopGradientVisible] = useState(false);
-    const [isBottomGradientVisible, setIsBottomGradientVisible] = useState(false);
-    const [isScrolled, setIsScrolled] = useState(false);
+    const { isTopGradientVisible, isBottomGradientVisible } = useScrollGradients(accordionContainerRef);
+    const isScrolled = isTopGradientVisible; // Derived state
 
     const currentUiGroups = useMemo(() => UI_PRESENTATION_CONFIG[activeShell] || [], [activeShell]);
-    const buildGroup = { id: 'build', title: 'Build Options'};
+    const buildGroup = { id: 'build', title: 'Build Options' };
     // --- MODIFICATION: Define personalization panels separately ---
     const personalizationGroups = [
         { id: 'thumbName' as TextPartId, title: 'Thumb Name' },
@@ -1358,28 +1378,6 @@ const AccordionDesktop = ({ openAccordion, setOpenAccordion, colorForApplyAll }:
         }
         setOpenAccordion(openAccordion === accordionId ? null : accordionId);
     };
-    
-    const checkAndSetGradients = useCallback(() => {
-        const element = accordionContainerRef.current;
-        if (!element) return;
-        const hasOverflow = element.scrollHeight > element.clientHeight;
-        setIsTopGradientVisible(hasOverflow && element.scrollTop > 0);
-        setIsBottomGradientVisible(hasOverflow && Math.abs(element.scrollHeight - element.clientHeight - element.scrollTop) >= NUMERIC_CONSTANTS.SCROLL_THRESHOLD);
-        setIsScrolled(element.scrollTop > 0);
-    }, []);
-
-    useEffect(() => {
-        const element = accordionContainerRef.current;
-        if (!element) return;
-        const handler = () => checkAndSetGradients();
-        element.addEventListener('scroll', handler);
-        window.addEventListener('resize', handler);
-        handler();
-        return () => {
-            element.removeEventListener('scroll', handler);
-            window.removeEventListener('resize', handler);
-        };
-    }, [checkAndSetGradients, currentUiGroups]);
 
     // MODIFICATION: Use colorId and lookup map
     const renderHeaderAccessory = (group: UIPartGroup) => {
@@ -1440,7 +1438,7 @@ const AccordionDesktop = ({ openAccordion, setOpenAccordion, colorForApplyAll }:
                                 />
                             );
                         }
-                        
+
                         return (
                             <AccordionOptionDesktop
                                 key={group.id}
@@ -1494,9 +1492,10 @@ const AccordionMobile = ({ onOpenPanel, openAccordionOptionMobile }: {
     const { configuration } = state;
     const activeShell = getModelNameForBuild(configuration.build);
     const listRef = useRef<HTMLElement>(null);
-    
+    const { isTopGradientVisible, isBottomGradientVisible } = useScrollGradients(listRef);
+
     const currentUiGroups = useMemo(() => UI_PRESENTATION_CONFIG[activeShell] || [], [activeShell]);
-    const buildGroup = { id: 'build' as const, title: 'Build Options'};
+    const buildGroup = { id: 'build' as const, title: 'Build Options' };
     // --- MODIFICATION: Define personalization panels separately ---
     const personalizationGroups = [
         { id: 'thumbName' as TextPartId, title: 'Thumb Name' },
@@ -1520,7 +1519,7 @@ const AccordionMobile = ({ onOpenPanel, openAccordionOptionMobile }: {
 
     return (
         <section ref={listRef} className={`px-4 bg-[#161616] h-full overflow-y-auto ${openAccordionOptionMobile ? 'opacity-50 pointer-events-none' : ''}`} tabIndex={-1}>
-            <ScrollGradient position={POSITIONS.TOP} isVisible={false} />
+            <ScrollGradient position={POSITIONS.TOP} isVisible={isTopGradientVisible} />
             <button key={buildGroup.id} className="w-full h-[56px] bg-[#1C1C1C] flex items-center justify-between px-4 mb-[10px]" onClick={() => onOpenPanel(buildGroup)}>
                 <div className="flex items-center">
                     <CaretRightIcon className="h-4 w-auto mr-3" />
@@ -1537,7 +1536,7 @@ const AccordionMobile = ({ onOpenPanel, openAccordionOptionMobile }: {
                     {renderAccessory(group)}
                 </button>
             ))}
-            
+
             {/* --- MODIFICATION: Render personalization panels separately --- */}
             {personalizationGroups.map(group => (
                 <button key={group.id} className="w-full h-[56px] bg-[#1C1C1C] flex items-center justify-between px-4 mb-[10px]" onClick={() => onOpenPanel(group)}>
@@ -1549,7 +1548,7 @@ const AccordionMobile = ({ onOpenPanel, openAccordionOptionMobile }: {
                 </button>
             ))}
 
-            <ScrollGradient position={POSITIONS.BOTTOM} isVisible={false} />
+            <ScrollGradient position={POSITIONS.BOTTOM} isVisible={isBottomGradientVisible} />
         </section>
     );
 };
@@ -1567,7 +1566,7 @@ const UI = () => {
 
     // For Desktop state
     const [openAccordion, setOpenAccordion] = useState<string | null>('build');
-    
+
     const activeShell = getModelNameForBuild(configuration.build);
     const currentUiGroups = useMemo(() => UI_PRESENTATION_CONFIG[activeShell] || [], [activeShell]);
 
@@ -1617,7 +1616,7 @@ const UI = () => {
                 return configuration[openPanelContext.outerZoneKey]?.colorId;
             }
         }
-        
+
         if (openPanelContext.type === 'single' && lastActivatedPartType === 'single') {
             return configuration[openPanelContext.zoneKey]?.colorId;
         }
@@ -1646,11 +1645,11 @@ const UI = () => {
     useEffect(() => {
         const babylonContainer = document.getElementById('babylon-container');
         const mainEl = mainRef.current;
-    
+
         if (!babylonContainer || !mainEl) {
             return;
         }
-    
+
         const observer = new ResizeObserver(entries => {
             window.requestAnimationFrame(() => {
                 for (let entry of entries) {
@@ -1660,9 +1659,9 @@ const UI = () => {
                 }
             });
         });
-    
+
         observer.observe(mainEl);
-    
+
         return () => {
             observer.disconnect();
         };
@@ -1679,7 +1678,7 @@ const UI = () => {
         } else if ('zoneKey' in group || 'outerZoneKey' in group) {
             setOpenAccordionOptionMobile({ name: 'COLOR', context: group as UIPartGroup });
         } else {
-           // --- MODIFICATION: Handle Text parts ---
+            // --- MODIFICATION: Handle Text parts ---
             if (group.id === 'thumbName' || group.id === 'pinkyName') {
                 setOpenAccordionOptionMobile({ name: 'TEXT', context: { id: group.id, title: group.title } });
             }
@@ -1687,7 +1686,7 @@ const UI = () => {
     };
 
     const handleClosePanel = useCallback(() => {
-        dispatch({ type: 'RESET_LAST_ACTIVATED_PART_TYPE' as any }); 
+        dispatch({ type: 'RESET_LAST_ACTIVATED_PART_TYPE' } as any);
         setOpenAccordionOptionMobile(null);
     }, [dispatch]);
 
@@ -1726,7 +1725,7 @@ const UI = () => {
 
     return (
         <div ref={appContainerRef} className="flex flex-col lg:relative w-full h-full bg-transparent text-white">
-            
+
             {isLoading && (
                 <div className="absolute inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 pointer-events-auto">
                     <p className="text-white text-xl animate-pulse">Loading...</p>
@@ -1738,7 +1737,7 @@ const UI = () => {
                 <button className="absolute top-[20px] right-[20px] z-20 p-2 hover:bg-gray-800 hover:bg-opacity-50 focus:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-white pointer-events-auto" aria-label="Share configuration" onClick={handleShare}>
                     <ShareIcon />
                 </button>
-                
+
                 <div className="absolute bottom-4 inset-x-0 h-8 z-10 pointer-events-none" aria-hidden="true">
                     {!isDesktop && (
                         <button
@@ -1767,7 +1766,7 @@ const UI = () => {
             {!isVisualizationExpanded && (
                 isDesktop ? (
                     <>
-                        <AccordionDesktop 
+                        <AccordionDesktop
                             openAccordion={openAccordion}
                             setOpenAccordion={setOpenAccordion}
                             colorForApplyAll={colorForApplyAll}
@@ -1800,29 +1799,29 @@ const UI = () => {
 
 // 3. Update your main App component to include the controller.
 const App = () => {
-  const [sceneManager, setSceneManager] = useState<SceneManager | null>(null);
+    const [sceneManager, setSceneManager] = useState<SceneManager | null>(null);
 
-  return (
-    <GloveConfiguratorProvider>
-      <SceneContext.Provider value={sceneManager}>
+    return (
+        <GloveConfiguratorProvider>
+            <SceneContext.Provider value={sceneManager}>
 
-        <div id="app-root" className="relative w-full h-[100dvh] bg-[#161616]">
-            <div id="babylon-container" className="absolute inset-0 z-10">
-                <BabylonCanvas onSceneReady={setSceneManager} />
-            </div>
-            <div id="ui-container" className="absolute inset-0 z-20 pointer-events-none">
-                <UI />
-            </div>
-        </div>
-        
-        <GloveLogicController />
+                <div id="app-root" className="relative w-full h-[100dvh] bg-[#161616]">
+                    <div id="babylon-container" className="absolute inset-0 z-10">
+                        <BabylonCanvas onSceneReady={setSceneManager} />
+                    </div>
+                    <div id="ui-container" className="absolute inset-0 z-20 pointer-events-none">
+                        <UI />
+                    </div>
+                </div>
 
-        {/* This component will now automatically sync the state to the URL */}
-        <URLSyncController />
+                <GloveLogicController />
 
-      </SceneContext.Provider>
-    </GloveConfiguratorProvider>
-  );
+                {/* This component will now automatically sync the state to the URL */}
+                <URLSyncController />
+
+            </SceneContext.Provider>
+        </GloveConfiguratorProvider>
+    );
 };
 
 export default App;
