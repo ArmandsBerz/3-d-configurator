@@ -496,13 +496,14 @@ const ColorSwatchGrid = ({ swatches, selectedColorId, onColorSelect }: ColorSwat
 };
 // --- END MODIFICATION ---
 
-// --- NEW URL SYNC CONTROLLER (Corrected Version) ---
+// --- DEBOUNCE UTILITY (WITH BETTER TYPES) ---
+function debounce<T extends (...args: any[]) => void>(
+    func: T,
+    delay: number
+): (...args: Parameters<T>) => void {
+    let timeoutId: ReturnType<typeof setTimeout>;
 
-// Debounce utility to prevent excessive URL updates
-function debounce(func: (...args: any[]) => void, delay: number) {
-    let timeoutId: NodeJS.Timeout;
-    // This is the corrected part
-    return (...args: any[]) => {
+    return (...args: Parameters<T>) => {
         clearTimeout(timeoutId);
         timeoutId = setTimeout(() => {
             func(...args);
@@ -510,22 +511,28 @@ function debounce(func: (...args: any[]) => void, delay: number) {
     };
 }
 
+
+// --- URL SYNC CONTROLLER (REFACTORED WITH useMemo) ---
 const URLSyncController = () => {
     const { state } = useGloveConfigurator();
 
-    const debouncedUpdateURL = useRef(
-        debounce((newUrl: string) => {
+    // useMemo ensures the debounced function is stable and not re-created on every render.
+    const debouncedUpdateURL = useMemo(
+        () => debounce((newUrl: string) => {
             window.history.replaceState({}, '', newUrl);
-        }, 300)
-    ).current;
+        }, 300),
+        [] // Empty dependency array means this is created only once.
+    );
 
     useEffect(() => {
         const newUrl = generateShareableURL(state.configuration);
         debouncedUpdateURL(newUrl);
+        // It's now safe to include debouncedUpdateURL because useMemo guarantees it's stable.
     }, [state.configuration, debouncedUpdateURL]);
 
     return null; // This component renders nothing.
 };
+
 
 // --- Accordion Containers ---
 
