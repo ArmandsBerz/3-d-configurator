@@ -1698,7 +1698,17 @@ const UI = () => {
     }, [dispatch]);
 
     const handleShare = useCallback(async () => {
-        const configUrl = `${window.location.origin}?config=${encodeURIComponent(JSON.stringify(state.configuration))}`;
+        // 1. Generate the correct, up-to-the-minute URL from the state.
+        const configUrl = generateShareableURL(state.configuration);
+
+        // 2. IMPORTANT: Force the browser's address bar to update IMMEDIATELY.
+        try {
+            window.history.replaceState({}, '', configUrl);
+        } catch (err) {
+            console.warn('Could not update browser URL', err); // Log the error but don't stop the function
+        }
+
+        // 3. Now, share that same URL.
         const shareData = { title: 'My Custom Glove', text: 'Check out the glove I designed!', url: configUrl };
         if (navigator.share) {
             try { await navigator.share(shareData); } catch (err) { console.log('Share failed', err); }
