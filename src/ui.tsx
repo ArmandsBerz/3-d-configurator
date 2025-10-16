@@ -381,7 +381,7 @@ const ImageOption = React.forwardRef<HTMLButtonElement, ImageOptionProps>(
     ({ title, isSelected, onSelect, tabIndex }, ref) => (
         <button ref={ref} tabIndex={tabIndex} className={`relative h-[100px] cursor-pointer flex flex-col justify-center items-center text-center bg-[#2a2a2a] ${isSelected ? 'border-4 border-white' : 'hover:bg-[#333333]'} focus:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-white`} onClick={onSelect}>
             <h4 className="text-base font-semibold text-white">{title}</h4>
-            {isSelected && <div className="absolute top-0 right-0 w-[28px] h-[28px] bg-white flex items-center justify-center"><CheckmarkIcon /></div>}
+            {isSelected && <div className="absolute top-0 right-0 w-[28px] h-[28px] bg-white flex items-center justify-center"><CheckmarkIcon className="text-black" /></div>}
         </button>
     )
 );
