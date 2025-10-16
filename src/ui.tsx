@@ -1705,7 +1705,7 @@ const UI = () => {
         try {
             window.history.replaceState({}, '', configUrl);
         } catch (err) {
-            console.warn('Could not update browser URL', err); // Log the error but don't stop the function
+            console.error('Could not update browser URL', err); // Log the error but don't stop the function
         }
 
         // 3. Now, share that same URL.
