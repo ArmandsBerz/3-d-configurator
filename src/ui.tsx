@@ -1368,8 +1368,12 @@ const AccordionDesktop = ({ openAccordion, setOpenAccordion, colorForApplyAll }:
     const { configuration } = state;
     const activeShell = getModelNameForBuild(configuration.build);
     const accordionContainerRef = useRef<HTMLDivElement>(null);
+    const desktopAccordionContainerRef = useRef<HTMLDivElement>(null);
     const { isTopGradientVisible, isBottomGradientVisible } = useScrollGradients(accordionContainerRef);
     const isScrolled = isTopGradientVisible; // Derived state
+
+    const closeAccordion = useCallback(() => setOpenAccordion(null), [setOpenAccordion]);
+    useEscapeKey(desktopAccordionContainerRef, closeAccordion, !!openAccordion);
 
     const currentUiGroups = useMemo(() => UI_PRESENTATION_CONFIG[activeShell] || [], [activeShell]);
     const buildGroup = { id: 'build', title: 'Build Options' };
@@ -1406,7 +1410,7 @@ const AccordionDesktop = ({ openAccordion, setOpenAccordion, colorForApplyAll }:
     };
 
     return (
-        <div className="absolute top-0 left-0 bottom-0 w-[440px] z-10 bg-[#161616] p-10 pointer-events-none">
+        <div ref={desktopAccordionContainerRef} className="absolute top-0 left-0 bottom-0 w-[440px] z-10 bg-[#161616] p-10 pointer-events-none">
             <div className="absolute z-20 w-[70px] h-[49px] bg-gray-300 bg-opacity-75 flex items-center justify-center pointer-events-auto"><p className="font-bold text-xl text-gray-900">LOGO</p></div>
             <div className={`absolute ${isScrolled ? 'top-[82px]' : 'top-[142px]'} bottom-4 left-[40px] w-[400px] pointer-events-auto transition-all duration-30 ease-in-out overflow-hidden`}>
                 <ScrollGradient position={POSITIONS.TOP} isVisible={isTopGradientVisible} />
@@ -1696,6 +1700,8 @@ const UI = () => {
         dispatch({ type: 'RESET_LAST_ACTIVATED_PART_TYPE' } as any);
         setOpenAccordionOptionMobile(null);
     }, [dispatch]);
+
+    useEscapeKey(appContainerRef, handleClosePanel, !!openAccordionOptionMobile);
 
     const handleShare = useCallback(async () => {
         // 1. Generate the correct, up-to-the-minute URL from the state.
