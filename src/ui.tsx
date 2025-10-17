@@ -1531,7 +1531,7 @@ const AccordionMobile = ({ onOpenPanel, openAccordionOptionMobile }: {
     return (
         <section ref={listRef} className={`px-4 bg-[#161616] h-full overflow-y-auto ${openAccordionOptionMobile ? 'opacity-50 pointer-events-none' : ''}`} tabIndex={-1}>
             <ScrollGradient position={POSITIONS.TOP} isVisible={isTopGradientVisible} />
-            <button key={buildGroup.id} className="w-full h-[56px] bg-[#1C1C1C] flex items-center justify-between px-4 mb-[10px]" onClick={() => onOpenPanel(buildGroup)}>
+            <button key={buildGroup.id} className="w-full h-[56px] bg-[#1C1C1C] flex items-center justify-between px-4 mb-[10px] focus:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-white" onClick={() => onOpenPanel(buildGroup)}>
                 <div className="flex items-center">
                     <CaretRightIcon className="h-4 w-auto mr-3" />
                     <span className="text-lg">{buildGroup.title}</span>
@@ -1539,7 +1539,7 @@ const AccordionMobile = ({ onOpenPanel, openAccordionOptionMobile }: {
             </button>
 
             {currentUiGroups.map((group: UIPartGroup) => (
-                <button key={group.id} className="w-full h-[56px] bg-[#1C1C1C] flex items-center justify-between px-4 mb-[10px]" onClick={() => onOpenPanel(group)}>
+                <button key={group.id} className="w-full h-[56px] bg-[#1C1C1C] flex items-center justify-between px-4 mb-[10px] focus:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-white" onClick={() => onOpenPanel(group)}>
                     <div className="flex items-center">
                         <CaretRightIcon className="h-4 w-auto mr-3" />
                         <span className="text-lg">{group.title}</span>
@@ -1550,7 +1550,7 @@ const AccordionMobile = ({ onOpenPanel, openAccordionOptionMobile }: {
 
             {/* --- MODIFICATION: Render personalization panels separately --- */}
             {personalizationGroups.map(group => (
-                <button key={group.id} className="w-full h-[56px] bg-[#1C1C1C] flex items-center justify-between px-4 mb-[10px]" onClick={() => onOpenPanel(group)}>
+                <button key={group.id} className="w-full h-[56px] bg-[#1C1C1C] flex items-center justify-between px-4 mb-[10px] focus:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-white" onClick={() => onOpenPanel(group)}>
                     <div className="flex items-center">
                         <CaretRightIcon className="h-4 w-auto mr-3" />
                         <span className="text-lg">{group.title}</span>
