@@ -1,3 +1,4 @@
+import 'wicg-inert';
 import { SceneManager } from './viewer';
 import {
     SceneContext,
