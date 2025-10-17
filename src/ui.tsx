@@ -1495,15 +1495,16 @@ const AccordionDesktop = ({ openAccordion, setOpenAccordion, colorForApplyAll }:
     );
 };
 
-const AccordionMobile = ({ onOpenPanel, openAccordionOptionMobile }: {
-    onOpenPanel: (group: UIPartGroup | { id: 'build' | TextPartId, title: string }) => void;
+interface AccordionMobileProps {
+    onOpenPanel: (group: UIPartGroup | { id: 'build' | TextPartId, title: string }, event: React.MouseEvent<HTMLButtonElement>) => void;
     openAccordionOptionMobile: MobileAccordionState;
-}) => {
+}
+
+const AccordionMobile = React.forwardRef<HTMLElement, AccordionMobileProps>(({ onOpenPanel, openAccordionOptionMobile }, ref) => {
     const { state } = useGloveConfigurator();
     const { configuration } = state;
     const activeShell = getModelNameForBuild(configuration.build);
-    const listRef = useRef<HTMLElement>(null);
-    const { isTopGradientVisible, isBottomGradientVisible } = useScrollGradients(listRef);
+    const { isTopGradientVisible, isBottomGradientVisible } = useScrollGradients(ref as React.RefObject<HTMLElement>);
 
     const currentUiGroups = useMemo(() => UI_PRESENTATION_CONFIG[activeShell] || [], [activeShell]);
     const buildGroup = { id: 'build' as const, title: 'Build Options' };
@@ -1529,9 +1530,9 @@ const AccordionMobile = ({ onOpenPanel, openAccordionOptionMobile }: {
     };
 
     return (
-        <section ref={listRef} className={`px-4 bg-[#161616] h-full overflow-y-auto ${openAccordionOptionMobile ? 'opacity-50 pointer-events-none' : ''}`} tabIndex={-1}>
+        <section ref={ref} className={`px-4 bg-[#161616] h-full overflow-y-auto ${openAccordionOptionMobile ? 'opacity-50 pointer-events-none' : ''}`} tabIndex={-1}>
             <ScrollGradient position={POSITIONS.TOP} isVisible={isTopGradientVisible} />
-            <button key={buildGroup.id} className="w-full h-[56px] bg-[#1C1C1C] flex items-center justify-between px-4 mb-[10px] focus:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-white" onClick={() => onOpenPanel(buildGroup)}>
+            <button key={buildGroup.id} className="w-full h-[56px] bg-[#1C1C1C] flex items-center justify-between px-4 mb-[10px] focus:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-white" onClick={(e) => onOpenPanel(buildGroup, e)}>
                 <div className="flex items-center">
                     <CaretRightIcon className="h-4 w-auto mr-3" />
                     <span className="text-lg">{buildGroup.title}</span>
@@ -1539,7 +1540,7 @@ const AccordionMobile = ({ onOpenPanel, openAccordionOptionMobile }: {
             </button>
 
             {currentUiGroups.map((group: UIPartGroup) => (
-                <button key={group.id} className="w-full h-[56px] bg-[#1C1C1C] flex items-center justify-between px-4 mb-[10px] focus:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-white" onClick={() => onOpenPanel(group)}>
+                <button key={group.id} className="w-full h-[56px] bg-[#1C1C1C] flex items-center justify-between px-4 mb-[10px] focus:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-white" onClick={(e) => onOpenPanel(group, e)}>
                     <div className="flex items-center">
                         <CaretRightIcon className="h-4 w-auto mr-3" />
                         <span className="text-lg">{group.title}</span>
@@ -1550,7 +1551,7 @@ const AccordionMobile = ({ onOpenPanel, openAccordionOptionMobile }: {
 
             {/* --- MODIFICATION: Render personalization panels separately --- */}
             {personalizationGroups.map(group => (
-                <button key={group.id} className="w-full h-[56px] bg-[#1C1C1C] flex items-center justify-between px-4 mb-[10px] focus:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-white" onClick={() => onOpenPanel(group)}>
+                <button key={group.id} className="w-full h-[56px] bg-[#1C1C1C] flex items-center justify-between px-4 mb-[10px] focus:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-white" onClick={(e) => onOpenPanel(group, e)}>
                     <div className="flex items-center">
                         <CaretRightIcon className="h-4 w-auto mr-3" />
                         <span className="text-lg">{group.title}</span>
@@ -1562,7 +1563,7 @@ const AccordionMobile = ({ onOpenPanel, openAccordionOptionMobile }: {
             <ScrollGradient position={POSITIONS.BOTTOM} isVisible={isBottomGradientVisible} />
         </section>
     );
-};
+});
 
 
 // --- Main UI Component ---
@@ -1574,6 +1575,8 @@ const UI = () => {
     const [openAccordionOptionMobile, setOpenAccordionOptionMobile] = useState<MobileAccordionState>(null);
     const appContainerRef = useRef<HTMLDivElement>(null);
     const mainRef = useRef<HTMLElement>(null);
+    const mobileListRef = useRef<HTMLElement>(null);
+    const triggerButtonRef = useRef<HTMLButtonElement | null>(null);
 
     // For Desktop state
     const [openAccordion, setOpenAccordion] = useState<string | null>('build');
@@ -1677,11 +1680,60 @@ const UI = () => {
             observer.disconnect();
         };
     }, []);
-    useEffect(() => { /* ... focus trap logic ... */ }, [isDesktop, openAccordionOptionMobile]);
 
     const panelHeaderRef = useRef<HTMLButtonElement | null>(null);
 
-    const handleOpenPanel = (group: UIPartGroup | { id: 'build' | TextPartId, title: string }) => {
+    useLayoutEffect(() => {
+        const listElement = mobileListRef.current;
+        if (!listElement) return;
+
+        if (openAccordionOptionMobile) {
+            listElement.setAttribute('inert', '');
+            panelHeaderRef.current?.focus();
+        } else {
+            listElement.removeAttribute('inert');
+            if (triggerButtonRef.current) {
+                triggerButtonRef.current.focus();
+                triggerButtonRef.current = null;
+            }
+        }
+    }, [openAccordionOptionMobile]);
+
+    useEffect(() => {
+        const container = appContainerRef.current;
+        if (!container) return;
+        const handleKeyDown = (event: KeyboardEvent) => {
+            if (event.key !== 'Tab') return;
+            const focusableElements = Array.from(
+                container.querySelectorAll<HTMLElement>(
+                    'a[href]:not([disabled]), button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), details:not([disabled]), [tabindex]:not([tabindex="-1"])'
+                )
+            ).filter(el => !(el as any).inert && window.getComputedStyle(el).display !== 'none');
+            if (focusableElements.length === 0) return;
+            const firstElement = focusableElements[0];
+            const lastElement = focusableElements[focusableElements.length - 1];
+            if (event.shiftKey) {
+                if (document.activeElement === firstElement) {
+                    lastElement.focus();
+                    event.preventDefault();
+                }
+            } else {
+                if (document.activeElement === lastElement) {
+                    firstElement.focus();
+                    event.preventDefault();
+                }
+            }
+        };
+        container.addEventListener('keydown', handleKeyDown);
+        return () => {
+            if (container) {
+                container.removeEventListener('keydown', handleKeyDown);
+            }
+        };
+    }, [isDesktop, openAccordionOptionMobile, isVisualizationExpanded]);
+
+    const handleOpenPanel = (group: UIPartGroup | { id: 'build' | TextPartId, title: string }, event: React.MouseEvent<HTMLButtonElement>) => {
+        triggerButtonRef.current = event.currentTarget;
         if (group.id === 'build') {
             setOpenAccordionOptionMobile({ name: 'BUILD' });
         } else if ('type' in group && group.type === 'gallery') {
@@ -1743,6 +1795,7 @@ const UI = () => {
     };
 
     const handleReviewClick = (event: React.MouseEvent<HTMLButtonElement>) => {
+        triggerButtonRef.current = event.currentTarget;
         setOpenAccordionOptionMobile({ name: 'SUMMARY' });
     };
 
@@ -1800,6 +1853,7 @@ const UI = () => {
                     <div className="flex flex-col overflow-hidden bg-[#161616] pointer-events-auto" style={{ flexBasis: 'calc(38.2% + 66px)' }}>
                         <div className="relative flex-grow overflow-hidden">
                             <AccordionMobile
+                                ref={mobileListRef}
                                 onOpenPanel={handleOpenPanel}
                                 openAccordionOptionMobile={openAccordionOptionMobile}
                             />
