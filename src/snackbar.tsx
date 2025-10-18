@@ -8,7 +8,7 @@ interface SnackbarProps {
 }
 
 /**
- * A component that displays a short message at the bottom of the screen
+ * A component that displays a short message at the top-center of the screen
  * and automatically dismisses itself.
  */
 export const Snackbar = ({ message, onClose }: SnackbarProps) => {
@@ -47,10 +47,10 @@ export const Snackbar = ({ message, onClose }: SnackbarProps) => {
 
   return (
     <div
-      className={`fixed bottom-5 left-1/2 -translate-x-1/2 z-50 w-auto max-w-[90%] p-4 bg-[#333333] text-white text-base font-medium rounded-lg shadow-lg transition-all duration-300 ease-in-out ${
+      className={`fixed top-5 left-1/2 -translate-x-1/2 z-50 w-auto max-w-[90%] p-4 bg-[#333333] text-white text-base font-medium shadow-lg transition-all duration-300 ease-in-out ${
         isVisible
-          ? 'opacity-100 translate-y-0'  // Visible state: slide up and fade in
-          : 'opacity-0 translate-y-10' // Hidden state: slide down and fade out
+          ? 'opacity-100 translate-y-0'    // Visible state: slide down and fade in
+          : 'opacity-0 -translate-y-10'   // Hidden state: slide up and fade out
       }`}
       role="status" // Announces the message to screen readers
       aria-live="polite"

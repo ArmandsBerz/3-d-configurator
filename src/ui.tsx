@@ -1777,7 +1777,7 @@ const UI = () => {
             // --- MODIFICATION: Use Snackbar instead of alert ---
             try {
                 await navigator.clipboard.writeText(configUrl);
-                setSnackbarMessage('Sharable link copied to clipboard!'); // Show success snackbar
+                setSnackbarMessage('Share link copied!'); // Show success snackbar
             } catch (err) {
                 setSnackbarMessage('Failed to copy link.'); // Show error snackbar
             }
