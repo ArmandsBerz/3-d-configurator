@@ -31,6 +31,7 @@ import {
 import React, { useState, useRef, useLayoutEffect, useCallback, useEffect, createContext, useContext, useReducer, ReactNode, ReactElement, useMemo } from 'react';
 import BabylonCanvas from './viewer';
 import { SummaryIcon, BackArrowIcon, CheckmarkIcon, LongArrowRightIcon, CaretRightIcon, CaretDownIcon, CaretUpIcon, ShareIcon, CollapseIcon, ExpandIcon, DragIcon, ZoomIcon } from './icons';
+import { Snackbar } from './snackbar'; // Import the Snackbar component
 
 // --- START: NEW SCROLL GRADIENT HOOK ---
 export const useScrollGradients = (scrollableRef: React.RefObject<HTMLElement | null>) => {
@@ -1572,6 +1573,7 @@ const UI = () => {
     const isDesktop = useBreakpoint();
     const { state, dispatch } = useGloveConfigurator();
     const { configuration, isLoading, lastActivatedPartType } = state as AppState; // Cast to our extended AppState
+    const [snackbarMessage, setSnackbarMessage] = useState<string | null>(null); // State for Snackbar message
     const [isVisualizationExpanded, setIsVisualizationExpanded] = useState(false);
     const [openAccordionOptionMobile, setOpenAccordionOptionMobile] = useState<MobileAccordionState>(null);
     const appContainerRef = useRef<HTMLDivElement>(null);
@@ -1772,7 +1774,13 @@ const UI = () => {
         if (navigator.share) {
             try { await navigator.share(shareData); } catch (err) { console.log('Share failed', err); }
         } else {
-            try { await navigator.clipboard.writeText(configUrl); alert('Sharable link copied to clipboard!'); } catch (err) { alert('Failed to copy link.'); }
+            // --- MODIFICATION: Use Snackbar instead of alert ---
+            try {
+                await navigator.clipboard.writeText(configUrl);
+                setSnackbarMessage('Sharable link copied to clipboard!'); // Show success snackbar
+            } catch (err) {
+                setSnackbarMessage('Failed to copy link.'); // Show error snackbar
+            }
         }
     }, [state.configuration]);
 
@@ -1802,6 +1810,15 @@ const UI = () => {
 
     return (
         <div ref={appContainerRef} className="flex flex-col lg:relative w-full h-full bg-transparent text-white">
+
+            {/* --- SNACKBAR RENDER --- */}
+            {snackbarMessage && (
+                <Snackbar
+                    message={snackbarMessage}
+                    onClose={() => setSnackbarMessage(null)} // Handler to clear the message
+                />
+            )}
+            {/* --- END SNACKBAR RENDER --- */}
 
             {isLoading && (
                 <div className="absolute inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 pointer-events-auto">
