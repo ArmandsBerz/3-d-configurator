@@ -1176,8 +1176,9 @@ const useBreakpoint = (breakpoint: string = NUMERIC_CONSTANTS.DESKTOP_BREAKPOINT
 const NavigationHint = ({ isVisible }: { isVisible: boolean }) => {
     if (!isVisible) return null;
 
+    // *** MODIFICATION: Changed items-center to items-start ***
     return (
-        <div className="absolute inset-0 flex items-center justify-center pt-[10px] bg-black bg-opacity-65 z-10 pointer-events-none">
+        <div className="absolute inset-0 flex items-start justify-center pt-[10px] bg-black bg-opacity-65 z-10 pointer-events-none">
             <p className="text-white text-sm font-semibold">Use arrow keys to navigate</p>
         </div>
     );
