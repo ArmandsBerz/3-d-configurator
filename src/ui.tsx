@@ -26,9 +26,8 @@ import {
     // MODIFICATION: Import the lookup map for display names
     colorLookupMap,
     loadConfigurationFromURL,
-    generateShareableURL,
-    LoadResult, // Import the LoadResult type
-    LoadStatus // Import the LoadStatus type
+    generateShareableURL
+    // LoadResult and LoadStatus types are implicitly known via loadConfigurationFromURL, no need to import them here
 } from './logic';
 import React, { useState, useRef, useLayoutEffect, useCallback, useEffect, createContext, useContext, useReducer, ReactNode, ReactElement, useMemo } from 'react';
 import BabylonCanvas from './viewer';
