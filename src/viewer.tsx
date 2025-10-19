@@ -227,14 +227,14 @@ export class SceneManager {
         // Add other shared textures like the detail map
         const detailTexture = new Texture(`${rootUrl}details.png`, this.scene);
         detailTexture.coordinatesIndex = 0;
-        detailTexture.uScale = 4;
-        detailTexture.vScale = 4;
+        detailTexture.uScale = 3;
+        detailTexture.vScale = 3;
         material.detailMap.isEnabled = true;
         material.detailMap.normalBlendMethod = 1;
         material.detailMap.texture = detailTexture;
         material.detailMap.diffuseBlendLevel = 0;
         material.detailMap.roughnessBlendLevel = 0;
-        material.detailMap.bumpLevel = .6;
+        material.detailMap.bumpLevel = .35;
         
         // Create the color swap plugin instance with the full color palette
         const gloveConfig: ColorSwapConfig = {

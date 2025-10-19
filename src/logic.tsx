@@ -297,51 +297,68 @@ export const generateShareableURL = (config: GloveConfiguration): string => {
     .replace(/\+/g, '-')
     .replace(/\//g, '_')
     .replace(/=/g, '');
-  
+
   const versionedPayload = `${CONFIG_VERSION}:${processedData}`;
   const baseURL = window.location.origin + window.location.pathname;
   return `${baseURL}?config=${versionedPayload}`;
 };
 
+// --- MODIFICATION: Define new return type ---
+export type LoadStatus = 'success' | 'failed' | 'empty';
+export interface LoadResult {
+    configuration: GloveConfiguration;
+    status: LoadStatus;
+}
+// --- END MODIFICATION ---
+
 /**
  * Safely decodes the URL from the browser's address bar.
- * If the URL is missing, invalid, or corrupted, it returns the default state.
+ * If the URL is missing, invalid, or corrupted, it returns the default state
+ * along with a status indicating why.
  */
-export const loadConfigurationFromURL = (): GloveConfiguration => {
+// --- MODIFICATION: Update function signature and return statements ---
+export const loadConfigurationFromURL = (): LoadResult => {
   try {
     const urlParams = new URLSearchParams(window.location.search);
     const versionedPayload = urlParams.get('config');
 
     if (!versionedPayload) {
-      return initialState.configuration;
+      // No config param found
+      return { configuration: initialState.configuration, status: 'empty' };
     }
 
     const [version, data] = versionedPayload.split(':', 2);
 
     if (version !== CONFIG_VERSION) {
+      // Version mismatch
       throw new Error(`Unsupported config version: ${version}`);
     }
 
     if (!data) {
+        // Data part is missing after version prefix
         throw new Error('No data in payload');
     }
-    
+
     const base64 = data.replace(/-/g, '+').replace(/_/g, '/');
     const compressed = fflate.strToU8(atob(base64), true);
     const serializedString = fflate.strFromU8(fflate.inflateSync(compressed));
 
 
     if (!serializedString) {
+      // Decompression or decoding failed
       throw new Error('Processing failed');
     }
 
-    return deserialize(serializedString);
+    // Success!
+    return { configuration: deserialize(serializedString), status: 'success' };
 
   } catch (error) {
+    // Generic failure during parsing/decoding
     console.warn('Could not load config from URL. Using default.', error);
-    return initialState.configuration;
+    return { configuration: initialState.configuration, status: 'failed' };
   }
 };
+// --- END MODIFICATION ---
 
 // --- MODIFIED PER PLAN: GLOVE_TO_WEBS_MAP uses new webtype IDs as keys ---
 export const GLOVE_TO_WEBS_MAP = {

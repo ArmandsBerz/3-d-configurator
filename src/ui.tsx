@@ -26,7 +26,9 @@ import {
     // MODIFICATION: Import the lookup map for display names
     colorLookupMap,
     loadConfigurationFromURL,
-    generateShareableURL
+    generateShareableURL,
+    LoadResult, // Import the LoadResult type
+    LoadStatus // Import the LoadStatus type
 } from './logic';
 import React, { useState, useRef, useLayoutEffect, useCallback, useEffect, createContext, useContext, useReducer, ReactNode, ReactElement, useMemo } from 'react';
 import BabylonCanvas from './viewer';
@@ -329,14 +331,14 @@ interface GloveConfiguratorProviderProps {
 
 // --- UPDATE APP INITIALIZATION ---
 
-// 1. Get the starting configuration by reading the URL ONCE.
-const startingConfiguration = loadConfigurationFromURL();
+// 1. Get the starting configuration AND status by reading the URL ONCE.
+const initialLoadResult = loadConfigurationFromURL(); // Captures { configuration, status }
 
 // 2. Update your provider to use this starting configuration.
 const GloveConfiguratorProvider = ({ children }: GloveConfiguratorProviderProps) => {
     const [state, dispatch] = useReducer(gloveConfigReducer, {
         ...initialState,
-        configuration: startingConfiguration
+        configuration: initialLoadResult.configuration // Use only the configuration part
     });
 
     return (
@@ -1583,6 +1585,14 @@ const UI = () => {
 
     // For Desktop state
     const [openAccordion, setOpenAccordion] = useState<string | null>('build');
+
+    // --- MODIFICATION: Add useEffect for checking initial load status ---
+    useEffect(() => {
+        if (initialLoadResult.status === 'failed') {
+            setSnackbarMessage("Invalid share link. Showing default glove.");
+        }
+    }, []); // Empty dependency array ensures this runs only once on mount
+    // --- END MODIFICATION ---
 
     const activeShell = getModelNameForBuild(configuration.build);
     const currentUiGroups = useMemo(() => UI_PRESENTATION_CONFIG[activeShell] || [], [activeShell]);
