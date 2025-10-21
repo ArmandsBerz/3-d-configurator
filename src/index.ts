@@ -139,41 +139,38 @@ class GradientColorSwapPlugin extends MaterialPluginBase {
   }
 
   getCustomCode(shaderType: string) {
-    if (shaderType !== "fragment") return null;
+  if (shaderType !== "fragment") return null;
+  return {
+    "CUSTOM_FRAGMENT_BEFORE_LIGHTS": `
+      #ifdef COLOR_SWAP
+        // operate on albedo that PBR uses for lighting
+        vec3 original = surfaceAlbedo.rgb;
+        vec3 accumulatedColor = vec3(0.0);
+        float totalInfluence = 0.0;
 
-    // work at a late stage so PBR can’t overwrite it (Chrome/ANGLE safe)
-    const varName = this._varColorName; // "finalColor" for PBR, "color" for Standard
+        float safeRadius = max(blendRadius, 0.0001);
+        float radiusSq = 2.0 * safeRadius * safeRadius;
 
-    return {
-      "CUSTOM_FRAGMENT_BEFORE_FRAGCOLOR": `
-        #ifdef COLOR_SWAP
-          vec3 original = ${varName}.rgb;
-          vec3 accumulatedColor = vec3(0.0);
-          float totalInfluence = 0.0;
+        vec3 bases[6];
+        vec3 repls[6];
+        bases[0]=base0; bases[1]=base1; bases[2]=base2; bases[3]=base3; bases[4]=base4; bases[5]=base5;
+        repls[0]=repl0; repls[1]=repl1; repls[2]=repl2; repls[3]=repl3; repls[4]=repl4; repls[5]=repl5;
 
-          float safeRadius = max(blendRadius, 0.0001);
-          float radiusSq = 2.0 * safeRadius * safeRadius;
+        for (int i = 0; i < 6; i++) {
+          float d = distance(original, bases[i]);
+          float inf = exp(-(d*d) / radiusSq);
+          accumulatedColor += repls[i] * inf;
+          totalInfluence += inf;
+        }
 
-          vec3 bases[6];
-          vec3 repls[6];
-          bases[0]=base0; bases[1]=base1; bases[2]=base2; bases[3]=base3; bases[4]=base4; bases[5]=base5;
-          repls[0]=repl0; repls[1]=repl1; repls[2]=repl2; repls[3]=repl3; repls[4]=repl4; repls[5]=repl5;
-
-          for (int i = 0; i < 6; i++) {
-            float d = distance(original, bases[i]);
-            float inf = exp(-(d*d) / radiusSq);
-            accumulatedColor += repls[i] * inf;
-            totalInfluence += inf;
-          }
-
-          if (totalInfluence > 0.001) {
-            vec3 finalSwap = accumulatedColor / totalInfluence;
-            ${varName}.rgb = mix(original, finalSwap, min(totalInfluence * blendStrength, 1.0));
-          }
-        #endif
-      `
-    };
-  }
+        if (totalInfluence > 0.001) {
+          vec3 finalSwap = accumulatedColor / totalInfluence;
+          surfaceAlbedo.rgb = mix(original, finalSwap, min(totalInfluence * blendStrength, 1.0));
+        }
+      #endif
+    `
+  };
+}
 }
 
 const createScene = async () => {
