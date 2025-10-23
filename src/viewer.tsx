@@ -91,12 +91,14 @@ class ColorSwapPlugin extends MaterialPluginBase {
         const paletteBuffer = new Uint8Array(paletteBufferSize);
         let bufferIndex = 0;
         for (const color of config.initialReplacements) {
-            // Convert Color3 (linear, 0-1) to sRGB bytes (0-255) for RawTexture
-            // RawTexture.CreateRGBTexture expects sRGB bytes by default
-            const gammaColor = color.toGammaSpace(); // Convert back to gamma space
-            paletteBuffer[bufferIndex++] = Math.round(gammaColor.r * 255);
-            paletteBuffer[bufferIndex++] = Math.round(gammaColor.g * 255);
-            paletteBuffer[bufferIndex++] = Math.round(gammaColor.b * 255);
+            // --- START OF GAMMA CORRECTION (per ChatGPT suggestion) ---
+            // Write LINEAR Color3 (0-1) values directly as bytes (0-255)
+            // because _paletteLUT.gammaSpace is set to false.
+            // const gammaColor = color.toGammaSpace(); // REMOVED as requested
+            paletteBuffer[bufferIndex++] = Math.round(color.r * 255); // Use linear .r
+            paletteBuffer[bufferIndex++] = Math.round(color.g * 255); // Use linear .g
+            paletteBuffer[bufferIndex++] = Math.round(color.b * 255); // Use linear .b
+            // --- END OF GAMMA CORRECTION ---
         }
 
         // Create the texture from the raw byte data
