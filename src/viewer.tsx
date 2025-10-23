@@ -32,12 +32,14 @@ interface ColorSwapConfig {
 
 // --- REFACTORED PLUGIN CODE ---
 class ColorSwapPlugin extends MaterialPluginBase {
-    // --- START OF STEP 1 MODIFICATION ---
+    // --- START OF STEP 1 MODIFICATION (Corrected Plan) ---
     // Removed: private _baseColors: Color3[] = [];
     // Removed: private _replacements: Color3[] = [];
-    private _colorLUT: DynamicTexture;
-    private _paletteSize = 32; // Added per plan. Will be confirmed by config in Step 2.
-    // --- END OF STEP 1 MODIFICATION ---
+    private _dataLUT: DynamicTexture; // Will hold base colors + pointers
+    private _paletteLUT: Texture; // Will hold the swappable palette colors
+    private _zoneCount = 32; // Number of zones/base colors
+    private _paletteColorCount = 20; // Number of actual swappable colors (adjust if needed)
+    // --- END OF STEP 1 MODIFICATION (Corrected Plan) ---
 
     public blendRadius = 0.01;
     public blendStrength = 1.5;
@@ -225,7 +227,7 @@ export class SceneManager {
 
         // Set unique Color ID texture for this model
         const colorIdTexture = new Texture(`${rootUrl}${modelName}.png`, this.scene, true, false, Constants.TEXTURE_NEAREST_SAMPLINGMODE);
-        
+
         // --- START OF CHATGPT WARNING 5 (Gamma) ---
         // This is where you would apply the gammaSpace = false rule.
         // It's applied to the colorIdTexture, not just the LUT.
@@ -249,7 +251,7 @@ export class SceneManager {
         material.detailMap.diffuseBlendLevel = 0;
         material.detailMap.roughnessBlendLevel = 0;
         material.detailMap.bumpLevel = .35;
-        
+
         // Create the color swap plugin instance with the full color palette
         const gloveConfig: ColorSwapConfig = {
             baseColors: [
@@ -258,6 +260,7 @@ export class SceneManager {
                 "#FF3000", "#00CFFF", "#50FF00", "#AF00FF", "#FFEF00", "#0010FF", "#00FF70", "#FF008F",
                 "#FF8F00", "#0070FF", "#00FF10", "#FF00EF", "#AFFF00", "#5000FF", "#00FFCF", "#FF0030"
             ],
+            // NOTE: This initialReplacements will need adjustment in Step 2 for the new plan
             initialReplacements: Array(32).fill(0).map(() => new Color3(Math.random(), Math.random(), Math.random()))
         };
 
@@ -271,18 +274,18 @@ export class SceneManager {
         this.isSceneReady = true;
         onReady(this);
     }
-    
+
     public isReady = (): boolean => this.isSceneReady;
-    
+
     // --- NEW: Specific update methods for shell and web ---
     public updateShellColor(index: number, color: Color3): void {
         this.activeShellPlugin?.updateColor(index, color);
     }
-    
+
     public updateWebColor(index: number, color: Color3): void {
         this.activeWebPlugin?.updateColor(index, color);
     }
-    
+
     // --- REFACTORED: updateBuild now uses the caching pattern ---
     public async updateBuild(modelName: string): Promise<void> {
         if (!modelName || this.activeShellName === modelName) return;
@@ -315,7 +318,7 @@ export class SceneManager {
                 }
             }
         }
-        
+
         // This logic below remains the same
         this.activeShellName = modelName;
         this.gloveShells.forEach((mesh, name) => {
@@ -354,7 +357,7 @@ export class SceneManager {
                 const webMaterial = container.materials.find(m => m.name === 'webMat') as PBRMaterial;
                 if (webMaterial) {
                     const webPlugin = this._setupMaterialWithPlugin(webMaterial, webModelName);
-                    
+
                     this.activeWebMaterial = webMaterial;
                     this.activeWebPlugin = webPlugin;
                     this.webMaterialsCache.set(webModelName, { material: webMaterial, plugin: webPlugin });
