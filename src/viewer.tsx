@@ -18,6 +18,7 @@ import {
     Color3,
     DynamicTexture,
     Texture,
+    RawTexture, // Added for Step 2
     // Note: SubMesh is implicitly used by bindForSubMesh, but not explicitly imported.
     // This was in your original code, so I am preserving it.
 } from '@babylonjs/core';
@@ -27,7 +28,16 @@ import { GLOVE_TO_WEBS_MAP } from './logic';
 // --- INTERFACE FOR PLUGIN CONFIGURATION ---
 interface ColorSwapConfig {
     baseColors: string[]; // Hex strings
-    initialReplacements: Color3[];
+    initialReplacements: Color3[]; // These are the PALETTE colors
+}
+
+// --- Helper function for Step 2 & 3 ---
+// Encodes a palette index (0-19 ideally) into an RGB color string for canvas drawing
+// We store the index in the Red channel.
+function encodeIndexAsColor(index: number): string {
+    // Clamp index just in case, although checks should prevent out-of-bounds
+    const clampedIndex = Math.max(0, Math.min(index, 255));
+    return `rgb(${clampedIndex}, 0, 0)`;
 }
 
 // --- REFACTORED PLUGIN CODE ---
@@ -48,15 +58,84 @@ class ColorSwapPlugin extends MaterialPluginBase {
     constructor(material: PBRBaseMaterial, config: ColorSwapConfig) {
         super(material, "ColorSwap", 200, { "COLOR_SWAP": false });
         this._markAllDefinesAsDirty = material._dirtyCallbacks[Constants.MATERIAL_AllDirtyFlag];
-        if (!config || !config.baseColors || !config.initialReplacements || config.baseColors.length !== config.initialReplacements.length) {
-            console.error("ColorSwapPlugin: Invalid configuration provided.");
+
+        // --- START OF STEP 2 MODIFICATION ---
+        // 1. Determine Actual Sizes & Validate Config
+        if (!config || !config.baseColors || !config.initialReplacements) {
+            console.error("ColorSwapPlugin: Invalid configuration provided (missing arrays).");
+            return; // Early exit if config is fundamentally broken
+        }
+        // Use provided lengths, with fallbacks just in case (though validation helps)
+        this._zoneCount = config.baseColors.length || 32;
+        this._paletteColorCount = config.initialReplacements.length || 20;
+
+        if (this._zoneCount === 0 || this._paletteColorCount === 0) {
+             console.error("ColorSwapPlugin: Config arrays cannot be empty.");
+             return; // Need at least one of each
+        }
+        if (this._paletteColorCount > 255) {
+            console.error("ColorSwapPlugin: Cannot support more than 255 palette colors with current encoding.");
+            // You'd need a more complex encoding (using G and B channels) for more colors.
             return;
         }
-        this._replacements = [...config.initialReplacements]; // <-- This line is now broken (as expected)
-        for (const hex of config.baseColors) {
-            const linearColor = Color3.FromHexString(hex).toLinearSpace();
-            this._baseColors.push(linearColor); // <-- This line is now broken (as expected)
+
+        const scene = material.getScene(); // Get scene reference
+
+        // 2. Create _dataLUT (Dynamic Texture - zoneCount x 2)
+        this._dataLUT = new DynamicTexture("dataLUT", { width: this._zoneCount, height: 2 }, scene, false);
+        this._dataLUT.updateSamplingMode(Constants.TEXTURE_NEAREST_SAMPLINGMODE); // Critical: Nearest for exact data
+        this._dataLUT.gammaSpace = false; // Critical: Treat as linear data, not sRGB color
+
+        // 3. Create _paletteLUT (Static Texture - paletteColorCount x 1)
+        const paletteBufferSize = this._paletteColorCount * 3; // 3 bytes per RGB color
+        const paletteBuffer = new Uint8Array(paletteBufferSize);
+        let bufferIndex = 0;
+        for (const color of config.initialReplacements) {
+            // Convert Color3 (linear, 0-1) to sRGB bytes (0-255) for RawTexture
+            // RawTexture.CreateRGBTexture expects sRGB bytes by default
+            const gammaColor = color.toGammaSpace(); // Convert back to gamma space
+            paletteBuffer[bufferIndex++] = Math.round(gammaColor.r * 255);
+            paletteBuffer[bufferIndex++] = Math.round(gammaColor.g * 255);
+            paletteBuffer[bufferIndex++] = Math.round(gammaColor.b * 255);
         }
+
+        // Create the texture from the raw byte data
+        this._paletteLUT = RawTexture.CreateRGBTexture(
+            paletteBuffer,
+            this._paletteColorCount, // width
+            1, // height
+            scene,
+            false, // noMipmap
+            false, // invertY
+            Constants.TEXTURE_NEAREST_SAMPLINGMODE, // Critical: Nearest sampling
+            Constants.TEXTUREFORMAT_RGB // Specify RGB format
+        );
+        this._paletteLUT.gammaSpace = false; // Critical: Treat as linear data
+
+        // 4. Populate _dataLUT
+        const ctx = this._dataLUT.getContext();
+        for (let i = 0; i < this._zoneCount; i++) {
+            // Draw the baseColor (Hex string from config) onto Row 0
+            // Need to handle potential missing base colors if array is somehow shorter
+            ctx.fillStyle = config.baseColors[i] || '#000000'; // Default to black if missing
+            ctx.fillRect(i, 0, 1, 1);
+
+            // Draw the Initial Pointer onto Row 1
+            // Maps Zone 'i' to Palette Index 'i % paletteColorCount'
+            const initialPaletteIndex = i % this._paletteColorCount;
+            ctx.fillStyle = encodeIndexAsColor(initialPaletteIndex);
+            ctx.fillRect(i, 1, 1, 1);
+        }
+
+        // 5. Update _dataLUT to send initial data to GPU
+        this._dataLUT.update();
+
+        // Removed old broken assignments:
+        // this._replacements = [...config.initialReplacements];
+        // for (const hex of config.baseColors) { ... this._baseColors.push(linearColor); ... }
+
+        // --- END OF STEP 2 MODIFICATION ---
+
         this.isEnabled = true;
     }
     public updateColor(index: number, newColor: Color3) {
@@ -67,6 +146,9 @@ class ColorSwapPlugin extends MaterialPluginBase {
         this._replacements[index] = newColor; // <-- This line is now broken (as expected)
     }
     public dispose() {
+        // --- TODO: Also dispose the textures when Step 3+ are done ---
+        // this._dataLUT?.dispose();
+        // this._paletteLUT?.dispose();
         this._baseColors = []; // <-- This line is now broken (as expected)
         this._replacements = []; // <-- This line is now broken (as expected)
         super.dispose();
@@ -148,6 +230,7 @@ surfaceAlbedo.rgb = finalPixelColor;
 }
 
 // --- AssetManager Class ---
+// (No changes below this line, except for the typo fix)
 class AssetManager {
     private cache = new Map<string, Promise<AssetContainer>>();
     constructor(private scene: Scene) { }
@@ -260,7 +343,7 @@ export class SceneManager {
                 "#FF3000", "#00CFFF", "#50FF00", "#AF00FF", "#FFEF00", "#0010FF", "#00FF70", "#FF008F",
                 "#FF8F00", "#0070FF", "#00FF10", "#FF00EF", "#AFFF00", "#5000FF", "#00FFCF", "#FF0030"
             ],
-            // NOTE: This initialReplacements will need adjustment in Step 2 for the new plan
+            // NOTE: This initialReplacements should now ideally match the actual palette size (e.g., 20)
             initialReplacements: Array(32).fill(0).map(() => new Color3(Math.random(), Math.random(), Math.random()))
         };
 
