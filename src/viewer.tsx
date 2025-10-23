@@ -17,7 +17,9 @@ import {
     Constants,
     Color3,
     DynamicTexture,
-    Texture
+    Texture,
+    // Note: SubMesh is implicitly used by bindForSubMesh, but not explicitly imported.
+    // This was in your original code, so I am preserving it.
 } from '@babylonjs/core';
 import "@babylonjs/loaders";
 import { GLOVE_TO_WEBS_MAP } from './logic';
@@ -30,8 +32,13 @@ interface ColorSwapConfig {
 
 // --- REFACTORED PLUGIN CODE ---
 class ColorSwapPlugin extends MaterialPluginBase {
-    private _baseColors: Color3[] = [];
-    private _replacements: Color3[] = [];
+    // --- START OF STEP 1 MODIFICATION ---
+    // Removed: private _baseColors: Color3[] = [];
+    // Removed: private _replacements: Color3[] = [];
+    private _colorLUT: DynamicTexture;
+    private _paletteSize = 32; // Added per plan. Will be confirmed by config in Step 2.
+    // --- END OF STEP 1 MODIFICATION ---
+
     public blendRadius = 0.01;
     public blendStrength = 1.5;
     private _isEnabled = false;
@@ -43,23 +50,23 @@ class ColorSwapPlugin extends MaterialPluginBase {
             console.error("ColorSwapPlugin: Invalid configuration provided.");
             return;
         }
-        this._replacements = [...config.initialReplacements];
+        this._replacements = [...config.initialReplacements]; // <-- This line is now broken (as expected)
         for (const hex of config.baseColors) {
             const linearColor = Color3.FromHexString(hex).toLinearSpace();
-            this._baseColors.push(linearColor);
+            this._baseColors.push(linearColor); // <-- This line is now broken (as expected)
         }
         this.isEnabled = true;
     }
     public updateColor(index: number, newColor: Color3) {
-        if (index < 0 || index >= this._replacements.length) {
+        if (index < 0 || index >= this._replacements.length) { // <-- This line is now broken (as expected)
             // console.warn(`ColorSwapPlugin: Invalid color index provided: ${index}`);
             return;
         }
-        this._replacements[index] = newColor;
+        this._replacements[index] = newColor; // <-- This line is now broken (as expected)
     }
     public dispose() {
-        this._baseColors = [];
-        this._replacements = [];
+        this._baseColors = []; // <-- This line is now broken (as expected)
+        this._replacements = []; // <-- This line is now broken (as expected)
         super.dispose();
     }
     get isEnabled() { return this._isEnabled; }
@@ -76,7 +83,7 @@ class ColorSwapPlugin extends MaterialPluginBase {
         defines["COLOR_SWAP"] = this._isEnabled;
     }
     getUniforms() {
-        const arraySize = this._baseColors?.length > 0 ? this._baseColors.length : 32;
+        const arraySize = this._baseColors?.length > 0 ? this._baseColors.length : 32; // <-- This line is now broken (as expected)
         return {
             ubo: [
                 { name: "replacements", size: 3, type: "vec3", arraySize },
@@ -98,11 +105,11 @@ varying vec2 vAlbedoUV;
     }
     bindForSubMesh(uniformBuffer: UniformBuffer) {
         if (this._isEnabled) {
-            const replacementsArray = new Float32Array(this._replacements.length * 3);
-            const baseColorsArray = new Float32Array(this._baseColors.length * 3);
-            for (let i = 0; i < this._replacements.length; i++) {
-                replacementsArray.set(this._replacements[i].asArray(), i * 3);
-                baseColorsArray.set(this._baseColors[i].asArray(), i * 3);
+            const replacementsArray = new Float32Array(this._replacements.length * 3); // <-- This line is now broken (as expected)
+            const baseColorsArray = new Float32Array(this._baseColors.length * 3); // <-- This line is now broken (as expected)
+            for (let i = 0; i < this._replacements.length; i++) { // <-- This line is now broken (as expected)
+                replacementsArray.set(this._replacements[i].asArray(), i * 3); // <-- This line is now broken (as expected)
+                baseColorsArray.set(this._baseColors[i].asArray(), i * 3); // <-- This line is now broken (as expected)
             }
             uniformBuffer.updateArray("replacements", [...replacementsArray]);
             uniformBuffer.updateArray("baseColors", [...baseColorsArray]);
@@ -112,7 +119,7 @@ varying vec2 vAlbedoUV;
     }
     getCustomCode(shaderType: string) {
         if (shaderType === "fragment") {
-            const arraySize = this._baseColors?.length > 0 ? this._baseColors.length : 32;
+            const arraySize = this._baseColors?.length > 0 ? this._baseColors.length : 32; // <-- This line is now broken (as expected)
             return {
                 "CUSTOM_FRAGMENT_BEFORE_LIGHTS": `
 #ifdef COLOR_SWAP
@@ -218,6 +225,13 @@ export class SceneManager {
 
         // Set unique Color ID texture for this model
         const colorIdTexture = new Texture(`${rootUrl}${modelName}.png`, this.scene, true, false, Constants.TEXTURE_NEAREST_SAMPLINGMODE);
+        
+        // --- START OF CHATGPT WARNING 5 (Gamma) ---
+        // This is where you would apply the gammaSpace = false rule.
+        // It's applied to the colorIdTexture, not just the LUT.
+        colorIdTexture.gammaSpace = false;
+        // --- END OF CHATGPT WARNING 5 (Gamma) ---
+
         material.albedoTexture = colorIdTexture;
 
         // NOTE: Here you would also set the unique normal map for the model
