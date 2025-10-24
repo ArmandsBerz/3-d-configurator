@@ -190,19 +190,30 @@ class ColorSwapPlugin extends MaterialPluginBase {
     prepareDefines(defines: MaterialDefines) {
         defines["COLOR_SWAP"] = this._isEnabled;
     }
+
+    // --- START OF STEP 4 MODIFICATION ---
     getUniforms() {
-        const arraySize = this._baseColors?.length > 0 ? this._baseColors.length : 32; // <-- This line is now broken (as expected)
+        // Removed broken line: const arraySize = this._baseColors?.length > 0 ? this._baseColors.length : 32;
         return {
             ubo: [
-                { name: "replacements", size: 3, type: "vec3", arraySize },
-                { name: "baseColors", size: 3, type: "vec3", arraySize },
+                // Removed: { name: "replacements", size: 3, type: "vec3", arraySize },
+                // Removed: { name: "baseColors", size: 3, type: "vec3", arraySize },
+                // Kept original uniforms:
                 { name: "blendRadius", size: 1, type: "float" },
                 { name: "blendStrength", size: 1, type: "float" },
             ],
             fragment: `
 #ifdef COLOR_SWAP
-uniform vec3 replacements[${arraySize}];
-uniform vec3 baseColors[${arraySize}];
+// --- START OF COMMENT REMOVAL (per ChatGPT suggestion) ---
+// Removed: uniform vec3 replacements[...]; // This line used the removed 'arraySize'
+// Removed: uniform vec3 baseColors[...];   // This line used the removed 'arraySize'
+// --- END OF COMMENT REMOVAL ---
+
+// Added new texture sampler declarations:
+uniform sampler2D dataLUT;
+uniform sampler2D paletteLUT;
+
+// Kept original uniforms and varyings:
 uniform float blendRadius;
 uniform float blendStrength;
 uniform sampler2D albedoSampler;
@@ -211,6 +222,8 @@ varying vec2 vAlbedoUV;
 `
         };
     }
+    // --- END OF STEP 4 MODIFICATION ---
+
     bindForSubMesh(uniformBuffer: UniformBuffer) {
         if (this._isEnabled) {
             const replacementsArray = new Float32Array(this._replacements.length * 3); // <-- This line is now broken (as expected)
