@@ -19,8 +19,9 @@ import {
     DynamicTexture,
     Texture,
     RawTexture, // Added for Step 2
-    // Note: SubMesh is implicitly used by bindForSubMesh, but not explicitly imported.
-    // This was in your original code, so I am preserving it.
+    SubMesh, // Added for Step 6
+    AbstractEngine, // Added for bindForSubMesh fix
+    // Note: Effect is implicitly used by bindForSubMesh, but not explicitly imported.
 } from '@babylonjs/core';
 import "@babylonjs/loaders";
 import { GLOVE_TO_WEBS_MAP } from './logic';
@@ -219,31 +220,51 @@ class ColorSwapPlugin extends MaterialPluginBase {
 uniform sampler2D dataLUT;
 uniform sampler2D paletteLUT;
 
-// Kept original uniforms and varyings:
+// Kept original uniforms:
 uniform float blendRadius;
 uniform float blendStrength;
-uniform sampler2D albedoSampler; // Still declared here, used by getSamplers
-varying vec2 vAlbedoUV;
+
+// --- START OF OPTIONAL CLEANUP (per ChatGPT suggestion) ---
+// Removed: uniform sampler2D albedoSampler; // Still declared here, used by getSamplers
+// Removed: varying vec2 vAlbedoUV;
+// --- END OF OPTIONAL CLEANUP ---
 #endif
 `
         };
     }
     // --- END OF STEP 4 MODIFICATION ---
 
-    bindForSubMesh(uniformBuffer: UniformBuffer) {
-        if (this._isEnabled) {
-            const replacementsArray = new Float32Array(this._replacements.length * 3); // <-- This line is now broken (as expected)
-            const baseColorsArray = new Float32Array(this._baseColors.length * 3); // <-- This line is now broken (as expected)
-            for (let i = 0; i < this._replacements.length; i++) { // <-- This line is now broken (as expected)
-                replacementsArray.set(this._replacements[i].asArray(), i * 3); // <-- This line is now broken (as expected)
-                baseColorsArray.set(this._baseColors[i].asArray(), i * 3); // <-- This line is now broken (as expected)
-            }
-            uniformBuffer.updateArray("replacements", [...replacementsArray]);
-            uniformBuffer.updateArray("baseColors", [...baseColorsArray]);
+    // --- START OF STEP 6 MODIFICATION ---
+    // --- START OF SIGNATURE FIX (per ChatGPT suggestion) ---
+    // Modified signature to include Scene, AbstractEngine and SubMesh in correct order
+    bindForSubMesh(uniformBuffer: UniformBuffer, scene: Scene, engine: AbstractEngine, subMesh: SubMesh) {
+    // --- END OF SIGNATURE FIX ---
+        if (this._isEnabled && this._dataLUT && this._paletteLUT) { // Check textures exist
+            // Removed old broken code:
+            // const replacementsArray = new Float32Array(this._replacements.length * 3);
+            // const baseColorsArray = new Float32Array(this._baseColors.length * 3);
+            // for (let i = 0; i < this._replacements.length; i++) {
+            //     replacementsArray.set(this._replacements[i].asArray(), i * 3);
+            //     baseColorsArray.set(this._baseColors[i].asArray(), i * 3);
+            // }
+            // uniformBuffer.updateArray("replacements", [...replacementsArray]);
+            // uniformBuffer.updateArray("baseColors", [...baseColorsArray]);
+
+            // Keep original float updates (these are still valid UBO uniforms)
             uniformBuffer.updateFloat("blendRadius", this.blendRadius);
             uniformBuffer.updateFloat("blendStrength", this.blendStrength);
+
+            // Bind the textures to the shader effect (CRITICAL FIX using correct signature)
+            // Use optional chaining just in case subMesh or effect is null/undefined briefly
+            const effect = subMesh?.getEffect();
+            if (effect) { // Ensure effect is available
+                effect.setTexture("dataLUT", this._dataLUT);
+                effect.setTexture("paletteLUT", this._paletteLUT);
+            }
         }
     }
+    // --- END OF STEP 6 MODIFICATION ---
+
     getCustomCode(shaderType: string) {
         if (shaderType === "fragment") {
             const arraySize = this._baseColors?.length > 0 ? this._baseColors.length : 32; // <-- This line is now broken (as expected)
