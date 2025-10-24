@@ -184,9 +184,15 @@ class ColorSwapPlugin extends MaterialPluginBase {
         this._markAllDefinesAsDirty();
         this._enable(this._isEnabled);
     }
+
+    // --- START OF STEP 5 MODIFICATION ---
     public getSamplers(samplers: string[]) {
-        samplers.push("albedoSampler");
+        // Add the new LUT samplers
+        samplers.push("dataLUT");
+        samplers.push("paletteLUT");
     }
+    // --- END OF STEP 5 MODIFICATION ---
+
     prepareDefines(defines: MaterialDefines) {
         defines["COLOR_SWAP"] = this._isEnabled;
     }
@@ -216,7 +222,7 @@ uniform sampler2D paletteLUT;
 // Kept original uniforms and varyings:
 uniform float blendRadius;
 uniform float blendStrength;
-uniform sampler2D albedoSampler;
+uniform sampler2D albedoSampler; // Still declared here, used by getSamplers
 varying vec2 vAlbedoUV;
 #endif
 `
