@@ -86,6 +86,11 @@ class ColorSwapPlugin extends MaterialPluginBase {
         this._dataLUT = new DynamicTexture("dataLUT", { width: this._zoneCount, height: 2 }, scene, false);
         this._dataLUT.updateSamplingMode(Constants.TEXTURE_NEAREST_SAMPLINGMODE); // Critical: Nearest for exact data
         this._dataLUT.gammaSpace = false; // Critical: Treat as linear data, not sRGB color
+        // --- START OF CLAMP ADDRESS MODE (per ChatGPT suggestion) ---
+        this._dataLUT.wrapU = Constants.TEXTURE_CLAMP_ADDRESSMODE;
+        this._dataLUT.wrapV = Constants.TEXTURE_CLAMP_ADDRESSMODE;
+        // --- END OF CLAMP ADDRESS MODE ---
+
 
         // 3. Create _paletteLUT (Static Texture - paletteColorCount x 1)
         const paletteBufferSize = this._paletteColorCount * 3; // 3 bytes per RGB color
@@ -114,6 +119,10 @@ class ColorSwapPlugin extends MaterialPluginBase {
             Constants.TEXTUREFORMAT_RGB // Specify RGB format
         );
         this._paletteLUT.gammaSpace = false; // Critical: Treat as linear data
+        // --- START OF CLAMP ADDRESS MODE (per ChatGPT suggestion) ---
+        this._paletteLUT.wrapU = Constants.TEXTURE_CLAMP_ADDRESSMODE;
+        this._paletteLUT.wrapV = Constants.TEXTURE_CLAMP_ADDRESSMODE;
+        // --- END OF CLAMP ADDRESS MODE ---
 
         // 4. Populate _dataLUT
         const ctx = this._dataLUT.getContext();
@@ -265,32 +274,91 @@ uniform float blendStrength;
     }
     // --- END OF STEP 6 MODIFICATION ---
 
+    // --- START OF STEP 7 MODIFICATION ---
     getCustomCode(shaderType: string) {
         if (shaderType === "fragment") {
-            const arraySize = this._baseColors?.length > 0 ? this._baseColors.length : 32; // <-- This line is now broken (as expected)
+            // Removed broken line: const arraySize = this._baseColors?.length > 0 ? this._baseColors.length : 32;
+
+            // --- START OF WEBGL1 FALLBACK (per ChatGPT suggestion) ---
+            // Define GLSL helper functions for decoding and fetching (WebGL1/2 compatible)
+            const definitionsGLSL = `
+                // Sizes as compile-time constants injected from JS
+                const int ZONE_COUNT = ${this._zoneCount};
+                const int DATA_LUT_H = 2; // Height of dataLUT is fixed at 2
+                const int PALETTE_COUNT = ${this._paletteColorCount};
+
+                // Helper to decode the palette index from the R channel
+                int decodeColorToIndex(vec4 pointerColor) {
+                    return int(pointerColor.r * 255.0 + 0.5);
+                }
+
+                #ifdef WEBGL2
+                    // WebGL2 uses precise texelFetch
+                    #define FETCH_DATA(ix, iy) texelFetch(dataLUT, ivec2(ix, iy), 0)
+                    #define FETCH_PALETTE(ix)  texelFetch(paletteLUT, ivec2(ix, 0), 0)
+                #else
+                    // WebGL1 fallback uses texture2D with manual UV calculation
+                    // Calculates UV coordinates for the center of a pixel in dataLUT
+                    vec2 uvDataLUT(int ix, int iy){
+                        return (vec2(float(ix)+0.5, float(iy)+0.5) / vec2(float(ZONE_COUNT), float(DATA_LUT_H)));
+                    }
+                    // Calculates UV coordinates for the center of a pixel in paletteLUT
+                    vec2 uvPalette(int ix){
+                        return (vec2(float(ix)+0.5, 0.5) / vec2(float(PALETTE_COUNT), 1.0));
+                    }
+                    // Define macros to use texture2D for fetching
+                    #define FETCH_DATA(ix, iy) texture2D(dataLUT, uvDataLUT(ix, iy))
+                    #define FETCH_PALETTE(ix)  texture2D(paletteLUT, uvPalette(ix))
+                #endif
+            `;
+            // --- END OF WEBGL1 FALLBACK ---
+
             return {
+                // Inject the definitions, including the fallback logic
+                "CUSTOM_FRAGMENT_DEFINITIONS": definitionsGLSL,
+
+                // Replace the old logic with the new LUT logic using the FETCH macros
                 "CUSTOM_FRAGMENT_BEFORE_LIGHTS": `
 #ifdef COLOR_SWAP
-vec3 finalPixelColor = surfaceAlbedo.rgb;
-const float MATCH_TOLERANCE = 0.05;
-int bestIndex = -1;
-for (int i = 0; i < ${arraySize}; i++) {
-    float dist = distance(finalPixelColor, baseColors[i]);
-    if (dist < MATCH_TOLERANCE) {
-        bestIndex = i;
-        break;
+    vec3 idColor = surfaceAlbedo.rgb;
+    int zoneIndex = -1;
+    int paletteIndex = 0; // Default to palette 0 if no match
+
+    // --- 1. FIND THE ZONE INDEX ---
+    // Loop through base colors on Row 0 of dataLUT using the FETCH macro
+    for (int i = 0; i < ZONE_COUNT; i++) { // Use GLSL constant ZONE_COUNT
+        // Use FETCH_DATA macro for compatibility
+        vec3 baseColor = FETCH_DATA(i, 0).rgb;
+        // Use a small tolerance for comparison
+        if (distance(idColor, baseColor) < 0.01) {
+            zoneIndex = i;
+            break;
+        }
     }
-}
-if (bestIndex != -1) {
-    finalPixelColor = replacements[bestIndex];
-}
-surfaceAlbedo.rgb = finalPixelColor;
+
+    // --- 2. GET THE POINTER (Palette Index) ---
+    if (zoneIndex != -1) {
+        // Fetch the pointer color using FETCH_DATA macro
+        vec4 pointerColor = FETCH_DATA(zoneIndex, 1);
+        // Decode the index using the helper function
+        paletteIndex = decodeColorToIndex(pointerColor);
+
+        // Clamp paletteIndex to the valid range using GLSL constant
+        paletteIndex = clamp(paletteIndex, 0, PALETTE_COUNT - 1);
+    }
+
+    // --- 3. GET THE FINAL PALETTE COLOR ---
+    // Fetch the final color from paletteLUT using FETCH_PALETTE macro
+    vec3 finalColor = FETCH_PALETTE(paletteIndex).rgb;
+    surfaceAlbedo.rgb = finalColor; // Apply the final color
+
 #endif
 `
             };
         }
         return null;
     }
+    // --- END OF STEP 7 MODIFICATION ---
 }
 
 // --- AssetManager Class ---
