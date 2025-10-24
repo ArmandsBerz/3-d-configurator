@@ -44,10 +44,10 @@ function encodeIndexAsColor(index: number): string {
 // --- REFACTORED PLUGIN CODE ---
 class ColorSwapPlugin extends MaterialPluginBase {
     // --- START OF STEP 1 MODIFICATION (Corrected Plan) ---
-    // Removed: private _baseColors: Color3[] = [];
-    // Removed: private _replacements: Color3[] = [];
-    private _dataLUT: DynamicTexture; // Will hold base colors + pointers
-    private _paletteLUT: Texture; // Will hold the swappable palette colors
+    // --- START OF DEFINITE ASSIGNMENT FIX ---
+    private _dataLUT!: DynamicTexture; // Will hold base colors + pointers
+    private _paletteLUT!: Texture; // Will hold the swappable palette colors
+    // --- END OF DEFINITE ASSIGNMENT FIX ---
     private _zoneCount = 32; // Number of zones/base colors
     private _paletteColorCount = 20; // Number of actual swappable colors (adjust if needed)
     // --- END OF STEP 1 MODIFICATION (Corrected Plan) ---
@@ -64,7 +64,9 @@ class ColorSwapPlugin extends MaterialPluginBase {
         // 1. Determine Actual Sizes & Validate Config
         if (!config || !config.baseColors || !config.initialReplacements) {
             console.error("ColorSwapPlugin: Invalid configuration provided (missing arrays).");
-            return; // Early exit if config is fundamentally broken
+            // Added explicit return to satisfy TypeScript potentially about _dataLUT/_paletteLUT not being assigned
+            // although the `!` assertion technically handles this. Better safe.
+            return;
         }
         // Use provided lengths, with fallbacks just in case (though validation helps)
         this._zoneCount = config.baseColors.length || 32;
@@ -76,8 +78,7 @@ class ColorSwapPlugin extends MaterialPluginBase {
         }
         if (this._paletteColorCount > 255) {
             console.error("ColorSwapPlugin: Cannot support more than 255 palette colors with current encoding.");
-            // You'd need a more complex encoding (using G and B channels) for more colors.
-            return;
+             return;
         }
 
         const scene = material.getScene(); // Get scene reference
@@ -98,9 +99,6 @@ class ColorSwapPlugin extends MaterialPluginBase {
         let bufferIndex = 0;
         for (const color of config.initialReplacements) {
             // --- START OF GAMMA CORRECTION (per ChatGPT suggestion) ---
-            // Write LINEAR Color3 (0-1) values directly as bytes (0-255)
-            // because _paletteLUT.gammaSpace is set to false.
-            // const gammaColor = color.toGammaSpace(); // REMOVED as requested
             paletteBuffer[bufferIndex++] = Math.round(color.r * 255); // Use linear .r
             paletteBuffer[bufferIndex++] = Math.round(color.g * 255); // Use linear .g
             paletteBuffer[bufferIndex++] = Math.round(color.b * 255); // Use linear .b
@@ -127,13 +125,9 @@ class ColorSwapPlugin extends MaterialPluginBase {
         // 4. Populate _dataLUT
         const ctx = this._dataLUT.getContext();
         for (let i = 0; i < this._zoneCount; i++) {
-            // Draw the baseColor (Hex string from config) onto Row 0
-            // Need to handle potential missing base colors if array is somehow shorter
             ctx.fillStyle = config.baseColors[i] || '#000000'; // Default to black if missing
             ctx.fillRect(i, 0, 1, 1);
 
-            // Draw the Initial Pointer onto Row 1
-            // Maps Zone 'i' to Palette Index 'i % paletteColorCount'
             const initialPaletteIndex = i % this._paletteColorCount;
             ctx.fillStyle = encodeIndexAsColor(initialPaletteIndex);
             ctx.fillRect(i, 1, 1, 1);
@@ -142,22 +136,14 @@ class ColorSwapPlugin extends MaterialPluginBase {
         // 5. Update _dataLUT to send initial data to GPU
         this._dataLUT.update();
 
-        // Removed old broken assignments:
-        // this._replacements = [...config.initialReplacements];
-        // for (const hex of config.baseColors) { ... this._baseColors.push(linearColor); ... }
-
         // --- END OF STEP 2 MODIFICATION ---
 
         this.isEnabled = true;
     }
 
     // --- START OF STEP 3 MODIFICATION ---
-    // Deleted old updateColor method:
-    // public updateColor(index: number, newColor: Color3) { ... }
-
     // Added new method to update the pointer for a specific zone:
     public updateZonePaletteIndex(zoneIndex: number, paletteIndex: number): void {
-        // Validation (important to prevent errors)
         if (zoneIndex < 0 || zoneIndex >= this._zoneCount) {
             console.warn(`ColorSwapPlugin: Invalid zone index provided: ${zoneIndex}`);
             return;
@@ -166,27 +152,27 @@ class ColorSwapPlugin extends MaterialPluginBase {
              console.warn(`ColorSwapPlugin: Invalid palette index provided: ${paletteIndex}`);
              return;
         }
-
-        // Ensure texture is ready (might not be if constructor failed)
         if (!this._dataLUT) return;
 
-        // Get context, encode index, draw pixel, update texture
         const ctx = this._dataLUT.getContext();
         ctx.fillStyle = encodeIndexAsColor(paletteIndex);
-        ctx.fillRect(zoneIndex, 1, 1, 1); // Draw onto Row 1 at the zoneIndex
-        this._dataLUT.update(); // Push the change to the GPU
+        ctx.fillRect(zoneIndex, 1, 1, 1);
+        this._dataLUT.update();
     }
     // --- END OF STEP 3 MODIFICATION ---
 
 
+    // --- START OF DISPOSE FIX ---
     public dispose() {
-        // --- TODO: Also dispose the textures when Step 3+ are done ---
-        // this._dataLUT?.dispose();
-        // this._paletteLUT?.dispose();
-        this._baseColors = []; // <-- This line is now broken (as expected)
-        this._replacements = []; // <-- This line is now broken (as expected)
+        this._dataLUT?.dispose(); // Dispose the LUTs if they exist
+        this._paletteLUT?.dispose();
+        // Removed old broken assignments:
+        // this._baseColors = [];
+        // this._replacements = [];
         super.dispose();
     }
+    // --- END OF DISPOSE FIX ---
+
     get isEnabled() { return this._isEnabled; }
     set isEnabled(enabled) {
         if (this._isEnabled === enabled) return;
@@ -197,7 +183,6 @@ class ColorSwapPlugin extends MaterialPluginBase {
 
     // --- START OF STEP 5 MODIFICATION ---
     public getSamplers(samplers: string[]) {
-        // Add the new LUT samplers
         samplers.push("dataLUT");
         samplers.push("paletteLUT");
     }
@@ -209,34 +194,17 @@ class ColorSwapPlugin extends MaterialPluginBase {
 
     // --- START OF STEP 4 MODIFICATION ---
     getUniforms() {
-        // Removed broken line: const arraySize = this._baseColors?.length > 0 ? this._baseColors.length : 32;
         return {
             ubo: [
-                // Removed: { name: "replacements", size: 3, type: "vec3", arraySize },
-                // Removed: { name: "baseColors", size: 3, type: "vec3", arraySize },
-                // Kept original uniforms:
                 { name: "blendRadius", size: 1, type: "float" },
                 { name: "blendStrength", size: 1, type: "float" },
             ],
             fragment: `
 #ifdef COLOR_SWAP
-// --- START OF COMMENT REMOVAL (per ChatGPT suggestion) ---
-// Removed: uniform vec3 replacements[...]; // This line used the removed 'arraySize'
-// Removed: uniform vec3 baseColors[...];   // This line used the removed 'arraySize'
-// --- END OF COMMENT REMOVAL ---
-
-// Added new texture sampler declarations:
 uniform sampler2D dataLUT;
 uniform sampler2D paletteLUT;
-
-// Kept original uniforms:
 uniform float blendRadius;
 uniform float blendStrength;
-
-// --- START OF OPTIONAL CLEANUP (per ChatGPT suggestion) ---
-// Removed: uniform sampler2D albedoSampler;
-// Removed: varying vec2 vAlbedoUV;
-// --- END OF OPTIONAL CLEANUP ---
 #endif
 `
         };
@@ -244,29 +212,16 @@ uniform float blendStrength;
     // --- END OF STEP 4 MODIFICATION ---
 
     // --- START OF STEP 6 MODIFICATION ---
-    // --- START OF SIGNATURE FIX (per ChatGPT suggestion) ---
-    // Modified signature to include Scene, AbstractEngine and SubMesh in correct order
     bindForSubMesh(uniformBuffer: UniformBuffer, scene: Scene, engine: AbstractEngine, subMesh: SubMesh) {
-    // --- END OF SIGNATURE FIX ---
-        if (this._isEnabled && this._dataLUT && this._paletteLUT) { // Check textures exist
-            // Removed old broken code:
-            // const replacementsArray = new Float32Array(this._replacements.length * 3);
-            // const baseColorsArray = new Float32Array(this._baseColors.length * 3);
-            // for (let i = 0; i < this._replacements.length; i++) {
-            //     replacementsArray.set(this._replacements[i].asArray(), i * 3);
-            //     baseColorsArray.set(this._baseColors[i].asArray(), i * 3);
-            // }
-            // uniformBuffer.updateArray("replacements", [...replacementsArray]);
-            // uniformBuffer.updateArray("baseColors", [...baseColorsArray]);
-
-            // Keep original float updates (these are still valid UBO uniforms)
+        if (this._isEnabled && this._dataLUT && this._paletteLUT) {
             uniformBuffer.updateFloat("blendRadius", this.blendRadius);
             uniformBuffer.updateFloat("blendStrength", this.blendStrength);
 
-            // Bind the textures to the shader effect (CRITICAL FIX using correct signature)
-            // Use optional chaining just in case subMesh or effect is null/undefined briefly
-            const effect = subMesh?.getEffect();
-            if (effect) { // Ensure effect is available
+            // --- START OF BIND TEXTURE FIX ---
+            // Use this._material.getEffect() instead of subMesh.getEffect()
+            const effect = this._material?.getEffect(); // Access via the material plugin's internal _material property
+            // --- END OF BIND TEXTURE FIX ---
+            if (effect) {
                 effect.setTexture("dataLUT", this._dataLUT);
                 effect.setTexture("paletteLUT", this._paletteLUT);
             }
@@ -277,80 +232,54 @@ uniform float blendStrength;
     // --- START OF STEP 7 MODIFICATION ---
     getCustomCode(shaderType: string) {
         if (shaderType === "fragment") {
-            // Removed broken line: const arraySize = this._baseColors?.length > 0 ? this._baseColors.length : 32;
-
-            // --- START OF WEBGL1 FALLBACK (per ChatGPT suggestion) ---
-            // Define GLSL helper functions for decoding and fetching (WebGL1/2 compatible)
             const definitionsGLSL = `
-                // Sizes as compile-time constants injected from JS
                 const int ZONE_COUNT = ${this._zoneCount};
-                const int DATA_LUT_H = 2; // Height of dataLUT is fixed at 2
+                const int DATA_LUT_H = 2;
                 const int PALETTE_COUNT = ${this._paletteColorCount};
 
-                // Helper to decode the palette index from the R channel
                 int decodeColorToIndex(vec4 pointerColor) {
                     return int(pointerColor.r * 255.0 + 0.5);
                 }
 
                 #ifdef WEBGL2
-                    // WebGL2 uses precise texelFetch
                     #define FETCH_DATA(ix, iy) texelFetch(dataLUT, ivec2(ix, iy), 0)
                     #define FETCH_PALETTE(ix)  texelFetch(paletteLUT, ivec2(ix, 0), 0)
                 #else
-                    // WebGL1 fallback uses texture2D with manual UV calculation
-                    // Calculates UV coordinates for the center of a pixel in dataLUT
                     vec2 uvDataLUT(int ix, int iy){
                         return (vec2(float(ix)+0.5, float(iy)+0.5) / vec2(float(ZONE_COUNT), float(DATA_LUT_H)));
                     }
-                    // Calculates UV coordinates for the center of a pixel in paletteLUT
                     vec2 uvPalette(int ix){
                         return (vec2(float(ix)+0.5, 0.5) / vec2(float(PALETTE_COUNT), 1.0));
                     }
-                    // Define macros to use texture2D for fetching
                     #define FETCH_DATA(ix, iy) texture2D(dataLUT, uvDataLUT(ix, iy))
                     #define FETCH_PALETTE(ix)  texture2D(paletteLUT, uvPalette(ix))
                 #endif
             `;
-            // --- END OF WEBGL1 FALLBACK ---
 
             return {
-                // Inject the definitions, including the fallback logic
                 "CUSTOM_FRAGMENT_DEFINITIONS": definitionsGLSL,
-
-                // Replace the old logic with the new LUT logic using the FETCH macros
                 "CUSTOM_FRAGMENT_BEFORE_LIGHTS": `
 #ifdef COLOR_SWAP
     vec3 idColor = surfaceAlbedo.rgb;
     int zoneIndex = -1;
-    int paletteIndex = 0; // Default to palette 0 if no match
+    int paletteIndex = 0;
 
-    // --- 1. FIND THE ZONE INDEX ---
-    // Loop through base colors on Row 0 of dataLUT using the FETCH macro
-    for (int i = 0; i < ZONE_COUNT; i++) { // Use GLSL constant ZONE_COUNT
-        // Use FETCH_DATA macro for compatibility
+    for (int i = 0; i < ZONE_COUNT; i++) {
         vec3 baseColor = FETCH_DATA(i, 0).rgb;
-        // Use a small tolerance for comparison
         if (distance(idColor, baseColor) < 0.01) {
             zoneIndex = i;
             break;
         }
     }
 
-    // --- 2. GET THE POINTER (Palette Index) ---
     if (zoneIndex != -1) {
-        // Fetch the pointer color using FETCH_DATA macro
         vec4 pointerColor = FETCH_DATA(zoneIndex, 1);
-        // Decode the index using the helper function
         paletteIndex = decodeColorToIndex(pointerColor);
-
-        // Clamp paletteIndex to the valid range using GLSL constant
         paletteIndex = clamp(paletteIndex, 0, PALETTE_COUNT - 1);
     }
 
-    // --- 3. GET THE FINAL PALETTE COLOR ---
-    // Fetch the final color from paletteLUT using FETCH_PALETTE macro
     vec3 finalColor = FETCH_PALETTE(paletteIndex).rgb;
-    surfaceAlbedo.rgb = finalColor; // Apply the final color
+    surfaceAlbedo.rgb = finalColor;
 
 #endif
 `
@@ -362,7 +291,6 @@ uniform float blendStrength;
 }
 
 // --- AssetManager Class ---
-// (No changes below this line, except for the typo fix)
 class AssetManager {
     private cache = new Map<string, Promise<AssetContainer>>();
     constructor(private scene: Scene) { }
@@ -397,13 +325,11 @@ export class SceneManager {
     private isSceneReady = false;
     private textTextures = new Map<string, DynamicTexture>();
 
-    // --- Properties for the two-material system ---
     private activeShellMaterial: PBRMaterial | null = null;
     private activeShellPlugin: ColorSwapPlugin | null = null;
     private activeWebMaterial: PBRMaterial | null = null;
     private activeWebPlugin: ColorSwapPlugin | null = null;
 
-    // --- Caches for efficiency ---
     private shellMaterialsCache = new Map<string, { material: PBRMaterial, plugin: ColorSwapPlugin }>();
     private gloveShells = new Map<string, Mesh>();
     private webMaterialsCache = new Map<string, { material: PBRMaterial, plugin: ColorSwapPlugin }>();
@@ -416,18 +342,16 @@ export class SceneManager {
         this.assetManager = new AssetManager(this.scene);
         this.scene.clearColor = new Color4(0, 0, 0, 0);
 
-        // --- CAMERA CONFIGURATION UPDATED ---
         const camera = new ArcRotateCamera("camera", Math.PI / 2, Math.PI / 2, 3, Vector3.Zero(), this.scene);
         camera.minZ = 0.1;
         camera.attachControl(canvas, true);
         new HemisphericLight("light", new Vector3(0, 1, 0), this.scene);
 
-        // --- APPLYING THE EXACT SETTINGS HERE ---
-        camera.fov = 0.3; // Narrows the field of view like a telephoto lens.
-        camera.lowerRadiusLimit = 1.5; // Prevents zooming in too close.
-        camera.upperRadiusLimit = 4; // Prevents zooming out too far.
-        camera.panningSensibility = 0; // Disables camera panning (click and drag).
-        camera.wheelPrecision = 150; // Controls zoom speed.
+        camera.fov = 0.3;
+        camera.lowerRadiusLimit = 1.5;
+        camera.upperRadiusLimit = 4;
+        camera.panningSensibility = 0;
+        camera.wheelPrecision = 150;
 
         this.loadInitialAssets(onReady);
 
@@ -436,26 +360,13 @@ export class SceneManager {
         this.resizeObserver.observe(canvas);
     }
 
-    // --- NEW: Reusable "recipe" function to set up any material ---
     private _setupMaterialWithPlugin(material: PBRMaterial, modelName: string): ColorSwapPlugin {
         const rootUrl = `${process.env.PUBLIC_URL || ''}/assets/`;
 
-        // Set unique Color ID texture for this model
         const colorIdTexture = new Texture(`${rootUrl}${modelName}.png`, this.scene, true, false, Constants.TEXTURE_NEAREST_SAMPLINGMODE);
-
-        // --- START OF CHATGPT WARNING 5 (Gamma) ---
-        // This is where you would apply the gammaSpace = false rule.
-        // It's applied to the colorIdTexture, not just the LUT.
         colorIdTexture.gammaSpace = false;
-        // --- END OF CHATGPT WARNING 5 (Gamma) ---
-
         material.albedoTexture = colorIdTexture;
 
-        // NOTE: Here you would also set the unique normal map for the model
-        // const normalTexture = new Texture(`${rootUrl}${modelName}_normal.png`, this.scene);
-        // material.bumpTexture = normalTexture;
-
-        // Add other shared textures like the detail map
         const detailTexture = new Texture(`${rootUrl}details.png`, this.scene);
         detailTexture.coordinatesIndex = 0;
         detailTexture.uScale = 3;
@@ -467,17 +378,22 @@ export class SceneManager {
         material.detailMap.roughnessBlendLevel = 0;
         material.detailMap.bumpLevel = .35;
 
-        // Create the color swap plugin instance with the full color palette
+        // --- START OF PALETTE SIZE MISMATCH FIX ---
+        // Ensure initialReplacements matches _paletteColorCount (assumed to be 20 from logic.tsx)
+        const paletteColorsFromLogic = GLOVE_TO_WEBS_MAP.COLOR_OPTIONS // Assuming COLOR_OPTIONS is exported from logic.tsx
+            .map(opt => Color3.FromHexString(opt.hex).toLinearSpace()) // Convert hex to linear Color3
+            .slice(0, 20); // Take only the first 20
+
         const gloveConfig: ColorSwapConfig = {
-            baseColors: [
+            baseColors: [ // Ensure this still has 32 colors
                 "#FF0000", "#00FFFF", "#80FF00", "#7F00FF", "#FFBF00", "#0040FF", "#00FF40", "#FF00BF",
                 "#FF6000", "#009FFF", "#20FF00", "#DF00FF", "#DFFF00", "#2000FF", "#00FF9F", "#FF0060",
                 "#FF3000", "#00CFFF", "#50FF00", "#AF00FF", "#FFEF00", "#0010FF", "#00FF70", "#FF008F",
                 "#FF8F00", "#0070FF", "#00FF10", "#FF00EF", "#AFFF00", "#5000FF", "#00FFCF", "#FF0030"
             ],
-            // NOTE: This initialReplacements should now ideally match the actual palette size (e.g., 20)
-            initialReplacements: Array(32).fill(0).map(() => new Color3(Math.random(), Math.random(), Math.random()))
+            initialReplacements: paletteColorsFromLogic // Use the actual 20 palette colors
         };
+        // --- END OF PALETTE SIZE MISMATCH FIX ---
 
         const plugin = new ColorSwapPlugin(material, gloveConfig);
         return plugin;
@@ -485,34 +401,33 @@ export class SceneManager {
 
     private async loadInitialAssets(onReady: (manager: SceneManager) => void) {
         const initialGloveName = 'openBack';
-        await this.updateBuild(initialGloveName); // Use the new updateBuild to handle initial setup
+        await this.updateBuild(initialGloveName);
         this.isSceneReady = true;
         onReady(this);
     }
 
     public isReady = (): boolean => this.isSceneReady;
 
-    // --- NEW: Specific update methods for shell and web ---
-    public updateShellColor(index: number, color: Color3): void {
-        this.activeShellPlugin?.updateColor(index, color);
+    // --- START OF SCENEMANAGER UPDATE FIX ---
+    // Renamed methods and updated calls to use the new plugin method
+    public updateShellZonePointer(zoneIndex: number, paletteIndex: number): void {
+        this.activeShellPlugin?.updateZonePaletteIndex(zoneIndex, paletteIndex);
     }
 
-    public updateWebColor(index: number, color: Color3): void {
-        this.activeWebPlugin?.updateColor(index, color);
+    public updateWebZonePointer(zoneIndex: number, paletteIndex: number): void {
+        this.activeWebPlugin?.updateZonePaletteIndex(zoneIndex, paletteIndex);
     }
+    // --- END OF SCENEMANAGER UPDATE FIX ---
 
-    // --- REFACTORED: updateBuild now uses the caching pattern ---
+
     public async updateBuild(modelName: string): Promise<void> {
         if (!modelName || this.activeShellName === modelName) return;
 
-        // 1. Check if the shell's material setup is already in the cache.
         if (this.shellMaterialsCache.has(modelName)) {
-            // --- CACHE HIT (It's been loaded before) ---
             const cached = this.shellMaterialsCache.get(modelName)!;
-            this.activeShellMaterial = cached.material; // Point to the cached material
-            this.activeShellPlugin = cached.plugin;   // Point to the cached plugin
+            this.activeShellMaterial = cached.material;
+            this.activeShellPlugin = cached.plugin;
         } else {
-            // --- CACHE MISS (First time loading this shell) ---
             const container = await this.assetManager.getAsset(modelName);
             const mesh = container.meshes.find(m => m.name === modelName) as Mesh;
             if (mesh) {
@@ -521,20 +436,14 @@ export class SceneManager {
 
                 const gloveMaterial = container.materials.find(m => m.name === 'gloveMat') as PBRMaterial;
                 if (gloveMaterial) {
-                    // Create the setup ONCE using your factory function
                     const newPlugin = this._setupMaterialWithPlugin(gloveMaterial, modelName);
-
-                    // Point the active properties to this new setup
                     this.activeShellMaterial = gloveMaterial;
                     this.activeShellPlugin = newPlugin;
-
-                    // CRITICAL: Save the new setup into the cache for next time
                     this.shellMaterialsCache.set(modelName, { material: gloveMaterial, plugin: newPlugin });
                 }
             }
         }
 
-        // This logic below remains the same
         this.activeShellName = modelName;
         this.gloveShells.forEach((mesh, name) => {
             mesh.setEnabled(name === modelName);
@@ -546,9 +455,7 @@ export class SceneManager {
         }
     }
 
-    // --- OVERHAULED: updateWeb now manages its own material and plugin ---
     public async updateWeb(webModelName: string): Promise<void> {
-        // If no web is selected, hide them all and clear active material/plugin
         if (!webModelName) {
             this.webs.forEach(mesh => mesh.setEnabled(false));
             this.activeWebMaterial = null;
@@ -556,13 +463,11 @@ export class SceneManager {
             return;
         }
 
-        // Check if we've already configured this web's material
         if (this.webMaterialsCache.has(webModelName)) {
             const cached = this.webMaterialsCache.get(webModelName)!;
             this.activeWebMaterial = cached.material;
             this.activeWebPlugin = cached.plugin;
         } else {
-            // If not cached, load the asset and set up its material for the first time
             const container = await this.assetManager.getAsset(webModelName);
             const mesh = container.meshes.find(m => m.name === webModelName) as Mesh;
             if (mesh) {
@@ -572,7 +477,6 @@ export class SceneManager {
                 const webMaterial = container.materials.find(m => m.name === 'webMat') as PBRMaterial;
                 if (webMaterial) {
                     const webPlugin = this._setupMaterialWithPlugin(webMaterial, webModelName);
-
                     this.activeWebMaterial = webMaterial;
                     this.activeWebPlugin = webPlugin;
                     this.webMaterialsCache.set(webModelName, { material: webMaterial, plugin: webPlugin });
@@ -580,7 +484,6 @@ export class SceneManager {
             }
         }
 
-        // Finally, ensure only the correct web mesh is visible
         this.webs.forEach((mesh, name) => {
             mesh.setEnabled(name === webModelName);
         });
@@ -615,13 +518,15 @@ export class SceneManager {
     };
 
     public dispose() {
-        this.activeShellPlugin?.dispose();
-        this.shellMaterialsCache.forEach(cached => cached.plugin.dispose());
+        this.shellMaterialsCache.forEach(cached => cached.plugin.dispose()); // Dispose plugins in cache
         this.shellMaterialsCache.clear();
-        this.webMaterialsCache.forEach(cached => cached.plugin.dispose());
+        this.webMaterialsCache.forEach(cached => cached.plugin.dispose()); // Dispose plugins in cache
         this.webMaterialsCache.clear();
+        // Removed potential double-dispose: this.activeShellPlugin?.dispose();
+        // Removed potential double-dispose: this.activeWebPlugin?.dispose();
         this.resizeObserver.disconnect();
-        this.engine.dispose();
+        this.scene.dispose(); // Dispose scene resources
+        this.engine.dispose(); // Dispose engine
     }
 }
 
