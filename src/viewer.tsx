@@ -140,13 +140,35 @@ class ColorSwapPlugin extends MaterialPluginBase {
 
         this.isEnabled = true;
     }
-    public updateColor(index: number, newColor: Color3) {
-        if (index < 0 || index >= this._replacements.length) { // <-- This line is now broken (as expected)
-            // console.warn(`ColorSwapPlugin: Invalid color index provided: ${index}`);
+
+    // --- START OF STEP 3 MODIFICATION ---
+    // Deleted old updateColor method:
+    // public updateColor(index: number, newColor: Color3) { ... }
+
+    // Added new method to update the pointer for a specific zone:
+    public updateZonePaletteIndex(zoneIndex: number, paletteIndex: number): void {
+        // Validation (important to prevent errors)
+        if (zoneIndex < 0 || zoneIndex >= this._zoneCount) {
+            console.warn(`ColorSwapPlugin: Invalid zone index provided: ${zoneIndex}`);
             return;
         }
-        this._replacements[index] = newColor; // <-- This line is now broken (as expected)
+        if (paletteIndex < 0 || paletteIndex >= this._paletteColorCount) {
+             console.warn(`ColorSwapPlugin: Invalid palette index provided: ${paletteIndex}`);
+             return;
+        }
+
+        // Ensure texture is ready (might not be if constructor failed)
+        if (!this._dataLUT) return;
+
+        // Get context, encode index, draw pixel, update texture
+        const ctx = this._dataLUT.getContext();
+        ctx.fillStyle = encodeIndexAsColor(paletteIndex);
+        ctx.fillRect(zoneIndex, 1, 1, 1); // Draw onto Row 1 at the zoneIndex
+        this._dataLUT.update(); // Push the change to the GPU
     }
+    // --- END OF STEP 3 MODIFICATION ---
+
+
     public dispose() {
         // --- TODO: Also dispose the textures when Step 3+ are done ---
         // this._dataLUT?.dispose();
