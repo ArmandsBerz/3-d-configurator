@@ -225,7 +225,7 @@ uniform float blendRadius;
 uniform float blendStrength;
 
 // --- START OF OPTIONAL CLEANUP (per ChatGPT suggestion) ---
-// Removed: uniform sampler2D albedoSampler; // Still declared here, used by getSamplers
+// Removed: uniform sampler2D albedoSampler;
 // Removed: varying vec2 vAlbedoUV;
 // --- END OF OPTIONAL CLEANUP ---
 #endif
