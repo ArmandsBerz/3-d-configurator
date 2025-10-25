@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import {
-    Engine,
+    Engine, // Changed for bindForSubMesh signature
     Scene,
     ArcRotateCamera,
     Vector3,
@@ -20,11 +20,13 @@ import {
     Texture,
     RawTexture, // Added for Step 2
     SubMesh, // Added for Step 6
-    AbstractEngine, // Added for bindForSubMesh fix
+    // Removed AbstractEngine import
     // Note: Effect is implicitly used by bindForSubMesh, but not explicitly imported.
 } from '@babylonjs/core';
 import "@babylonjs/loaders";
-import { GLOVE_TO_WEBS_MAP } from './logic';
+// --- START OF FIX B: Import COLOR_OPTIONS ---
+import { GLOVE_TO_WEBS_MAP, COLOR_OPTIONS } from './logic';
+// --- END OF FIX B ---
 
 // --- INTERFACE FOR PLUGIN CONFIGURATION ---
 interface ColorSwapConfig {
@@ -105,6 +107,7 @@ class ColorSwapPlugin extends MaterialPluginBase {
             // --- END OF GAMMA CORRECTION ---
         }
 
+        // --- START OF FIX 3: Add TEXTURETYPE_UNSIGNED_BYTE ---
         // Create the texture from the raw byte data
         this._paletteLUT = RawTexture.CreateRGBTexture(
             paletteBuffer,
@@ -114,8 +117,9 @@ class ColorSwapPlugin extends MaterialPluginBase {
             false, // noMipmap
             false, // invertY
             Constants.TEXTURE_NEAREST_SAMPLINGMODE, // Critical: Nearest sampling
-            Constants.TEXTUREFORMAT_RGB // Specify RGB format
+            Constants.TEXTURETYPE_UNSIGNED_BYTE // Explicitly state the data type
         );
+        // --- END OF FIX 3 ---
         this._paletteLUT.gammaSpace = false; // Critical: Treat as linear data
         // --- START OF CLAMP ADDRESS MODE (per ChatGPT suggestion) ---
         this._paletteLUT.wrapU = Constants.TEXTURE_CLAMP_ADDRESSMODE;
@@ -166,9 +170,6 @@ class ColorSwapPlugin extends MaterialPluginBase {
     public dispose() {
         this._dataLUT?.dispose(); // Dispose the LUTs if they exist
         this._paletteLUT?.dispose();
-        // Removed old broken assignments:
-        // this._baseColors = [];
-        // this._replacements = [];
         super.dispose();
     }
     // --- END OF DISPOSE FIX ---
@@ -192,7 +193,7 @@ class ColorSwapPlugin extends MaterialPluginBase {
         defines["COLOR_SWAP"] = this._isEnabled;
     }
 
-    // --- START OF STEP 4 MODIFICATION ---
+    // --- START OF FIX 1: Add samplers back to fragment string ---
     getUniforms() {
         return {
             ubo: [
@@ -201,26 +202,24 @@ class ColorSwapPlugin extends MaterialPluginBase {
             ],
             fragment: `
 #ifdef COLOR_SWAP
-uniform sampler2D dataLUT;
-uniform sampler2D paletteLUT;
+// Added texture sampler declarations back:
+
+// Kept original uniforms:
 uniform float blendRadius;
 uniform float blendStrength;
 #endif
 `
         };
     }
-    // --- END OF STEP 4 MODIFICATION ---
+    // --- END OF FIX 1 ---
 
     // --- START OF STEP 6 MODIFICATION ---
-    bindForSubMesh(uniformBuffer: UniformBuffer, scene: Scene, engine: AbstractEngine, subMesh: SubMesh) {
+    bindForSubMesh(uniformBuffer: UniformBuffer, scene: Scene, engine: Engine, subMesh: SubMesh) {
         if (this._isEnabled && this._dataLUT && this._paletteLUT) {
             uniformBuffer.updateFloat("blendRadius", this.blendRadius);
             uniformBuffer.updateFloat("blendStrength", this.blendStrength);
 
-            // --- START OF BIND TEXTURE FIX ---
-            // Use this._material.getEffect() instead of subMesh.getEffect()
-            const effect = this._material?.getEffect(); // Access via the material plugin's internal _material property
-            // --- END OF BIND TEXTURE FIX ---
+            const effect = this._material?.getEffect();
             if (effect) {
                 effect.setTexture("dataLUT", this._dataLUT);
                 effect.setTexture("paletteLUT", this._paletteLUT);
@@ -230,12 +229,18 @@ uniform float blendStrength;
     // --- END OF STEP 6 MODIFICATION ---
 
     // --- START OF STEP 7 MODIFICATION ---
+    // --- START OF FIX 2: Move logic to UPDATE_ALBEDO ---
     getCustomCode(shaderType: string) {
         if (shaderType === "fragment") {
+            // --- START OF FIX 2 (ChatGPT): Gate helpers ---
             const definitionsGLSL = `
                 const int ZONE_COUNT = ${this._zoneCount};
                 const int DATA_LUT_H = 2;
                 const int PALETTE_COUNT = ${this._paletteColorCount};
+
+                #ifdef COLOR_SWAP // Gate helpers
+                uniform sampler2D dataLUT;
+                uniform sampler2D paletteLUT;
 
                 int decodeColorToIndex(vec4 pointerColor) {
                     return int(pointerColor.r * 255.0 + 0.5);
@@ -254,11 +259,12 @@ uniform float blendStrength;
                     #define FETCH_DATA(ix, iy) texture2D(dataLUT, uvDataLUT(ix, iy))
                     #define FETCH_PALETTE(ix)  texture2D(paletteLUT, uvPalette(ix))
                 #endif
+                #endif // End gate helpers
             `;
+            // --- END OF FIX 2 (ChatGPT): Gate helpers ---
 
-            return {
-                "CUSTOM_FRAGMENT_DEFINITIONS": definitionsGLSL,
-                "CUSTOM_FRAGMENT_BEFORE_LIGHTS": `
+            // --- START OF FIX 1 (ChatGPT): Rename finalColor ---
+            const updateAlbedoGLSL = `
 #ifdef COLOR_SWAP
     vec3 idColor = surfaceAlbedo.rgb;
     int zoneIndex = -1;
@@ -278,15 +284,21 @@ uniform float blendStrength;
         paletteIndex = clamp(paletteIndex, 0, PALETTE_COUNT - 1);
     }
 
-    vec3 finalColor = FETCH_PALETTE(paletteIndex).rgb;
-    surfaceAlbedo.rgb = finalColor;
+    // Assign directly to surfaceAlbedo.rgb instead of using finalColor
+    surfaceAlbedo.rgb = FETCH_PALETTE(paletteIndex).rgb;
 
 #endif
-`
+`;
+            // --- END OF FIX 1 (ChatGPT): Rename finalColor ---
+
+            return {
+                "CUSTOM_FRAGMENT_DEFINITIONS": definitionsGLSL,
+                "CUSTOM_FRAGMENT_UPDATE_ALBEDO": updateAlbedoGLSL // Moved logic here
             };
         }
         return null;
     }
+    // --- END OF FIX 2 ---
     // --- END OF STEP 7 MODIFICATION ---
 }
 
@@ -378,11 +390,11 @@ export class SceneManager {
         material.detailMap.roughnessBlendLevel = 0;
         material.detailMap.bumpLevel = .35;
 
-        // --- START OF PALETTE SIZE MISMATCH FIX ---
-        // Ensure initialReplacements matches _paletteColorCount (assumed to be 20 from logic.tsx)
-        const paletteColorsFromLogic = GLOVE_TO_WEBS_MAP.COLOR_OPTIONS // Assuming COLOR_OPTIONS is exported from logic.tsx
-            .map(opt => Color3.FromHexString(opt.hex).toLinearSpace()) // Convert hex to linear Color3
-            .slice(0, 20); // Take only the first 20
+        // --- START OF FIX B: Use imported COLOR_OPTIONS ---
+        const paletteColorsFromLogic: Color3[] =
+          COLOR_OPTIONS.map(({ hex }) => Color3.FromHexString(hex).toLinearSpace())
+                       .slice(0, 20); // Assuming palette size is fixed at 20 based on COLOR_OPTIONS
+        // --- END OF FIX B ---
 
         const gloveConfig: ColorSwapConfig = {
             baseColors: [ // Ensure this still has 32 colors
@@ -393,7 +405,6 @@ export class SceneManager {
             ],
             initialReplacements: paletteColorsFromLogic // Use the actual 20 palette colors
         };
-        // --- END OF PALETTE SIZE MISMATCH FIX ---
 
         const plugin = new ColorSwapPlugin(material, gloveConfig);
         return plugin;
@@ -522,8 +533,6 @@ export class SceneManager {
         this.shellMaterialsCache.clear();
         this.webMaterialsCache.forEach(cached => cached.plugin.dispose()); // Dispose plugins in cache
         this.webMaterialsCache.clear();
-        // Removed potential double-dispose: this.activeShellPlugin?.dispose();
-        // Removed potential double-dispose: this.activeWebPlugin?.dispose();
         this.resizeObserver.disconnect();
         this.scene.dispose(); // Dispose scene resources
         this.engine.dispose(); // Dispose engine

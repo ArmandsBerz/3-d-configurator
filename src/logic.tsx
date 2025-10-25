@@ -1,5 +1,5 @@
 import { useEffect, createContext, useContext } from 'react';
-import { Color3 } from '@babylonjs/core';
+// Removed Color3 import as it's no longer needed here after the change
 import { useGloveConfigurator } from './ui';
 import { SceneManager } from './viewer';
 import * as fflate from 'fflate';
@@ -14,13 +14,22 @@ export const COLOR_OPTIONS = [
 ] as const;
 export type ColorId = typeof COLOR_OPTIONS[number]['id'];
 
+// --- START OF SUGGESTION A: Add id -> index lookup ---
+export const colorIndexById = new Map<ColorId, number>(
+  COLOR_OPTIONS.map((opt, idx) => [opt.id, idx])
+);
+export const getPaletteIndexById = (id: ColorId): number =>
+  colorIndexById.get(id) ?? 0; // Default to index 0 (Red) if ID not found
+// --- END OF SUGGESTION A ---
+
+
 export interface SingleColorState {
   colorId: ColorId;
 }
 // --- END MODIFICATION ---
 
 export interface PartConfig {
-  shaderIndex: number;
+  shaderIndex: number; // This remains the ZONE index (0-31)
   displayName: string;
 }
 
@@ -433,7 +442,7 @@ export const GLOVE_PARTS_CONFIG: {
     shellSpecific: { [shellName: string]: { [key in ZoneKey]?: PartConfig } };
 } = {
     universal: {
-        [ZONES.WEB]:                { shaderIndex: 30, displayName: 'Web', materialTarget: 'web' },
+        [ZONES.WEB]:                { shaderIndex: 30, displayName: 'Web', materialTarget: 'web' }, // Note: shaderIndex 30 might be out of 0-31 range? Check base colors.
         [ZONES.WRIST]:              { shaderIndex: 26, displayName: 'Wrist', materialTarget: 'shell' },
         [ZONES.WRIST_STRAP]:        { shaderIndex: 19, displayName: 'Wrist Strap', materialTarget: 'shell' },
         [ZONES.PAD_HOOD]:           { shaderIndex: 20, displayName: 'Pad/Hood', materialTarget: 'shell' },
@@ -511,15 +520,15 @@ export const GloveLogicController = () => {
                     const colorState = configuration[zoneKey as ZoneKey];
                     if (!colorState || !config) continue;
 
-                    const hexColor = getHexById(colorState.colorId);
-                    const color3 = Color3.FromHexString(hexColor);
-
+                    // --- START OF SUGGESTION A: Use palette index ---
+                    const paletteIndex = getPaletteIndexById(colorState.colorId);
                     if (config.materialTarget === 'shell' || config.materialTarget === 'both') {
-                        sceneManager.updateShellColor(config.shaderIndex, color3);
+                        sceneManager.updateShellZonePointer(config.shaderIndex, paletteIndex);
                     }
                     if (config.materialTarget === 'web' || config.materialTarget === 'both') {
-                        sceneManager.updateWebColor(config.shaderIndex, color3);
+                        sceneManager.updateWebZonePointer(config.shaderIndex, paletteIndex);
                     }
+                    // --- END OF SUGGESTION A ---
                 }
 
                 // Loop 2: Shell-Specific Parts
@@ -529,9 +538,10 @@ export const GloveLogicController = () => {
                         const colorState = configuration[zoneKey as ZoneKey];
                         if (!colorState || !config) continue;
 
-                        const hexColor = getHexById(colorState.colorId);
-                        const color3 = Color3.FromHexString(hexColor);
-                        sceneManager.updateShellColor(config.shaderIndex, color3);
+                        // --- START OF SUGGESTION A: Use palette index ---
+                        const paletteIndex = getPaletteIndexById(colorState.colorId);
+                        sceneManager.updateShellZonePointer(config.shaderIndex, paletteIndex);
+                        // --- END OF SUGGESTION A ---
                     }
                 }
 
