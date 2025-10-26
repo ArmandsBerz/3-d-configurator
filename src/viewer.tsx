@@ -47,8 +47,12 @@ function encodeIndexAsColor(index: number): string {
 class ColorSwapPlugin extends MaterialPluginBase {
     // --- START OF STEP 1 MODIFICATION (Corrected Plan) ---
     // --- START OF DEFINITE ASSIGNMENT FIX ---
-    private _dataLUT!: DynamicTexture; // Will hold base colors + pointers
+    // --- START OF A.1 ---
+    private _baseLUT!: RawTexture;     // linear colors (per-zone id colors)
+    private _pointerLUT!: RawTexture;  // raw byte indices (R channel)
+    private _pointerBuf!: Uint8Array;  // keep CPU-side buffer for cheap updates
     private _paletteLUT!: Texture; // Will hold the swappable palette colors
+    // --- END OF A.1 ---
     // --- END OF DEFINITE ASSIGNMENT FIX ---
     private _zoneCount = 32; // Number of zones/base colors
     private _paletteColorCount = 20; // Number of actual swappable colors (adjust if needed)
@@ -85,17 +89,59 @@ class ColorSwapPlugin extends MaterialPluginBase {
 
         const scene = material.getScene(); // Get scene reference
 
-        // 2. Create _dataLUT (Dynamic Texture - zoneCount x 2)
-        this._dataLUT = new DynamicTexture("dataLUT", { width: this._zoneCount, height: 2 }, scene, false);
-        this._dataLUT.updateSamplingMode(Constants.TEXTURE_NEAREST_SAMPLINGMODE); // Critical: Nearest for exact data
-        this._dataLUT.gammaSpace = false; // Critical: Treat as linear data, not sRGB color
-        // --- START OF CLAMP ADDRESS MODE (per ChatGPT suggestion) ---
-        this._dataLUT.wrapU = Constants.TEXTURE_CLAMP_ADDRESSMODE;
-        this._dataLUT.wrapV = Constants.TEXTURE_CLAMP_ADDRESSMODE;
-        // --- END OF CLAMP ADDRESS MODE ---
+        // --- START OF A.1 viewer.tsx — plugin: replace mixed _dataLUT with two RawTextures ---
+        // -------- baseLUT (linear colors) --------
+        const baseBuf = new Uint8Array(this._zoneCount * 3);
+        {
+          let o = 0;
+          for (let i = 0; i < this._zoneCount; i++) {
+            const hex = config.baseColors[i] ?? "#000000";
+            const lin = Color3.FromHexString(hex).toLinearSpace(); // <- linear
+            baseBuf[o++] = Math.round(lin.r * 255);
+            baseBuf[o++] = Math.round(lin.g * 255);
+            baseBuf[o++] = Math.round(lin.b * 255);
+          }
+          this._baseLUT = RawTexture.CreateRGBTexture(
+            baseBuf,
+            this._zoneCount,
+            1,
+            scene,
+            /*noMipmap*/ true,
+            /*invertY*/ false,
+            Constants.TEXTURE_NEAREST_SAMPLINGMODE,
+            Constants.TEXTURETYPE_UNSIGNED_BYTE
+          );
+          this._baseLUT.gammaSpace = false; // bytes are already linear
+          this._baseLUT.wrapU = this._baseLUT.wrapV = Constants.TEXTURE_CLAMP_ADDRESSMODE;
+        }
+        
+        // -------- pointerLUT (raw byte indices in R) --------
+        this._pointerBuf = new Uint8Array(this._zoneCount * 3);
+        {
+          let o = 0;
+          for (let i = 0; i < this._zoneCount; i++) {
+            const idx = i % this._paletteColorCount;  // initial mapping
+            this._pointerBuf[o++] = idx; // R = palette index [0..255]
+            this._pointerBuf[o++] = 0;   // G
+            this._pointerBuf[o++] = 0;   // B
+          }
+          this._pointerLUT = RawTexture.CreateRGBTexture(
+            this._pointerBuf,
+            this._zoneCount,
+            1,
+            scene,
+            /*noMipmap*/ true,
+            /*invertY*/ false,
+            Constants.TEXTURE_NEAREST_SAMPLINGMODE,
+            Constants.TEXTURETYPE_UNSIGNED_BYTE
+          );
+          this._pointerLUT.gammaSpace = false; // integer data, never gamma
+          this._pointerLUT.wrapU = this._pointerLUT.wrapV = Constants.TEXTURE_CLAMP_ADDRESSMODE;
+        }
 
-
+        // -------- paletteLUT (already correct: linear bytes) --------
         // 3. Create _paletteLUT (Static Texture - paletteColorCount x 1)
+        // --- END OF A.1 ---
         const paletteBufferSize = this._paletteColorCount * 3; // 3 bytes per RGB color
         const paletteBuffer = new Uint8Array(paletteBufferSize);
         let bufferIndex = 0;
@@ -126,49 +172,34 @@ class ColorSwapPlugin extends MaterialPluginBase {
         this._paletteLUT.wrapV = Constants.TEXTURE_CLAMP_ADDRESSMODE;
         // --- END OF CLAMP ADDRESS MODE ---
 
-        // 4. Populate _dataLUT
-        const ctx = this._dataLUT.getContext();
-        for (let i = 0; i < this._zoneCount; i++) {
-            ctx.fillStyle = config.baseColors[i] || '#000000'; // Default to black if missing
-            ctx.fillRect(i, 0, 1, 1);
-
-            const initialPaletteIndex = i % this._paletteColorCount;
-            ctx.fillStyle = encodeIndexAsColor(initialPaletteIndex);
-            ctx.fillRect(i, 1, 1, 1);
-        }
-
-        // 5. Update _dataLUT to send initial data to GPU
-        this._dataLUT.update();
-
+        // 4. Populate _dataLUT (REMOVED)
+        // 5. Update _dataLUT to send initial data to GPU (REMOVED)
+        
         // --- END OF STEP 2 MODIFICATION ---
 
         this.isEnabled = true;
     }
 
     // --- START OF STEP 3 MODIFICATION ---
-    // Added new method to update the pointer for a specific zone:
+    // --- START OF A.1 Update method ---
     public updateZonePaletteIndex(zoneIndex: number, paletteIndex: number): void {
-        if (zoneIndex < 0 || zoneIndex >= this._zoneCount) {
-            console.warn(`ColorSwapPlugin: Invalid zone index provided: ${zoneIndex}`);
-            return;
-        }
-        if (paletteIndex < 0 || paletteIndex >= this._paletteColorCount) {
-             console.warn(`ColorSwapPlugin: Invalid palette index provided: ${paletteIndex}`);
-             return;
-        }
-        if (!this._dataLUT) return;
-
-        const ctx = this._dataLUT.getContext();
-        ctx.fillStyle = encodeIndexAsColor(paletteIndex);
-        ctx.fillRect(zoneIndex, 1, 1, 1);
-        this._dataLUT.update();
+      if (zoneIndex < 0 || zoneIndex >= this._zoneCount) return;
+      if (paletteIndex < 0 || paletteIndex >= this._paletteColorCount) return;
+    
+      const o = zoneIndex * 3;
+      this._pointerBuf[o] = paletteIndex;
+      this._pointerLUT.update(this._pointerBuf); // re-upload small 1×N strip
     }
+    // --- END OF A.1 Update method ---
     // --- END OF STEP 3 MODIFICATION ---
 
 
     // --- START OF DISPOSE FIX ---
     public dispose() {
-        this._dataLUT?.dispose(); // Dispose the LUTs if they exist
+        // --- START OF A.1 Dispose ---
+        this._baseLUT?.dispose(); // Dispose the LUTs if they exist
+        this._pointerLUT?.dispose();
+        // --- END OF A.1 Dispose ---
         this._paletteLUT?.dispose();
         super.dispose();
     }
@@ -183,10 +214,13 @@ class ColorSwapPlugin extends MaterialPluginBase {
     }
 
     // --- START OF STEP 5 MODIFICATION ---
+    // --- START OF A.1 Samplers ---
     public getSamplers(samplers: string[]) {
-        samplers.push("dataLUT");
+        samplers.push("baseLUT");
+        samplers.push("pointerLUT");
         samplers.push("paletteLUT");
     }
+    // --- END OF A.1 Samplers ---
     // --- END OF STEP 5 MODIFICATION ---
 
     prepareDefines(defines: MaterialDefines) {
@@ -202,7 +236,7 @@ class ColorSwapPlugin extends MaterialPluginBase {
             ],
             fragment: `
 #ifdef COLOR_SWAP
-// Added texture sampler declarations back:
+// Added texture sampler declarations back: (REMOVED - Handled in DEFINITIONS)
 
 // Kept original uniforms:
 uniform float blendRadius;
@@ -214,50 +248,48 @@ uniform float blendStrength;
     // --- END OF FIX 1 ---
 
     // --- START OF STEP 6 MODIFICATION ---
+    // --- START OF A.1 Bind ---
     bindForSubMesh(uniformBuffer: UniformBuffer, scene: Scene, engine: Engine, subMesh: SubMesh) {
-        if (this._isEnabled && this._dataLUT && this._paletteLUT) {
+        if (this._isEnabled && this._baseLUT && this._pointerLUT && this._paletteLUT) {
             uniformBuffer.updateFloat("blendRadius", this.blendRadius);
             uniformBuffer.updateFloat("blendStrength", this.blendStrength);
 
             const effect = this._material?.getEffect();
             if (effect) {
-                effect.setTexture("dataLUT", this._dataLUT);
+                effect.setTexture("baseLUT", this._baseLUT);
+                effect.setTexture("pointerLUT", this._pointerLUT);
                 effect.setTexture("paletteLUT", this._paletteLUT);
             }
         }
     }
+    // --- END OF A.1 Bind ---
     // --- END OF STEP 6 MODIFICATION ---
 
     // --- START OF STEP 7 MODIFICATION ---
     // --- START OF FIX 2: Move logic to UPDATE_ALBEDO ---
     getCustomCode(shaderType: string) {
         if (shaderType === "fragment") {
-            // --- START OF FIX 2 (ChatGPT): Gate helpers ---
+            // --- START OF A.1 Shader glue ---
             const definitionsGLSL = `
                 const int ZONE_COUNT = ${this._zoneCount};
-                const int DATA_LUT_H = 2;
                 const int PALETTE_COUNT = ${this._paletteColorCount};
 
                 #ifdef COLOR_SWAP // Gate helpers
-                uniform sampler2D dataLUT;
-                uniform sampler2D paletteLUT;
+                uniform sampler2D baseLUT;     // linear colors per zone
+                uniform sampler2D pointerLUT;  // index per zone (R channel, 0..255)
+                uniform sampler2D paletteLUT;  // linear palette colors
 
-                int decodeColorToIndex(vec4 pointerColor) {
-                    return int(pointerColor.r * 255.0 + 0.5);
-                }
+                int decodeIndex(vec4 c) { return int(c.r * 255.0 + 0.5); }
 
                 #ifdef WEBGL2
-                    #define FETCH_DATA(ix, iy) texelFetch(dataLUT, ivec2(ix, iy), 0)
-                    #define FETCH_PALETTE(ix)  texelFetch(paletteLUT, ivec2(ix, 0), 0)
+                    #define FETCH_BASE(ix)    texelFetch(baseLUT,    ivec2(ix, 0), 0)
+                    #define FETCH_POINTER(ix) texelFetch(pointerLUT, ivec2(ix, 0), 0)
+                    #define FETCH_PALETTE(ix) texelFetch(paletteLUT, ivec2(ix, 0), 0)
                 #else
-                    vec2 uvDataLUT(int ix, int iy){
-                        return (vec2(float(ix)+0.5, float(iy)+0.5) / vec2(float(ZONE_COUNT), float(DATA_LUT_H)));
-                    }
-                    vec2 uvPalette(int ix){
-                        return (vec2(float(ix)+0.5, 0.5) / vec2(float(PALETTE_COUNT), 1.0));
-                    }
-                    #define FETCH_DATA(ix, iy) texture2D(dataLUT, uvDataLUT(ix, iy))
-                    #define FETCH_PALETTE(ix)  texture2D(paletteLUT, uvPalette(ix))
+                    vec2 uv1D(int ix, int W){ return (vec2(float(ix)+0.5, 0.5) / vec2(float(W), 1.0)); }
+                    #define FETCH_BASE(ix)    texture2D(baseLUT,    uv1D(ix, ZONE_COUNT))
+                    #define FETCH_POINTER(ix) texture2D(pointerLUT, uv1D(ix, ZONE_COUNT))
+                    #define FETCH_PALETTE(ix) texture2D(paletteLUT, uv1D(ix, PALETTE_COUNT))
                 #endif
                 #endif // End gate helpers
             `;
@@ -266,22 +298,24 @@ uniform float blendStrength;
             // --- START OF FIX 1 (ChatGPT): Rename finalColor ---
             const updateAlbedoGLSL = `
 #ifdef COLOR_SWAP
+    // idColor must be linear; see texture setup below.
     vec3 idColor = surfaceAlbedo.rgb;
-    int zoneIndex = -1;
-    int paletteIndex = 0;
 
+    int zoneIndex = -1;
+    const float ID_TOL = 0.5 / 255.0; // 1/2 LSB in byte space
+
+    // Find the zone by matching to baseLUT
     for (int i = 0; i < ZONE_COUNT; i++) {
-        vec3 baseColor = FETCH_DATA(i, 0).rgb;
-        if (distance(idColor, baseColor) < 0.01) {
+        vec3 baseColor = FETCH_BASE(i).rgb;
+        if (all(lessThan(abs(idColor - baseColor), vec3(ID_TOL)))) {
             zoneIndex = i;
             break;
         }
     }
 
+    int paletteIndex = 0;
     if (zoneIndex != -1) {
-        vec4 pointerColor = FETCH_DATA(zoneIndex, 1);
-        paletteIndex = decodeColorToIndex(pointerColor);
-        paletteIndex = clamp(paletteIndex, 0, PALETTE_COUNT - 1);
+        paletteIndex = clamp(decodeIndex(FETCH_POINTER(zoneIndex)), 0, PALETTE_COUNT - 1);
     }
 
     // Assign directly to surfaceAlbedo.rgb instead of using finalColor
@@ -289,6 +323,7 @@ uniform float blendStrength;
 
 #endif
 `;
+            // --- END OF A.1 Shader glue ---
             // --- END OF FIX 1 (ChatGPT): Rename finalColor ---
 
             return {
@@ -375,9 +410,16 @@ export class SceneManager {
     private _setupMaterialWithPlugin(material: PBRMaterial, modelName: string): ColorSwapPlugin {
         const rootUrl = `${process.env.PUBLIC_URL || ''}/assets/`;
 
-        const colorIdTexture = new Texture(`${rootUrl}${modelName}.png`, this.scene, true, false, Constants.TEXTURE_NEAREST_SAMPLINGMODE);
-        colorIdTexture.gammaSpace = false;
+        // --- START OF 2. viewer.tsx — SceneManager: sample the ID PNG as linear ---
+        const colorIdTexture = new Texture(`${rootUrl}${modelName}.png`, this.scene, /*noMipmap*/ true, /*invertY*/ false, Constants.TEXTURE_NEAREST_SAMPLINGMODE);
+        // IMPORTANT: PNG is sRGB; ask Babylon to convert to linear for the shader
+        colorIdTexture.gammaSpace = true;
+        // Be strict: avoid seams/bleeding
+        colorIdTexture.wrapU = colorIdTexture.wrapV = Constants.TEXTURE_CLAMP_ADDRESSMODE;
+        colorIdTexture.hasAlpha = false;
+        
         material.albedoTexture = colorIdTexture;
+        // --- END OF 2. ---
 
         const detailTexture = new Texture(`${rootUrl}details.png`, this.scene);
         detailTexture.coordinatesIndex = 0;
