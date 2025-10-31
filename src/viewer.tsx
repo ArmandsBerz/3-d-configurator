@@ -58,10 +58,16 @@ class ColorSwapPlugin extends MaterialPluginBase {
     private _paletteColorCount = 20; // Number of actual swappable colors (adjust if needed)
     // --- END OF STEP 1 MODIFICATION (Corrected Plan) ---
 
-    public blendRadius = 0.01;
+    // Optional: keep the old feel unless you *want* wider blending
+    public blendRadius = 1.01;
     public blendStrength = 1.5;
     private _isEnabled = false;
     private _markAllDefinesAsDirty: () => void;
+
+    // in ColorSwapPlugin class:
+    private _sdfTex?: Texture;                 // <— add
+    public setSDFTexture(t: Texture) { this._sdfTex = t; }  // <— add
+
     constructor(material: PBRBaseMaterial, config: ColorSwapConfig) {
         super(material, "ColorSwap", 200, { "COLOR_SWAP": false });
         this._markAllDefinesAsDirty = material._dirtyCallbacks[Constants.MATERIAL_AllDirtyFlag];
@@ -219,6 +225,7 @@ class ColorSwapPlugin extends MaterialPluginBase {
         samplers.push("baseLUT");
         samplers.push("pointerLUT");
         samplers.push("paletteLUT");
+        samplers.push("sdfTex");                 // <— add
     }
     // --- END OF A.1 Samplers ---
     // --- END OF STEP 5 MODIFICATION ---
@@ -259,6 +266,7 @@ uniform float blendStrength;
                 effect.setTexture("baseLUT", this._baseLUT);
                 effect.setTexture("pointerLUT", this._pointerLUT);
                 effect.setTexture("paletteLUT", this._paletteLUT);
+                if (this._sdfTex) effect.setTexture("sdfTex", this._sdfTex);  // <— add
             }
         }
     }
@@ -278,6 +286,7 @@ uniform float blendStrength;
                 uniform sampler2D baseLUT;     // linear colors per zone
                 uniform sampler2D pointerLUT;  // index per zone (R channel, 0..255)
                 uniform sampler2D paletteLUT;  // linear palette colors
+                uniform sampler2D sdfTex;      // signed/normalized distance field in R channel
 
                 int decodeIndex(vec4 c) { return int(c.r * 255.0 + 0.5); }
 
@@ -291,6 +300,45 @@ uniform float blendStrength;
                     #define FETCH_POINTER(ix) texture2D(pointerLUT, uv1D(ix, ZONE_COUNT))
                     #define FETCH_PALETTE(ix) texture2D(paletteLUT, uv1D(ix, PALETTE_COUNT))
                 #endif
+
+                // sRGB -> Linear conversion (matches Babylon's toLinearSpace behavior closely)
+                vec3 srgbToLinear(vec3 c){
+                  // piecewise sRGB
+                  vec3 lo = c / 12.92;
+                  vec3 hi = pow((c + 0.055) / 1.055, vec3(2.4));
+                  return mix(lo, hi, step(vec3(0.04045), c));
+                }
+
+                // Find the closest zone in baseLUT to a sampled ID color (linear space)
+                int closestZone(vec3 idColor) {
+                  int bestI = 0;
+                  float bestD = 1e9;
+                  for (int i = 0; i < ZONE_COUNT; ++i) {
+                    vec3 b = FETCH_BASE(i).rgb;
+                    vec3 d = idColor - b;
+                    float dd = dot(d, d);
+                    if (dd < bestD) { bestD = dd; bestI = i; }
+                  }
+                  return bestI;
+                }
+
+                // Old behavior: try exact-ish match first, then fallback
+                int findZone(vec3 idColor) {
+                  const float ID_TOL = 0.5 / 255.0; // half LSB in byte space
+                  for (int i = 0; i < ZONE_COUNT; ++i) {
+                    vec3 b = FETCH_BASE(i).rgb;
+                    if (all(lessThan(abs(idColor - b), vec3(ID_TOL)))) {
+                      return i;
+                    }
+                  }
+                  return closestZone(idColor);
+                }
+
+                // Map a zone -> palette color via pointerLUT
+                vec3 zoneToPalette(int zone) {
+                  int p = decodeIndex(FETCH_POINTER(zone));
+                  return FETCH_PALETTE(p).rgb; // linear
+                }
                 #endif // End gate helpers
             `;
             // --- END OF FIX 2 (ChatGPT): Gate helpers ---
@@ -298,29 +346,32 @@ uniform float blendStrength;
             // --- START OF FIX 1 (ChatGPT): Rename finalColor ---
             const updateAlbedoGLSL = `
 #ifdef COLOR_SWAP
-    // idColor must be linear; see texture setup below.
-    vec3 idColor = surfaceAlbedo.rgb;
+  // SDF value and gradient (for edge direction)
+  float sd = texture2D(sdfTex, vAlbedoUV).r;
+  vec2 g  = vec2(dFdx(sd), dFdy(sd));
+  float glen = max(length(g), 1e-6);
+  vec2 dir = g / glen;
 
-    int zoneIndex = -1;
-    const float ID_TOL = 0.5 / 255.0; // 1/2 LSB in byte space
+  // UV offset ~ 1 pixel along the normal to the edge
+  float px = max(fwidth(vAlbedoUV.x) + fwidth(vAlbedoUV.y), 1e-5);
+  vec2 duv = dir * px;
 
-    // Find the zone by matching to baseLUT
-    for (int i = 0; i < ZONE_COUNT; i++) {
-        vec3 baseColor = FETCH_BASE(i).rgb;
-        if (all(lessThan(abs(idColor - baseColor), vec3(ID_TOL)))) {
-            zoneIndex = i;
-            break;
-        }
-    }
+  // Sample ID map (albedoSampler) on either side of the edge, then convert to *linear*
+  vec3 idA = srgbToLinear(texture2D(albedoSampler, vAlbedoUV - duv).rgb); // side A (linear)
+  vec3 idB = srgbToLinear(texture2D(albedoSampler, vAlbedoUV + duv).rgb); // side B (linear)
 
-    int paletteIndex = 0;
-    if (zoneIndex != -1) {
-        paletteIndex = clamp(decodeIndex(FETCH_POINTER(zoneIndex)), 0, PALETTE_COUNT - 1);
-    }
+  // Use old exact match first to preserve wiring, fallback to nearest if needed
+  int  zA = findZone(idA);
+  int  zB = findZone(idB);
+  vec3 palA = zoneToPalette(zA);
+  vec3 palB = zoneToPalette(zB);
 
-    // Assign directly to surfaceAlbedo.rgb instead of using finalColor
-    surfaceAlbedo.rgb = FETCH_PALETTE(paletteIndex).rgb;
+  // Build a smooth transition centered at 0.5
+  float w = max(fwidth(sd) * blendStrength, 1e-6);
+  float t = smoothstep(0.5 - blendRadius * w, 0.5 + blendRadius * w, sd);
 
+  // Final palette-blended albedo
+  surfaceAlbedo.rgb = mix(palB, palA, t);
 #endif
 `;
             // --- END OF A.1 Shader glue ---
@@ -449,6 +500,19 @@ export class SceneManager {
         };
 
         const plugin = new ColorSwapPlugin(material, gloveConfig);
+
+        // Wire SDF (required for smoothing)
+        const sdfTexture = new Texture(
+          `${rootUrl}${modelName}SDF.png`,
+          this.scene,
+          /*noMipmap*/ false,
+          /*invertY*/ false,
+          Constants.TEXTURE_TRILINEAR_SAMPLINGMODE
+        );
+        sdfTexture.gammaSpace = false; // data texture
+        sdfTexture.wrapU = sdfTexture.wrapV = Constants.TEXTURE_CLAMP_ADDRESSMODE;
+        plugin.setSDFTexture(sdfTexture); // <— add
+
         return plugin;
     }
 
