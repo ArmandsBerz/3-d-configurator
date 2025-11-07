@@ -20,6 +20,7 @@ import {
     Texture,
     RawTexture, // Added for Step 2
     SubMesh, // Added for Step 6
+    Viewport, // <-- ADD THIS
     // Removed AbstractEngine import
     // Note: Effect is implicitly used by bindForSubMesh, but not explicitly imported.
 } from '@babylonjs/core';
@@ -61,6 +62,7 @@ class ColorSwapPlugin extends MaterialPluginBase {
     // Optional: keep the old feel unless you *want* wider blending
     public blendRadius = 1.01;
     public blendStrength = 1.5;
+    public enableSdf = 1.0; // <-- ADD THIS
     private _isEnabled = false;
     private _markAllDefinesAsDirty: () => void;
 
@@ -240,6 +242,7 @@ class ColorSwapPlugin extends MaterialPluginBase {
             ubo: [
                 { name: "blendRadius", size: 1, type: "float" },
                 { name: "blendStrength", size: 1, type: "float" },
+                { name: "u_enableSdf", size: 1, type: "float" }, // <-- ADD THIS
             ],
             fragment: `
 #ifdef COLOR_SWAP
@@ -248,6 +251,7 @@ class ColorSwapPlugin extends MaterialPluginBase {
 // Kept original uniforms:
 uniform float blendRadius;
 uniform float blendStrength;
+uniform float u_enableSdf; // <-- ADD THIS
 #endif
 `
         };
@@ -260,6 +264,7 @@ uniform float blendStrength;
         if (this._isEnabled && this._baseLUT && this._pointerLUT && this._paletteLUT) {
             uniformBuffer.updateFloat("blendRadius", this.blendRadius);
             uniformBuffer.updateFloat("blendStrength", this.blendStrength);
+            uniformBuffer.updateFloat("u_enableSdf", this.enableSdf); // <-- ADD THIS
 
             const effect = this._material?.getEffect();
             if (effect) {
@@ -346,32 +351,39 @@ uniform float blendStrength;
             // --- START OF FIX 1 (ChatGPT): Rename finalColor ---
             const updateAlbedoGLSL = `
 #ifdef COLOR_SWAP
-  // SDF value and gradient (for edge direction)
+// This is the global switch (1.0 = on, 0.0 = off)
+// It is set from the CPU, which now measures the object's pixel size.
+
+if (u_enableSdf > 0.5) {
+  // --- HIGH QUALITY PATH (SDF ON) ---
+  // The 'fwidth' check is GONE from here.
+  
   float sd = texture2D(sdfTex, vAlbedoUV).r;
+  float sd_fwidth = fwidth(sd); // Still needed for blend width
   vec2 g  = vec2(dFdx(sd), dFdy(sd));
   float glen = max(length(g), 1e-6);
   vec2 dir = g / glen;
 
-  // UV offset ~ 1 pixel along the normal to the edge
   float px = max(fwidth(vAlbedoUV.x) + fwidth(vAlbedoUV.y), 1e-5);
   vec2 duv = dir * px;
 
-  // Sample ID map (albedoSampler) on either side of the edge, then convert to *linear*
-  vec3 idA = srgbToLinear(texture2D(albedoSampler, vAlbedoUV - duv).rgb); // side A (linear)
-  vec3 idB = srgbToLinear(texture2D(albedoSampler, vAlbedoUV + duv).rgb); // side B (linear)
+  vec3 idA = srgbToLinear(texture2D(albedoSampler, vAlbedoUV - duv).rgb);
+  vec3 idB = srgbToLinear(texture2D(albedoSampler, vAlbedoUV + duv).rgb);
 
-  // Use old exact match first to preserve wiring, fallback to nearest if needed
   int  zA = findZone(idA);
   int  zB = findZone(idB);
   vec3 palA = zoneToPalette(zA);
   vec3 palB = zoneToPalette(zB);
 
-  // Build a smooth transition centered at 0.5
-  float w = max(fwidth(sd) * blendStrength, 1e-6);
+  float w = max(sd_fwidth * blendStrength, 1e-6);
   float t = smoothstep(0.5 - blendRadius * w, 0.5 + blendRadius * w, sd);
-
-  // Final palette-blended albedo
   surfaceAlbedo.rgb = mix(palB, palA, t);
+
+} else {
+  // --- FALLBACK PATH (SDF OFF) ---
+  vec3 idC = srgbToLinear(texture2D(albedoSampler, vAlbedoUV).rgb);
+  surfaceAlbedo.rgb = zoneToPalette(findZone(idC));
+}
 #endif
 `;
             // --- END OF A.1 Shader glue ---
@@ -418,6 +430,7 @@ class AssetManager {
 export class SceneManager {
     private engine: Engine;
     private scene: Scene;
+    private camera: ArcRotateCamera; // <-- MAKE THIS A CLASS PROPERTY
     private resizeObserver: ResizeObserver;
     private assetManager: AssetManager;
     private isSceneReady = false;
@@ -440,20 +453,77 @@ export class SceneManager {
         this.assetManager = new AssetManager(this.scene);
         this.scene.clearColor = new Color4(0, 0, 0, 0);
 
-        const camera = new ArcRotateCamera("camera", Math.PI / 2, Math.PI / 2, 3, Vector3.Zero(), this.scene);
-        camera.minZ = 0.1;
-        camera.attachControl(canvas, true);
+        this.camera = new ArcRotateCamera("camera", Math.PI / 2, Math.PI / 2, 3, Vector3.Zero(), this.scene); // <-- CHANGE to this.camera
+        this.camera.minZ = 0.1;
+        this.camera.attachControl(canvas, true);
         new HemisphericLight("light", new Vector3(0, 1, 0), this.scene);
 
-        camera.fov = 0.3;
-        camera.lowerRadiusLimit = 1.5;
-        camera.upperRadiusLimit = 4;
-        camera.panningSensibility = 0;
-        camera.wheelPrecision = 150;
+        this.camera.fov = 0.3;
+        this.camera.lowerRadiusLimit = 1.5;
+        this.camera.upperRadiusLimit = 4;
+        this.camera.panningSensibility = 0;
+        this.camera.wheelPrecision = 150;
 
         this.loadInitialAssets(onReady);
 
-        this.engine.runRenderLoop(() => this.scene.render());
+        // ... inside the constructor ...
+
+        this.engine.runRenderLoop(() => {
+            
+            // --- THIS IS THE NEW "PIXEL BUDGET" LOGIC ---
+            if (this.activeShellPlugin && this.activeShellName && this.gloveShells.has(this.activeShellName)) {
+                const activeMesh = this.gloveShells.get(this.activeShellName);
+                if (activeMesh) { // <-- guard for TS
+                  activeMesh.computeWorldMatrix(true); // Ensure matrices are up to date
+
+                  const localCorners = activeMesh.getBoundingInfo().boundingBox.vectors;
+                  const worldMatrix = activeMesh.getWorldMatrix();
+                  const transformMatrix = this.scene.getTransformMatrix();
+                  const viewport = this.camera.viewport.toGlobal(this.engine.getRenderWidth(), this.engine.getRenderHeight());
+
+                  let minX = Infinity, minY = Infinity;
+                  let maxX = -Infinity, maxY = -Infinity;
+                  let validPixels = 0;
+
+                  // Project all 8 corners of the box to 2D screen space
+                  for (const corner of localCorners) {
+                    const screenPos = Vector3.Project(corner, worldMatrix, transformMatrix, viewport);
+
+                    // Only count corners that are in front of the camera
+                    if (screenPos.z > 0 && screenPos.z < 1) {
+                      minX = Math.min(minX, screenPos.x);
+                      maxX = Math.max(maxX, screenPos.x);
+                      minY = Math.min(minY, screenPos.y);
+                      maxY = Math.max(maxY, screenPos.y);
+                      validPixels++;
+                    }
+                  }
+
+                  let enableSdf = 1.0; // Default to ON
+
+                  if (validPixels > 0) {
+                    const pixelHeight = maxY - minY;
+
+                    // If the object is less than 250px tall, turn off SDF
+                    const SDF_PIXEL_HEIGHT_THRESHOLD = 470.0;
+
+                    enableSdf = (pixelHeight > SDF_PIXEL_HEIGHT_THRESHOLD) ? 1.0 : 0.0;
+                  } else {
+                    enableSdf = 0.0; // Object is off-screen
+                  }
+
+                  // Set the uniform for the shader
+                  this.activeShellPlugin.enableSdf = enableSdf;
+                  if (this.activeWebPlugin) {
+                    this.activeWebPlugin.enableSdf = enableSdf;
+                  }
+                }
+            }
+            // --- END OF NEW LOGIC ---
+
+            this.scene.render();
+        });
+        
         this.resizeObserver = new ResizeObserver(() => this.engine.resize());
         this.resizeObserver.observe(canvas);
     }
