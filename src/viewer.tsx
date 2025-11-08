@@ -375,14 +375,41 @@ if (u_enableSdf > 0.5) {
   vec3 palA = zoneToPalette(zA);
   vec3 palB = zoneToPalette(zB);
 
-  float w = max(sd_fwidth * blendStrength, 1e-6);
+  float wMin = 0.8 * px;                 // tune 0.7–1.0
+float w    = max(max(sd_fwidth * blendStrength, 1e-6), wMin);
   float t = smoothstep(0.5 - blendRadius * w, 0.5 + blendRadius * w, sd);
   surfaceAlbedo.rgb = mix(palB, palA, t);
 
 } else {
-  // --- FALLBACK PATH (SDF OFF) ---
-  vec3 idC = srgbToLinear(texture2D(albedoSampler, vAlbedoUV).rgb);
-  surfaceAlbedo.rgb = zoneToPalette(findZone(idC));
+  // --- MINIFICATION FILTER (material-local, palette-aware; no global FXAA/TAA) ---
+
+  // 1) Edge direction from the ID map luminance
+  vec3  id0 = srgbToLinear(texture2D(albedoSampler, vAlbedoUV).rgb);
+  float L0  = dot(id0, vec3(0.299, 0.587, 0.114));
+  vec2  g   = vec2(dFdx(L0), dFdy(L0));
+  float glen = max(length(g), 1e-6);
+  vec2  dir  = g / glen;
+
+  // 2) Pixel footprint in UV (subpixel coverage span)
+  float fp = max(fwidth(vAlbedoUV.x) + fwidth(vAlbedoUV.y), 1e-5);
+  vec2  duv = dir * fp;
+
+  // 3) Take a few samples across the footprint, map each to a PALETTE color,
+  //    then blend in palette space (not raw RGB of the ID map).
+  vec2 offs[4] = vec2[](-1.5*duv, -0.5*duv, 0.5*duv, 1.5*duv);
+  float w[4]   = float[](0.2, 0.3, 0.3, 0.2); // tent weights
+
+  vec3 accum = vec3(0.0);
+  float sumw = 0.0;
+  for (int i = 0; i < 4; ++i) {
+    vec3 idS = srgbToLinear(texture2D(albedoSampler, vAlbedoUV + offs[i]).rgb);
+    int  z   = findZone(idS);
+    vec3 pal = zoneToPalette(z);
+    accum += pal * w[i];
+    sumw  += w[i];
+  }
+
+  surfaceAlbedo.rgb = accum / sumw;
 }
 #endif
 `;
