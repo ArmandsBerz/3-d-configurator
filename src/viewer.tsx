@@ -474,6 +474,16 @@ export class SceneManager {
     private webs = new Map<string, Mesh>();
     private activeShellName: string | null = null;
 
+    // --- Added for bitmap font: cache + per-zone atlases ---
+    private _bitmapFontReady: Promise<void> | null = null;
+    private _fontImage: HTMLImageElement | null = null;
+    private _fontCommon: { lineHeight: number; base: number; scaleW: number; scaleH: number } | null = null;
+    private _fontChars = new Map<number, { x: number; y: number; w: number; h: number; xoffset: number; yoffset: number; xadvance: number; page: number }>();
+    private _fontKern = new Map<string, number>();
+    private _opacityDTs = new Map<string, DynamicTexture>();
+    private _normalDTs = new Map<string, DynamicTexture>();
+    private _lastText = new Map<string, string>();
+
     constructor(canvas: HTMLCanvasElement, onReady: (manager: SceneManager) => void) {
         this.engine = new Engine(canvas, true, { alpha: true });
         this.scene = new Scene(this.engine);
@@ -490,6 +500,9 @@ export class SceneManager {
         this.camera.upperRadiusLimit = 4;
         this.camera.panningSensibility = 0;
         this.camera.wheelPrecision = 150;
+
+        // Load bitmap font once
+        this._bitmapFontReady = this._initBitmapFont();
 
         this.loadInitialAssets(onReady);
 
@@ -703,32 +716,143 @@ export class SceneManager {
         });
     }
 
+    // --- CHANGED: bitmap-font blit text with alpha mask + normal map ---
     public updateText = (options: { zone: string; text: string; font: string; color: string; }) => {
         const { zone, text, font, color } = options;
         if (!this.activeShellName) return;
         const materialName = `${zone}${this.activeShellName.charAt(0).toUpperCase() + this.activeShellName.slice(1)}`;
         const textMat = this.scene.getMaterialByName(materialName) as PBRMaterial;
-        if (textMat) {
-            let texture = this.textTextures.get(zone);
-            if (!texture) {
-                texture = new DynamicTexture(zone, { width: 512, height: 256 }, this.scene);
-                texture.hasAlpha = true;
-                textMat.albedoTexture = texture;
-                textMat.useAlphaFromAlbedoTexture = true;
-                textMat.transparencyMode = PBRMaterial.PBRMATERIAL_ALPHABLEND;
-                textMat.unlit = true;
-                this.textTextures.set(zone, texture);
-            }
-            const fontSize = text ? 70 : 90;
-            const fontString = `bold ${fontSize}px "${font}"`;
-            const ctx = texture.getContext();
-            ctx.clearRect(0, 0, texture.getSize().width, texture.getSize().height);
-            if (text) {
-                texture.drawText(text, null, null, fontString, color, 'transparent', false);
-            }
-        } else {
-             console.warn(`Text material "${materialName}" not found on active model.`);
+        if (!textMat) {
+            console.warn(`Text material "${materialName}" not found on active model.`);
+            return;
         }
+
+        // Ensure font assets are loaded
+        if (!this._bitmapFontReady) return;
+        // Not awaiting here—callers may type rapidly; we fail fast until ready
+        // (First onReady render usually happens after assets have loaded.)
+        // If still not ready, do nothing.
+        // @ts-ignore
+        if ((this._fontImage === null) || (this._fontCommon === null) || this._fontChars.size === 0) return;
+
+        // Create per-zone DTs if needed
+        let opacityDT = this._opacityDTs.get(zone);
+        let normalDT = this._normalDTs.get(zone);
+        const texW = 512, texH = 256; // keep your existing atlas size
+        if (!opacityDT) {
+            opacityDT = new DynamicTexture(`${zone}_opacity`, { width: texW, height: texH }, this.scene, false);
+            opacityDT.hasAlpha = true;
+            this._opacityDTs.set(zone, opacityDT);
+        }
+        if (!normalDT) {
+            normalDT = new DynamicTexture(`${zone}_normal`, { width: texW, height: texH }, this.scene, false);
+            normalDT.hasAlpha = true; // alpha irrelevant for bump, but harmless
+            this._normalDTs.set(zone, normalDT);
+        }
+
+        // Hook into material (tiny setup change)
+        textMat.opacityTexture = opacityDT;
+        textMat.bumpTexture = normalDT;
+        textMat.bumpTexture.level = 3.0;
+        textMat.useAlphaFromAlbedoTexture = false; // we use opacityTexture for alpha
+        textMat.transparencyMode = PBRMaterial.PBRMATERIAL_ALPHABLEND;
+        textMat.unlit = false; // normals should affect lighting
+        textMat.metallic = 0;
+        textMat.roughness = 0.1;
+        // Color tint via albedoColor; ignore the passed 'font' (fixed atlas)
+        try {
+            (textMat as any).albedoColor = Color3.FromHexString(color);
+        } catch {
+            // If not a hex, fallback to white
+            (textMat as any).albedoColor = new Color3(1, 1, 1);
+        }
+
+        // Early out if unchanged
+        const last = this._lastText.get(zone) ?? "";
+        if (last === text) return;
+        this._lastText.set(zone, text);
+
+        const ctxA = opacityDT.getContext();
+        const ctxN = normalDT.getContext();
+        ctxA.clearRect(0, 0, texW, texH);
+        ctxN.clearRect(0, 0, texW, texH);
+
+        // Empty text → clear + update
+        if (!text) {
+            opacityDT.update(false);
+            normalDT.update(false);
+            return;
+        }
+
+        const img = this._fontImage!;
+        const common = this._fontCommon!;
+
+        // Layout
+        // Scale so one line ≈ 70% of texture height (similar visual to previous fontSize=70 on 256px)
+        const targetLine = texH * 0.51;
+        const scale = targetLine / Math.max(common.lineHeight, 1);
+        const lineAdvance = common.lineHeight * scale;
+
+        // Start pen at some left padding; baseline at ~center vertically
+        const paddingX = 16;
+        let penX = paddingX;
+        
+        // 1. Calculate the Y position for the *top* of the centered line
+        const lineTopY = (texH - lineAdvance) * 0.5;
+        // 2. Calculate the baseline Y (we still need this for line breaks)
+        let penY = lineTopY + common.base * scale;
+
+        // Draw each glyph twice (opacity & normal) with same dest rect
+        let prevCode = -1;
+        for (const ch of text) {
+            if (ch === '\n') {
+                penX = paddingX;
+                penY += lineAdvance;
+                prevCode = -1;
+                continue;
+            }
+            const code = ch.codePointAt(0)!;
+
+            // Kerning
+            if (prevCode >= 0) {
+                const k = this._fontKern.get(`${prevCode},${code}`) ?? 0;
+                penX += k * scale;
+            }
+
+            const g = this._fontChars.get(code);
+            if (!g || g.w === 0 || g.h === 0) {
+                // Advance by space width if missing
+                const space = this._fontChars.get(32 /*space*/);
+                penX += (space ? space.xadvance : common.lineHeight * 0.35) * scale;
+                prevCode = code;
+                continue;
+            }
+
+            const srcX = g.x;
+            const srcY = g.y;
+            const srcW = g.w;
+            const srcH = g.h;
+
+            const dstX = Math.round(penX + g.xoffset * scale);
+            // Use lineTopY, which is the top of the line box
+            const dstY = Math.round(lineTopY + g.yoffset * scale);
+            const dstW = Math.max(1, Math.round(srcW * scale));
+            const dstH = Math.max(1, Math.round(srcH * scale));
+
+            // Clip if needed (simple guard)
+            if (dstX < texW && dstY < texH && dstX + dstW > 0 && dstY + dstH > 0) {
+                // Opacity pass: we only care about alpha channel
+                ctxA.drawImage(img, srcX, srcY, srcW, srcH, dstX, dstY, dstW, dstH);
+                // Normal pass: RGB carries tangent-space normals
+                ctxN.drawImage(img, srcX, srcY, srcW, srcH, dstX, dstY, dstW, dstH);
+            }
+
+            penX += g.xadvance * scale;
+            prevCode = code;
+        }
+
+        opacityDT.update(false);
+        normalDT.update(false);
     };
 
     public dispose() {
@@ -739,6 +863,86 @@ export class SceneManager {
         this.resizeObserver.disconnect();
         this.scene.dispose(); // Dispose scene resources
         this.engine.dispose(); // Dispose engine
+    }
+
+    // --- Added: load & parse lobsterType.fnt + image once ---
+    private async _initBitmapFont(): Promise<void> {
+        const rootUrl = `${process.env.PUBLIC_URL || ''}/assets/`;
+        // Load image
+        const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+            const im = new Image();
+            im.crossOrigin = 'anonymous';
+            im.onload = () => resolve(im);
+            im.onerror = reject;
+            im.src = `${rootUrl}lobsterType.png`;
+        });
+        this._fontImage = img;
+
+        // Load fnt (assume text BMFont format)
+        const fntText = await fetch(`${rootUrl}lobsterType.fnt`).then(r => r.text());
+
+        // Minimal BMFont text parser
+        const num = (s: string) => Number(s);
+        let scaleW = 0, scaleH = 0, lineHeight = 0, base = 0;
+
+        const parseKV = (line: string) =>
+            Object.fromEntries(
+                line.split(/\s+/)
+                    .slice(1)
+                    .filter(Boolean)
+                    .map(pair => {
+                        const [k, vRaw] = pair.split('=');
+                        // values may be quoted in some .fnt variants
+                        const v = vRaw?.replace(/^"/, '').replace(/"$/, '');
+                        return [k, v];
+                    })
+            );
+
+        for (const raw of fntText.split(/\r?\n/)) {
+            const line = raw.trim();
+            if (!line) continue;
+
+
+
+            if (line.startsWith('common ')) {
+                const kv = parseKV(line);
+                lineHeight = num(kv.lineHeight ?? 0);
+                base = num(kv.base ?? 0);
+                scaleW = num(kv.scaleW ?? 0);
+                scaleH = num(kv.scaleH ?? 0);
+                continue;
+            }
+
+            if (line.startsWith('char ')) {
+                const kv = parseKV(line);
+                const id = num(kv.id);
+                if (isNaN(id)) continue;
+                this._fontChars.set(id, {
+                    x: num(kv.x ?? 0),
+                    y: num(kv.y ?? 0),
+                    w: num(kv.width ?? kv.w ?? 0),
+                    h: num(kv.height ?? kv.h ?? 0),
+                    xoffset: num(kv.xoffset ?? 0),
+                    yoffset: num(kv.yoffset ?? 0),
+                    xadvance: num(kv.xadvance ?? 0),
+                    page: num(kv.page ?? 0),
+                });
+                continue;
+            }
+
+            if (line.startsWith('kerning ')) {
+                const kv = parseKV(line);
+                const first = num(kv.first ?? 0);
+                const second = num(kv.second ?? 0);
+                const amount = num(kv.amount ?? 0);
+                if (!isNaN(first) && !isNaN(second)) {
+                    this._fontKern.set(`${first},${second}`, amount);
+                }
+                continue;
+            }
+        }
+
+        this._fontCommon = { lineHeight, base, scaleW, scaleH };
     }
 }
 
