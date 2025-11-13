@@ -33,8 +33,25 @@ export interface PartConfig {
   displayName: string;
 }
 
-// --- NEW, CORRECTED CORE TYPES TO ACHIEVE TYPE SAFETY ---
-export type Font = 'SCRIPT' | 'BLOCK';
+// --- START OF PHASE 1.1 & 1.2 ---
+export const FONT_REGISTRY = [
+  {
+    id: 'LOBSTER',        // <- internal Font id
+    label: 'Lobster',     // <- what the dropdown shows
+    baseName: 'lobsterType',
+    targetLineFactor: 0.51,
+  },
+  {
+    id: 'ROBOTO',
+    label: 'Roboto',
+    baseName: 'robotoType',
+    targetLineFactor: 0.51,
+  },
+  // Add more fonts here later...
+] as const;
+
+export type Font = (typeof FONT_REGISTRY)[number]['id'];
+// --- END OF PHASE 1.1 & 1.2 ---
 
 // --- MODIFIED PER PLAN ---
 export interface TextPart {
@@ -155,10 +172,12 @@ export const leatherOptions = [
     { id: 'imgOpt2', title: 'American Steerhide' }
 ];
 
-export const fontOptions: { id: Font, label: string }[] = [
-    { id: 'SCRIPT', label: 'SCRIPT' },
-    { id: 'BLOCK', label: 'BLOCK' }
-];
+// --- START OF PHASE 1.2 ---
+export const fontOptions = FONT_REGISTRY.map(font => ({
+  id: font.id,      // 'LOBSTER' | 'ROBOTO' | ...
+  label: font.label // 'Lobster', 'Roboto', ...
+}));
+// --- END OF PHASE 1.2 ---
 
 // ===================================================================
 // --- SERIALIZATION LAYER REPLACEMENT ---
@@ -383,8 +402,10 @@ export const initialState: AppState = {
     configuration: {
         build: { imageSelection: 'imgOpt1', position: 'inf', size: '1100', handOpeningSize: 'adt', stiffness: 'std', throwingHand: 'rh', backStyle: 'opn', webType: 'mtp' },
 
-        thumbName: { type: 'text', text: 'Thumb', font: 'SCRIPT', colorId: 'gy' },
-        pinkyName: { type: 'text', text: 'Pinky', font: 'BLOCK', colorId: 'sl' },
+        // --- START OF PHASE 1.3 ---
+        thumbName: { type: 'text', text: 'Thumb', font: 'LOBSTER', colorId: 'gy' },
+        pinkyName: { type: 'text', text: 'Pinky', font: 'ROBOTO', colorId: 'sl' },
+        // --- END OF PHASE 1.3 ---
 
         [ZONES.THUMB_INNER]:    { colorId: 'rd' },
         [ZONES.INDEX]:          { colorId: 'bl' },

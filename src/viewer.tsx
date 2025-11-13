@@ -26,9 +26,11 @@ import {
 } from '@babylonjs/core';
 import "@babylonjs/loaders";
 // --- START OF FIX B: Import COLOR_OPTIONS ---
-import { GLOVE_TO_WEBS_MAP, COLOR_OPTIONS } from './logic';
+// --- START OF PHASE 2.1 ---
+import { GLOVE_TO_WEBS_MAP, COLOR_OPTIONS, FONT_REGISTRY } from './logic';
 // --- END OF FIX B ---
 import type { Font } from './logic';
+// --- END OF PHASE 2.1 ---
 
 // --- INTERFACE FOR PLUGIN CONFIGURATION ---
 interface ColorSwapConfig {
@@ -454,7 +456,9 @@ class AssetManager {
 }
 
 // --- Bitmap font types & registry (multi-font model) ---
+// --- START OF PHASE 2.1 ---
 type FontId = Font;
+// --- END OF PHASE 2.1 ---
 
 interface BitmapFontGlyph {
     x: number;
@@ -484,10 +488,17 @@ interface BitmapFontData {
 }
 
 // Map logical font ids to asset base names
-const FONT_CONFIG: Record<FontId, { baseName: string; targetLineFactor?: number }> = {
-    SCRIPT: { baseName: 'lobsterType', targetLineFactor: 0.51 },
-    BLOCK: { baseName: 'robotoType', targetLineFactor: 0.51 },
-};
+// --- START OF PHASE 2.2 ---
+const FONT_CONFIG = Object.fromEntries(
+  FONT_REGISTRY.map(font => [
+    font.id, // 'LOBSTER' | 'ROBOTO' | ...
+    {
+      baseName: font.baseName,
+      targetLineFactor: font.targetLineFactor,
+    },
+  ])
+) as Record<FontId, { baseName: string; targetLineFactor?: number }>;
+// --- END OF PHASE 2.2 ---
 
 // --- UPDATED SceneManager Class ---
 export class SceneManager {
@@ -534,7 +545,7 @@ export class SceneManager {
         this.camera.panningSensibility = 0;
         this.camera.wheelPrecision = 150;
 
-        // Load bitmap fonts once (SCRIPT + BLOCK)
+        // Load bitmap fonts once
         this._bitmapFontReady = this._initBitmapFonts();
 
         this.loadInitialAssets(onReady);
@@ -768,7 +779,9 @@ export class SceneManager {
         if (this._fonts.size === 0) return;
 
         // Resolve font data (with safe fallback)
-        let fontData = this._fonts.get(font as FontId) || this._fonts.get('SCRIPT' as FontId) || Array.from(this._fonts.values())[0];
+        // --- START OF PHASE 3 ---
+        let fontData = this._fonts.get(font as FontId) || this._fonts.get('LOBSTER' as FontId) || Array.from(this._fonts.values())[0];
+        // --- END OF PHASE 3 ---
         if (!fontData) return;
 
         const { image: img, common, chars, kern } = fontData;
@@ -902,7 +915,8 @@ export class SceneManager {
         this.engine.dispose(); // Dispose engine
     }
 
-    // Load & parse all bitmap fonts (SCRIPT + BLOCK) once
+    // Load & parse all bitmap fonts once
+    // --- START OF PHASE 2.3 ---
     private async _initBitmapFonts(): Promise<void> {
         const rootUrl = `${process.env.PUBLIC_URL || ''}/assets/`;
 
@@ -1015,6 +1029,7 @@ export class SceneManager {
 
         await Promise.all(fontIds.map(loadFont));
     }
+    // --- END OF PHASE 2.3 ---
 }
 
 interface BabylonCanvasProps {
