@@ -28,6 +28,7 @@ import "@babylonjs/loaders";
 // --- START OF FIX B: Import COLOR_OPTIONS ---
 import { GLOVE_TO_WEBS_MAP, COLOR_OPTIONS } from './logic';
 // --- END OF FIX B ---
+import type { Font } from './logic';
 
 // --- INTERFACE FOR PLUGIN CONFIGURATION ---
 interface ColorSwapConfig {
@@ -452,6 +453,41 @@ class AssetManager {
     }
 }
 
+// --- Bitmap font types & registry (multi-font model) ---
+type FontId = Font;
+
+interface BitmapFontGlyph {
+    x: number;
+    y: number;
+    w: number;
+    h: number;
+    xoffset: number;
+    yoffset: number;
+    xadvance: number;
+    page: number;
+}
+
+interface BitmapFontCommon {
+    lineHeight: number;
+    base: number;
+    scaleW: number;
+    scaleH: number;
+    // Optional per-font tuning to nudge vertical placement
+    targetLineFactor?: number;
+}
+
+interface BitmapFontData {
+    image: HTMLImageElement;
+    common: BitmapFontCommon;
+    chars: Map<number, BitmapFontGlyph>;
+    kern: Map<string, number>;
+}
+
+// Map logical font ids to asset base names
+const FONT_CONFIG: Record<FontId, { baseName: string; targetLineFactor?: number }> = {
+    SCRIPT: { baseName: 'lobsterType', targetLineFactor: 0.51 },
+    BLOCK: { baseName: 'robotoType', targetLineFactor: 0.51 },
+};
 
 // --- UPDATED SceneManager Class ---
 export class SceneManager {
@@ -474,12 +510,9 @@ export class SceneManager {
     private webs = new Map<string, Mesh>();
     private activeShellName: string | null = null;
 
-    // --- Added for bitmap font: cache + per-zone atlases ---
+    // --- Added for bitmap fonts: cache + per-zone atlases ---
     private _bitmapFontReady: Promise<void> | null = null;
-    private _fontImage: HTMLImageElement | null = null;
-    private _fontCommon: { lineHeight: number; base: number; scaleW: number; scaleH: number } | null = null;
-    private _fontChars = new Map<number, { x: number; y: number; w: number; h: number; xoffset: number; yoffset: number; xadvance: number; page: number }>();
-    private _fontKern = new Map<string, number>();
+    private _fonts = new Map<FontId, BitmapFontData>();
     private _opacityDTs = new Map<string, DynamicTexture>();
     private _normalDTs = new Map<string, DynamicTexture>();
     private _lastText = new Map<string, string>();
@@ -501,8 +534,8 @@ export class SceneManager {
         this.camera.panningSensibility = 0;
         this.camera.wheelPrecision = 150;
 
-        // Load bitmap font once
-        this._bitmapFontReady = this._initBitmapFont();
+        // Load bitmap fonts once (SCRIPT + BLOCK)
+        this._bitmapFontReady = this._initBitmapFonts();
 
         this.loadInitialAssets(onReady);
 
@@ -717,7 +750,7 @@ export class SceneManager {
     }
 
     // --- CHANGED: bitmap-font blit text with alpha mask + normal map ---
-    public updateText = (options: { zone: string; text: string; font: string; color: string; }) => {
+    public updateText = (options: { zone: string; text: string; font: Font; color: string; }) => {
         const { zone, text, font, color } = options;
         if (!this.activeShellName) return;
         const materialName = `${zone}${this.activeShellName.charAt(0).toUpperCase() + this.activeShellName.slice(1)}`;
@@ -732,8 +765,13 @@ export class SceneManager {
         // Not awaiting here—callers may type rapidly; we fail fast until ready
         // (First onReady render usually happens after assets have loaded.)
         // If still not ready, do nothing.
-        // @ts-ignore
-        if ((this._fontImage === null) || (this._fontCommon === null) || this._fontChars.size === 0) return;
+        if (this._fonts.size === 0) return;
+
+        // Resolve font data (with safe fallback)
+        let fontData = this._fonts.get(font as FontId) || this._fonts.get('SCRIPT' as FontId) || Array.from(this._fonts.values())[0];
+        if (!fontData) return;
+
+        const { image: img, common, chars, kern } = fontData;
 
         // Create per-zone DTs if needed
         let opacityDT = this._opacityDTs.get(zone);
@@ -767,10 +805,11 @@ export class SceneManager {
             (textMat as any).albedoColor = new Color3(1, 1, 1);
         }
 
-        // Early out if unchanged
+        // Early out if unchanged (make cache font-aware)
+        const signature = `${font}:${text}`;
         const last = this._lastText.get(zone) ?? "";
-        if (last === text) return;
-        this._lastText.set(zone, text);
+        if (last === signature) return;
+        this._lastText.set(zone, signature);
 
         const ctxA = opacityDT.getContext();
         const ctxN = normalDT.getContext();
@@ -784,12 +823,10 @@ export class SceneManager {
             return;
         }
 
-        const img = this._fontImage!;
-        const common = this._fontCommon!;
-
         // Layout
-        // Scale so one line ≈ 70% of texture height (similar visual to previous fontSize=70 on 256px)
-        const targetLine = texH * 0.51;
+        const targetLineFactor = common.targetLineFactor ?? 0.51;
+        // Scale so one line ≈ targetLineFactor of texture height
+        const targetLine = texH * targetLineFactor;
         const scale = targetLine / Math.max(common.lineHeight, 1);
         const lineAdvance = common.lineHeight * scale;
 
@@ -815,14 +852,14 @@ export class SceneManager {
 
             // Kerning
             if (prevCode >= 0) {
-                const k = this._fontKern.get(`${prevCode},${code}`) ?? 0;
+                const k = kern.get(`${prevCode},${code}`) ?? 0;
                 penX += k * scale;
             }
 
-            const g = this._fontChars.get(code);
+            const g = chars.get(code);
             if (!g || g.w === 0 || g.h === 0) {
                 // Advance by space width if missing
-                const space = this._fontChars.get(32 /*space*/);
+                const space = chars.get(32 /*space*/);
                 penX += (space ? space.xadvance : common.lineHeight * 0.35) * scale;
                 prevCode = code;
                 continue;
@@ -865,84 +902,118 @@ export class SceneManager {
         this.engine.dispose(); // Dispose engine
     }
 
-    // --- Added: load & parse lobsterType.fnt + image once ---
-    private async _initBitmapFont(): Promise<void> {
+    // Load & parse all bitmap fonts (SCRIPT + BLOCK) once
+    private async _initBitmapFonts(): Promise<void> {
         const rootUrl = `${process.env.PUBLIC_URL || ''}/assets/`;
-        // Load image
-        const img = await new Promise<HTMLImageElement>((resolve, reject) => {
-            const im = new Image();
-            im.crossOrigin = 'anonymous';
-            im.onload = () => resolve(im);
-            im.onerror = reject;
-            im.src = `${rootUrl}lobsterType.png`;
-        });
-        this._fontImage = img;
 
-        // Load fnt (assume text BMFont format)
-        const fntText = await fetch(`${rootUrl}lobsterType.fnt`).then(r => r.text());
+        const fontIds = Object.keys(FONT_CONFIG) as FontId[];
 
-        // Minimal BMFont text parser
-        const num = (s: string) => Number(s);
-        let scaleW = 0, scaleH = 0, lineHeight = 0, base = 0;
+        const loadFont = async (fontId: FontId): Promise<void> => {
+            const { baseName, targetLineFactor } = FONT_CONFIG[fontId];
 
-        const parseKV = (line: string) =>
-            Object.fromEntries(
-                line.split(/\s+/)
-                    .slice(1)
-                    .filter(Boolean)
-                    .map(pair => {
-                        const [k, vRaw] = pair.split('=');
-                        // values may be quoted in some .fnt variants
-                        const v = vRaw?.replace(/^"/, '').replace(/"$/, '');
-                        return [k, v];
-                    })
-            );
-
-        for (const raw of fntText.split(/\r?\n/)) {
-            const line = raw.trim();
-            if (!line) continue;
-
-
-
-            if (line.startsWith('common ')) {
-                const kv = parseKV(line);
-                lineHeight = num(kv.lineHeight ?? 0);
-                base = num(kv.base ?? 0);
-                scaleW = num(kv.scaleW ?? 0);
-                scaleH = num(kv.scaleH ?? 0);
-                continue;
-            }
-
-            if (line.startsWith('char ')) {
-                const kv = parseKV(line);
-                const id = num(kv.id);
-                if (isNaN(id)) continue;
-                this._fontChars.set(id, {
-                    x: num(kv.x ?? 0),
-                    y: num(kv.y ?? 0),
-                    w: num(kv.width ?? kv.w ?? 0),
-                    h: num(kv.height ?? kv.h ?? 0),
-                    xoffset: num(kv.xoffset ?? 0),
-                    yoffset: num(kv.yoffset ?? 0),
-                    xadvance: num(kv.xadvance ?? 0),
-                    page: num(kv.page ?? 0),
+            try {
+                // Load image
+                const image = await new Promise<HTMLImageElement>((resolve, reject) => {
+                    const im = new Image();
+                    im.crossOrigin = 'anonymous';
+                    im.onload = () => resolve(im);
+                    im.onerror = reject;
+                    im.src = `${rootUrl}${baseName}.png`;
                 });
-                continue;
-            }
 
-            if (line.startsWith('kerning ')) {
-                const kv = parseKV(line);
-                const first = num(kv.first ?? 0);
-                const second = num(kv.second ?? 0);
-                const amount = num(kv.amount ?? 0);
-                if (!isNaN(first) && !isNaN(second)) {
-                    this._fontKern.set(`${first},${second}`, amount);
+                // Load fnt (assume text BMFont format)
+                const fntResponse = await fetch(`${rootUrl}${baseName}.fnt`);
+                if (!fntResponse.ok) {
+                    throw new Error(`Failed to load font description for ${baseName}`);
                 }
-                continue;
-            }
-        }
+                const fntText = await fntResponse.text();
 
-        this._fontCommon = { lineHeight, base, scaleW, scaleH };
+                const num = (s: string | undefined) => Number(s ?? 0);
+                let scaleW = 0, scaleH = 0, lineHeight = 0, base = 0;
+
+                const chars = new Map<number, BitmapFontGlyph>();
+                const kern = new Map<string, number>();
+
+                const parseKV = (line: string) =>
+                    Object.fromEntries(
+                        line.split(/\s+/)
+                            .slice(1)
+                            .filter(Boolean)
+                            .map(pair => {
+                                const [k, vRaw] = pair.split('=');
+                                // values may be quoted in some .fnt variants
+                                const v = vRaw?.replace(/^"/, '').replace(/"$/, '');
+                                return [k, v];
+                            })
+                    );
+
+                for (const raw of fntText.split(/\r?\n/)) {
+                    const line = raw.trim();
+                    if (!line) continue;
+
+                    if (line.startsWith('common ')) {
+                        const kv = parseKV(line);
+                        lineHeight = num(kv.lineHeight);
+                        base = num(kv.base);
+                        scaleW = num(kv.scaleW);
+                        scaleH = num(kv.scaleH);
+                        continue;
+                    }
+
+                    if (line.startsWith('char ')) {
+                        const kv = parseKV(line);
+                        const id = num(kv.id);
+                        if (isNaN(id)) continue;
+                        chars.set(id, {
+                            x: num(kv.x),
+                            y: num(kv.y),
+                            w: num(kv.width ?? kv.w),
+                            h: num(kv.height ?? kv.h),
+                            xoffset: num(kv.xoffset),
+                            yoffset: num(kv.yoffset),
+                            xadvance: num(kv.xadvance),
+                            page: num(kv.page),
+                        });
+                        continue;
+                    }
+
+                    if (line.startsWith('kerning ')) {
+                        const kv = parseKV(line);
+                        const first = num(kv.first);
+                        const second = num(kv.second);
+                        const amount = num(kv.amount);
+                        if (!isNaN(first) && !isNaN(second)) {
+                            kern.set(`${first},${second}`, amount);
+                        }
+                        continue;
+                    }
+                }
+
+                const common: BitmapFontCommon = {
+                    lineHeight,
+                    base,
+                    scaleW,
+                    scaleH,
+                    targetLineFactor,
+                };
+
+                const fontData: BitmapFontData = {
+                    image,
+                    common,
+                    chars,
+                    kern,
+                };
+
+                this._fonts.set(fontId, fontData);
+            } catch (error) {
+                if (process.env.NODE_ENV === 'development') {
+                    console.warn(`[BitmapFont] Failed to load font "${fontId}" (${baseName})`, error);
+                }
+                // Skip this font; caller will fall back to another font at render time.
+            }
+        };
+
+        await Promise.all(fontIds.map(loadFont));
     }
 }
 
