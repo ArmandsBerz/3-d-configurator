@@ -53,7 +53,7 @@ class ColorSwapPlugin extends MaterialPluginBase {
     // --- START OF DEFINITE ASSIGNMENT FIX ---
     // --- START OF A.1 ---
     private _baseLUT!: RawTexture;     // linear colors (per-zone id colors)
-    private _pointerLUT!: RawTexture;  // raw byte indices (R channel)
+    private _pointerLUT!: RawTexture;  // raw byte indices in R channel
     private _pointerBuf!: Uint8Array;  // keep CPU-side buffer for cheap updates
     private _paletteLUT!: Texture; // Will hold the swappable palette colors
     // --- END OF A.1 ---
@@ -399,18 +399,47 @@ float w    = max(max(sd_fwidth * blendStrength, 1e-6), wMin);
 
   // 3) Take a few samples across the footprint, map each to a PALETTE color,
   //    then blend in palette space (not raw RGB of the ID map).
-  vec2 offs[4] = vec2[](-1.5*duv, -0.5*duv, 0.5*duv, 1.5*duv);
-  float w[4]   = float[](0.2, 0.3, 0.3, 0.2); // tent weights
+
+  vec2 off0 = -1.5 * duv;
+  vec2 off1 = -0.5 * duv;
+  vec2 off2 =  0.5 * duv;
+  vec2 off3 =  1.5 * duv;
+
+  float w0 = 0.2;
+  float w1 = 0.3;
+  float w2 = 0.3;
+  float w3 = 0.2;
 
   vec3 accum = vec3(0.0);
   float sumw = 0.0;
-  for (int i = 0; i < 4; ++i) {
-    vec3 idS = srgbToLinear(texture2D(albedoSampler, vAlbedoUV + offs[i]).rgb);
-    int  z   = findZone(idS);
-    vec3 pal = zoneToPalette(z);
-    accum += pal * w[i];
-    sumw  += w[i];
-  }
+
+  // sample 0
+  vec3 idS0 = srgbToLinear(texture2D(albedoSampler, vAlbedoUV + off0).rgb);
+  int  z0   = findZone(idS0);
+  vec3 pal0 = zoneToPalette(z0);
+  accum += pal0 * w0;
+  sumw  += w0;
+
+  // sample 1
+  vec3 idS1 = srgbToLinear(texture2D(albedoSampler, vAlbedoUV + off1).rgb);
+  int  z1   = findZone(idS1);
+  vec3 pal1 = zoneToPalette(z1);
+  accum += pal1 * w1;
+  sumw  += w1;
+
+  // sample 2
+  vec3 idS2 = srgbToLinear(texture2D(albedoSampler, vAlbedoUV + off2).rgb);
+  int  z2   = findZone(idS2);
+  vec3 pal2 = zoneToPalette(z2);
+  accum += pal2 * w2;
+  sumw  += w2;
+
+  // sample 3
+  vec3 idS3 = srgbToLinear(texture2D(albedoSampler, vAlbedoUV + off3).rgb);
+  int  z3   = findZone(idS3);
+  vec3 pal3 = zoneToPalette(z3);
+  accum += pal3 * w3;
+  sumw  += w3;
 
   surfaceAlbedo.rgb = accum / sumw;
 }
