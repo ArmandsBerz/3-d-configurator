@@ -1836,22 +1836,19 @@ const UI = () => {
             <main ref={mainRef} className={`p-4 flex flex-col items-center justify-center relative bg-transparent overflow-auto h-full w-full ${isVisualizationExpanded ? 'flex-grow' : 'lg:absolute lg:inset-0'}`} style={!isDesktop && !isVisualizationExpanded ? { flexBasis: 'calc(61.8% - 66px)' } : {}}>
                 {!isDesktop && <div className="absolute top-[20px] left-[20px] w-[70px] h-[49px] bg-gray-300 bg-opacity-75 z-10 flex items-center justify-center pointer-events-auto"><p className="font-bold text-xl text-gray-900">LOGO</p></div>}
                 
-                {/* --- MODIFICATION: Desktop Flex Group with Reverse Order --- */}
+                {/* --- MODIFICATION: Desktop & Mobile Header Logic --- */}
                 {isDesktop ? (
                     <div className="absolute top-[20px] right-[20px] z-20 flex flex-row-reverse items-center gap-[25px] pointer-events-auto">
-                        {/* Close Button - First in DOM (Tab #1), Last Visual (Right) */}
+                        {/* Desktop: Close Button */}
                         <button 
                             className="p-2 hover:bg-gray-800 hover:bg-opacity-50 focus:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-white"
                             aria-label="Close Configuration"
-                            onClick={() => {}} // Ready for logic
+                            onClick={() => {}} 
                         >
-                             {/* Container enforces 25px size on the icon, ensuring button padding remains consistent with Share */}
-                            <div className="w-[25px] h-[25px] flex items-center justify-center">
-                                <CloseIcon />
-                            </div>
+                            <CloseIcon />
                         </button>
                         
-                        {/* Share Button - Second in DOM (Tab #2), First Visual (Left) */}
+                        {/* Desktop: Share Button */}
                         <button 
                             className="p-2 hover:bg-gray-800 hover:bg-opacity-50 focus:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-white" 
                             aria-label="Share configuration" 
@@ -1861,22 +1858,39 @@ const UI = () => {
                         </button>
                     </div>
                 ) : (
-                    /* Mobile Floater (Unchanged) */
-                    <button className="absolute top-[20px] right-[20px] z-20 p-2 hover:bg-gray-800 hover:bg-opacity-50 focus:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-white pointer-events-auto" aria-label="Share configuration" onClick={handleShare}>
-                        <ShareIcon />
+                    /* Mobile: Close Button (Replaces Share in Top Right) - Tab Order #1 */
+                    <button 
+                        className="absolute top-[20px] right-[20px] z-20 p-2 hover:bg-gray-800 hover:bg-opacity-50 focus:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-white pointer-events-auto" 
+                        aria-label="Close Configuration" 
+                        onClick={() => {}}
+                    >
+                        <CloseIcon />
                     </button>
                 )}
                 {/* --- END MODIFICATION --- */}
 
                 <div className="absolute bottom-4 inset-x-0 h-8 z-10 pointer-events-none" aria-hidden="true">
                     {!isDesktop && (
-                        <button
-                            className="absolute left-5 bottom-0 p-1 hover:bg-gray-800 hover:bg-opacity-50 cursor-pointer focus:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-white pointer-events-auto"
-                            onClick={() => setIsVisualizationExpanded(!isVisualizationExpanded)}
-                            aria-label={isVisualizationExpanded ? "Collapse visualization" : "Expand visualization"}
-                        >
-                            {isVisualizationExpanded ? <CollapseIcon /> : <ExpandIcon />}
-                        </button>
+                        <>
+                            {/* Mobile: Expand Button (Floater Left) - Tab Order #2 */}
+                            <button
+                                className="absolute left-5 bottom-0 p-1 hover:bg-gray-800 hover:bg-opacity-50 cursor-pointer focus:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-white pointer-events-auto"
+                                onClick={() => setIsVisualizationExpanded(!isVisualizationExpanded)}
+                                aria-label={isVisualizationExpanded ? "Collapse visualization" : "Expand visualization"}
+                            >
+                                {isVisualizationExpanded ? <CollapseIcon /> : <ExpandIcon />}
+                            </button>
+
+                            {/* Mobile: Share Button (Floater Right) - Tab Order #3 */}
+                            {/* Mirroring the Expand button style: p-1, bottom-0, but anchored right-5 (20px) */}
+                            <button 
+                                className="absolute right-[20px] bottom-0 p-1 hover:bg-gray-800 hover:bg-opacity-50 cursor-pointer focus:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-white pointer-events-auto"
+                                aria-label="Share configuration"
+                                onClick={handleShare}
+                            >
+                                <ShareIcon />
+                            </button>
+                        </>
                     )}
                     <div className="flex justify-center items-center h-full">
                         <div className="flex items-center space-x-4 text-xs text-gray-400 pointer-events-auto">
