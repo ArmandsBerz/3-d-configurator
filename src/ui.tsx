@@ -5,7 +5,6 @@ import {
     GloveLogicController,
     leatherOptions,
     fontOptions,
-    // MODIFICATION: Import COLOR_OPTIONS instead of colorSwatches
     COLOR_OPTIONS,
     buildOptionsData,
     initialState,
@@ -14,7 +13,6 @@ import {
     ZoneKey,
     getModelNameForBuild,
     webTypeOptions,
-    // MODIFICATION: Import getHexById and the new ColorId type
     getHexById,
     ColorId,
     WebTypeId,
@@ -23,15 +21,14 @@ import {
     BuildConfig,
     AppState as ImportedAppState,
     isApplyToAllEligible,
-    // MODIFICATION: Import the lookup map for display names
     colorLookupMap,
     loadConfigurationFromURL,
     generateShareableURL
-    // LoadResult and LoadStatus types are implicitly known via loadConfigurationFromURL, no need to import them here
+
 } from './logic';
 import React, { useState, useRef, useLayoutEffect, useCallback, useEffect, createContext, useContext, useReducer, ReactNode, ReactElement, useMemo } from 'react';
 import BabylonCanvas from './viewer';
-import { SummaryIcon, BackArrowIcon, CheckmarkIcon, LongArrowRightIcon, CaretRightIcon, CaretDownIcon, CaretUpIcon, ShareIcon, CollapseIcon, ExpandIcon, DragIcon, ZoomIcon } from './icons';
+import { SummaryIcon, BackArrowIcon, CheckmarkIcon, LongArrowRightIcon, CaretRightIcon, CaretDownIcon, CaretUpIcon, ShareIcon, CollapseIcon, ExpandIcon, DragIcon, ZoomIcon, CloseIcon } from './icons';
 import { Snackbar } from './snackbar'; // Import the Snackbar component
 
 // --- START: NEW SCROLL GRADIENT HOOK ---
@@ -1838,9 +1835,38 @@ const UI = () => {
 
             <main ref={mainRef} className={`p-4 flex flex-col items-center justify-center relative bg-transparent overflow-auto h-full w-full ${isVisualizationExpanded ? 'flex-grow' : 'lg:absolute lg:inset-0'}`} style={!isDesktop && !isVisualizationExpanded ? { flexBasis: 'calc(61.8% - 66px)' } : {}}>
                 {!isDesktop && <div className="absolute top-[20px] left-[20px] w-[70px] h-[49px] bg-gray-300 bg-opacity-75 z-10 flex items-center justify-center pointer-events-auto"><p className="font-bold text-xl text-gray-900">LOGO</p></div>}
-                <button className="absolute top-[20px] right-[20px] z-20 p-2 hover:bg-gray-800 hover:bg-opacity-50 focus:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-white pointer-events-auto" aria-label="Share configuration" onClick={handleShare}>
-                    <ShareIcon />
-                </button>
+                
+                {/* --- MODIFICATION: Desktop Flex Group with Reverse Order --- */}
+                {isDesktop ? (
+                    <div className="absolute top-[20px] right-[20px] z-20 flex flex-row-reverse items-center gap-[25px] pointer-events-auto">
+                        {/* Close Button - First in DOM (Tab #1), Last Visual (Right) */}
+                        <button 
+                            className="p-2 hover:bg-gray-800 hover:bg-opacity-50 focus:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-white"
+                            aria-label="Close Configuration"
+                            onClick={() => {}} // Ready for logic
+                        >
+                             {/* Container enforces 25px size on the icon, ensuring button padding remains consistent with Share */}
+                            <div className="w-[25px] h-[25px] flex items-center justify-center">
+                                <CloseIcon />
+                            </div>
+                        </button>
+                        
+                        {/* Share Button - Second in DOM (Tab #2), First Visual (Left) */}
+                        <button 
+                            className="p-2 hover:bg-gray-800 hover:bg-opacity-50 focus:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-white" 
+                            aria-label="Share configuration" 
+                            onClick={handleShare}
+                        >
+                            <ShareIcon />
+                        </button>
+                    </div>
+                ) : (
+                    /* Mobile Floater (Unchanged) */
+                    <button className="absolute top-[20px] right-[20px] z-20 p-2 hover:bg-gray-800 hover:bg-opacity-50 focus:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-white pointer-events-auto" aria-label="Share configuration" onClick={handleShare}>
+                        <ShareIcon />
+                    </button>
+                )}
+                {/* --- END MODIFICATION --- */}
 
                 <div className="absolute bottom-4 inset-x-0 h-8 z-10 pointer-events-none" aria-hidden="true">
                     {!isDesktop && (
