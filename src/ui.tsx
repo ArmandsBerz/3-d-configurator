@@ -197,6 +197,47 @@ export const NUMERIC_CONSTANTS = {
     DESKTOP_BREAKPOINT: '1024px',
 } as const;
 
+// --- BRIDGE PROTOCOL & HELPERS ---
+const BRIDGE_MESSAGE_TYPES = {
+    CUSTOMIZER_STATE: 'CUSTOMIZER_STATE',
+    EXIT_APP: 'EXIT_APP',
+    COMPLETE_ORDER: 'COMPLETE_ORDER', // Phase 2 usage, but can exist now
+} as const;
+
+type BridgeMessage =
+    | { type: typeof BRIDGE_MESSAGE_TYPES.CUSTOMIZER_STATE; query: string }
+    | { type: typeof BRIDGE_MESSAGE_TYPES.EXIT_APP }
+    | {
+        type: typeof BRIDGE_MESSAGE_TYPES.COMPLETE_ORDER;
+        payload: { config?: string; thumbId?: string };
+    };
+
+const isInIframe = (): boolean => {
+    if (typeof window === 'undefined') return false;
+    return window.parent && window.parent !== window;
+};
+
+const postToParent = (message: BridgeMessage) => {
+    if (typeof window === 'undefined') return;
+
+    // Not in iframe → dev logging only, no fake behavior
+    if (!isInIframe()) {
+        if (process.env.NODE_ENV === 'development') {
+            console.log('[Bridge Outgoing]', message);
+        }
+        return;
+    }
+
+    try {
+        // Target origin '*' is fine here; real filtering will be in glove-loader.js
+        window.parent.postMessage(message, '*');
+    } catch (err) {
+        if (process.env.NODE_ENV === 'development') {
+            console.warn('[Bridge] postMessage failed', err, message);
+        }
+    }
+};
+
 // --- END: Application-Wide Constants ---
 
 // --- NEW SHELL-SPECIFIC UI PRESENTATION CONFIG (Step 5) ---
@@ -516,21 +557,39 @@ function debounce<T extends (...args: any[]) => void>(
 const URLSyncController = () => {
     const { state } = useGloveConfigurator();
 
-    // useMemo ensures the debounced function is stable and not re-created on every render.
-    const debouncedUpdateURL = useMemo(
-        () => debounce((newUrl: string) => {
-            window.history.replaceState({}, '', newUrl);
-        }, 300),
-        [] // Empty dependency array means this is created only once.
+    const debouncedSync = useMemo(
+        () =>
+            debounce((configuration: AppState['configuration']) => {
+                const newUrl = generateShareableURL(configuration);
+
+                try {
+                    // 1) Update iframe URL
+                    window.history.replaceState({}, '', newUrl);
+
+                    // 2) Extract query (config=...) and send to parent
+                    const urlObj = new URL(newUrl, window.location.origin);
+                    const query = urlObj.search.slice(1); // "config=..."
+
+                    if (query) {
+                        postToParent({
+                            type: BRIDGE_MESSAGE_TYPES.CUSTOMIZER_STATE,
+                            query,
+                        });
+                    }
+                } catch (err) {
+                    if (process.env.NODE_ENV === 'development') {
+                        console.warn('[Bridge] URLSyncController failed', err, newUrl);
+                    }
+                }
+            }, 300),
+        []
     );
 
     useEffect(() => {
-        const newUrl = generateShareableURL(state.configuration);
-        debouncedUpdateURL(newUrl);
-        // It's now safe to include debouncedUpdateURL because useMemo guarantees it's stable.
-    }, [state.configuration, debouncedUpdateURL]);
+        debouncedSync(state.configuration);
+    }, [state.configuration, debouncedSync]);
 
-    return null; // This component renders nothing.
+    return null;
 };
 
 
@@ -1307,7 +1366,7 @@ const useEscapeKey = (ref: React.RefObject<HTMLElement | null>, callback: () => 
     }, [ref, callback, isListening]);
 };
 
-const OverviewDesktop = () => {
+const OverviewDesktop = ({ onComplete }: { onComplete: () => void }) => {
     const [agnosticAccordionOpen, setAgnosticAccordionOpen] = useState(false);
     const triggerButtonRef = useRef<HTMLButtonElement | null>(null);
     const containerRef = useRef<HTMLDivElement>(null);
@@ -1351,7 +1410,7 @@ const OverviewDesktop = () => {
                 <OrderButtonController
                     isSummaryVisible={agnosticAccordionOpen}
                     onReviewClick={handleOpen}
-                    onCompleteClick={() => alert('Proceeding to next step...')}
+                    onCompleteClick={onComplete}
                 />
             </div>
         </div>
@@ -1666,6 +1725,33 @@ const UI = () => {
     }, [isDesktop, openAccordionOptionMobile]);
     // --- END MODIFICATION ---
 
+    const handleExitCustomizer = useCallback(() => {
+        postToParent({ type: BRIDGE_MESSAGE_TYPES.EXIT_APP });
+        // In standalone: only logs (handled inside postToParent)
+    }, []);
+
+    const handleCompleteOrder = useCallback(() => {
+        // Build current shareable URL to extract config value
+        const configUrl = generateShareableURL(configuration);
+
+        try {
+            const urlObj = new URL(configUrl, window.location.origin);
+            const configParam = urlObj.searchParams.get('config') || undefined;
+
+            postToParent({
+                type: BRIDGE_MESSAGE_TYPES.COMPLETE_ORDER,
+                payload: {
+                    config: configParam,
+                    // thumbId will be added later once thumb service exists
+                },
+            });
+        } catch (err) {
+            if (process.env.NODE_ENV === 'development') {
+                console.warn('[Bridge] handleCompleteOrder failed', err, configUrl);
+            }
+        }
+    }, [configuration]);
+
     useEffect(() => {
         const babylonContainer = document.getElementById('babylon-container');
         const mainEl = mainRef.current;
@@ -1843,7 +1929,7 @@ const UI = () => {
                         <button 
                             className="p-2 hover:bg-gray-800 hover:bg-opacity-50 focus:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-white"
                             aria-label="Close Configuration"
-                            onClick={() => {}} 
+                            onClick={handleExitCustomizer} 
                         >
                             <CloseIcon />
                         </button>
@@ -1862,7 +1948,7 @@ const UI = () => {
                     <button 
                         className="absolute top-[20px] right-[20px] z-20 p-2 hover:bg-gray-800 hover:bg-opacity-50 focus:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-white pointer-events-auto" 
                         aria-label="Close Configuration" 
-                        onClick={() => {}}
+                        onClick={handleExitCustomizer}
                     >
                         <CloseIcon />
                     </button>
@@ -1915,7 +2001,7 @@ const UI = () => {
                             setOpenAccordion={setOpenAccordion}
                             colorForApplyAll={colorForApplyAll}
                         />
-                        <OverviewDesktop />
+                        <OverviewDesktop onComplete={handleCompleteOrder} />
                     </>
                 ) : (
                     <div className="flex flex-col overflow-hidden bg-[#161616] pointer-events-auto" style={{ flexBasis: 'calc(38.2% + 66px)' }}>
@@ -1930,7 +2016,7 @@ const UI = () => {
                         <FooterMobile
                             openPanelName={openAccordionOptionMobile?.name}
                             onClosePanel={handleClosePanel}
-                            onCompleteOrder={() => alert('Complete Order clicked!')}
+                            onCompleteOrder={handleCompleteOrder}
                             onReviewClick={handleReviewClick}
                             activeColor={colorForApplyAll}
                             showApplyToAllButton={showApplyToAllButton}
