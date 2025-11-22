@@ -209,7 +209,7 @@ type BridgeMessage =
     | { type: typeof BRIDGE_MESSAGE_TYPES.EXIT_APP }
     | {
         type: typeof BRIDGE_MESSAGE_TYPES.COMPLETE_ORDER;
-        payload: { config?: string; thumbId?: string };
+        payload: { config?: string; thumbnailId?: string };
     };
 
 const isInIframe = (): boolean => {
@@ -1742,7 +1742,7 @@ const UI = () => {
                 type: BRIDGE_MESSAGE_TYPES.COMPLETE_ORDER,
                 payload: {
                     config: configParam,
-                    // thumbId will be added later once thumb service exists
+                    // thumbnailId will be added later once thumbnail service exists
                 },
             });
         } catch (err) {
