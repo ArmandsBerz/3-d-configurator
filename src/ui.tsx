@@ -202,6 +202,8 @@ const BRIDGE_MESSAGE_TYPES = {
     CUSTOMIZER_STATE: 'CUSTOMIZER_STATE',
     EXIT_APP: 'EXIT_APP',
     COMPLETE_ORDER: 'COMPLETE_ORDER', // Phase 2 usage, but can exist now
+    REQUEST_SHARE: 'REQUEST_SHARE',
+    SHARE_COMPLETE: 'SHARE_COMPLETE',
 } as const;
 
 type BridgeMessage =
@@ -210,6 +212,15 @@ type BridgeMessage =
     | {
         type: typeof BRIDGE_MESSAGE_TYPES.COMPLETE_ORDER;
         payload: { config?: string; thumbnailId?: string };
+    }
+    | {
+        type: typeof BRIDGE_MESSAGE_TYPES.REQUEST_SHARE;
+        payload: { config: string };
+    }
+    | {
+        type: typeof BRIDGE_MESSAGE_TYPES.SHARE_COMPLETE;
+        success: boolean;
+        errorMessage?: string;
     };
 
 const isInIframe = (): boolean => {
@@ -607,7 +618,7 @@ interface AccordionOptionHeaderProps {
 const AccordionOptionHeader = React.forwardRef<HTMLButtonElement, AccordionOptionHeaderProps>(
     ({ title, onClick, accessoryContent, icon, isOpen, variant, controlsId }, ref) => {
         const baseClasses = "w-full flex justify-between items-center text-left focus:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-white";
-        const variantClasses = variant === VARIANTS.LAYOUT.DESKTOP ? "p-4 h-[56px] hover:bg-[#2A2A2A] transition-colors" : "py-3 h-[56px] mb-3 text-white";
+        const variantClasses = variant === VARIANTS.LAYOUT.DESKTOP ? "p-4 h-[56px] hover:bg-[#2A2A2A] transition-colors" : "py-3 h-[56px] mb-3 text_white";
         return (
             <button ref={ref} onClick={onClick} className={`${baseClasses} ${variantClasses}`} aria-expanded={isOpen} aria-controls={controlsId}>
                 <div className="flex items-center space-x-3">
@@ -1210,7 +1221,7 @@ const FooterMobile = ({ openPanelName, onClosePanel, onReviewClick, onCompleteOr
     }
 
     return (
-        <footer className="flex-shrink-0 bg-[#161616] flex items-center justify-start pb-[20px] px-[14px] pt-[10px]">
+        <footer className="flex-shrink-0 bg-[#161616] flex items-center justify_start pb-[20px] px-[14px] pt-[10px]">
             {panelSpecificFooter}
         </footer>
     );
@@ -1650,6 +1661,29 @@ const UI = () => {
     }, []); // Empty dependency array ensures this runs only once on mount
     // --- END MODIFICATION ---
 
+    // --- NEW: Listen for SHARE_COMPLETE messages from parent (for Snackbar updates) ---
+    useEffect(() => {
+        const handleParentMessage = (event: MessageEvent) => {
+            const data = event.data;
+            if (!data || typeof data !== 'object') return;
+
+            if (data.type === BRIDGE_MESSAGE_TYPES.SHARE_COMPLETE) {
+                if (data.success) {
+                    setSnackbarMessage('Share link copied!');
+                } else {
+                    setSnackbarMessage('Failed to share link.');
+                }
+            }
+        };
+
+        window.addEventListener('message', handleParentMessage);
+
+        return () => {
+            window.removeEventListener('message', handleParentMessage);
+        };
+    }, []);
+    // --- END: SHARE_COMPLETE listener ---
+
     const activeShell = getModelNameForBuild(configuration.build);
     const currentUiGroups = useMemo(() => UI_PRESENTATION_CONFIG[activeShell] || [], [activeShell]);
 
@@ -1852,6 +1886,24 @@ const UI = () => {
     useEscapeKey(appContainerRef, handleClosePanel, !!openAccordionOptionMobile);
 
     const handleShare = useCallback(async () => {
+        // If we're running in an iframe, delegate sharing to the parent.
+        if (isInIframe()) {
+            try {
+                const configUrl = generateShareableURL(state.configuration);
+                const urlObj = new URL(configUrl, window.location.origin);
+                const configParam = urlObj.searchParams.get('config') || '';
+
+                postToParent({
+                    type: BRIDGE_MESSAGE_TYPES.REQUEST_SHARE,
+                    payload: { config: configParam }
+                });
+            } catch (err) {
+                setSnackbarMessage('Failed to prepare share link.');
+            }
+            return;
+        }
+
+        // Standalone mode: keep the existing behavior.
         // 1. Generate the correct, up-to-the-minute URL from the state.
         const configUrl = generateShareableURL(state.configuration);
 
@@ -1924,7 +1976,7 @@ const UI = () => {
                 
                 {/* --- MODIFICATION: Desktop & Mobile Header Logic --- */}
                 {isDesktop ? (
-                    <div className="absolute top-[20px] right-[20px] z-20 flex flex-row-reverse items-center gap-[25px] pointer-events-auto">
+                    <div className="absolute top-[20px] right-[20px] z-20 flex flex-row-reverse items-center gap_[25px] pointer-events-auto">
                         {/* Desktop: Close Button */}
                         <button 
                             className="p-2 hover:bg-gray-800 hover:bg-opacity-50 focus:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-white"

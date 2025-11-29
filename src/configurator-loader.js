@@ -381,6 +381,118 @@
         }
     }
 
+    // NEW: Handle REQUEST_SHARE from iframe and send SHARE_COMPLETE back
+    function handleRequestShare(payload) {
+        var configValue =
+            payload && typeof payload.config === 'string' && payload.config.length > 0
+                ? payload.config
+                : state.currentConfig || null;
+
+        var shareUrl = window.location.href;
+        var success = false;
+        var errorMessage = '';
+
+        // Try to construct a canonical URL and force-sync config param
+        try {
+            var url = new URL(window.location.href);
+            if (configValue) {
+                url.searchParams.set('config', configValue);
+            }
+            shareUrl = url.toString();
+        } catch (e) {
+            // Fallback for environments without URL constructor
+            try {
+                withUpdatedQuery(function (params) {
+                    if (configValue) {
+                        params.config = configValue;
+                    }
+                });
+                shareUrl = window.location.href;
+            } catch (e2) {
+                errorMessage =
+                    'Failed to construct share URL: ' +
+                    ((e2 && e2.message) ? e2.message : String(e2 || 'unknown error'));
+            }
+        }
+
+        function notifyIframe() {
+            if (!state.iframeWindow) {
+                return;
+            }
+            try {
+                state.iframeWindow.postMessage(
+                    {
+                        type: 'SHARE_COMPLETE',
+                        success: !!success,
+                        errorMessage: errorMessage || undefined
+                    },
+                    state.allowedOrigin || '*'
+                );
+            } catch (postErr) {
+                logDebug(
+                    'Failed to post SHARE_COMPLETE message: ' +
+                        ((postErr && postErr.message) ? postErr.message : String(postErr || 'unknown error'))
+                );
+            }
+        }
+
+        function finalizeFailure(message) {
+            success = false;
+            if (message) {
+                errorMessage = message;
+            }
+            notifyIframe();
+        }
+
+        // If shareUrl calculation already failed badly, bail out early
+        if (!shareUrl) {
+            finalizeFailure(errorMessage || 'Share URL is empty.');
+            return;
+        }
+
+        try {
+            if (navigator.share) {
+                navigator
+                    .share({
+                        title: 'My Custom Glove',
+                        text: 'Check out the glove I designed!',
+                        url: shareUrl
+                    })
+                    .then(function () {
+                        success = true;
+                        notifyIframe();
+                    })
+                    .catch(function (err) {
+                        errorMessage =
+                            (err && err.message) ? err.message : String(err || 'Share failed');
+                        finalizeFailure(errorMessage);
+                    });
+                return;
+            }
+
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard
+                    .writeText(shareUrl)
+                    .then(function () {
+                        success = true;
+                        notifyIframe();
+                    })
+                    .catch(function (err) {
+                        errorMessage =
+                            (err && err.message) ? err.message : String(err || 'Clipboard write failed');
+                        finalizeFailure(errorMessage);
+                    });
+                return;
+            }
+
+            finalizeFailure('No share or clipboard API available');
+        } catch (e3) {
+            errorMessage =
+                (e3 && e3.message) ? e3.message : String(e3 || 'Unexpected error during share');
+            finalizeFailure(errorMessage);
+        }
+    }
+
     function handleMessageEvent(event) {
         // Must have iframe to care about messages
         if (!state.iframeWindow || !state.iframeEl) {
@@ -417,6 +529,9 @@
                 break;
             case 'COMPLETE_ORDER':
                 handleCompleteOrderMessage(data);
+                break;
+            case 'REQUEST_SHARE':
+                handleRequestShare(data.payload);
                 break;
             default:
                 // Unknown message types are safely ignored
