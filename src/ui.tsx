@@ -23,8 +23,8 @@ import {
     isApplyToAllEligible,
     colorLookupMap,
     loadConfigurationFromURL,
-    generateShareableURL
-
+    generateShareableURL,
+    resolveVariantId
 } from './logic';
 import React, { useState, useRef, useLayoutEffect, useCallback, useEffect, createContext, useContext, useReducer, ReactNode, ReactElement, useMemo } from 'react';
 import BabylonCanvas from './viewer';
@@ -211,7 +211,12 @@ type BridgeMessage =
     | { type: typeof BRIDGE_MESSAGE_TYPES.EXIT_APP }
     | {
         type: typeof BRIDGE_MESSAGE_TYPES.COMPLETE_ORDER;
-        payload: { config?: string; thumbnailId?: string };
+        payload: {
+            variantId: string | null;
+            quantity: number;
+            config: string;
+            thumbnailId?: string;
+        };
     }
     | {
         type: typeof BRIDGE_MESSAGE_TYPES.REQUEST_SHARE;
@@ -328,7 +333,17 @@ const UI_PRESENTATION_CONFIG: UIPresentationConfig = {
 const gloveConfigReducer = (state: AppState, action: GloveAction): AppState => {
     switch (action.type) {
         case ACTION_TYPES.UPDATE_BUILD:
-            return { ...state, configuration: { ...state.configuration, build: action.payload } };
+            return {
+                ...state,
+                configuration: {
+                    ...state.configuration,
+                    build: action.payload,
+                },
+                commerce: {
+                    ...state.commerce,
+                    variantId: resolveVariantId(action.payload),
+                },
+            };
         case ACTION_TYPES.UPDATE_ZONE_COLOR:
             return {
                 ...state,
@@ -1485,7 +1500,7 @@ const AccordionDesktop = ({ openAccordion, setOpenAccordion, colorForApplyAll }:
             <div className="absolute z-20 w-[70px] h-[49px] bg-gray-300 bg-opacity-75 flex items-center justify-center pointer-events-auto"><p className="font-bold text-xl text-gray-900">LOGO</p></div>
             <div className={`absolute ${isScrolled ? 'top-[82px]' : 'top-[142px]'} bottom-4 left-[40px] w-[400px] pointer-events-auto transition-all duration-30 ease-in-out overflow-hidden`}>
                 <ScrollGradient position={POSITIONS.TOP} isVisible={isTopGradientVisible} />
-                <div ref={accordionContainerRef} className="h-full overflow-y-auto space-y-4 focus:outline-none focus-visible:outline focus-visible:outline-4 focus-visible:outline-white focus-visible:outline-offset-[-4px]">
+                <div ref={accordionContainerRef} className="h-full overflow-y-auto space-y-4 focus:outline-none focus-visible:outline focus-visible:outline-4 focus-visible:outline-white focus-visible:outline-offset-[-4px] show-thin-scrollbar">
                     <AccordionOptionDesktop
                         key={buildGroup.id}
                         title={buildGroup.title}
@@ -1641,7 +1656,7 @@ const AccordionMobile = React.forwardRef<HTMLElement, AccordionMobileProps>(({ o
 const UI = () => {
     const isDesktop = useBreakpoint();
     const { state, dispatch } = useGloveConfigurator();
-    const { configuration, isLoading, lastActivatedPartType } = state as AppState; // Cast to our extended AppState
+    const { configuration, commerce, isLoading, lastActivatedPartType } = state as AppState; // Cast to our extended AppState
     const [snackbarMessage, setSnackbarMessage] = useState<string | null>(null); // State for Snackbar message
     const [isVisualizationExpanded, setIsVisualizationExpanded] = useState(false);
     const [openAccordionOptionMobile, setOpenAccordionOptionMobile] = useState<MobileAccordionState>(null);
@@ -1770,13 +1785,23 @@ const UI = () => {
 
         try {
             const urlObj = new URL(configUrl, window.location.origin);
-            const configParam = urlObj.searchParams.get('config') || undefined;
+            const configParam = urlObj.searchParams.get('config') || '';
+
+            // Optional safety: if no variant yet, bail
+            if (!commerce.variantId) {
+                if (process.env.NODE_ENV === 'development') {
+                    console.warn('[Bridge] No variantId available, cannot complete order');
+                }
+                return;
+            }
 
             postToParent({
                 type: BRIDGE_MESSAGE_TYPES.COMPLETE_ORDER,
                 payload: {
+                    variantId: commerce.variantId,
+                    quantity: commerce.quantity,
                     config: configParam,
-                    // thumbnailId will be added later once thumbnail service exists
+                    // thumbnailId: undefined // reserved for later
                 },
             });
         } catch (err) {
@@ -1784,7 +1809,7 @@ const UI = () => {
                 console.warn('[Bridge] handleCompleteOrder failed', err, configUrl);
             }
         }
-    }, [configuration]);
+    }, [configuration, commerce]);
 
     useEffect(() => {
         const babylonContainer = document.getElementById('babylon-container');
