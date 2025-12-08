@@ -103,8 +103,15 @@ export type GloveConfiguration = {
     pinkyName: TextPart;
 } & Record<ZoneKey, SingleColorState>;
 
+// --- NEW: Commerce state for Shopify integration ---
+export interface CommerceState {
+    variantId: string | null;
+    quantity: number;
+}
+
 export interface AppState {
     configuration: GloveConfiguration;
+    commerce: CommerceState; // 👈 new
     isLoading: boolean;
     lastActivatedPartType: 'inner' | 'outer' | 'single' | null;
 }
@@ -430,6 +437,10 @@ export const initialState: AppState = {
         [ZONES.WRIST_LOGO_OUTLINE]: { colorId: 'sl' },
         [ZONES.FINGER_LOGO]:    { colorId: 'gd' },
     },
+    commerce: {
+        variantId: null, // “doesn’t know yet” at startup
+        quantity: 1,     // default 1
+    },
     isLoading: false,
     lastActivatedPartType: null,
 };
@@ -444,6 +455,16 @@ export const getModelNameForBuild = (buildConfig: BuildConfig): string => {
         case 'fb': return 'firstBase';
         default: return 'openBack';
     }
+};
+
+// Variant mapping infrastructure (to be implemented later)
+export type VariantKey = string; // e.g. 'openBack|3300|adt|std|rh|imgOpt2|cls|mtp'
+// export const VARIANT_MAP: Record<VariantKey, string> = {};
+
+export const resolveVariantId = (build: BuildConfig): string | null => {
+    // TODO (later step): look up in variants-map.json or API
+    // For now, return null as a safe placeholder.
+    return null;
 };
 
 export const SceneContext = createContext<SceneManager | null>(null);
