@@ -359,20 +359,11 @@
 
     function handleCompleteOrderMessage(data) {
         var payload = data && data.payload ? data.payload : {};
-        var config = typeof payload.config === 'string' ? payload.config : undefined;
-        var thumbnailId = typeof payload.thumbnailId === 'string' ? payload.thumbnailId : undefined;
-
-        var detail = {};
-        if (typeof config !== 'undefined') {
-            detail.config = config;
-        }
-        if (typeof thumbnailId !== 'undefined') {
-            detail.thumbnailId = thumbnailId;
-        }
 
         try {
             var event = new CustomEvent('configurator:complete-order', {
-                detail: detail
+                // Just forward everything the iframe sends
+                detail: payload
             });
             window.dispatchEvent(event);
             logDebug('Dispatched configurator:complete-order event.');
