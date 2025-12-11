@@ -122,3 +122,47 @@
 
     logDebug('Configurator cart listener initialized.');
 })();
+
+(function initEntryContext() {
+    var cachedContext = null;
+
+    function getEntryContext() {
+        if (cachedContext !== null) return cachedContext;
+
+        var scriptEl = document.getElementById('glove-entry-context');
+        if (!scriptEl) {
+            cachedContext = {};
+            return cachedContext;
+        }
+
+        try {
+            cachedContext = JSON.parse(scriptEl.textContent);
+        } catch (e) {
+            console.warn('[Configurator] Failed to parse entry context JSON', e);
+            cachedContext = {};
+        }
+
+        return cachedContext;
+    }
+
+    document.addEventListener('click', function(event) {
+        var trigger = event.target.closest('.js-open-glove-configurator');
+        if (!trigger) return;
+
+        event.preventDefault();
+
+        var context = getEntryContext();
+        var url = new URL(window.location.href);
+
+        url.searchParams.set('mode', 'customize');
+
+        if (context.family) {
+            url.searchParams.set('entry_family', context.family);
+        }
+        if (context.variantId) {
+            url.searchParams.set('entry_variant', context.variantId);
+        }
+
+        window.location.href = url.toString();
+    });
+})();
