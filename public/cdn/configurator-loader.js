@@ -211,6 +211,13 @@
 
         var params = parseQuery(existingSearch);
 
+        // ✅ NEW: copy entry_* from parent page into iframe params
+        var parentParams = parseQuery(window.location.search);
+        for (var k in parentParams) {
+            if (!Object.prototype.hasOwnProperty.call(parentParams, k)) continue;
+            if (k.indexOf('entry_') === 0) params[k] = parentParams[k];
+        }
+
         if (typeof configValue === 'string' && configValue.length > 0) {
             params.config = configValue;
         }
