@@ -399,9 +399,18 @@ const initialLoadResult = loadConfigurationFromURL(); // Captures { configuratio
 
 // 2. Update your provider to use this starting configuration.
 const GloveConfiguratorProvider = ({ children }: GloveConfiguratorProviderProps) => {
+    // 1. Get the result (memoized to prevent re-running on renders)
+    const initialLoadResult = useMemo(() => loadConfigurationFromURL(), []);
+
     const [state, dispatch] = useReducer(gloveConfigReducer, {
         ...initialState,
-        configuration: initialLoadResult.configuration // Use only the configuration part
+        configuration: initialLoadResult.configuration,
+        commerce: {
+            ...initialState.commerce,
+            // ✅ CRITICAL: Use the variant from URL if it exists (using ?? for safety)
+            variantId: initialLoadResult.variantId ?? initialState.commerce.variantId,
+            quantity: 1
+        }
     });
 
     return (

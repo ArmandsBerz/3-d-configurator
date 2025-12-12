@@ -340,8 +340,10 @@ export const generateShareableURL = (config: GloveConfiguration): string => {
 
 // --- MODIFICATION: Define new return type ---
 export type LoadStatus = 'success' | 'failed' | 'empty';
+
 export interface LoadResult {
     configuration: GloveConfiguration;
+    variantId?: string | null; // ✅ NEW: Carry variant hint from URL
     status: LoadStatus;
 }
 // --- END MODIFICATION ---
@@ -351,26 +353,75 @@ export interface LoadResult {
  * If the URL is missing, invalid, or corrupted, it returns the default state
  * along with a status indicating why.
  */
+
+// Helper: deep clone initial config (to avoid mutating initialState)
+const cloneInitialConfig = (): GloveConfiguration =>
+    JSON.parse(JSON.stringify(initialState.configuration));
+
+const mapEntryFamilyToPosition = (entryFamily: string): BuildConfig['position'] => {
+    // TODO: adapt this mapping to your real product.type handles
+    switch (entryFamily) {
+        case 'infield':
+        case 'infielder':
+            return 'inf';
+        case 'outfield':
+        case 'outfielder':
+            return 'out';
+        case 'pitcher':
+            return 'pit';
+        case 'catcher':
+            return 'cat';
+        case 'first-base':
+        case 'first-baseman':
+            return 'fb';
+        default:
+            return initialState.configuration.build.position;
+    }
+};
+
 // --- MODIFICATION: Update function signature and return statements ---
 export const loadConfigurationFromURL = (): LoadResult => {
   try {
     const urlParams = new URLSearchParams(window.location.search);
     const versionedPayload = urlParams.get('config');
 
+    // --- NEW: Step 5 logic (Entry Context) ---
     if (!versionedPayload) {
-      // No config param found
-      return { configuration: initialState.configuration, status: 'empty' };
+      const entryFamily  = urlParams.get('entry_family');
+      const entryVariant = urlParams.get('entry_variant');
+
+      // If no entry_* at all, behave like before
+      if (!entryFamily && !entryVariant) {
+        return { configuration: initialState.configuration, status: 'empty' };
+      }
+
+      const config = cloneInitialConfig();
+
+      if (entryFamily) {
+        config.build.position = mapEntryFamilyToPosition(entryFamily);
+
+        // Apply defaults based on family
+        if (config.build.position === 'out' || config.build.position === 'pit') {
+          config.build.backStyle = 'opn';
+        }
+        // Add other defaults as needed...
+      }
+
+      return { 
+          configuration: config, 
+          variantId: entryVariant || null, // ✅ Pass this back!
+          status: 'success' 
+      };
     }
+    // --- END NEW BRANCH ---
 
     const [version, data] = versionedPayload.split(':', 2);
 
     if (version !== CONFIG_VERSION) {
-      // Version mismatch
       throw new Error(`Unsupported config version: ${version}`);
     }
 
     if (!data) {
-        // Data part is missing after version prefix
         throw new Error('No data in payload');
     }
 
@@ -378,9 +429,7 @@ export const loadConfigurationFromURL = (): LoadResult => {
     const compressed = fflate.strToU8(atob(base64), true);
     const serializedString = fflate.strFromU8(fflate.inflateSync(compressed));
 
-
     if (!serializedString) {
-      // Decompression or decoding failed
       throw new Error('Processing failed');
     }
 
@@ -388,7 +437,6 @@ export const loadConfigurationFromURL = (): LoadResult => {
     return { configuration: deserialize(serializedString), status: 'success' };
 
   } catch (error) {
-    // Generic failure during parsing/decoding
     console.warn('Could not load config from URL. Using default.', error);
     return { configuration: initialState.configuration, status: 'failed' };
   }
