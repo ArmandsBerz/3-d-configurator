@@ -531,6 +531,28 @@
             case 'REQUEST_SHARE':
                 handleRequestShare(data.payload);
                 break;
+            case 'SYNC_BACK':
+                // ✅ Phase 4: Forward sync data to the theme (Hardened)
+                try {
+                    // Ensure payload is a real object so theme JS doesn't crash
+                    var payload =
+                        data &&
+                        data.payload &&
+                        typeof data.payload === 'object' &&
+                        !Array.isArray(data.payload)
+                            ? data.payload
+                            : {};
+
+                    var syncEvent = new CustomEvent('configurator:sync-back', {
+                        detail: payload
+                    });
+
+                    window.dispatchEvent(syncEvent);
+                    logDebug('Dispatched configurator:sync-back event.');
+                } catch (e) {
+                    logWarn('Failed to dispatch sync-back event: ' + e.message);
+                }
+                break;
             default:
                 // Unknown message types are safely ignored
                 logDebug('Ignoring unknown message type: ' + type);

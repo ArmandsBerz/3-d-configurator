@@ -204,6 +204,7 @@ const BRIDGE_MESSAGE_TYPES = {
     COMPLETE_ORDER: 'COMPLETE_ORDER', // Phase 2 usage, but can exist now
     REQUEST_SHARE: 'REQUEST_SHARE',
     SHARE_COMPLETE: 'SHARE_COMPLETE',
+    SYNC_BACK: 'SYNC_BACK', // Added for Phase 4
 } as const;
 
 type BridgeMessage =
@@ -226,6 +227,21 @@ type BridgeMessage =
         type: typeof BRIDGE_MESSAGE_TYPES.SHARE_COMPLETE;
         success: boolean;
         errorMessage?: string;
+    }
+    | {
+        type: typeof BRIDGE_MESSAGE_TYPES.SYNC_BACK;
+        payload: {
+            schemaVersion: number;
+            position: string | null;
+            variantId: string | null;
+            throwingHand: string | null;
+            size: string | null;
+            stiffness: string | null;
+            handOpening: string | null;
+            leather: string | null;
+            web: string | null;
+            back: string | null;
+        };
     };
 
 const isInIframe = (): boolean => {
@@ -395,12 +411,14 @@ interface GloveConfiguratorProviderProps {
 // --- UPDATE APP INITIALIZATION ---
 
 // 1. Get the starting configuration AND status by reading the URL ONCE.
+// This executes at module load time. The UI component below relies on this variable.
 const initialLoadResult = loadConfigurationFromURL(); // Captures { configuration, status }
 
 // 2. Update your provider to use this starting configuration.
 const GloveConfiguratorProvider = ({ children }: GloveConfiguratorProviderProps) => {
-    // 1. Get the result (memoized to prevent re-running on renders)
-    const initialLoadResult = useMemo(() => loadConfigurationFromURL(), []);
+    // ✅ FIX: Removed local 'initialLoadResult' to prevent shadowing. 
+    // We now use the module-scope 'initialLoadResult' which guarantees 
+    // the Provider and the UI component (which checks status) see the same object.
 
     const [state, dispatch] = useReducer(gloveConfigReducer, {
         ...initialState,
@@ -1783,10 +1801,49 @@ const UI = () => {
     }, [isDesktop, openAccordionOptionMobile]);
     // --- END MODIFICATION ---
 
-    const handleExitCustomizer = useCallback(() => {
-        postToParent({ type: BRIDGE_MESSAGE_TYPES.EXIT_APP });
-        // In standalone: only logs (handled inside postToParent)
-    }, []);
+    const handleExitCustomizer = () => {
+        // ✅ Phase 4: Sync Back (Hardened Enterprise Version)
+        const build = state?.configuration?.build;
+
+        // helper: force “flat primitive or null”
+        const prim = (v: any): string | null => {
+            if (v == null) return null;
+            if (typeof v === "string") return v;
+            if (typeof v === "number" || typeof v === "boolean") return String(v);
+            return (v?.id ?? v?.handle ?? String(v)) as string;
+        };
+
+        try {
+            const payload = {
+                schemaVersion: 1,
+
+                // Core Identity
+                position: prim(build?.position),
+                variantId: prim(state?.commerce?.variantId),
+
+                // Specifications
+                throwingHand: prim(build?.throwingHand),
+                size: prim(build?.size),
+                stiffness: prim(build?.stiffness),
+                handOpening: prim(build?.handOpeningSize),
+                leather: prim(build?.imageSelection),
+                web: prim(build?.webType),
+                back: prim(build?.backStyle),
+            };
+
+            postToParent({ type: BRIDGE_MESSAGE_TYPES.SYNC_BACK, payload });
+        } catch (error) {
+            console.error("Failed to prepare/send SYNC_BACK payload:", error);
+        } finally {
+            setTimeout(() => {
+                try {
+                    postToParent({ type: BRIDGE_MESSAGE_TYPES.EXIT_APP });
+                } catch (e) {
+                    console.error("Failed to send EXIT_APP:", e);
+                }
+            }, 0);
+        }
+    };
 
     const handleCompleteOrder = useCallback(() => {
         // Build current shareable URL to extract config value
