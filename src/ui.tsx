@@ -231,16 +231,21 @@ type BridgeMessage =
     | {
         type: typeof BRIDGE_MESSAGE_TYPES.SYNC_BACK;
         payload: {
+            // --- ACTIVE CONTRACT (What we send today) ---
+            size: string;
+            leather: string;
+            webStyle: string;
+
+            // --- FUTURE ENTERPRISE CONTRACT (Saved for later) ---
+            /*
             schemaVersion: number;
             position: string | null;
             variantId: string | null;
             throwingHand: string | null;
-            size: string | null;
             stiffness: string | null;
             handOpening: string | null;
-            leather: string | null;
-            web: string | null;
             back: string | null;
+            */
         };
     };
 
@@ -348,18 +353,31 @@ const UI_PRESENTATION_CONFIG: UIPresentationConfig = {
 // --- MODIFIED PER PLAN ---
 const gloveConfigReducer = (state: AppState, action: GloveAction): AppState => {
     switch (action.type) {
-        case ACTION_TYPES.UPDATE_BUILD:
+        // --- MODIFICATION A: Reducer Fix for UPDATE_BUILD ---
+        case ACTION_TYPES.UPDATE_BUILD: {
+            // 1. Calculate the NEXT build state first
+            const nextBuild = {
+                ...state.configuration.build,
+                ...action.payload
+            };
+
+            // 2. Resolve against the FULL next build (prevents partial state bugs)
+            const resolvedVariantId = resolveVariantId(nextBuild);
+
             return {
                 ...state,
                 configuration: {
                     ...state.configuration,
-                    build: action.payload,
+                    build: nextBuild,
                 },
                 commerce: {
                     ...state.commerce,
-                    variantId: resolveVariantId(action.payload),
+                    // STRICT MODE: If resolution fails, variantId becomes null
+                    variantId: resolvedVariantId,
                 },
             };
+        }
+        // --- END MODIFICATION A ---
         case ACTION_TYPES.UPDATE_ZONE_COLOR:
             return {
                 ...state,
@@ -415,18 +433,19 @@ interface GloveConfiguratorProviderProps {
 const initialLoadResult = loadConfigurationFromURL(); // Captures { configuration, status }
 
 // 2. Update your provider to use this starting configuration.
+// --- MODIFICATION B: GloveConfiguratorProvider Initialization Fix ---
 const GloveConfiguratorProvider = ({ children }: GloveConfiguratorProviderProps) => {
-    // ✅ FIX: Removed local 'initialLoadResult' to prevent shadowing. 
-    // We now use the module-scope 'initialLoadResult' which guarantees 
-    // the Provider and the UI component (which checks status) see the same object.
+    // 1. Resolve immediately on load
+    const initialVariantId = initialLoadResult.variantId 
+        ?? resolveVariantId(initialLoadResult.configuration.build) 
+        ?? null;
 
     const [state, dispatch] = useReducer(gloveConfigReducer, {
         ...initialState,
         configuration: initialLoadResult.configuration,
         commerce: {
             ...initialState.commerce,
-            // ✅ CRITICAL: Use the variant from URL if it exists (using ?? for safety)
-            variantId: initialLoadResult.variantId ?? initialState.commerce.variantId,
+            variantId: initialVariantId, 
             quantity: 1
         }
     });
@@ -437,6 +456,7 @@ const GloveConfiguratorProvider = ({ children }: GloveConfiguratorProviderProps)
         </GloveConfiguratorContext.Provider>
     );
 };
+// --- END MODIFICATION B ---
 
 export const useGloveConfigurator = () => {
     const context = useContext(GloveConfiguratorContext);
@@ -1801,51 +1821,36 @@ const UI = () => {
     }, [isDesktop, openAccordionOptionMobile]);
     // --- END MODIFICATION ---
 
-    const handleExitCustomizer = () => {
-        // ✅ Phase 4: Sync Back (Hardened Enterprise Version)
-        const build = state?.configuration?.build;
-
-        // helper: force “flat primitive or null”
-        const prim = (v: any): string | null => {
-            if (v == null) return null;
-            if (typeof v === "string") return v;
-            if (typeof v === "number" || typeof v === "boolean") return String(v);
-            return (v?.id ?? v?.handle ?? String(v)) as string;
+    const handleExitCustomizer = useCallback(() => {
+        // 1. PREPARE THE DATA
+        // The contract now matches this exactly, so no errors.
+        const payload = {
+            size: configuration.build.size,
+            leather: configuration.build.imageSelection,
+            webStyle: configuration.build.webType
         };
 
-        try {
-            const payload = {
-                schemaVersion: 1,
+        // 2. SEND DATA (Type-safe!)
+        postToParent({
+            type: BRIDGE_MESSAGE_TYPES.SYNC_BACK,
+            payload: payload
+        });
 
-                // Core Identity
-                position: prim(build?.position),
-                variantId: prim(state?.commerce?.variantId),
+        // 3. THEN EXIT
+        postToParent({
+            type: BRIDGE_MESSAGE_TYPES.EXIT_APP,
+        });
+        
+    }, [configuration]);
 
-                // Specifications
-                throwingHand: prim(build?.throwingHand),
-                size: prim(build?.size),
-                stiffness: prim(build?.stiffness),
-                handOpening: prim(build?.handOpeningSize),
-                leather: prim(build?.imageSelection),
-                web: prim(build?.webType),
-                back: prim(build?.backStyle),
-            };
-
-            postToParent({ type: BRIDGE_MESSAGE_TYPES.SYNC_BACK, payload });
-        } catch (error) {
-            console.error("Failed to prepare/send SYNC_BACK payload:", error);
-        } finally {
-            setTimeout(() => {
-                try {
-                    postToParent({ type: BRIDGE_MESSAGE_TYPES.EXIT_APP });
-                } catch (e) {
-                    console.error("Failed to send EXIT_APP:", e);
-                }
-            }, 0);
-        }
-    };
-
+    // --- MODIFICATION C: handleCompleteOrder UX Guard ---
     const handleCompleteOrder = useCallback(() => {
+        // STRICT GUARD: Block order if variant is invalid
+        if (!commerce.variantId) {
+            setSnackbarMessage('This configuration cannot be ordered. Please select different options.');
+            return;
+        }
+
         // Build current shareable URL to extract config value
         const configUrl = generateShareableURL(configuration);
 
@@ -1853,13 +1858,7 @@ const UI = () => {
             const urlObj = new URL(configUrl, window.location.origin);
             const configParam = urlObj.searchParams.get('config') || '';
 
-            // Optional safety: if no variant yet, bail
-            if (!commerce.variantId) {
-                if (process.env.NODE_ENV === 'development') {
-                    console.warn('[Bridge] No variantId available, cannot complete order');
-                }
-                return;
-            }
+            // Note: Previous check removed because the strict guard handles it now.
 
             postToParent({
                 type: BRIDGE_MESSAGE_TYPES.COMPLETE_ORDER,
@@ -1875,7 +1874,8 @@ const UI = () => {
                 console.warn('[Bridge] handleCompleteOrder failed', err, configUrl);
             }
         }
-    }, [configuration, commerce]);
+    }, [commerce, configuration]);
+    // --- END MODIFICATION C ---
 
     useEffect(() => {
         const babylonContainer = document.getElementById('babylon-container');

@@ -3,6 +3,7 @@ import { useEffect, createContext, useContext } from 'react';
 import { useGloveConfigurator } from './ui';
 import { SceneManager } from './viewer';
 import * as fflate from 'fflate';
+import variantData from './variants-map.json';
 
 // --- NEW CORE TYPES (from Step 1) ---
 export type HexColor = string;
@@ -509,10 +510,97 @@ export const getModelNameForBuild = (buildConfig: BuildConfig): string => {
 export type VariantKey = string; // e.g. 'openBack|3300|adt|std|rh|imgOpt2|cls|mtp'
 // export const VARIANT_MAP: Record<VariantKey, string> = {};
 
+// --- ADD THIS BLOCK ---
+
+type VariantKeyPart =
+  | 'shell'
+  | 'imageSelection'
+  | 'position'
+  | 'size'
+  | 'handOpeningSize'
+  | 'stiffness'
+  | 'throwingHand'
+  | 'backStyle'
+  | 'webType';
+
+type VariantMapFile = {
+  version: number;
+  default?: string;
+  keyParts: string[]; 
+  map: Record<string, string>;
+  comment?: string;
+};
+
+const VARIANTS = variantData as unknown as VariantMapFile;
+
+const isNumericId = (v: unknown): v is string =>
+  typeof v === 'string' && /^\d+$/.test(v);
+
+// Runtime allowlist matching the VariantKeyPart type
+const ALLOWED_KEY_PARTS = new Set<VariantKeyPart>([
+  'shell', 'imageSelection', 'position', 'size',
+  'handOpeningSize', 'stiffness', 'throwingHand',
+  'backStyle', 'webType',
+]);
+
 export const resolveVariantId = (build: BuildConfig): string | null => {
-    // TODO (later step): look up in variants-map.json or API
-    // For now, return null as a safe placeholder.
-    return null;
+  const shell = getModelNameForBuild(build);
+
+  // 1. Validate Configuration (Dev Safety)
+  if (
+    !Array.isArray(VARIANTS.keyParts) ||
+    VARIANTS.keyParts.some(p => !ALLOWED_KEY_PARTS.has(p as VariantKeyPart))
+  ) {
+    if (process.env.NODE_ENV === 'development') {
+      console.warn('[Variants] Invalid keyParts in variants-map.json:', VARIANTS.keyParts);
+    }
+    // Fallback: Only allow default if intended as Single SKU
+    return (VARIANTS.keyParts?.length === 0 && isNumericId(VARIANTS.default)) ? VARIANTS.default : null;
+  }
+
+  // 2. MODE: Single SKU (Empty keyParts)
+  if (VARIANTS.keyParts.length === 0) {
+    return isNumericId(VARIANTS.default) ? VARIANTS.default : null;
+  }
+
+  // 3. MODE: Strict Match
+  // Map all possible fields
+  const allFields: Partial<Record<VariantKeyPart, string | undefined | null>> = {
+    shell,
+    size: build.size,
+    imageSelection: build.imageSelection,
+    throwingHand: build.throwingHand,
+    backStyle: build.backStyle,
+    webType: build.webType,
+    handOpeningSize: build.handOpeningSize,
+    stiffness: build.stiffness,
+    position: build.position,
+  };
+
+  const parts = VARIANTS.keyParts as VariantKeyPart[];
+  const keyValues = parts.map(p => allFields[p]);
+
+  // Guard: If any required part is missing, we cannot form a key.
+  if (keyValues.some(v => !v)) {
+    if (process.env.NODE_ENV === 'development') {
+      const missing = parts.filter(p => !allFields[p]);
+      console.warn('[Variants] Cannot build key. Missing fields:', missing);
+    }
+    return null; // Strict: Block order
+  }
+
+  const key = (keyValues as string[]).join('|');
+  const hit = VARIANTS.map[key];
+
+  // 4. Exact Match
+  if (isNumericId(hit)) return hit;
+
+  // 5. No Match
+  if (process.env.NODE_ENV === 'development') {
+    console.warn(`[Variants] No ID found for key "${key}".`);
+  }
+
+  return null; // Strict: No fallback
 };
 
 export const SceneContext = createContext<SceneManager | null>(null);

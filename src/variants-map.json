@@ -1,0 +1,42 @@
+{
+  "version": 1,
+  "keyParts": ["shell", "imageSelection", "size"],
+  "default": "45807344418972",
+  "map": {
+    "catchers": "45807344418972",
+
+    "first-base": "45810730729628",
+    "first-base|1300": "45810730729628",
+
+    "close-back|imgOpt1": "45807211577500",
+    "close-back|imgOpt2": "45807211610268",
+    "close-back|imgOpt3": "45807211643036",
+
+    "open-back|imgOpt1|1100": "45807210528924",
+    "open-back|imgOpt1|1125": "45807210627228",
+    "open-back|imgOpt1|1150": "45807210725532",
+    "open-back|imgOpt1|1175": "45807210823836",
+    "open-back|imgOpt1|1200": "45807210922140",
+    "open-back|imgOpt1|1225": "45807211020444",
+    "open-back|imgOpt1|1250": "45807211118748",
+    "open-back|imgOpt1|1275": "45807211217052",
+
+    "open-back|imgOpt2|1100": "45807210561692",
+    "open-back|imgOpt2|1125": "45807210659996",
+    "open-back|imgOpt2|1150": "45807210758300",
+    "open-back|imgOpt2|1175": "45807210856604",
+    "open-back|imgOpt2|1200": "45807210954908",
+    "open-back|imgOpt2|1225": "45807211053212",
+    "open-back|imgOpt2|1250": "45807211151516",
+    "open-back|imgOpt2|1275": "45807211249820",
+
+    "open-back|imgOpt3|1100": "45807210594460",
+    "open-back|imgOpt3|1125": "45807210692764",
+    "open-back|imgOpt3|1150": "45807210791068",
+    "open-back|imgOpt3|1175": "45807210889372",
+    "open-back|imgOpt3|1200": "45807210987676",
+    "open-back|imgOpt3|1225": "45807211085980",
+    "open-back|imgOpt3|1250": "45807211184284",
+    "open-back|imgOpt3|1275": "45807211282588"
+  }
+}
