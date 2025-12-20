@@ -2,7 +2,6 @@ import 'wicg-inert';
 import { SceneManager } from './viewer';
 import {
     SceneContext,
-    GloveLogicController,
     leatherOptions,
     fontOptions,
     COLOR_OPTIONS,
@@ -24,7 +23,11 @@ import {
     colorLookupMap,
     loadConfigurationFromURL,
     generateShareableURL,
-    resolveVariantId
+    resolveVariantId,
+    // --- Added for Local Logic Controller ---
+    GLOVE_TO_WEBS_MAP,
+    GLOVE_PARTS_CONFIG,
+    getPaletteIndexById
 } from './logic';
 import React, { useState, useRef, useLayoutEffect, useCallback, useEffect, createContext, useContext, useReducer, ReactNode, ReactElement, useMemo } from 'react';
 import BabylonCanvas from './viewer';
@@ -2169,6 +2172,94 @@ const UI = () => {
             )}
         </div>
     );
+};
+
+// ===================================================================
+// --- REFACTORED LOGIC CONTROLLER (Step 7) ---
+// ===================================================================
+export const GloveLogicController = () => {
+    const { state } = useGloveConfigurator();
+    const sceneManager = useContext(SceneContext);
+
+    useEffect(() => {
+        const updateSceneAsync = async () => {
+            if (!sceneManager || !sceneManager.isReady()) {
+                return;
+            }
+
+            try {
+                const { configuration } = state;
+                const activeShell = getModelNameForBuild(configuration.build);
+
+                // Update 3D models for shell and web
+                await sceneManager.updateBuild(activeShell);
+
+                const compatibleWebsForShell = GLOVE_TO_WEBS_MAP[activeShell as keyof typeof GLOVE_TO_WEBS_MAP];
+                const webModelFilename = compatibleWebsForShell?.[configuration.build.webType as keyof typeof compatibleWebsForShell];
+
+                if (webModelFilename) {
+                    await sceneManager.updateWeb(webModelFilename);
+                } else {
+                    await sceneManager.updateWeb(''); // Hide web if not compatible
+                }
+
+                // --- MODIFIED PER PLAN ---
+                // Loop 1: Universal Parts
+                for (const [zoneKey, config] of Object.entries(GLOVE_PARTS_CONFIG.universal)) {
+                    const colorState = configuration[zoneKey as ZoneKey];
+                    if (!colorState || !config) continue;
+
+                    // --- START OF SUGGESTION A: Use palette index ---
+                    const paletteIndex = getPaletteIndexById(colorState.colorId);
+                    if (config.materialTarget === 'shell' || config.materialTarget === 'both') {
+                        sceneManager.updateShellZonePointer(config.shaderIndex, paletteIndex);
+                    }
+                    if (config.materialTarget === 'web' || config.materialTarget === 'both') {
+                        sceneManager.updateWebZonePointer(config.shaderIndex, paletteIndex);
+                    }
+                    // --- END OF SUGGESTION A ---
+                }
+
+                // Loop 2: Shell-Specific Parts
+                const shellParts = GLOVE_PARTS_CONFIG.shellSpecific[activeShell];
+                if (shellParts) {
+                    for (const [zoneKey, config] of Object.entries(shellParts)) {
+                        const colorState = configuration[zoneKey as ZoneKey];
+                        if (!colorState || !config) continue;
+
+                        // --- START OF SUGGESTION A: Use palette index ---
+                        const paletteIndex = getPaletteIndexById(colorState.colorId);
+                        sceneManager.updateShellZonePointer(config.shaderIndex, paletteIndex);
+                        // --- END OF SUGGESTION A ---
+                    }
+                }
+
+                // Text updates also need to use the lookup.
+                sceneManager.updateText({
+                    zone: 'thumbName',
+                    text: configuration.thumbName.text,
+                    font: configuration.thumbName.font,
+                    color: getHexById(configuration.thumbName.colorId),
+                });
+
+                sceneManager.updateText({
+                    zone: 'pinkyName',
+                    text: configuration.pinkyName.text,
+                    font: configuration.pinkyName.font,
+                    color: getHexById(configuration.pinkyName.colorId),
+                });
+                // --- END MODIFICATION ---
+
+            } catch (error) {
+                console.error("Failed to update scene:", error);
+            }
+        };
+
+        updateSceneAsync();
+
+    }, [state, sceneManager]);
+
+    return null;
 };
 
 // 3. Update your main App component to include the controller.
