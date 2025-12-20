@@ -37,7 +37,7 @@ import {
     UIPartGroupGallery,
     UIPartGroupSingle,
     CommerceState
-} from './glove-data';
+} from './product-data';
 
 // --- RE-EXPORT EVERYTHING FOR CONSUMERS (UI.TSX, VIEWER.TSX) ---
 export type {
