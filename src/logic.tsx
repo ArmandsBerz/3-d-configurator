@@ -16,6 +16,7 @@ import {
     GLOVE_PARTS_CONFIG,
     GLOVE_TO_WEBS_MAP,
     getModelNameForBuild,
+    UI_PRESENTATION_CONFIG, // <--- ADDED: The Data
     // Types
     AppState,
     GloveConfiguration,
@@ -32,7 +33,7 @@ import {
     BuildThrowingId,
     BuildBackId,
     TextPart,
-    UIPresentationConfig,
+    UIPresentationConfig, // <--- The Type
     UIPartGroup,
     UIPartGroupGallery,
     UIPartGroupSingle,
@@ -74,7 +75,8 @@ export {
     initialState,
     GLOVE_PARTS_CONFIG,
     GLOVE_TO_WEBS_MAP,
-    getModelNameForBuild
+    getModelNameForBuild,
+    UI_PRESENTATION_CONFIG // <--- ADDED: Exporting to the world
 };
 
 // --- HELPER: Index Lookup for 3D Performance ---
