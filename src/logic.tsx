@@ -1,7 +1,6 @@
 import { createContext, useContext } from 'react';
 import { SceneManager } from './viewer';
 import * as fflate from 'fflate';
-import variantData from './variants-map.json';
 
 // --- IMPORT THE DATABASE (The "Universe" of the Glove) ---
 import {
@@ -103,98 +102,6 @@ const THREAD_BASED_ZONES = new Set<ZoneKey>([
 
 export const isApplyToAllEligible = (zoneKey: ZoneKey): boolean => {
     return !THREAD_BASED_ZONES.has(zoneKey);
-};
-
-// ===================================================================
-// --- VARIANT RESOLUTION LOGIC ---
-// ===================================================================
-
-type VariantKeyPart =
-    | 'shell'
-    | 'imageSelection'
-    | 'position'
-    | 'size'
-    | 'handOpeningSize'
-    | 'stiffness'
-    | 'throwingHand'
-    | 'backStyle'
-    | 'webType';
-
-type VariantMapFile = {
-    version: number;
-    default?: string;
-    keyParts: string[];
-    map: Record<string, string>;
-    comment?: string;
-};
-
-const VARIANTS = variantData as unknown as VariantMapFile;
-
-const isNumericId = (v: unknown): v is string =>
-    typeof v === 'string' && /^\d+$/.test(v);
-
-// Runtime allowlist matching the VariantKeyPart type
-const ALLOWED_KEY_PARTS = new Set<VariantKeyPart>([
-    'shell', 'imageSelection', 'position', 'size',
-    'handOpeningSize', 'stiffness', 'throwingHand',
-    'backStyle', 'webType',
-]);
-
-export const resolveVariantId = (build: BuildConfig): string | null => {
-    const shell = getModelNameForBuild(build);
-
-    // 1. Validate Configuration (Dev Safety)
-    if (
-        !Array.isArray(VARIANTS.keyParts) ||
-        VARIANTS.keyParts.some(p => !ALLOWED_KEY_PARTS.has(p as VariantKeyPart))
-    ) {
-        if (process.env.NODE_ENV === 'development') {
-            console.warn('[Variants] Invalid keyParts in variants-map.json:', VARIANTS.keyParts);
-        }
-        return (VARIANTS.keyParts?.length === 0 && isNumericId(VARIANTS.default)) ? VARIANTS.default : null;
-    }
-
-    // 2. MODE: Single SKU (Empty keyParts)
-    if (VARIANTS.keyParts.length === 0) {
-        return isNumericId(VARIANTS.default) ? VARIANTS.default : null;
-    }
-
-    // 3. MODE: Strict Match
-    const allFields: Partial<Record<VariantKeyPart, string | undefined | null>> = {
-        shell,
-        size: build.size,
-        imageSelection: build.imageSelection,
-        throwingHand: build.throwingHand,
-        backStyle: build.backStyle,
-        webType: build.webType,
-        handOpeningSize: build.handOpeningSize,
-        stiffness: build.stiffness,
-        position: build.position,
-    };
-
-    const parts = VARIANTS.keyParts as VariantKeyPart[];
-    const keyValues = parts.map(p => allFields[p]);
-
-    if (keyValues.some(v => !v)) {
-        if (process.env.NODE_ENV === 'development') {
-            const missing = parts.filter(p => !allFields[p]);
-            console.warn('[Variants] Cannot build key. Missing fields:', missing);
-        }
-        return null;
-    }
-
-    const key = (keyValues as string[]).join('|');
-    const hit = VARIANTS.map[key];
-
-    // 4. Exact Match
-    if (isNumericId(hit)) return hit;
-
-    // 5. No Match
-    if (process.env.NODE_ENV === 'development') {
-        console.warn(`[Variants] No ID found for key "${key}".`);
-    }
-
-    return null;
 };
 
 // ===================================================================
@@ -327,20 +234,6 @@ export interface LoadResult {
 const cloneInitialConfig = (): GloveConfiguration =>
     JSON.parse(JSON.stringify(initialState.configuration));
 
-const mapEntryFamilyToPosition = (entryFamily: string): BuildConfig['position'] => {
-    switch (entryFamily) {
-        case 'infield':
-        case 'infielder': return 'inf';
-        case 'outfield':
-        case 'outfielder': return 'out';
-        case 'pitcher': return 'pit';
-        case 'catcher': return 'cat';
-        case 'first-base':
-        case 'first-baseman': return 'fb';
-        default: return initialState.configuration.build.position;
-    }
-};
-
 export const loadConfigurationFromURL = (): LoadResult => {
     try {
         const urlParams = new URLSearchParams(window.location.search);
@@ -356,12 +249,7 @@ export const loadConfigurationFromURL = (): LoadResult => {
 
             const config = cloneInitialConfig();
 
-            if (entryFamily) {
-                config.build.position = mapEntryFamilyToPosition(entryFamily);
-                if (config.build.position === 'out' || config.build.position === 'pit') {
-                    config.build.backStyle = 'opn';
-                }
-            }
+            // Note: entry_family Logic removed as per instruction (Translation Layer Deleted)
 
             return {
                 configuration: config,
