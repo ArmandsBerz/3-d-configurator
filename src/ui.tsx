@@ -23,7 +23,6 @@ import {
     colorLookupMap,
     loadConfigurationFromURL,
     generateShareableURL,
-    resolveVariantId,
     // --- Added for Local Logic Controller ---
     GLOVE_TO_WEBS_MAP,
     GLOVE_PARTS_CONFIG,
@@ -294,9 +293,6 @@ const gloveConfigReducer = (state: AppState, action: GloveAction): AppState => {
                 ...action.payload
             };
 
-            // 2. Resolve against the FULL next build (prevents partial state bugs)
-            const resolvedVariantId = resolveVariantId(nextBuild);
-
             return {
                 ...state,
                 configuration: {
@@ -305,8 +301,8 @@ const gloveConfigReducer = (state: AppState, action: GloveAction): AppState => {
                 },
                 commerce: {
                     ...state.commerce,
-                    // STRICT MODE: If resolution fails, variantId becomes null
-                    variantId: resolvedVariantId,
+                    // STRICT MODE: VariantId is effectively dead/null
+                    variantId: null, 
                 },
             };
         }
@@ -368,10 +364,8 @@ const initialLoadResult = loadConfigurationFromURL(); // Captures { configuratio
 // 2. Update your provider to use this starting configuration.
 // --- MODIFICATION B: GloveConfiguratorProvider Initialization Fix ---
 const GloveConfiguratorProvider = ({ children }: GloveConfiguratorProviderProps) => {
-    // 1. Resolve immediately on load
-    const initialVariantId = initialLoadResult.variantId 
-        ?? resolveVariantId(initialLoadResult.configuration.build) 
-        ?? null;
+    // 1. Resolve immediately on load (Disabled)
+    const initialVariantId = initialLoadResult.variantId ?? null;
 
     const [state, dispatch] = useReducer(gloveConfigReducer, {
         ...initialState,
@@ -1778,11 +1772,11 @@ const UI = () => {
 
     // --- MODIFICATION C: handleCompleteOrder UX Guard ---
     const handleCompleteOrder = useCallback(() => {
-        // STRICT GUARD: Block order if variant is invalid
-        if (!commerce.variantId) {
-            setSnackbarMessage('This configuration cannot be ordered. Please select different options.');
-            return;
-        }
+        // STRICT GUARD REMOVED: Allow order to proceed even if variantId is null (since backend is mock)
+        // if (!commerce.variantId) {
+        //     setSnackbarMessage('This configuration cannot be ordered. Please select different options.');
+        //     return;
+        // }
 
         // Build current shareable URL to extract config value
         const configUrl = generateShareableURL(configuration);
@@ -1790,8 +1784,6 @@ const UI = () => {
         try {
             const urlObj = new URL(configUrl, window.location.origin);
             const configParam = urlObj.searchParams.get('config') || '';
-
-            // Note: Previous check removed because the strict guard handles it now.
 
             postToParent({
                 type: BRIDGE_MESSAGE_TYPES.COMPLETE_ORDER,
