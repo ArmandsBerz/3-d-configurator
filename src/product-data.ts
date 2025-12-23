@@ -298,11 +298,11 @@ export const UI_PRESENTATION_CONFIG: UIPresentationConfig = {
 };
 
 // ===================================================================
-// 5. THE PRESET (DEFAULT STATE)
+// 5. THE PRESETS (DEFAULT STATES)
 // ===================================================================
 
-export const initialState: AppState = {
-    configuration: {
+export const PRESETS = {
+    default: {
         build: { imageSelection: 'imgOpt1', position: 'inf', size: '1100', handOpeningSize: 'adt', stiffness: 'std', throwingHand: 'rh', backStyle: 'opn', webType: 'mtp' },
         thumbName: { type: 'text', text: 'Thumb', font: 'LOBSTER', colorId: 'gy' },
         pinkyName: { type: 'text', text: 'Pinky', font: 'ROBOTO', colorId: 'sl' },
@@ -328,7 +328,41 @@ export const initialState: AppState = {
         [ZONES.WRIST_LOGO]:     { colorId: 'gd' },
         [ZONES.WRIST_LOGO_OUTLINE]: { colorId: 'sl' },
         [ZONES.FINGER_LOGO]:    { colorId: 'gd' },
-    },
+    } as GloveConfiguration,
+
+    catcher: {
+        build: { imageSelection: 'imgOpt1', position: 'cat', size: '1200', handOpeningSize: 'adt', stiffness: 'std', throwingHand: 'rh', backStyle: 'opn', webType: '2pc' },
+        thumbName: { type: 'text', text: 'Catcher', font: 'LOBSTER', colorId: 'gd' },
+        pinkyName: { type: 'text', text: 'Mitt', font: 'ROBOTO', colorId: 'gd' },
+        [ZONES.THUMB_INNER]:    { colorId: 'bl' }, // Primary U-Piece
+        [ZONES.INDEX]:          { colorId: 'bl' }, // Shell Back
+        [ZONES.MIDDLE_INNER]:   { colorId: 'rd' }, // Shell Base
+        [ZONES.MIDDLE_OUTER]:   { colorId: 'rd' }, // Rails
+        [ZONES.RING_INNER]:     { colorId: 'bl' },
+        [ZONES.RING_OUTER]:     { colorId: 'bl' },
+        [ZONES.WEB]:            { colorId: 'bl' },
+        [ZONES.WRIST]:          { colorId: 'bl' },
+        [ZONES.WRIST_STRAP]:    { colorId: 'bl' },
+        [ZONES.PAD_HOOD]:       { colorId: 'rd' },
+        [ZONES.THUMB_OUTER]:    { colorId: 'bl' }, // Outer Thumb
+        [ZONES.PINKY_INNER]:    { colorId: 'bl' },
+        [ZONES.PINKY_OUTER]:    { colorId: 'bl' },
+        [ZONES.PALM]:           { colorId: 'bl' },
+        [ZONES.LINER]:          { colorId: 'gy' },
+        [ZONES.BINDING]:        { colorId: 'gd' },
+        [ZONES.WELTING]:        { colorId: 'gd' },
+        [ZONES.LACE]:           { colorId: 'gd' },
+        [ZONES.STITCHING]:      { colorId: 'rd' },
+        [ZONES.WRIST_LOGO]:     { colorId: 'rd' },
+        [ZONES.WRIST_LOGO_OUTLINE]: { colorId: 'gd' },
+        [ZONES.FINGER_LOGO]:    { colorId: 'rd' },
+    } as GloveConfiguration
+} as const;
+
+export type PresetId = keyof typeof PRESETS;
+
+export const initialState: AppState = {
+    configuration: PRESETS.default,
     commerce: {
         variantId: null,
         quantity: 1,

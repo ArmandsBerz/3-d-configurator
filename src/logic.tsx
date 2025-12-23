@@ -12,6 +12,8 @@ import {
     fontOptions,    // <--- Added this
     FONT_REGISTRY,  // <--- Added this (for viewer.tsx)
     initialState,
+    PRESETS,        // <--- ADDED: Import PRESETS
+    PresetId,       // <--- ADDED: Import PresetId
     GLOVE_PARTS_CONFIG,
     GLOVE_TO_WEBS_MAP,
     getModelNameForBuild,
@@ -60,7 +62,8 @@ export type {
     UIPartGroup,
     UIPartGroupGallery,
     UIPartGroupSingle,
-    CommerceState
+    CommerceState,
+    PresetId // <--- ADDED: Re-export PresetId
 };
 
 export {
@@ -72,6 +75,7 @@ export {
     fontOptions,    // <--- Re-exporting
     FONT_REGISTRY,  // <--- Re-exporting
     initialState,
+    PRESETS,        // <--- ADDED: Re-export PRESETS
     GLOVE_PARTS_CONFIG,
     GLOVE_TO_WEBS_MAP,
     getModelNameForBuild,
@@ -102,6 +106,42 @@ const THREAD_BASED_ZONES = new Set<ZoneKey>([
 
 export const isApplyToAllEligible = (zoneKey: ZoneKey): boolean => {
     return !THREAD_BASED_ZONES.has(zoneKey);
+};
+
+// ===================================================================
+// --- PRESET HANDLING LOGIC (THE "DELIVERY TRUCK") ---
+// ===================================================================
+
+const deepCopy = <T,>(obj: T): T => {
+    if (typeof structuredClone === 'function') {
+        return structuredClone(obj);
+    }
+    return JSON.parse(JSON.stringify(obj));
+};
+
+// Helper to ensure a loaded preset has all necessary fields by merging with default
+const fillMissing = (incoming: Partial<GloveConfiguration>): GloveConfiguration => {
+    const base = deepCopy(PRESETS.default);
+    
+    // We do a shallow merge of the top-level keys. 
+    // Note: For deep nested objects like 'build', simple spread might overwrite nested defaults if incoming is partial.
+    // However, our presets are currently full objects. 
+    // To be safer for future partial updates, we can explicitly merge critical subsections if needed.
+    
+    return {
+        ...base,
+        ...incoming,
+        build: {
+            ...base.build,
+            ...(incoming.build || {})
+        }
+    };
+};
+
+export const getPresetConfig = (id: PresetId): GloveConfiguration => {
+    const rawPreset = PRESETS[id];
+    // Safety 1 & 2: Deep Copy + Fill Missing
+    return fillMissing(rawPreset);
 };
 
 // ===================================================================
@@ -187,7 +227,10 @@ export const serialize = (config: GloveConfiguration): string => {
 };
 
 export const deserialize = (encodedString: string): GloveConfiguration => {
-    const config = JSON.parse(JSON.stringify(initialState.configuration));
+    // USE THE SAFER FILL MISSING LOGIC HERE TOO!
+    // Instead of raw JSON.parse of initialState, we use our helper to get a fresh base.
+    const config = deepCopy(initialState.configuration); 
+    
     const pairs = encodedString.split('_');
 
     for (const pair of pairs) {
@@ -232,7 +275,7 @@ export interface LoadResult {
 }
 
 const cloneInitialConfig = (): GloveConfiguration =>
-    JSON.parse(JSON.stringify(initialState.configuration));
+    deepCopy(initialState.configuration); // Swapped to deepCopy helper
 
 export const loadConfigurationFromURL = (): LoadResult => {
     try {
