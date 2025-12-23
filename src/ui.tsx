@@ -27,7 +27,9 @@ import {
     GLOVE_TO_WEBS_MAP,
     GLOVE_PARTS_CONFIG,
     getPaletteIndexById,
-    UI_PRESENTATION_CONFIG // <--- Import this from './logic'
+    UI_PRESENTATION_CONFIG, // <--- Import this from './logic'
+    // --- ADDED FOR STEP 3: THE SWITCH IMPLEMENTATION ---
+    GloveConfiguration
 } from './logic';
 import React, { useState, useRef, useLayoutEffect, useCallback, useEffect, createContext, useContext, useReducer, ReactNode, ReactElement, useMemo } from 'react';
 import BabylonCanvas from './viewer';
@@ -124,7 +126,9 @@ export type GloveAction =
     // MODIFICATION: Use colorId
     | { type: typeof ACTION_TYPES.APPLY_COLOR_TO_ALL; payload: { colorId: ColorId } }
     | { type: typeof ACTION_TYPES.SET_LOADING; payload: boolean }
-    | { type: 'RESET_LAST_ACTIVATED_PART_TYPE' };
+    | { type: 'RESET_LAST_ACTIVATED_PART_TYPE' }
+    // --- ADDED FOR STEP 3: THE SWITCH ACTION ---
+    | { type: typeof ACTION_TYPES.REPLACE_CONFIGURATION; payload: GloveConfiguration };
 // --- END MODIFICATION ---
 
 // --- END: Core Type Definitions ---
@@ -170,6 +174,8 @@ export const ACTION_TYPES = {
     UPDATE_TEXT: 'UPDATE_TEXT',
     APPLY_COLOR_TO_ALL: 'APPLY_COLOR_TO_ALL',
     SET_LOADING: 'SET_LOADING',
+    // --- ADDED FOR STEP 3: THE SWITCH ---
+    REPLACE_CONFIGURATION: 'REPLACE_CONFIGURATION',
 } as const;
 
 export const POSITIONS = {
@@ -343,6 +349,20 @@ const gloveConfigReducer = (state: AppState, action: GloveAction): AppState => {
         }
         case ACTION_TYPES.SET_LOADING:
             return { ...state, isLoading: action.payload };
+        
+        // --- ADDED FOR STEP 3: THE SWITCH IMPLEMENTATION ---
+        case ACTION_TYPES.REPLACE_CONFIGURATION:
+            return {
+                ...state, // 1. CLONE everything else
+                
+                // 2 & 3. NUKE AND PAVE configuration
+                configuration: action.payload,
+                
+                // 4. RESET UI state logic
+                lastActivatedPartType: null,
+            };
+        // ----------------------------------------------------
+
         default:
             return state;
     }
@@ -1102,7 +1122,7 @@ type MobileAccordionState =
     | { name: 'BUILD' }
     | { name: 'COLOR'; context: UIPartGroup }
     | { name: 'GALLERY'; context: UIPartGroupGallery }
-    | { name: 'TEXT'; context: { id: TextPartId, title: string } }
+    | { name: 'TEXT'; context: { id: TextPartId; title: string } }
     | null;
 
 
@@ -1774,8 +1794,8 @@ const UI = () => {
     const handleCompleteOrder = useCallback(() => {
         // STRICT GUARD REMOVED: Allow order to proceed even if variantId is null (since backend is mock)
         // if (!commerce.variantId) {
-        //     setSnackbarMessage('This configuration cannot be ordered. Please select different options.');
-        //     return;
+        //      setSnackbarMessage('This configuration cannot be ordered. Please select different options.');
+        //      return;
         // }
 
         // Build current shareable URL to extract config value
