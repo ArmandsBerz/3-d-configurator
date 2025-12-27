@@ -27,14 +27,17 @@ import {
     GLOVE_TO_WEBS_MAP,
     GLOVE_PARTS_CONFIG,
     getPaletteIndexById,
-    UI_PRESENTATION_CONFIG, // <--- Import this from './logic'
+    UI_PRESENTATION_CONFIG, 
     // --- ADDED FOR STEP 3: THE SWITCH IMPLEMENTATION ---
-    GloveConfiguration
+    GloveConfiguration,
+    // --- ADDED FOR CLAUDE'S FIX (TRANSLATION) ---
+    getPresetConfig,
+    PresetId
 } from './logic';
 import React, { useState, useRef, useLayoutEffect, useCallback, useEffect, createContext, useContext, useReducer, ReactNode, ReactElement, useMemo } from 'react';
 import BabylonCanvas from './viewer';
 import { SummaryIcon, BackArrowIcon, CheckmarkIcon, LongArrowRightIcon, CaretRightIcon, CaretDownIcon, CaretUpIcon, ShareIcon, CollapseIcon, ExpandIcon, DragIcon, ZoomIcon, CloseIcon } from './icons';
-import { Snackbar } from './snackbar'; // Import the Snackbar component
+import { Snackbar } from './snackbar'; 
 
 // --- START: NEW SCROLL GRADIENT HOOK ---
 export const useScrollGradients = (scrollableRef: React.RefObject<HTMLElement | null>) => {
@@ -101,12 +104,11 @@ export interface UIPartGroupGallery {
 export type UIPartGroup = UIPartGroupSingle | UIPartGroupDual | UIPartGroupGallery;
 
 export interface UIPresentationConfig {
-    [shellName: string]: UIPartGroup[]; // A dictionary of UI groups per shell
+    [shellName: string]: UIPartGroup[]; 
 }
 
 // --- CORE TYPE DEFINITIONS ARE NOW IMPORTED FROM LOGIC.TSX ---
 
-// --- MODIFIED PER PLAN ---
 type AppState = ImportedAppState & {
     lastActivatedPartType: 'inner' | 'outer' | 'single' | null;
 };
@@ -117,19 +119,15 @@ export type GloveAction =
         type: typeof ACTION_TYPES.UPDATE_ZONE_COLOR;
         payload: {
             zoneKey: ZoneKey;
-            // MODIFICATION: Use colorId
             colorId: ColorId;
             partType: 'inner' | 'outer' | 'single';
         }
     }
     | { type: typeof ACTION_TYPES.UPDATE_TEXT; payload: { id: 'thumbName' | 'pinkyName'; data: TextPart } }
-    // MODIFICATION: Use colorId
     | { type: typeof ACTION_TYPES.APPLY_COLOR_TO_ALL; payload: { colorId: ColorId } }
     | { type: typeof ACTION_TYPES.SET_LOADING; payload: boolean }
     | { type: 'RESET_LAST_ACTIVATED_PART_TYPE' }
-    // --- ADDED FOR STEP 3: THE SWITCH ACTION ---
     | { type: typeof ACTION_TYPES.REPLACE_CONFIGURATION; payload: GloveConfiguration };
-// --- END MODIFICATION ---
 
 // --- END: Core Type Definitions ---
 
@@ -174,7 +172,6 @@ export const ACTION_TYPES = {
     UPDATE_TEXT: 'UPDATE_TEXT',
     APPLY_COLOR_TO_ALL: 'APPLY_COLOR_TO_ALL',
     SET_LOADING: 'SET_LOADING',
-    // --- ADDED FOR STEP 3: THE SWITCH ---
     REPLACE_CONFIGURATION: 'REPLACE_CONFIGURATION',
 } as const;
 
@@ -210,10 +207,10 @@ export const NUMERIC_CONSTANTS = {
 const BRIDGE_MESSAGE_TYPES = {
     CUSTOMIZER_STATE: 'CUSTOMIZER_STATE',
     EXIT_APP: 'EXIT_APP',
-    COMPLETE_ORDER: 'COMPLETE_ORDER', // Phase 2 usage, but can exist now
+    COMPLETE_ORDER: 'COMPLETE_ORDER', 
     REQUEST_SHARE: 'REQUEST_SHARE',
     SHARE_COMPLETE: 'SHARE_COMPLETE',
-    SYNC_BACK: 'SYNC_BACK', // Added for Phase 4
+    SYNC_BACK: 'SYNC_BACK', 
 } as const;
 
 type BridgeMessage =
@@ -240,21 +237,9 @@ type BridgeMessage =
     | {
         type: typeof BRIDGE_MESSAGE_TYPES.SYNC_BACK;
         payload: {
-            // --- ACTIVE CONTRACT (What we send today) ---
             size: string;
             leather: string;
             webStyle: string;
-
-            // --- FUTURE ENTERPRISE CONTRACT (Saved for later) ---
-            /*
-            schemaVersion: number;
-            position: string | null;
-            variantId: string | null;
-            throwingHand: string | null;
-            stiffness: string | null;
-            handOpening: string | null;
-            back: string | null;
-            */
         };
     };
 
@@ -263,24 +248,19 @@ const isInIframe = (): boolean => {
     return window.parent && window.parent !== window;
 };
 
+// --- SAFE POST TO PARENT (PROCESS.ENV REMOVED) ---
 const postToParent = (message: BridgeMessage) => {
     if (typeof window === 'undefined') return;
 
-    // Not in iframe → dev logging only, no fake behavior
     if (!isInIframe()) {
-        if (process.env.NODE_ENV === 'development') {
-            console.log('[Bridge Outgoing]', message);
-        }
+        console.log('[Bridge Outgoing]', message);
         return;
     }
 
     try {
-        // Target origin '*' is fine here; real filtering will be in glove-loader.js
         window.parent.postMessage(message, '*');
     } catch (err) {
-        if (process.env.NODE_ENV === 'development') {
-            console.warn('[Bridge] postMessage failed', err, message);
-        }
+        console.warn('[Bridge] postMessage failed', err, message);
     }
 };
 
@@ -288,12 +268,9 @@ const postToParent = (message: BridgeMessage) => {
 
 // --- Centralized State Management ---
 
-// --- MODIFIED PER PLAN ---
 const gloveConfigReducer = (state: AppState, action: GloveAction): AppState => {
     switch (action.type) {
-        // --- MODIFICATION A: Reducer Fix for UPDATE_BUILD ---
         case ACTION_TYPES.UPDATE_BUILD: {
-            // 1. Calculate the NEXT build state first
             const nextBuild = {
                 ...state.configuration.build,
                 ...action.payload
@@ -307,18 +284,15 @@ const gloveConfigReducer = (state: AppState, action: GloveAction): AppState => {
                 },
                 commerce: {
                     ...state.commerce,
-                    // STRICT MODE: VariantId is effectively dead/null
                     variantId: null, 
                 },
             };
         }
-        // --- END MODIFICATION A ---
         case ACTION_TYPES.UPDATE_ZONE_COLOR:
             return {
                 ...state,
                 configuration: {
                     ...state.configuration,
-                    // MODIFICATION: Use colorId
                     [action.payload.zoneKey]: { colorId: action.payload.colorId },
                 },
                 lastActivatedPartType: action.payload.partType,
@@ -331,16 +305,12 @@ const gloveConfigReducer = (state: AppState, action: GloveAction): AppState => {
         case ACTION_TYPES.UPDATE_TEXT:
             return { ...state, configuration: { ...state.configuration, [action.payload.id]: action.payload.data } };
         case ACTION_TYPES.APPLY_COLOR_TO_ALL: {
-            // MODIFICATION: Use colorId
             const { colorId } = action.payload;
             if (!colorId) return state;
 
             const newConfiguration = { ...state.configuration };
-            // Loop through all defined zone keys and update their color
             Object.values(ZONES).forEach((zoneKey: ZoneKey) => {
-                // MODIFICATION: Use the helper to respect exclusion rules
                 if (isApplyToAllEligible(zoneKey)) {
-                    // MODIFICATION: Use colorId
                     newConfiguration[zoneKey] = { colorId: colorId };
                 }
             });
@@ -350,24 +320,17 @@ const gloveConfigReducer = (state: AppState, action: GloveAction): AppState => {
         case ACTION_TYPES.SET_LOADING:
             return { ...state, isLoading: action.payload };
         
-        // --- ADDED FOR STEP 3: THE SWITCH IMPLEMENTATION ---
         case ACTION_TYPES.REPLACE_CONFIGURATION:
             return {
-                ...state, // 1. CLONE everything else
-                
-                // 2 & 3. NUKE AND PAVE configuration
+                ...state, 
                 configuration: action.payload,
-                
-                // 4. RESET UI state logic
                 lastActivatedPartType: null,
             };
-        // ----------------------------------------------------
 
         default:
             return state;
     }
 };
-// --- END MODIFICATION ---
 
 const GloveConfiguratorContext = createContext<{ state: AppState; dispatch: React.Dispatch<GloveAction> } | undefined>(undefined);
 
@@ -376,15 +339,9 @@ interface GloveConfiguratorProviderProps {
 }
 
 // --- UPDATE APP INITIALIZATION ---
+const initialLoadResult = loadConfigurationFromURL(); 
 
-// 1. Get the starting configuration AND status by reading the URL ONCE.
-// This executes at module load time. The UI component below relies on this variable.
-const initialLoadResult = loadConfigurationFromURL(); // Captures { configuration, status }
-
-// 2. Update your provider to use this starting configuration.
-// --- MODIFICATION B: GloveConfiguratorProvider Initialization Fix ---
 const GloveConfiguratorProvider = ({ children }: GloveConfiguratorProviderProps) => {
-    // 1. Resolve immediately on load (Disabled)
     const initialVariantId = initialLoadResult.variantId ?? null;
 
     const [state, dispatch] = useReducer(gloveConfigReducer, {
@@ -403,7 +360,6 @@ const GloveConfiguratorProvider = ({ children }: GloveConfiguratorProviderProps)
         </GloveConfiguratorContext.Provider>
     );
 };
-// --- END MODIFICATION B ---
 
 export const useGloveConfigurator = () => {
     const context = useContext(GloveConfiguratorContext);
@@ -422,14 +378,12 @@ const ScrollGradient = ({ position, isVisible }: ScrollGradientProps) => {
     return <div className={`absolute left-0 right-0 h-[63px] ${isTop ? 'top-0 bg-gradient-to-b' : 'bottom-0 bg-gradient-to-t'} from-[#161616] to-transparent pointer-events-none z-10 transition-opacity duration-200 ${isVisible ? 'opacity-100' : 'opacity-0'}`} aria-hidden="true" />;
 };
 
-// --- MODIFIED PER PLAN ---
 const ColorIndicator = ({ colorId }: { colorId: ColorId }) => (
     <span
         className="w-5 h-5 rounded-full border border-white/20"
         style={{ backgroundColor: getHexById(colorId) }}
     ></span>
 );
-// --- END MODIFICATION ---
 
 interface ImageOptionProps {
     id: string;
@@ -517,7 +471,6 @@ const ColorSwatch = ({ color, name, isSelected, onSelect, tabIndex, elRef }: Col
     />
 );
 
-// --- MODIFIED PER PLAN ---
 interface ColorSwatchGridProps {
     swatches: Readonly<Array<{ id: ColorId, name: string, hex: HexColor }>>;
     selectedColorId: ColorId | undefined;
@@ -555,9 +508,8 @@ const ColorSwatchGrid = ({ swatches, selectedColorId, onColorSelect }: ColorSwat
         </div>
     );
 };
-// --- END MODIFICATION ---
 
-// --- DEBOUNCE UTILITY (WITH BETTER TYPES) ---
+// --- DEBOUNCE UTILITY ---
 function debounce<T extends (...args: any[]) => void>(
     func: T,
     delay: number
@@ -573,7 +525,7 @@ function debounce<T extends (...args: any[]) => void>(
 }
 
 
-// --- URL SYNC CONTROLLER (REFACTORED WITH useMemo) ---
+// --- URL SYNC CONTROLLER ---
 const URLSyncController = () => {
     const { state } = useGloveConfigurator();
 
@@ -583,12 +535,10 @@ const URLSyncController = () => {
                 const newUrl = generateShareableURL(configuration);
 
                 try {
-                    // 1) Update iframe URL
                     window.history.replaceState({}, '', newUrl);
 
-                    // 2) Extract query (config=...) and send to parent
                     const urlObj = new URL(newUrl, window.location.origin);
-                    const query = urlObj.search.slice(1); // "config=..."
+                    const query = urlObj.search.slice(1); 
 
                     if (query) {
                         postToParent({
@@ -695,7 +645,6 @@ const AccordionOptionMobile = ({ title, onClose, headerAccessory = null, childre
 
 // --- Content Components ---
 
-// --- MODIFIED PER PLAN ---
 interface SingleColorPickerProps {
     zoneKey: ZoneKey;
 }
@@ -734,7 +683,6 @@ const DualColorPicker = ({ outerZoneKey, innerZoneKey }: DualColorPickerProps) =
             payload: { zoneKey: innerZoneKey, colorId: newColorId, partType: 'inner' }
         });
     };
-    // --- END MODIFICATION ---
 
     return (
         <div className="space-y-4">
@@ -2204,29 +2152,84 @@ export const GloveLogicController = () => {
     return null;
 };
 
+// --- BRIDGE HOOK (The Receiver Logic) ---
+const useBridge = () => {
+    const { dispatch } = useGloveConfigurator();
+
+    useEffect(() => {
+        const handleMessage = (event: MessageEvent) => {
+            // 1. Agnostic Safety Check
+            if (!event.data || typeof event.data !== 'object') return;
+
+            // 2. Route the Signal
+            if (event.data.type === ACTION_TYPES.REPLACE_CONFIGURATION) {
+                console.log("[Bridge] Received Payload:", event.data.payload);
+                
+                let fullConfig: GloveConfiguration;
+
+                // 3. CHECK: Is this a Preset Command? ({ preset: "catcher" })
+                if (event.data.payload?.preset) {
+                    const presetId = event.data.payload.preset as PresetId;
+                    console.log("[Bridge] Translating preset:", presetId);
+                    
+                    // Convert "catcher" -> Full Glove Object
+                    fullConfig = getPresetConfig(presetId); 
+                } 
+                // 4. CHECK: Is this already a Full Config? (Saved design)
+                else if (event.data.payload?.build) {
+                    fullConfig = event.data.payload;
+                } 
+                // 5. ERROR: Unknown data format
+                else {
+                    console.warn("[Bridge] Ignored invalid payload:", event.data.payload);
+                    return;
+                }
+                
+                // 6. Dispatch the FULL object (Safe now)
+                dispatch({ 
+                    type: ACTION_TYPES.REPLACE_CONFIGURATION, 
+                    payload: fullConfig 
+                });
+            }
+        };
+
+        window.addEventListener('message', handleMessage);
+        return () => window.removeEventListener('message', handleMessage);
+    }, [dispatch]);
+};
+
 // 3. Update your main App component to include the controller.
-const App = () => {
+const GloveAppContent = () => {
     const [sceneManager, setSceneManager] = useState<SceneManager | null>(null);
 
+    // --- ACTIVATE RECEIVER HERE ---
+    useBridge(); 
+
+    return (
+        <SceneContext.Provider value={sceneManager}>
+
+            <div id="app-root" className="relative w-full h-[100dvh] bg-[#161616]">
+                <div id="babylon-container" className="absolute inset-0 z-10">
+                    <BabylonCanvas onSceneReady={setSceneManager} />
+                </div>
+                <div id="ui-container" className="absolute inset-0 z-20 pointer-events-none">
+                    <UI />
+                </div>
+            </div>
+
+            <GloveLogicController />
+
+            {/* This component will now automatically sync the state to the URL */}
+            <URLSyncController />
+
+        </SceneContext.Provider>
+    );
+};
+
+const App = () => {
     return (
         <GloveConfiguratorProvider>
-            <SceneContext.Provider value={sceneManager}>
-
-                <div id="app-root" className="relative w-full h-[100dvh] bg-[#161616]">
-                    <div id="babylon-container" className="absolute inset-0 z-10">
-                        <BabylonCanvas onSceneReady={setSceneManager} />
-                    </div>
-                    <div id="ui-container" className="absolute inset-0 z-20 pointer-events-none">
-                        <UI />
-                    </div>
-                </div>
-
-                <GloveLogicController />
-
-                {/* This component will now automatically sync the state to the URL */}
-                <URLSyncController />
-
-            </SceneContext.Provider>
+            <GloveAppContent />
         </GloveConfiguratorProvider>
     );
 };

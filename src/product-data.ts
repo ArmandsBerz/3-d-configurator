@@ -370,3 +370,51 @@ export const initialState: AppState = {
     isLoading: false,
     lastActivatedPartType: null,
 };
+
+// ===================================================================
+// 6. THE ENTRY POINT DICTIONARY (THE SOURCE OF TRUTH)
+// ===================================================================
+// This matches the "Key" you type in Shopify to a specific set of Rules.
+
+export interface EntryPointRule {
+    basePresetId: PresetId;  // Which visual preset to load (from Section 5)
+    isLocked: boolean;       // RULE: Is the user trapped in this model?
+    label: string;           // Just for your reference
+}
+
+export const ENTRY_POINT_DICTIONARY: Record<string, EntryPointRule> = {
+    // 1. STANDARD DEFAULT (Open)
+    // Shopify Key: 'default'
+    'default': {
+        basePresetId: 'default',
+        isLocked: false,
+        label: "Standard Builder (Open)"
+    },
+
+    // 2. STANDARD CATCHER (Open)
+    // Shopify Key: 'catcher'
+    'catcher': {
+        basePresetId: 'catcher',
+        isLocked: false, 
+        label: "Catcher Standard (Open)"
+    },
+
+    // 3. PROMO CATCHER (Locked)
+    // Shopify Key: 'catcher_locked'
+    'catcher_locked': {
+        basePresetId: 'catcher',
+        isLocked: true,             // <--- THE TRAP
+        label: "Catcher Special (Locked)"
+    },
+    
+    // 4. FIRST BASE (Using default visuals but overriding behavior)
+    // Shopify Key: 'first_base_locked'
+    'first_base_locked': {
+        basePresetId: 'default',    // Uses default colors...
+        isLocked: true,             // ...but locks the shell
+        label: "First Base Promo"
+    }
+};
+
+// This helper type ensures we can refer to these keys safely elsewhere
+export type ValidEntryPointKey = keyof typeof ENTRY_POINT_DICTIONARY;

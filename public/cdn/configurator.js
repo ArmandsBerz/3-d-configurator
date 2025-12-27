@@ -1,67 +1,76 @@
 (function() {
   'use strict';
 
-  // --- 1. CONFIGURATION (Read from Liquid) ---
+  // 1. SETUP: Find the mount point from your Liquid file
   const mountEl = document.querySelector('[data-configurator-mount]');
   
-  // Ask the HTML: "What is the URL?"
-  const baseUrl = mountEl ? mountEl.getAttribute('data-configurator-base-url') : null;
+  // Safety Check: If Liquid didn't render the mount, stop.
+  if (!mountEl) return; 
 
-  // Validation: If no URL is set in Theme Editor, stop here.
-  if (!baseUrl) {
-    console.warn('[Configurator] No App URL found. Please configure it in the Theme Editor.');
-    return;
-  }
+  const baseUrl = mountEl.getAttribute('data-configurator-base-url');
+  if (!baseUrl) return;
 
-  // Security: Extract the origin (e.g., "https://armandsstudio.com") for safe messaging
+  // Security: Calculate the target origin (e.g. "https://armandsstudio.com")
   let targetOrigin = '*';
-  try {
-    targetOrigin = new URL(baseUrl).origin;
-  } catch (e) {
-    console.error('[Configurator] Invalid App URL format:', baseUrl);
-    return;
-  }
+  try { targetOrigin = new URL(baseUrl).origin; } catch (e) {}
 
   let iframe = null;
+  let isIframeLoaded = false;
 
-  // --- 2. THE CREATOR (Opens Overlay & Injects Iframe) ---
-  function openConfigurator() {
+  // 2. THE SENDER: The actual postMessage logic
+  function sendSignal(presetId) {
+    if (!iframe || !iframe.contentWindow) return;
+    
+    const message = { 
+      type: 'REPLACE_CONFIGURATION', 
+      payload: { preset: presetId } // <--- SEND THE ACTUAL ID
+    };
+    
+    iframe.contentWindow.postMessage(message, targetOrigin);
+    console.log('[Bridge] Sent:', presetId);
+  }
+
+  // 3. THE LOADER: Handles creating the iframe safely
+  function openConfigurator(presetId) {
+    // Scenario A: First click (Create Iframe)
     if (!iframe) {
       iframe = document.createElement('iframe');
       iframe.src = baseUrl;
       iframe.style.width = '100%'; 
       iframe.style.height = '100%';
       iframe.style.border = 'none';
-      iframe.allow = "camera; microphone; fullscreen; clipboard-write"; 
+      iframe.allow = "camera; microphone; fullscreen; clipboard-write";
+      
+      // THE EVENT: Wait for load, then send
+      iframe.onload = () => {
+        isIframeLoaded = true;
+        sendSignal(presetId);
+      };
+      
       mountEl.appendChild(iframe);
+    } 
+    // Scenario B: Second click (Iframe exists)
+    else if (isIframeLoaded) {
+      sendSignal(presetId);
     }
-    
+
     document.body.classList.add('configurator-open');
   }
 
-  // --- 3. THE BRIDGE (Sends the Signal) ---
-  function sendSignal(type, payload) {
-    if (!iframe || !iframe.contentWindow) return;
+  // 4. THE LISTENER: Global click handler
+  document.addEventListener('click', (e) => {
+    // Did we click a Configurator Button?
+    const btn = e.target.closest('.js-open-configurator');
     
-    const message = { type, payload };
-    // Securely send only to our trusted App URL
-    iframe.contentWindow.postMessage(message, targetOrigin);
-    console.log('[Bridge] Sent:', message, 'to', targetOrigin);
-  }
-
-  // --- 4. THE TRIGGER (Wires it all together) ---
-  document.querySelectorAll('.js-open-configurator').forEach(btn => {
-    btn.addEventListener('click', (e) => {
+    if (btn) {
       e.preventDefault();
       
-      // A. Open the UI
-      openConfigurator();
-
-      // B. Wait 1.5s for React to boot, then switch to Catcher
-      setTimeout(() => {
-        sendSignal('REPLACE_CONFIGURATION', { preset: 'catcher' });
-      }, 1500);
-    });
+      // READ THE DATA from the Block
+      const presetId = btn.getAttribute('data-preset-id');
+      
+      // EXECUTE
+      openConfigurator(presetId);
+    }
   });
 
 })();
