@@ -302,7 +302,7 @@ export const UI_PRESENTATION_CONFIG: UIPresentationConfig = {
 // ===================================================================
 
 export const PRESETS = {
-    default: {
+    'open-back': {
         build: { imageSelection: 'imgOpt1', position: 'inf', size: '1100', handOpeningSize: 'adt', stiffness: 'std', throwingHand: 'rh', backStyle: 'opn', webType: 'mtp' },
         thumbName: { type: 'text', text: 'Thumb', font: 'LOBSTER', colorId: 'gy' },
         pinkyName: { type: 'text', text: 'Pinky', font: 'ROBOTO', colorId: 'sl' },
@@ -328,6 +328,62 @@ export const PRESETS = {
         [ZONES.WRIST_LOGO]:     { colorId: 'gd' },
         [ZONES.WRIST_LOGO_OUTLINE]: { colorId: 'sl' },
         [ZONES.FINGER_LOGO]:    { colorId: 'gd' },
+    } as GloveConfiguration,
+
+    'close-back': {
+        build: { imageSelection: 'imgOpt1', position: 'out', size: '1275', handOpeningSize: 'adt', stiffness: 'std', throwingHand: 'rh', backStyle: 'cls', webType: 'hwb' },
+        thumbName: { type: 'text', text: 'Close', font: 'LOBSTER', colorId: 'gy' },
+        pinkyName: { type: 'text', text: 'Back', font: 'ROBOTO', colorId: 'sl' },
+        [ZONES.THUMB_INNER]:    { colorId: 'rd' },
+        [ZONES.INDEX]:          { colorId: 'bl' },
+        [ZONES.MIDDLE_INNER]:   { colorId: 'fr' },
+        [ZONES.MIDDLE_OUTER]:   { colorId: 'rd' },
+        [ZONES.RING_INNER]:     { colorId: 'gd' },
+        [ZONES.RING_OUTER]:     { colorId: 'pu' },
+        [ZONES.WEB]:            { colorId: 'rd' },
+        [ZONES.WRIST]:          { colorId: 'sl' },
+        [ZONES.WRIST_STRAP]:    { colorId: 'sl' },
+        [ZONES.PAD_HOOD]:       { colorId: 'br' },
+        [ZONES.THUMB_OUTER]:    { colorId: 'fr' },
+        [ZONES.PINKY_INNER]:    { colorId: 'pu' },
+        [ZONES.PINKY_OUTER]:    { colorId: 'gd' },
+        [ZONES.PALM]:           { colorId: 'br' },
+        [ZONES.LINER]:          { colorId: 'ch' },
+        [ZONES.BINDING]:        { colorId: 'br' },
+        [ZONES.WELTING]:        { colorId: 'br' },
+        [ZONES.LACE]:           { colorId: 'br' },
+        [ZONES.STITCHING]:      { colorId: 'gd' },
+        [ZONES.WRIST_LOGO]:     { colorId: 'gd' },
+        [ZONES.WRIST_LOGO_OUTLINE]: { colorId: 'sl' },
+        [ZONES.FINGER_LOGO]:    { colorId: 'gd' },
+    } as GloveConfiguration,
+
+    'first-base': {
+        build: { imageSelection: 'imgOpt1', position: 'fb', size: '1250', handOpeningSize: 'adt', stiffness: 'std', throwingHand: 'rh', backStyle: 'opn', webType: 'pst' },
+        thumbName: { type: 'text', text: 'First', font: 'LOBSTER', colorId: 'br' },
+        pinkyName: { type: 'text', text: 'Base', font: 'ROBOTO', colorId: 'br' },
+        [ZONES.THUMB_INNER]:    { colorId: 'or' },
+        [ZONES.INDEX]:          { colorId: 'or' },
+        [ZONES.WEB]:            { colorId: 'br' },
+        [ZONES.WRIST]:          { colorId: 'or' },
+        [ZONES.PAD_HOOD]:       { colorId: 'br' },
+        [ZONES.THUMB_OUTER]:    { colorId: 'or' },
+        [ZONES.PALM]:           { colorId: 'or' },
+        [ZONES.LINER]:          { colorId: 'ch' },
+        [ZONES.BINDING]:        { colorId: 'br' },
+        [ZONES.WELTING]:        { colorId: 'br' },
+        [ZONES.LACE]:           { colorId: 'br' },
+        [ZONES.STITCHING]:      { colorId: 'gd' },
+        [ZONES.WRIST_LOGO]:     { colorId: 'gd' },
+        [ZONES.WRIST_LOGO_OUTLINE]: { colorId: 'br' },
+        [ZONES.FINGER_LOGO]:    { colorId: 'gd' },
+        [ZONES.MIDDLE_INNER]:   { colorId: 'or' },
+        [ZONES.MIDDLE_OUTER]:   { colorId: 'or' },
+        [ZONES.RING_INNER]:     { colorId: 'or' },
+        [ZONES.RING_OUTER]:     { colorId: 'or' },
+        [ZONES.WRIST_STRAP]:    { colorId: 'or' },
+        [ZONES.PINKY_INNER]:    { colorId: 'or' },
+        [ZONES.PINKY_OUTER]:    { colorId: 'or' },
     } as GloveConfiguration,
 
     catcher: {
@@ -362,7 +418,7 @@ export const PRESETS = {
 export type PresetId = keyof typeof PRESETS;
 
 export const initialState: AppState = {
-    configuration: PRESETS.default,
+    configuration: PRESETS['open-back'],
     commerce: {
         variantId: null,
         quantity: 1,
@@ -370,51 +426,3 @@ export const initialState: AppState = {
     isLoading: false,
     lastActivatedPartType: null,
 };
-
-// ===================================================================
-// 6. THE ENTRY POINT DICTIONARY (THE SOURCE OF TRUTH)
-// ===================================================================
-// This matches the "Key" you type in Shopify to a specific set of Rules.
-
-export interface EntryPointRule {
-    basePresetId: PresetId;  // Which visual preset to load (from Section 5)
-    isLocked: boolean;       // RULE: Is the user trapped in this model?
-    label: string;           // Just for your reference
-}
-
-export const ENTRY_POINT_DICTIONARY: Record<string, EntryPointRule> = {
-    // 1. STANDARD DEFAULT (Open)
-    // Shopify Key: 'default'
-    'default': {
-        basePresetId: 'default',
-        isLocked: false,
-        label: "Standard Builder (Open)"
-    },
-
-    // 2. STANDARD CATCHER (Open)
-    // Shopify Key: 'catcher'
-    'catcher': {
-        basePresetId: 'catcher',
-        isLocked: false, 
-        label: "Catcher Standard (Open)"
-    },
-
-    // 3. PROMO CATCHER (Locked)
-    // Shopify Key: 'catcher_locked'
-    'catcher_locked': {
-        basePresetId: 'catcher',
-        isLocked: true,             // <--- THE TRAP
-        label: "Catcher Special (Locked)"
-    },
-    
-    // 4. FIRST BASE (Using default visuals but overriding behavior)
-    // Shopify Key: 'first_base_locked'
-    'first_base_locked': {
-        basePresetId: 'default',    // Uses default colors...
-        isLocked: true,             // ...but locks the shell
-        label: "First Base Promo"
-    }
-};
-
-// This helper type ensures we can refer to these keys safely elsewhere
-export type ValidEntryPointKey = keyof typeof ENTRY_POINT_DICTIONARY;

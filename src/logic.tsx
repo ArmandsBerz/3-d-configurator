@@ -121,7 +121,7 @@ const deepCopy = <T,>(obj: T): T => {
 
 // Helper to ensure a loaded preset has all necessary fields by merging with default
 const fillMissing = (incoming: Partial<GloveConfiguration>): GloveConfiguration => {
-    const base = deepCopy(PRESETS.default);
+    const base = deepCopy(PRESETS['open-back']);
     
     // We do a shallow merge of the top-level keys. 
     // Note: For deep nested objects like 'build', simple spread might overwrite nested defaults if incoming is partial.
@@ -140,6 +140,12 @@ const fillMissing = (incoming: Partial<GloveConfiguration>): GloveConfiguration 
 
 export const getPresetConfig = (id: PresetId): GloveConfiguration => {
     const rawPreset = PRESETS[id];
+    
+    if (!rawPreset) {
+        // Fallback to open-back if ID is invalid or not found
+        return deepCopy(PRESETS['open-back']);
+    }
+
     // Safety 1 & 2: Deep Copy + Fill Missing
     return fillMissing(rawPreset);
 };
