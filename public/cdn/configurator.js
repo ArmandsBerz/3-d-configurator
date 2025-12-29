@@ -73,4 +73,15 @@
     }
   });
 
+  // 5. THE RECEIVER: Listen for the "Exit" command from React
+  window.addEventListener('message', (event) => {
+    // Logic Check: Is this the specific "EXIT_APP" command?
+    if (event.data && event.data.type === 'EXIT_APP') {
+        console.log('[Bridge] Closing Configurator');
+        
+        // The Action: Remove the class that shows the overlay
+        document.body.classList.remove('configurator-open');
+    }
+  });
+
 })();
