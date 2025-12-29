@@ -35,7 +35,21 @@
     // Scenario A: First click (Create Iframe)
     if (!iframe) {
       iframe = document.createElement('iframe');
-      iframe.src = baseUrl;
+      
+      // --- READER LOGIC: Sync to App ---
+      // Check if there is a saved design in the parent URL
+      const urlParams = new URLSearchParams(window.location.search);
+      const configParam = urlParams.get('config');
+
+      // Append it to the iframe src so React boots with it
+      if (configParam) {
+        const separator = baseUrl.includes('?') ? '&' : '?';
+        iframe.src = baseUrl + separator + 'config=' + configParam;
+      } else {
+        iframe.src = baseUrl;
+      }
+      // ---------------------------------
+
       iframe.style.width = '100%'; 
       iframe.style.height = '100%';
       iframe.style.border = 'none';
@@ -73,7 +87,7 @@
     }
   });
 
-  // 5. THE RECEIVER: Listen for the "Exit" command from React
+  // 5. THE RECEIVER: Listen for messages from React
   window.addEventListener('message', (event) => {
     // Logic Check: Is this the specific "EXIT_APP" command?
     if (event.data && event.data.type === 'EXIT_APP') {
@@ -82,6 +96,17 @@
         // The Action: Remove the class that shows the overlay
         document.body.classList.remove('configurator-open');
     }
+
+    // --- WRITER LOGIC: Sync to Browser ---
+    // Update the address bar when the user clicks options in the app
+    if (event.data && event.data.type === 'CUSTOMIZER_STATE') {
+        const query = event.data.query; // e.g. "config=v1:abc..."
+        if (query) {
+            const newUrl = window.location.pathname + '?' + query;
+            window.history.replaceState(null, '', newUrl);
+        }
+    }
+    // -------------------------------------
   });
 
 })();
