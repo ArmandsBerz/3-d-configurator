@@ -109,4 +109,11 @@
     // -------------------------------------
   });
 
+  // 6. AUTO-START: Open immediately if a config exists in the URL
+  const initialParams = new URLSearchParams(window.location.search);
+  if (initialParams.has('config')) {
+      // Pass 'null' because the Reader logic will grab the config from the URL automatically.
+      openConfigurator(null);
+  }
+
 })();
