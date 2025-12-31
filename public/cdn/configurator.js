@@ -53,12 +53,25 @@
       iframe.style.width = '100%'; 
       iframe.style.height = '100%';
       iframe.style.border = 'none';
-      iframe.allow = "camera; microphone; fullscreen; clipboard-write";
       
+      // 1. UPDATE PERMISSIONS
+      // Add 'web-share' to allow the iframe to use the native mobile share sheet
+      iframe.allow = "camera; microphone; fullscreen; clipboard-write; web-share";
+      
+      // 2. UPDATE ONLOAD
       // THE EVENT: Wait for load, then send
       iframe.onload = () => {
         isIframeLoaded = true;
         sendSignal(presetId);
+
+        // --- NEW: Send initial Phantom URL immediately ---
+        try {
+          iframe.contentWindow.postMessage(
+            { type: 'PHANTOM_URL', url: window.location.href },
+            targetOrigin
+          );
+        } catch (e) {}
+        // ------------------------------------------------
       };
       
       mountEl.appendChild(iframe);
@@ -99,11 +112,22 @@
 
     // --- WRITER LOGIC: Sync to Browser ---
     // Update the address bar when the user clicks options in the app
+    // 3. UPDATE LISTENER: Send the phantom URL back to the iframe
     if (event.data && event.data.type === 'CUSTOMIZER_STATE') {
         const query = event.data.query; // e.g. "config=v1:abc..."
         if (query) {
             const newUrl = window.location.pathname + '?' + query;
             window.history.replaceState(null, '', newUrl);
+
+            // --- NEW: Send updated Phantom URL to iframe ---
+            try {
+                // Send back to the specific iframe that messaged us
+                event.source.postMessage(
+                    { type: 'PHANTOM_URL', url: window.location.href },
+                    targetOrigin
+                );
+            } catch (e) {}
+            // ----------------------------------------------
         }
     }
     // -------------------------------------

@@ -1610,6 +1610,9 @@ const UI = () => {
     // For Desktop state
     const [openAccordion, setOpenAccordion] = useState<string | null>('build');
 
+    // Add this near your other refs (around line 1260)
+    const phantomUrlRef = useRef<string | null>(null);
+
     // --- MODIFICATION: Add useEffect for checking initial load status ---
     useEffect(() => {
         if (initialLoadResult.status === 'failed') {
@@ -1623,6 +1626,12 @@ const UI = () => {
         const handleParentMessage = (event: MessageEvent) => {
             const data = event.data;
             if (!data || typeof data !== 'object') return;
+
+            // --- ADDED: Store the Phantom URL ---
+            if (data.type === 'PHANTOM_URL' && typeof data.url === 'string') {
+                phantomUrlRef.current = data.url;
+            }
+            // ------------------------------------
 
             if (data.type === BRIDGE_MESSAGE_TYPES.SHARE_COMPLETE) {
                 if (data.success) {
@@ -1870,45 +1879,36 @@ const UI = () => {
     useEscapeKey(appContainerRef, handleClosePanel, !!openAccordionOptionMobile);
 
     const handleShare = useCallback(async () => {
-        // If we're running in an iframe, delegate sharing to the parent.
-        if (isInIframe()) {
-            try {
-                const configUrl = generateShareableURL(state.configuration);
-                const urlObj = new URL(configUrl, window.location.origin);
-                const configParam = urlObj.searchParams.get('config') || '';
-
-                postToParent({
-                    type: BRIDGE_MESSAGE_TYPES.REQUEST_SHARE,
-                    payload: { config: configParam }
-                });
-            } catch (err) {
-                setSnackbarMessage('Failed to prepare share link.');
-            }
-            return;
-        }
-
-        // Standalone mode: keep the existing behavior.
-        // 1. Generate the correct, up-to-the-minute URL from the state.
+        // 1. Generate the fallback URL (direct link to app)
         const configUrl = generateShareableURL(state.configuration);
 
-        // 2. IMPORTANT: Force the browser's address bar to update IMMEDIATELY.
-        try {
-            window.history.replaceState({}, '', configUrl);
-        } catch (err) {
-            console.error('Could not update browser URL', err); // Log the error but don't stop the function
-        }
+        // 2. Determine the URL to share:
+        // If we are in an iframe AND we have received a URL from Shopify, use that.
+        // Otherwise, use the direct app URL.
+        const urlToShare = isInIframe() && phantomUrlRef.current 
+            ? phantomUrlRef.current 
+            : configUrl;
 
-        // 3. Now, share that same URL.
-        const shareData = { title: 'My Custom Glove', text: 'Check out the glove I designed!', url: configUrl };
+        // 3. Share Logic (Native Share Sheet or Clipboard)
+        // Note: We perform this HERE to preserve the "User Gesture"
+        const shareData = { 
+            title: 'My Custom Glove', 
+            text: 'Check out the glove I designed!', 
+            url: urlToShare 
+        };
+
         if (navigator.share) {
-            try { await navigator.share(shareData); } catch (err) { console.log('Share failed', err); }
+            try { 
+                await navigator.share(shareData); 
+            } catch (err) { 
+                console.log('Share failed or cancelled', err); 
+            }
         } else {
-            // --- MODIFICATION: Use Snackbar instead of alert ---
             try {
-                await navigator.clipboard.writeText(configUrl);
-                setSnackbarMessage('Share link copied!'); // Show success snackbar
+                await navigator.clipboard.writeText(urlToShare);
+                setSnackbarMessage('Share link copied!'); 
             } catch (err) {
-                setSnackbarMessage('Failed to copy link.'); // Show error snackbar
+                setSnackbarMessage('Failed to copy link.'); 
             }
         }
     }, [state.configuration]);
