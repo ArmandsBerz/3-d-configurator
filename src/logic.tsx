@@ -288,25 +288,30 @@ export const loadConfigurationFromURL = (): LoadResult => {
         const urlParams = new URLSearchParams(window.location.search);
         const versionedPayload = urlParams.get('config');
 
+        // 1. Handle Empty/New Load
         if (!versionedPayload) {
+            // [Keep existing empty/new load logic]
             const entryFamily = urlParams.get('entry_family');
             const entryVariant = urlParams.get('entry_variant');
 
             if (!entryFamily && !entryVariant) {
+                // --- NEW: Check for basic entry hint here too! ---
+                const entryHint = urlParams.get('entry');
+                if (entryHint && entryHint in PRESETS) {
+                     return { 
+                        configuration: getPresetConfig(entryHint as PresetId), 
+                        status: 'success' 
+                    };
+                }
+                // -------------------------------------------------
                 return { configuration: initialState.configuration, status: 'empty' };
             }
-
+            
             const config = cloneInitialConfig();
-
-            // Note: entry_family Logic removed as per instruction (Translation Layer Deleted)
-
-            return {
-                configuration: config,
-                variantId: entryVariant || null,
-                status: 'success'
-            };
+            return { configuration: config, variantId: entryVariant || null, status: 'success' };
         }
 
+        // 2. Handle Config Load
         const [version, data] = versionedPayload.split(':', 2);
 
         if (version !== CONFIG_VERSION) {
@@ -328,7 +333,22 @@ export const loadConfigurationFromURL = (): LoadResult => {
         return { configuration: deserialize(serializedString), status: 'success' };
 
     } catch (error) {
-        console.warn('Could not load config from URL. Using default.', error);
+        console.warn('Config corrupted. Attempting fallback to hint.', error);
+        
+        // --- FALLBACK LOGIC ---
+        const urlParams = new URLSearchParams(window.location.search);
+        const entryHint = urlParams.get('entry'); // Grab the hint from iframe src
+
+        // If hint exists, load THAT glove instead of default
+        if (entryHint && entryHint in PRESETS) {
+            console.log(`Restoring context: ${entryHint}`);
+            return { 
+                configuration: getPresetConfig(entryHint as PresetId), 
+                status: 'failed' // Keeps the "Invalid Link" warning visible
+            };
+        }
+        // ----------------------
+
         return { configuration: initialState.configuration, status: 'failed' };
     }
 };

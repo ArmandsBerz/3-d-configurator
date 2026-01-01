@@ -33,17 +33,37 @@
 
   // 3. THE LOADER
   function openConfigurator(presetId) {
+    // --- ENTRY HINT LOGIC (MEMORY FIX) ---
+    // 1. If we have a preset (click), save it to memory.
+    if (presetId) {
+      try { sessionStorage.setItem('glove_entry_hint', presetId); } catch (e) {}
+    }
+    
+    // 2. Retrieve the hint from memory (or URL param) to survive reloads.
+    let storedHint = null;
+    try { storedHint = sessionStorage.getItem('glove_entry_hint'); } catch (e) {}
+    
+    const urlParams = new URLSearchParams(window.location.search);
+    // Priority: Clicked Button > URL Param > Session Memory
+    const entryHint = presetId || urlParams.get('entry') || storedHint;
+    
+    // 3. Prepare the param for the iframe src
+    const entryParam = entryHint ? '&entry=' + encodeURIComponent(entryHint) : '';
+    // -------------------------------------
+
     if (!iframe) {
       iframe = document.createElement('iframe');
       
-      const urlParams = new URLSearchParams(window.location.search);
       const configParam = urlParams.get('config');
 
       if (configParam) {
         const separator = baseUrl.includes('?') ? '&' : '?';
-        iframe.src = baseUrl + separator + 'config=' + configParam;
+        // Pass config AND entry hint (with encoding safety)
+        iframe.src = baseUrl + separator + 'config=' + encodeURIComponent(configParam) + entryParam;
       } else {
-        iframe.src = baseUrl;
+        const separator = baseUrl.includes('?') ? '&' : '?';
+        // Pass entry hint even without config (remove leading & if it's the first param)
+        iframe.src = baseUrl + separator + (entryParam.replace('&', '') || '');
       }
 
       iframe.style.width = '100%'; 
