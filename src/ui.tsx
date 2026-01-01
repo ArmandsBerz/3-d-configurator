@@ -1627,11 +1627,14 @@ const UI = () => {
             const data = event.data;
             if (!data || typeof data !== 'object') return;
 
-            // --- ADDED: Store the Phantom URL ---
+            // --- FIX FROM DEEPSEEK: SANITY CHECK ---
+            // Ensure it is a string and looks like a valid http/https URL
             if (data.type === 'PHANTOM_URL' && typeof data.url === 'string') {
-                phantomUrlRef.current = data.url;
+                 if (data.url.startsWith('http')) {
+                     phantomUrlRef.current = data.url;
+                 }
             }
-            // ------------------------------------
+            // ---------------------------------------
 
             if (data.type === BRIDGE_MESSAGE_TYPES.SHARE_COMPLETE) {
                 if (data.success) {
