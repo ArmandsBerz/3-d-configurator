@@ -335,19 +335,7 @@ export const loadConfigurationFromURL = (): LoadResult => {
     } catch (error) {
         console.warn('Config corrupted. Attempting fallback to hint.', error);
         
-        // --- FALLBACK LOGIC ---
-        const urlParams = new URLSearchParams(window.location.search);
-        const entryHint = urlParams.get('entry'); // Grab the hint from iframe src
-
-        // If hint exists, load THAT glove instead of default
-        if (entryHint && entryHint in PRESETS) {
-            console.log(`Restoring context: ${entryHint}`);
-            return { 
-                configuration: getPresetConfig(entryHint as PresetId), 
-                status: 'failed' // Keeps the "Invalid Link" warning visible
-            };
-        }
-        // ----------------------
+        // --- FALLBACK LOGIC DELETED FOR "KILL THE FAST RECEIVER" ---
 
         return { configuration: initialState.configuration, status: 'failed' };
     }

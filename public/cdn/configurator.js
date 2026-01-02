@@ -45,7 +45,7 @@
     
     const urlParams = new URLSearchParams(window.location.search);
     // Priority: Clicked Button > URL Param > Session Memory
-    const entryHint = presetId || urlParams.get('entry') || storedHint;
+    const entryHint = presetId || storedHint;
     
     // 3. Prepare the param for the iframe src
     const entryParam = entryHint ? '&entry=' + encodeURIComponent(entryHint) : '';
