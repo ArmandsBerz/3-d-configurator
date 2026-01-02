@@ -229,7 +229,8 @@ export const serialize = (config: GloveConfiguration): string => {
         }
     }
 
-    return pairs.join('_');
+    // --- FIX 1: SWAP UNDERSCORE FOR PIPE ---
+    return pairs.join('|');
 };
 
 export const deserialize = (encodedString: string): GloveConfiguration => {
@@ -237,7 +238,11 @@ export const deserialize = (encodedString: string): GloveConfiguration => {
     // Instead of raw JSON.parse of initialState, we use our helper to get a fresh base.
     const config = deepCopy(initialState.configuration); 
     
-    const pairs = encodedString.split('_');
+    // --- FIX 1: SPLIT BY PIPE (With Fallback) ---
+    let pairs = encodedString.split('|');
+    if (pairs.length === 1 && encodedString.includes('_')) {
+        pairs = encodedString.split('_');
+    }
 
     for (const pair of pairs) {
         const separatorIndex = pair.indexOf('-');
@@ -322,7 +327,12 @@ export const loadConfigurationFromURL = (): LoadResult => {
             throw new Error('No data in payload');
         }
 
-        const base64 = data.replace(/-/g, '+').replace(/_/g, '/');
+        // --- FIX 2: RESTORE PADDING ---
+        let base64 = data.replace(/-/g, '+').replace(/_/g, '/');
+        while (base64.length % 4) {
+            base64 += '=';
+        }
+
         const compressed = fflate.strToU8(atob(base64), true);
         const serializedString = fflate.strFromU8(fflate.inflateSync(compressed));
 
