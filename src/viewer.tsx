@@ -194,12 +194,12 @@ class ColorSwapPlugin extends MaterialPluginBase {
     // --- START OF STEP 3 MODIFICATION ---
     // --- START OF A.1 Update method ---
     public updateZonePaletteIndex(zoneIndex: number, paletteIndex: number): void {
-      if (zoneIndex < 0 || zoneIndex >= this._zoneCount) return;
-      if (paletteIndex < 0 || paletteIndex >= this._paletteColorCount) return;
-    
-      const o = zoneIndex * 3;
-      this._pointerBuf[o] = paletteIndex;
-      this._pointerLUT.update(this._pointerBuf); // re-upload small 1×N strip
+        if (zoneIndex < 0 || zoneIndex >= this._zoneCount) return;
+        if (paletteIndex < 0 || paletteIndex >= this._paletteColorCount) return;
+
+        const o = zoneIndex * 3;
+        this._pointerBuf[o] = paletteIndex;
+        this._pointerLUT.update(this._pointerBuf); // re-upload small 1×N strip
     }
     // --- END OF A.1 Update method ---
     // --- END OF STEP 3 MODIFICATION ---
@@ -519,13 +519,13 @@ interface BitmapFontData {
 // Map logical font ids to asset base names
 // --- START OF PHASE 2.2 ---
 const FONT_CONFIG = Object.fromEntries(
-  FONT_REGISTRY.map(font => [
-    font.id, // 'LOBSTER' | 'ROBOTO' | ...
-    {
-      baseName: font.baseName,
-      targetLineFactor: font.targetLineFactor,
-    },
-  ])
+    FONT_REGISTRY.map(font => [
+        font.id, // 'LOBSTER' | 'ROBOTO' | ...
+        {
+            baseName: font.baseName,
+            targetLineFactor: font.targetLineFactor,
+        },
+    ])
 ) as Record<FontId, { baseName: string; targetLineFactor?: number }>;
 // --- END OF PHASE 2.2 ---
 
@@ -557,7 +557,7 @@ export class SceneManager {
     private _normalDTs = new Map<string, DynamicTexture>();
     private _lastText = new Map<string, string>();
 
-    constructor(canvas: HTMLCanvasElement, onReady: (manager: SceneManager) => void) {
+    constructor(canvas: HTMLCanvasElement, onReady: (manager: SceneManager) => void, initialModelName: string) {
         this.engine = new Engine(canvas, true, { alpha: true });
         this.scene = new Scene(this.engine);
         this.assetManager = new AssetManager(this.scene);
@@ -577,66 +577,66 @@ export class SceneManager {
         // Load bitmap fonts once
         this._bitmapFontReady = this._initBitmapFonts();
 
-        this.loadInitialAssets(onReady);
+        this.loadInitialAssets(onReady, initialModelName);
 
         // ... inside the constructor ...
 
         this.engine.runRenderLoop(() => {
-            
+
             // --- THIS IS THE NEW "PIXEL BUDGET" LOGIC ---
             if (this.activeShellPlugin && this.activeShellName && this.gloveShells.has(this.activeShellName)) {
                 const activeMesh = this.gloveShells.get(this.activeShellName);
                 if (activeMesh) { // <-- guard for TS
-                  activeMesh.computeWorldMatrix(true); // Ensure matrices are up to date
+                    activeMesh.computeWorldMatrix(true); // Ensure matrices are up to date
 
-                  const localCorners = activeMesh.getBoundingInfo().boundingBox.vectors;
-                  const worldMatrix = activeMesh.getWorldMatrix();
-                  const transformMatrix = this.scene.getTransformMatrix();
-                  const viewport = this.camera.viewport.toGlobal(this.engine.getRenderWidth(), this.engine.getRenderHeight());
+                    const localCorners = activeMesh.getBoundingInfo().boundingBox.vectors;
+                    const worldMatrix = activeMesh.getWorldMatrix();
+                    const transformMatrix = this.scene.getTransformMatrix();
+                    const viewport = this.camera.viewport.toGlobal(this.engine.getRenderWidth(), this.engine.getRenderHeight());
 
-                  let minX = Infinity, minY = Infinity;
-                  let maxX = -Infinity, maxY = -Infinity;
-                  let validPixels = 0;
+                    let minX = Infinity, minY = Infinity;
+                    let maxX = -Infinity, maxY = -Infinity;
+                    let validPixels = 0;
 
-                  // Project all 8 corners of the box to 2D screen space
-                  for (const corner of localCorners) {
-                    const screenPos = Vector3.Project(corner, worldMatrix, transformMatrix, viewport);
+                    // Project all 8 corners of the box to 2D screen space
+                    for (const corner of localCorners) {
+                        const screenPos = Vector3.Project(corner, worldMatrix, transformMatrix, viewport);
 
-                    // Only count corners that are in front of the camera
-                    if (screenPos.z > 0 && screenPos.z < 1) {
-                      minX = Math.min(minX, screenPos.x);
-                      maxX = Math.max(maxX, screenPos.x);
-                      minY = Math.min(minY, screenPos.y);
-                      maxY = Math.max(maxY, screenPos.y);
-                      validPixels++;
+                        // Only count corners that are in front of the camera
+                        if (screenPos.z > 0 && screenPos.z < 1) {
+                            minX = Math.min(minX, screenPos.x);
+                            maxX = Math.max(maxX, screenPos.x);
+                            minY = Math.min(minY, screenPos.y);
+                            maxY = Math.max(maxY, screenPos.y);
+                            validPixels++;
+                        }
                     }
-                  }
 
-                  let enableSdf = 1.0; // Default to ON
+                    let enableSdf = 1.0; // Default to ON
 
-                  if (validPixels > 0) {
-                    const pixelHeight = maxY - minY;
+                    if (validPixels > 0) {
+                        const pixelHeight = maxY - minY;
 
-                    // If the object is less than 250px tall, turn off SDF
-                    const SDF_PIXEL_HEIGHT_THRESHOLD = 470.0;
+                        // If the object is less than 250px tall, turn off SDF
+                        const SDF_PIXEL_HEIGHT_THRESHOLD = 470.0;
 
-                    enableSdf = (pixelHeight > SDF_PIXEL_HEIGHT_THRESHOLD) ? 1.0 : 0.0;
-                  } else {
-                    enableSdf = 0.0; // Object is off-screen
-                  }
+                        enableSdf = (pixelHeight > SDF_PIXEL_HEIGHT_THRESHOLD) ? 1.0 : 0.0;
+                    } else {
+                        enableSdf = 0.0; // Object is off-screen
+                    }
 
-                  // Set the uniform for the shader
-                  this.activeShellPlugin.enableSdf = enableSdf;
-                  if (this.activeWebPlugin) {
-                    this.activeWebPlugin.enableSdf = enableSdf;
-                  }
+                    // Set the uniform for the shader
+                    this.activeShellPlugin.enableSdf = enableSdf;
+                    if (this.activeWebPlugin) {
+                        this.activeWebPlugin.enableSdf = enableSdf;
+                    }
                 }
             }
             // --- END OF NEW LOGIC ---
 
             this.scene.render();
         });
-        
+
         this.resizeObserver = new ResizeObserver(() => this.engine.resize());
         this.resizeObserver.observe(canvas);
     }
@@ -651,7 +651,7 @@ export class SceneManager {
         // Be strict: avoid seams/bleeding
         colorIdTexture.wrapU = colorIdTexture.wrapV = Constants.TEXTURE_CLAMP_ADDRESSMODE;
         colorIdTexture.hasAlpha = false;
-        
+
         material.albedoTexture = colorIdTexture;
         // --- END OF 2. ---
 
@@ -668,8 +668,8 @@ export class SceneManager {
 
         // --- START OF FIX B: Use imported COLOR_OPTIONS ---
         const paletteColorsFromLogic: Color3[] =
-          COLOR_OPTIONS.map(({ hex }) => Color3.FromHexString(hex).toLinearSpace())
-                       .slice(0, 20); // Assuming palette size is fixed at 20 based on COLOR_OPTIONS
+            COLOR_OPTIONS.map(({ hex }) => Color3.FromHexString(hex).toLinearSpace())
+                .slice(0, 20); // Assuming palette size is fixed at 20 based on COLOR_OPTIONS
         // --- END OF FIX B ---
 
         const gloveConfig: ColorSwapConfig = {
@@ -686,11 +686,11 @@ export class SceneManager {
 
         // Wire SDF (required for smoothing)
         const sdfTexture = new Texture(
-          `${rootUrl}${modelName}SDF.png`,
-          this.scene,
-          /*noMipmap*/ false,
-          /*invertY*/ false,
-          Constants.TEXTURE_TRILINEAR_SAMPLINGMODE
+            `${rootUrl}${modelName}SDF.png`,
+            this.scene,
+            /*noMipmap*/ false,
+            /*invertY*/ false,
+            Constants.TEXTURE_TRILINEAR_SAMPLINGMODE
         );
         sdfTexture.gammaSpace = false; // data texture
         sdfTexture.wrapU = sdfTexture.wrapV = Constants.TEXTURE_CLAMP_ADDRESSMODE;
@@ -699,9 +699,8 @@ export class SceneManager {
         return plugin;
     }
 
-    private async loadInitialAssets(onReady: (manager: SceneManager) => void) {
-        const initialGloveName = 'openBack';
-        await this.updateBuild(initialGloveName);
+    private async loadInitialAssets(onReady: (manager: SceneManager) => void, modelName: string) {
+        await this.updateBuild(modelName);
         this.isSceneReady = true;
         onReady(this);
     }
@@ -875,7 +874,7 @@ export class SceneManager {
         // Start pen at some left padding; baseline at ~center vertically
         const paddingX = 16;
         let penX = paddingX;
-        
+
         // 1. Calculate the Y position for the *top* of the centered line
         const lineTopY = (texH - lineAdvance) * 0.5;
         // 2. Calculate the baseline Y (we still need this for line breaks)
@@ -1063,20 +1062,24 @@ export class SceneManager {
 
 interface BabylonCanvasProps {
     onSceneReady: (sceneManager: SceneManager) => void;
+    initialModelName: string;
 }
 
-const BabylonCanvas = ({ onSceneReady }: BabylonCanvasProps) => {
+const BabylonCanvas = ({ onSceneReady, initialModelName }: BabylonCanvasProps) => {
     const reactCanvas = useRef<HTMLCanvasElement | null>(null);
 
     useEffect(() => {
         const { current: canvas } = reactCanvas;
         if (!canvas) return;
 
-        const sceneManager = new SceneManager(canvas, onSceneReady);
+        // Initialize ONCE with the initial value
+        const sceneManager = new SceneManager(canvas, onSceneReady, initialModelName);
 
         return () => {
             sceneManager.dispose();
         };
+        // ESLint disable is required because we intentionally ignore updates to initialModelName
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [onSceneReady]);
 
     return <canvas ref={reactCanvas} style={{ width: '100%', height: '100%', outline: 'none' }} />;

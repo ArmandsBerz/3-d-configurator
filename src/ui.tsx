@@ -2205,6 +2205,11 @@ const useBridge = () => {
 const GloveAppContent = () => {
     const [sceneManager, setSceneManager] = useState<SceneManager | null>(null);
 
+    // --- ADDED FOR FIX ---
+    const { state } = useGloveConfigurator();
+    const initialShellName = getModelNameForBuild(state.configuration.build);
+    // --------------------
+
     // --- ACTIVATE RECEIVER HERE ---
     useBridge(); 
 
@@ -2213,7 +2218,10 @@ const GloveAppContent = () => {
 
             <div id="app-root" className="relative w-full h-[100dvh] bg-[#161616]">
                 <div id="babylon-container" className="absolute inset-0 z-10">
-                    <BabylonCanvas onSceneReady={setSceneManager} />
+                    <BabylonCanvas
+                        onSceneReady={setSceneManager}
+                        initialModelName={initialShellName} // <--- The new instruction
+                    />
                 </div>
                 <div id="ui-container" className="absolute inset-0 z-20 pointer-events-none">
                     <UI />
