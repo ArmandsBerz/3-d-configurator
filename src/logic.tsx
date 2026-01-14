@@ -1,6 +1,7 @@
-import { createContext, useContext } from 'react';
+import { createContext, useContext, useEffect } from 'react';
 import { SceneManager } from './viewer';
 import * as fflate from 'fflate';
+import { useGloveConfigurator } from './ui'; // Importing from UI to access State
 
 // --- IMPORT THE DATABASE (The "Universe" of the Glove) ---
 import {
@@ -8,16 +9,14 @@ import {
     COLOR_OPTIONS,
     buildOptionsData,
     webTypeOptions,
-    leatherOptions, // <--- Added this
-    fontOptions,    // <--- Added this
-    FONT_REGISTRY,  // <--- Added this (for viewer.tsx)
+    leatherOptions,
+    fontOptions,
+    FONT_REGISTRY,
     initialState,
-    PRESETS,        // <--- ADDED: Import PRESETS
-    PresetId,       // <--- ADDED: Import PresetId
-    GLOVE_PARTS_CONFIG,
-    GLOVE_TO_WEBS_MAP,
-    getModelNameForBuild,
-    UI_PRESENTATION_CONFIG, // <--- ADDED: The Data
+    PRESETS,
+    PresetId,
+    resolveProduct, // <--- The New Router
+    ProductDefinition, // <--- The New Schema
     // Types
     AppState,
     GloveConfiguration,
@@ -34,7 +33,6 @@ import {
     BuildThrowingId,
     BuildBackId,
     TextPart,
-    UIPresentationConfig, // <--- The Type
     UIPartGroup,
     UIPartGroupGallery,
     UIPartGroupSingle,
@@ -58,12 +56,11 @@ export type {
     BuildThrowingId,
     BuildBackId,
     TextPart,
-    UIPresentationConfig,
     UIPartGroup,
     UIPartGroupGallery,
     UIPartGroupSingle,
     CommerceState,
-    PresetId // <--- ADDED: Re-export PresetId
+    PresetId
 };
 
 export {
@@ -71,15 +68,12 @@ export {
     COLOR_OPTIONS,
     buildOptionsData,
     webTypeOptions,
-    leatherOptions, // <--- Re-exporting
-    fontOptions,    // <--- Re-exporting
-    FONT_REGISTRY,  // <--- Re-exporting
+    leatherOptions,
+    fontOptions,
+    FONT_REGISTRY,
     initialState,
-    PRESETS,        // <--- ADDED: Re-export PRESETS
-    GLOVE_PARTS_CONFIG,
-    GLOVE_TO_WEBS_MAP,
-    getModelNameForBuild,
-    UI_PRESENTATION_CONFIG // <--- ADDED: Exporting to the world
+    PRESETS,
+    resolveProduct // Exporting the resolver
 };
 
 // --- HELPER: Index Lookup for 3D Performance ---
@@ -96,20 +90,8 @@ export const colorLookupMap = new Map(COLOR_OPTIONS.map(option => [option.id, op
 export const getHexById = (id: ColorId): HexColor =>
     colorLookupMap.get(id)?.hex || '#FFFFFF';
 
-// --- HELPER: Business Logic for UI Rules ---
-const THREAD_BASED_ZONES = new Set<ZoneKey>([
-    ZONES.STITCHING,
-    ZONES.WRIST_LOGO,
-    ZONES.WRIST_LOGO_OUTLINE,
-    ZONES.FINGER_LOGO,
-]);
-
-export const isApplyToAllEligible = (zoneKey: ZoneKey): boolean => {
-    return !THREAD_BASED_ZONES.has(zoneKey);
-};
-
 // ===================================================================
-// --- PRESET HANDLING LOGIC (THE "DELIVERY TRUCK") ---
+// --- SANITIZATION LOGIC (THE "BOUNCER") ---
 // ===================================================================
 
 const deepCopy = <T,>(obj: T): T => {
@@ -119,14 +101,60 @@ const deepCopy = <T,>(obj: T): T => {
     return JSON.parse(JSON.stringify(obj));
 };
 
+export const sanitize = (config: GloveConfiguration): GloveConfiguration => {
+    let nextConfig = deepCopy(config);
+    let iterations = 0;
+    const MAX_ITERATIONS = 3; // Prevent infinite loops
+
+    // 1. RE-RESOLVE LOOP (The "Infield Paradox" Fix)
+    // We loop until the definition is stable with the constraints
+    while (iterations < MAX_ITERATIONS) {
+        const def = resolveProduct(nextConfig.build);
+        let changed = false;
+
+        // Constraint: Forced Back Style (e.g., Catcher must be Open)
+        if (def.constraints.forcedBackStyle) {
+            if (nextConfig.build.backStyle !== def.constraints.forcedBackStyle) {
+                nextConfig.build.backStyle = def.constraints.forcedBackStyle;
+                changed = true;
+            }
+        }
+
+        // If constraints changed the build, we must re-resolve the product
+        if (!changed) break; 
+        iterations++;
+    }
+
+    // 2. GET FINAL DEFINITION
+    const def = resolveProduct(nextConfig.build);
+
+    // 3. SANITIZE WEB TYPE (Asset Completeness)
+    // Ensure the selected web exists in the active product's validWebs list
+    if (!def.assets.validWebs[nextConfig.build.webType]) {
+        // Fallback to the first valid web in the list
+        const validWebKeys = Object.keys(def.assets.validWebs) as WebTypeId[];
+        if (validWebKeys.length > 0) {
+            nextConfig.build.webType = validWebKeys[0];
+        }
+    }
+
+    // 4. SANITIZE ZONES (Palette & Existence)
+    // Ensure every zone has a valid color. 
+    // Note: We don't delete zones that don't exist in the current def (to preserve state across switches),
+    // but the UI and Viewer will strictly ignore them based on the definition.
+    
+    // (Optional: Enforce validPalette here if we restrict palettes per glove in the future)
+
+    return nextConfig;
+};
+
+// ===================================================================
+// --- PRESET HANDLING LOGIC ---
+// ===================================================================
+
 // Helper to ensure a loaded preset has all necessary fields by merging with default
 const fillMissing = (incoming: Partial<GloveConfiguration>): GloveConfiguration => {
     const base = deepCopy(PRESETS['open-back']);
-    
-    // We do a shallow merge of the top-level keys. 
-    // Note: For deep nested objects like 'build', simple spread might overwrite nested defaults if incoming is partial.
-    // However, our presets are currently full objects. 
-    // To be safer for future partial updates, we can explicitly merge critical subsections if needed.
     
     return {
         ...base,
@@ -142,24 +170,104 @@ export const getPresetConfig = (id: PresetId): GloveConfiguration => {
     const rawPreset = PRESETS[id];
     
     if (!rawPreset) {
-        // Fallback to open-back if ID is invalid or not found
         return deepCopy(PRESETS['open-back']);
     }
 
-    // Safety 1 & 2: Deep Copy + Fill Missing
-    return fillMissing(rawPreset);
+    // Run sanitize on presets to ensure they are valid for the current schema
+    return sanitize(fillMissing(rawPreset));
+};
+
+// ===================================================================
+// --- LOGIC CONTROLLER (THE "ENGINE") ---
+// ===================================================================
+
+export const GloveLogicController = () => {
+    const { state } = useGloveConfigurator();
+    const sceneManager = useContext(SceneContext);
+
+    useEffect(() => {
+        const updateSceneAsync = async () => {
+            if (!sceneManager || !sceneManager.isReady()) {
+                return;
+            }
+
+            try {
+                const { configuration } = state;
+                
+                // 1. RESOLVE PRODUCT (The Single Source of Truth)
+                const definition = resolveProduct(configuration.build);
+
+                // 2. UPDATE SHELL ASSET
+                await sceneManager.updateBuild(definition.assets.shellModel);
+
+                // 3. UPDATE WEB ASSET
+                // Map the user's generic 'webType' (e.g. 'trp') to the specific GLB (e.g. 'trapOB')
+                const webModelFilename = definition.assets.validWebs[configuration.build.webType];
+
+                if (webModelFilename) {
+                    await sceneManager.updateWeb(webModelFilename);
+                } else {
+                    // Should be prevented by sanitizer, but safe guard:
+                    await sceneManager.updateWeb(''); 
+                }
+
+                // 4. UPDATE ZONES (Definition-Driven)
+                // We iterate ONLY the zones defined in the active cartridge.
+                for (const [zoneKey, zoneDef] of Object.entries(definition.zones)) {
+                    const colorState = configuration[zoneKey as ZoneKey];
+                    if (!colorState) continue;
+
+                    const paletteIndex = getPaletteIndexById(colorState.colorId);
+
+                    // Apply to Shell?
+                    if (zoneDef.materialTarget === 'shell' || zoneDef.materialTarget === 'both') {
+                        sceneManager.updateShellZonePointer(zoneDef.shaderIndex, paletteIndex);
+                    }
+                    
+                    // Apply to Web?
+                    if (zoneDef.materialTarget === 'web' || zoneDef.materialTarget === 'both') {
+                        sceneManager.updateWebZonePointer(zoneDef.shaderIndex, paletteIndex);
+                    }
+                }
+
+                // 5. UPDATE TEXT
+                // (Text uses the universal lookup helpers for now)
+                sceneManager.updateText({
+                    zone: 'thumbName',
+                    text: configuration.thumbName.text,
+                    font: configuration.thumbName.font,
+                    color: getHexById(configuration.thumbName.colorId),
+                });
+
+                sceneManager.updateText({
+                    zone: 'pinkyName',
+                    text: configuration.pinkyName.text,
+                    font: configuration.pinkyName.font,
+                    color: getHexById(configuration.pinkyName.colorId),
+                });
+
+            } catch (error) {
+                console.error("Failed to update scene:", error);
+            }
+        };
+
+        updateSceneAsync();
+
+    }, [state, sceneManager]);
+
+    return null;
 };
 
 // ===================================================================
 // --- SERIALIZATION LAYER (URL HANDLING) ---
 // ===================================================================
 
-// The dictionary of long keys to short keys for the URL
 export const URL_KEY_MAP: { [key in ZoneKey | keyof Omit<GloveConfiguration, ZoneKey> | keyof BuildConfig]?: string } = {
     // Top-level
     thumbName: 'tn',
     pinkyName: 'pn',
     // BuildConfig
+    palette: 'pa',
     imageSelection: 'is',
     position: 'po',
     size: 'sz',
@@ -168,23 +276,20 @@ export const URL_KEY_MAP: { [key in ZoneKey | keyof Omit<GloveConfiguration, Zon
     throwingHand: 'th',
     backStyle: 'bs',
     webType: 'wt',
-    // Zones (dynamically generated: zone1 -> z1, etc.)
+    // Zones (dynamically generated)
     ...Object.fromEntries(Object.values(ZONES).map(zone => [zone, zone.replace('zone', 'z')]))
 };
 
-// A reverse map for deserializing
 const REVERSE_URL_KEY_MAP: { [key: string]: string } = Object.fromEntries(
     Object.entries(URL_KEY_MAP).map(([key, value]) => [value as string, key])
 );
 
-// Helper to encode text to a URL-safe Base64 string
 const encodeText = (text: string): string => {
     const utf8Bytes = new TextEncoder().encode(text);
     const base64 = btoa(String.fromCharCode(...utf8Bytes));
     return base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
 };
 
-// Helper to decode text from a URL-safe Base64 string
 const decodeText = (encoded: string): string => {
     try {
         let base64 = encoded.replace(/-/g, '+').replace(/_/g, '/');
@@ -229,16 +334,12 @@ export const serialize = (config: GloveConfiguration): string => {
         }
     }
 
-    // --- FIX 1: SWAP UNDERSCORE FOR PIPE ---
     return pairs.join('|');
 };
 
 export const deserialize = (encodedString: string): GloveConfiguration => {
-    // USE THE SAFER FILL MISSING LOGIC HERE TOO!
-    // Instead of raw JSON.parse of initialState, we use our helper to get a fresh base.
     const config = deepCopy(initialState.configuration); 
     
-    // --- FIX 1: SPLIT BY PIPE (With Fallback) ---
     let pairs = encodedString.split('|');
     if (pairs.length === 1 && encodedString.includes('_')) {
         pairs = encodedString.split('_');
@@ -270,7 +371,8 @@ export const deserialize = (encodedString: string): GloveConfiguration => {
         }
     }
 
-    return config;
+    // SANITIZE ON LOAD
+    return sanitize(config);
 };
 
 // --- URL LOGIC ---
@@ -286,7 +388,7 @@ export interface LoadResult {
 }
 
 const cloneInitialConfig = (): GloveConfiguration =>
-    deepCopy(initialState.configuration); // Swapped to deepCopy helper
+    deepCopy(initialState.configuration);
 
 export const loadConfigurationFromURL = (): LoadResult => {
     try {
@@ -295,12 +397,10 @@ export const loadConfigurationFromURL = (): LoadResult => {
 
         // 1. Handle Empty/New Load
         if (!versionedPayload) {
-            // [Keep existing empty/new load logic]
             const entryFamily = urlParams.get('entry_family');
             const entryVariant = urlParams.get('entry_variant');
 
             if (!entryFamily && !entryVariant) {
-                // --- NEW: Check for basic entry hint here too! ---
                 const entryHint = urlParams.get('entry');
                 if (entryHint && entryHint in PRESETS) {
                      return { 
@@ -308,12 +408,10 @@ export const loadConfigurationFromURL = (): LoadResult => {
                         status: 'success' 
                     };
                 }
-                // -------------------------------------------------
-                return { configuration: initialState.configuration, status: 'empty' };
+                return { configuration: cloneInitialConfig(), status: 'empty' };
             }
             
-            const config = cloneInitialConfig();
-            return { configuration: config, variantId: entryVariant || null, status: 'success' };
+            return { configuration: cloneInitialConfig(), variantId: entryVariant || null, status: 'success' };
         }
 
         // 2. Handle Config Load
@@ -327,7 +425,6 @@ export const loadConfigurationFromURL = (): LoadResult => {
             throw new Error('No data in payload');
         }
 
-        // --- FIX 2: RESTORE PADDING ---
         let base64 = data.replace(/-/g, '+').replace(/_/g, '/');
         while (base64.length % 4) {
             base64 += '=';
@@ -344,10 +441,7 @@ export const loadConfigurationFromURL = (): LoadResult => {
 
     } catch (error) {
         console.warn('Config corrupted. Attempting fallback to hint.', error);
-        
-        // --- FALLBACK LOGIC DELETED FOR "KILL THE FAST RECEIVER" ---
-
-        return { configuration: initialState.configuration, status: 'failed' };
+        return { configuration: cloneInitialConfig(), status: 'failed' };
     }
 };
 

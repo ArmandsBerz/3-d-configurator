@@ -1,3 +1,5 @@
+// src/ui.tsx
+
 import 'wicg-inert';
 import { SceneManager } from './viewer';
 import {
@@ -10,7 +12,7 @@ import {
     ZONES,
     HexColor,
     ZoneKey,
-    getModelNameForBuild,
+    getModelNameForBuild, // Kept if needed for legacy, but mostly replaced by resolveProduct
     webTypeOptions,
     getHexById,
     ColorId,
@@ -23,11 +25,9 @@ import {
     colorLookupMap,
     loadConfigurationFromURL,
     generateShareableURL,
-    // --- Added for Local Logic Controller ---
-    GLOVE_TO_WEBS_MAP,
-    GLOVE_PARTS_CONFIG,
-    getPaletteIndexById,
-    UI_PRESENTATION_CONFIG, 
+    // --- IMPORTED FROM LOGIC (The Brain) ---
+    resolveProduct,         // <--- NEW: The Router
+    GloveLogicController,   // <--- NEW: Imported Engine (moved from here)
     // --- ADDED FOR STEP 3: THE SWITCH IMPLEMENTATION ---
     GloveConfiguration,
     // --- ADDED FOR CLAUDE'S FIX (TRANSLATION) ---
@@ -911,12 +911,18 @@ const WebOptions = () => {
         dispatch({ type: ACTION_TYPES.UPDATE_BUILD, payload: newBuildConfig });
     };
 
+    // --- DEFINITION-DRIVEN FILTERING ---
+    // Only show web options that are valid for the current glove definition
+    const definition = resolveProduct(buildConfig);
+    const validWebs = definition.assets.validWebs;
+    const filteredWebOptions = webTypeOptions.filter(opt => validWebs[opt.id]);
+
     return (
         <div className="space-y-6">
             <ImageGroup
                 title="Web Type"
                 layout="grid-cols-3"
-                options={webTypeOptions}
+                options={filteredWebOptions} // <--- Filtered List
                 selectedOption={buildConfig.webType}
                 onSelectOption={handleWebTypeChange}
             />
@@ -979,8 +985,10 @@ const OrderSummaryInfo = () => {
     const { state } = useGloveConfigurator();
     const { configuration } = state;
     const { build, thumbName, pinkyName } = configuration;
-    const activeShell = getModelNameForBuild(build);
-    const uiGroups = UI_PRESENTATION_CONFIG[activeShell] || [];
+    
+    // --- RESOLVE PRODUCT ---
+    const definition = resolveProduct(build);
+    const uiGroups = definition.uiGroups;
 
     const getBuildLabel = (key: string, value: string): string => {
         if (key === 'imageSelection') return leatherOptions.find((opt: { id: string }) => opt.id === value)?.title || value;
@@ -1394,7 +1402,11 @@ const AccordionDesktop = ({ openAccordion, setOpenAccordion, colorForApplyAll }:
 }) => {
     const { state, dispatch } = useGloveConfigurator();
     const { configuration } = state;
-    const activeShell = getModelNameForBuild(configuration.build);
+    
+    // --- RESOLVE PRODUCT ---
+    const definition = resolveProduct(configuration.build);
+    const currentUiGroups = definition.uiGroups;
+
     const accordionContainerRef = useRef<HTMLDivElement>(null);
     const desktopAccordionContainerRef = useRef<HTMLDivElement>(null);
     const { isTopGradientVisible, isBottomGradientVisible } = useScrollGradients(accordionContainerRef);
@@ -1403,7 +1415,6 @@ const AccordionDesktop = ({ openAccordion, setOpenAccordion, colorForApplyAll }:
     const closeAccordion = useCallback(() => setOpenAccordion(null), [setOpenAccordion]);
     useEscapeKey(desktopAccordionContainerRef, closeAccordion, !!openAccordion);
 
-    const currentUiGroups = useMemo(() => UI_PRESENTATION_CONFIG[activeShell] || [], [activeShell]);
     const buildGroup = { id: 'build', title: 'Build Options' };
     // --- MODIFICATION: Define personalization panels separately ---
     const personalizationGroups = [
@@ -1531,10 +1542,13 @@ interface AccordionMobileProps {
 const AccordionMobile = React.forwardRef<HTMLElement, AccordionMobileProps>(({ onOpenPanel, openAccordionOptionMobile }, ref) => {
     const { state } = useGloveConfigurator();
     const { configuration } = state;
-    const activeShell = getModelNameForBuild(configuration.build);
+    
+    // --- RESOLVE PRODUCT ---
+    const definition = resolveProduct(configuration.build);
+    const currentUiGroups = definition.uiGroups;
+
     const { isTopGradientVisible, isBottomGradientVisible } = useScrollGradients(ref as React.RefObject<HTMLElement>);
 
-    const currentUiGroups = useMemo(() => UI_PRESENTATION_CONFIG[activeShell] || [], [activeShell]);
     const buildGroup = { id: 'build' as const, title: 'Build Options' };
     // --- MODIFICATION: Define personalization panels separately ---
     const personalizationGroups = [
@@ -1653,8 +1667,9 @@ const UI = () => {
     }, []);
     // --- END: SHARE_COMPLETE listener ---
 
-    const activeShell = getModelNameForBuild(configuration.build);
-    const currentUiGroups = useMemo(() => UI_PRESENTATION_CONFIG[activeShell] || [], [activeShell]);
+    // --- RESOLVE PRODUCT ---
+    const definition = resolveProduct(configuration.build);
+    const currentUiGroups = definition.uiGroups;
 
     // --- MODIFICATION: Use helper to determine button eligibility ---
     const colorForApplyAll = useMemo((): ColorId | undefined => {
@@ -2067,147 +2082,15 @@ const UI = () => {
     );
 };
 
-// ===================================================================
-// --- REFACTORED LOGIC CONTROLLER (Step 7) ---
-// ===================================================================
-export const GloveLogicController = () => {
-    const { state } = useGloveConfigurator();
-    const sceneManager = useContext(SceneContext);
-
-    useEffect(() => {
-        const updateSceneAsync = async () => {
-            if (!sceneManager || !sceneManager.isReady()) {
-                return;
-            }
-
-            try {
-                const { configuration } = state;
-                const activeShell = getModelNameForBuild(configuration.build);
-
-                // Update 3D models for shell and web
-                await sceneManager.updateBuild(activeShell);
-
-                const compatibleWebsForShell = GLOVE_TO_WEBS_MAP[activeShell as keyof typeof GLOVE_TO_WEBS_MAP];
-                const webModelFilename = compatibleWebsForShell?.[configuration.build.webType as keyof typeof compatibleWebsForShell];
-
-                if (webModelFilename) {
-                    await sceneManager.updateWeb(webModelFilename);
-                } else {
-                    await sceneManager.updateWeb(''); // Hide web if not compatible
-                }
-
-                // --- MODIFIED PER PLAN ---
-                // Loop 1: Universal Parts
-                for (const [zoneKey, config] of Object.entries(GLOVE_PARTS_CONFIG.universal)) {
-                    const colorState = configuration[zoneKey as ZoneKey];
-                    if (!colorState || !config) continue;
-
-                    // --- START OF SUGGESTION A: Use palette index ---
-                    const paletteIndex = getPaletteIndexById(colorState.colorId);
-                    if (config.materialTarget === 'shell' || config.materialTarget === 'both') {
-                        sceneManager.updateShellZonePointer(config.shaderIndex, paletteIndex);
-                    }
-                    if (config.materialTarget === 'web' || config.materialTarget === 'both') {
-                        sceneManager.updateWebZonePointer(config.shaderIndex, paletteIndex);
-                    }
-                    // --- END OF SUGGESTION A ---
-                }
-
-                // Loop 2: Shell-Specific Parts
-                const shellParts = GLOVE_PARTS_CONFIG.shellSpecific[activeShell];
-                if (shellParts) {
-                    for (const [zoneKey, config] of Object.entries(shellParts)) {
-                        const colorState = configuration[zoneKey as ZoneKey];
-                        if (!colorState || !config) continue;
-
-                        // --- START OF SUGGESTION A: Use palette index ---
-                        const paletteIndex = getPaletteIndexById(colorState.colorId);
-                        sceneManager.updateShellZonePointer(config.shaderIndex, paletteIndex);
-                        // --- END OF SUGGESTION A ---
-                    }
-                }
-
-                // Text updates also need to use the lookup.
-                sceneManager.updateText({
-                    zone: 'thumbName',
-                    text: configuration.thumbName.text,
-                    font: configuration.thumbName.font,
-                    color: getHexById(configuration.thumbName.colorId),
-                });
-
-                sceneManager.updateText({
-                    zone: 'pinkyName',
-                    text: configuration.pinkyName.text,
-                    font: configuration.pinkyName.font,
-                    color: getHexById(configuration.pinkyName.colorId),
-                });
-                // --- END MODIFICATION ---
-
-            } catch (error) {
-                console.error("Failed to update scene:", error);
-            }
-        };
-
-        updateSceneAsync();
-
-    }, [state, sceneManager]);
-
-    return null;
-};
-
-// --- BRIDGE HOOK (The Receiver Logic) ---
-const useBridge = () => {
-    const { dispatch } = useGloveConfigurator();
-
-    useEffect(() => {
-        const handleMessage = (event: MessageEvent) => {
-            // 1. Agnostic Safety Check
-            if (!event.data || typeof event.data !== 'object') return;
-
-            // 2. Route the Signal
-            if (event.data.type === ACTION_TYPES.REPLACE_CONFIGURATION) {
-                console.log("[Bridge] Received Payload:", event.data.payload);
-                
-                let fullConfig: GloveConfiguration;
-
-                // 3. CHECK: Is this a Preset Command? ({ preset: "catcher" })
-                if (event.data.payload?.preset) {
-                    const presetId = event.data.payload.preset as PresetId;
-                    console.log("[Bridge] Translating preset:", presetId);
-                    
-                    // Convert "catcher" -> Full Glove Object
-                    fullConfig = getPresetConfig(presetId); 
-                } 
-                // 4. CHECK: Is this already a Full Config? (Saved design)
-                else if (event.data.payload?.build) {
-                    fullConfig = event.data.payload;
-                } 
-                // 5. ERROR: Unknown data format
-                else {
-                    console.warn("[Bridge] Ignored invalid payload:", event.data.payload);
-                    return;
-                }
-                
-                // 6. Dispatch the FULL object (Safe now)
-                dispatch({ 
-                    type: ACTION_TYPES.REPLACE_CONFIGURATION, 
-                    payload: fullConfig 
-                });
-            }
-        };
-
-        window.addEventListener('message', handleMessage);
-        return () => window.removeEventListener('message', handleMessage);
-    }, [dispatch]);
-};
-
 // 3. Update your main App component to include the controller.
 const GloveAppContent = () => {
     const [sceneManager, setSceneManager] = useState<SceneManager | null>(null);
 
     // --- ADDED FOR FIX ---
     const { state } = useGloveConfigurator();
-    const initialShellName = getModelNameForBuild(state.configuration.build);
+    // Resolve the definition to get the correct initial shell name (GLB filename)
+    const definition = resolveProduct(state.configuration.build);
+    const initialShellName = definition.assets.shellModel;
     // --------------------
 
     // --- ACTIVATE RECEIVER HERE ---
@@ -2228,6 +2111,7 @@ const GloveAppContent = () => {
                 </div>
             </div>
 
+            {/* Render the Engine (Logic Controller) which listens to state and updates the Scene */}
             <GloveLogicController />
 
             {/* This component will now automatically sync the state to the URL */}
