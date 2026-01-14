@@ -12,7 +12,7 @@ import {
     ZONES,
     HexColor,
     ZoneKey,
-    getModelNameForBuild, // Kept if needed for legacy, but mostly replaced by resolveProduct
+    // getModelNameForBuild, // REMOVED per fix
     webTypeOptions,
     getHexById,
     ColorId,
@@ -21,7 +21,7 @@ import {
     TextPart,
     BuildConfig,
     AppState as ImportedAppState,
-    isApplyToAllEligible,
+    // isApplyToAllEligible, // REMOVED per fix
     colorLookupMap,
     loadConfigurationFromURL,
     generateShareableURL,
@@ -308,9 +308,10 @@ const gloveConfigReducer = (state: AppState, action: GloveAction): AppState => {
             const { colorId } = action.payload;
             if (!colorId) return state;
 
+            const definition = resolveProduct(state.configuration.build);
             const newConfiguration = { ...state.configuration };
             Object.values(ZONES).forEach((zoneKey: ZoneKey) => {
-                if (isApplyToAllEligible(zoneKey)) {
+                if (definition.zones[zoneKey]?.allowApplyToAll) {
                     newConfiguration[zoneKey] = { colorId: colorId };
                 }
             });
@@ -1469,7 +1470,7 @@ const AccordionDesktop = ({ openAccordion, setOpenAccordion, colorForApplyAll }:
                         let actionButton: ReactElement | null = null;
                         let isEligible = false;
                         if (group.type === 'single') {
-                            isEligible = isApplyToAllEligible(group.zoneKey);
+                            isEligible = definition.zones[group.zoneKey]?.allowApplyToAll ?? false;
                         } else if (group.type === 'dual' || group.type === 'gallery') {
                             isEligible = true; // Leather and web parts are always eligible
                         }
@@ -1691,7 +1692,7 @@ const UI = () => {
             representativeZoneKey = ZONES.WEB;
         }
 
-        if (!isApplyToAllEligible(representativeZoneKey)) {
+        if (!definition.zones[representativeZoneKey]?.allowApplyToAll) {
             return undefined; // If not eligible, no color is available.
         }
 
@@ -1735,12 +1736,12 @@ const UI = () => {
 
         const context = openAccordionOptionMobile.context as any;
         if ('type' in context) { // It's a UIPartGroup
-            if (context.type === 'single') return isApplyToAllEligible(context.zoneKey);
+            if (context.type === 'single') return definition.zones[context.zoneKey]?.allowApplyToAll ?? false;
             if (context.type === 'dual') return true;
-            if (context.type === 'gallery') return isApplyToAllEligible(ZONES.WEB);
+            if (context.type === 'gallery') return definition.zones[ZONES.WEB]?.allowApplyToAll ?? false;
         }
         return false;
-    }, [isDesktop, openAccordionOptionMobile]);
+    }, [isDesktop, openAccordionOptionMobile, definition]);
     // --- END MODIFICATION ---
 
     const handleExitCustomizer = useCallback(() => {
@@ -2092,9 +2093,6 @@ const GloveAppContent = () => {
     const definition = resolveProduct(state.configuration.build);
     const initialShellName = definition.assets.shellModel;
     // --------------------
-
-    // --- ACTIVATE RECEIVER HERE ---
-    useBridge(); 
 
     return (
         <SceneContext.Provider value={sceneManager}>

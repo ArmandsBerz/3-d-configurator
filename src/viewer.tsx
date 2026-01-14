@@ -1,3 +1,5 @@
+// src/viewer.tsx
+
 import React, { useEffect, useRef } from 'react';
 import {
     Engine, // Changed for bindForSubMesh signature
@@ -27,7 +29,8 @@ import {
 import "@babylonjs/loaders";
 // --- START OF FIX B: Import COLOR_OPTIONS ---
 // --- START OF PHASE 2.1 ---
-import { GLOVE_TO_WEBS_MAP, COLOR_OPTIONS, FONT_REGISTRY } from './logic';
+// REMOVED GLOVE_TO_WEBS_MAP from imports
+import { COLOR_OPTIONS, FONT_REGISTRY } from './logic';
 // --- END OF FIX B ---
 import type { Font } from './logic';
 // --- END OF PHASE 2.1 ---
@@ -748,10 +751,7 @@ export class SceneManager {
             mesh.setEnabled(name === modelName);
         });
 
-        const websToPreload = GLOVE_TO_WEBS_MAP[modelName as keyof typeof GLOVE_TO_WEBS_MAP];
-        if (websToPreload) {
-            this.assetManager.preloadAssets(Object.values(websToPreload));
-        }
+        // --- PRELOADER REMOVED (Legacy GLOVE_TO_WEBS_MAP logic) ---
     }
 
     public async updateWeb(webModelName: string): Promise<void> {
