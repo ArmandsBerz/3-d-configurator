@@ -30,9 +30,8 @@ import "@babylonjs/loaders";
 // --- START OF FIX B: Import COLOR_OPTIONS ---
 // --- START OF PHASE 2.1 ---
 // REMOVED GLOVE_TO_WEBS_MAP from imports
-import { COLOR_OPTIONS, FONT_REGISTRY } from './logic';
+import { COLOR_OPTIONS, FONT_REGISTRY, Font } from './product-data';
 // --- END OF FIX B ---
-import type { Font } from './logic';
 // --- END OF PHASE 2.1 ---
 
 // --- INTERFACE FOR PLUGIN CONFIGURATION ---
