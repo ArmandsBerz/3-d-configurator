@@ -107,17 +107,30 @@ export type BuildThrowingId = typeof buildOptionsData[4]['options'][number]['id'
 export type BuildBackId = 'opn' | 'cls';
 export type WebTypeId = typeof webTypeOptions[number]['id'];
 
-export interface BuildConfig {
+// --- STRICT SCHEMA: DISCRIMINATED UNION ---
+interface BuildConfigBase {
     palette: PaletteId;
     imageSelection: 'imgOpt1' | 'imgOpt2';
-    position: BuildPositionId;
     size: BuildSizeId;
     handOpeningSize: BuildHandId;
     stiffness: BuildStiffnessId;
     throwingHand: BuildThrowingId;
-    backStyle: BuildBackId;
     webType: WebTypeId;
 }
+
+// Group A: Positions with Back Style
+export interface BuildConfigWithBack extends BuildConfigBase {
+    position: 'out' | 'pit';
+    backStyle: BuildBackId; 
+}
+
+// Group B: Positions WITHOUT Back Style
+export interface BuildConfigNoBack extends BuildConfigBase {
+    position: 'inf' | 'fb' | 'cat';
+    backStyle?: never; // The key must not exist
+}
+
+export type BuildConfig = BuildConfigWithBack | BuildConfigNoBack;
 
 export interface TextPart {
     type: 'text';
@@ -185,7 +198,6 @@ export interface ProductDefinition {
 
     // D. CONSTRAINTS (Business Rules)
     constraints: {
-        forcedBackStyle?: 'opn' | 'cls';
         validPalette: string[]; // Whitelist of color IDs
     };
 }
@@ -231,7 +243,6 @@ interface ProductBlueprint {
     validWebs: Record<string, string>;
     specificZones: Record<string, Partial<ZoneDefinition>>; // Overrides
     uiGroups: UIPartGroup[];
-    forcedBackStyle?: 'opn' | 'cls';
 }
 
 // Simple Deep Freeze Implementation
@@ -319,7 +330,6 @@ const compileProduct = (blueprint: ProductBlueprint): ProductDefinition => {
         zones: finalZones,
         uiGroups: blueprint.uiGroups,
         constraints: {
-            forcedBackStyle: blueprint.forcedBackStyle,
             validPalette: COLOR_OPTIONS.map(c => c.id)
         }
     };
@@ -372,7 +382,6 @@ const PRODUCT_REGISTRY = {
     'close-back': compileProduct({
         id: 'close-back',
         shellModel: 'closeBack',
-        forcedBackStyle: 'cls', // Constraint
         validWebs: { 
             bsk: 'basketCB', clv: 'closedVCB', dhn: 'dualHingeCB', fmt: 'framedModTrapCB', 
             hwb: 'hCB', lch: 'lacedHCB', lcs: 'laceSealingCB', mtp: 'modTrapCB', 
@@ -432,7 +441,6 @@ const PRODUCT_REGISTRY = {
     'catchers': compileProduct({
         id: 'catchers',
         shellModel: 'catchers',
-        forcedBackStyle: 'opn', 
         validWebs: { '2pc': 'twoPieceCM' },
         specificZones: {
             [ZONES.INDEX]: { shaderIndex: 2, displayName: 'Shell Back' },
@@ -467,14 +475,16 @@ export const resolveProduct = (build: BuildConfig): ProductDefinition => {
     if (build.position === 'cat') return PRODUCT_REGISTRY['catchers'];
     if (build.position === 'fb') return PRODUCT_REGISTRY['first-base'];
     
-    // 2. Back Style Routing (Outfield/Pitcher/Infield)
-    if (['out', 'pit'].includes(build.position)) {
+    // 2. Back Style Routing (Only for Outfield/Pitcher)
+    if (build.position === 'out' || build.position === 'pit') {
+        // Safe because the Type Guard (Union) ensures backStyle exists for 'out'|'pit'
         return build.backStyle === 'cls' 
             ? PRODUCT_REGISTRY['close-back'] 
             : PRODUCT_REGISTRY['open-back'];
     }
     
     // 3. Default (Infield -> Open Back)
+    // Note: Infield does NOT have a backStyle property, so it maps directly here.
     return PRODUCT_REGISTRY['open-back'];
 };
 
@@ -484,7 +494,7 @@ export const resolveProduct = (build: BuildConfig): ProductDefinition => {
 
 export const PRESETS = {
     'open-back': {
-        build: { palette: 'universal', imageSelection: 'imgOpt1', position: 'inf', size: '1100', handOpeningSize: 'adt', stiffness: 'std', throwingHand: 'rh', backStyle: 'opn', webType: 'mtp' },
+        build: { palette: 'universal', imageSelection: 'imgOpt1', position: 'inf', size: '1100', handOpeningSize: 'adt', stiffness: 'std', throwingHand: 'rh', webType: 'mtp' },
         thumbName: { type: 'text', text: 'Thumb', font: 'LOBSTER', colorId: 'gy' },
         pinkyName: { type: 'text', text: 'Pinky', font: 'ROBOTO', colorId: 'sl' },
         [ZONES.THUMB_INNER]:    { colorId: 'rd' },
@@ -540,7 +550,7 @@ export const PRESETS = {
     } as GloveConfiguration,
 
     'first-base': {
-        build: { palette: 'universal', imageSelection: 'imgOpt1', position: 'fb', size: '1250', handOpeningSize: 'adt', stiffness: 'std', throwingHand: 'rh', backStyle: 'opn', webType: 'pst' },
+        build: { palette: 'universal', imageSelection: 'imgOpt1', position: 'fb', size: '1250', handOpeningSize: 'adt', stiffness: 'std', throwingHand: 'rh', webType: 'pst' },
         thumbName: { type: 'text', text: 'First', font: 'LOBSTER', colorId: 'br' },
         pinkyName: { type: 'text', text: 'Base', font: 'ROBOTO', colorId: 'br' },
         [ZONES.THUMB_INNER]:    { colorId: 'or' },
@@ -568,7 +578,7 @@ export const PRESETS = {
     } as GloveConfiguration,
 
     'catchers': {
-        build: { palette: 'universal', imageSelection: 'imgOpt1', position: 'cat', size: '1200', handOpeningSize: 'adt', stiffness: 'std', throwingHand: 'rh', backStyle: 'opn', webType: '2pc' },
+        build: { palette: 'universal', imageSelection: 'imgOpt1', position: 'cat', size: '1200', handOpeningSize: 'adt', stiffness: 'std', throwingHand: 'rh', webType: '2pc' },
         thumbName: { type: 'text', text: 'Catcher', font: 'LOBSTER', colorId: 'gd' },
         pinkyName: { type: 'text', text: 'Mitt', font: 'ROBOTO', colorId: 'gd' },
         [ZONES.THUMB_INNER]:    { colorId: 'bl' }, 
@@ -620,6 +630,59 @@ export const getHexById = (id: ColorId): HexColor =>
 // 9. SANITIZATION LOGIC (THE "BOUNCER")
 // ===================================================================
 
+/**
+ * Safely transitions from one build state to another, strictly enforcing 
+ * the existence or non-existence of 'backStyle' based on the new position.
+ */
+export const updateBuild = (current: BuildConfig, updates: Partial<BuildConfig>): BuildConfig => {
+    // 1. Determine the Target Position
+    const nextPosition = updates.position ?? current.position;
+
+    // 2. Base Properties (Explicitly extract common keys to avoid leaking 'backStyle')
+    const base: BuildConfigBase = {
+        palette: updates.palette ?? current.palette,
+        imageSelection: updates.imageSelection ?? current.imageSelection,
+        size: updates.size ?? current.size,
+        handOpeningSize: updates.handOpeningSize ?? current.handOpeningSize,
+        stiffness: updates.stiffness ?? current.stiffness,
+        throwingHand: updates.throwingHand ?? current.throwingHand,
+        webType: updates.webType ?? current.webType,
+    };
+
+    // 3. Branch Logic based on Schema Definition
+    if (nextPosition === 'inf' || nextPosition === 'fb' || nextPosition === 'cat') {
+        // CASE: Target does NOT support backStyle
+        // Return base + position. 'backStyle' is strictly omitted.
+        return {
+            ...base,
+            position: nextPosition
+        } as BuildConfigNoBack;
+    } 
+    else {
+        // CASE: Target REQUIRES backStyle
+        // Determine what the backStyle should be.
+        
+        // Did the update provide one?
+        let nextBack = (updates as any).backStyle;
+        
+        // If not, did the current one have one?
+        if (!nextBack && 'backStyle' in current) {
+            nextBack = current.backStyle;
+        }
+        
+        // If still nothing (e.g. coming from Infield), default to 'opn'
+        if (!nextBack) {
+            nextBack = 'opn'; 
+        }
+
+        return {
+            ...base,
+            position: nextPosition,
+            backStyle: nextBack
+        } as BuildConfigWithBack;
+    }
+};
+
 export const deepCopy = <T,>(obj: T): T => {
     if (typeof structuredClone === 'function') {
         return structuredClone(obj);
@@ -629,21 +692,21 @@ export const deepCopy = <T,>(obj: T): T => {
 
 export const sanitize = (config: GloveConfiguration): GloveConfiguration => {
     let nextConfig = deepCopy(config);
+    
+    // 1. STRUCTURAL REPAIR (The Factory)
+    // Running this ensures the object shape matches the Union, 
+    // effectively stripping invalid keys from URL/Storage loads.
+    // We pass empty updates {} effectively saying "rebuild yourself strictly".
+    nextConfig.build = updateBuild(nextConfig.build, {});
+
+    // 2. RE-RESOLVE LOOP (For dependent constraints)
+    // Since forcedBackStyle is gone, this loop handles other future constraints.
     let iterations = 0;
     const MAX_ITERATIONS = 3; 
-
-    // 1. RE-RESOLVE LOOP
     while (iterations < MAX_ITERATIONS) {
         const def = resolveProduct(nextConfig.build);
         let changed = false;
-
-        if (def.constraints.forcedBackStyle) {
-            if (nextConfig.build.backStyle !== def.constraints.forcedBackStyle) {
-                nextConfig.build.backStyle = def.constraints.forcedBackStyle;
-                changed = true;
-            }
-        }
-
+        // (Add future constraints here if needed)
         if (!changed) break; 
         iterations++;
     }
@@ -658,29 +721,23 @@ export const sanitize = (config: GloveConfiguration): GloveConfiguration => {
         }
     }
 
-    // 4. SANITIZE ZONES (The Fix)
-    // We create a Set for O(1) lookups
+    // 4. SANITIZE ZONES (Color Validation)
     const validColorIds = new Set(def.constraints.validPalette);
     const fallbackColor = def.constraints.validPalette[0] as ColorId;
 
-    // Check every key that looks like a zone
     for (const key of Object.keys(nextConfig)) {
         if (key.startsWith('zone')) {
             const zoneKey = key as ZoneKey;
             const zoneState = nextConfig[zoneKey];
-
-            // If this zone exists in state but has an invalid color
             if (zoneState && !validColorIds.has(zoneState.colorId)) {
-                // Reset it to the specific zone default, or the global fallback
                 const zoneDef = def.zones[zoneKey];
                 const newColor = zoneDef?.defaultColor || fallbackColor;
-                
                 nextConfig[zoneKey] = { colorId: newColor };
             }
         }
     }
-
-    // Check Text Colors too
+    
+    // Text Color Validation
     if (!validColorIds.has(nextConfig.thumbName.colorId)) {
         nextConfig.thumbName.colorId = fallbackColor;
     }
@@ -698,13 +755,14 @@ export const sanitize = (config: GloveConfiguration): GloveConfiguration => {
 const fillMissing = (incoming: Partial<GloveConfiguration>): GloveConfiguration => {
     const base = deepCopy(PRESETS['open-back']);
     
+    // Use Factory to merge safely. This prevents 'backStyle' from leaking 
+    // from the base preset into a 'catchers' incoming config.
+    const safeBuild = updateBuild(base.build, incoming.build || {});
+
     return {
         ...base,
         ...incoming,
-        build: {
-            ...base.build,
-            ...(incoming.build || {})
-        }
+        build: safeBuild
     };
 };
 
@@ -766,6 +824,8 @@ export const serialize = (config: GloveConfiguration): string => {
 
     // 1. Serialize Build Configuration
     for (const [key, value] of Object.entries(config.build)) {
+        // Object.entries on a Discriminated Union will ONLY iterate keys that actually exist.
+        // So if backStyle was deleted by sanitize, it won't be here.
         const shortKey = URL_KEY_MAP[key as keyof typeof URL_KEY_MAP];
         if (shortKey) {
             pairs.push(`${shortKey}-${value}`);

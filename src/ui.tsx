@@ -36,6 +36,7 @@ import {
     getPresetConfig,
     PresetId
 } from './logic';
+import { updateBuild } from './product-data'; // <--- NEW: Import directly from domain layer
 import React, { useState, useRef, useLayoutEffect, useCallback, useEffect, createContext, useContext, useReducer, ReactNode, ReactElement, useMemo } from 'react';
 import BabylonCanvas from './viewer';
 import { SummaryIcon, BackArrowIcon, CheckmarkIcon, LongArrowRightIcon, CaretRightIcon, CaretDownIcon, CaretUpIcon, ShareIcon, CollapseIcon, ExpandIcon, DragIcon, ZoomIcon, CloseIcon } from './icons';
@@ -116,7 +117,7 @@ type AppState = ImportedAppState & {
 };
 
 export type GloveAction =
-    | { type: typeof ACTION_TYPES.UPDATE_BUILD; payload: BuildConfig }
+    | { type: typeof ACTION_TYPES.UPDATE_BUILD; payload: Partial<BuildConfig> } // <--- FIX: Allow partial updates
     | {
         type: typeof ACTION_TYPES.UPDATE_ZONE_COLOR;
         payload: {
@@ -273,12 +274,10 @@ const postToParent = (message: BridgeMessage) => {
 const gloveConfigReducer = (state: AppState, action: GloveAction): AppState => {
     switch (action.type) {
         case ACTION_TYPES.UPDATE_BUILD: {
-            const nextBuild = {
-                ...state.configuration.build,
-                ...action.payload
-            };
+            // FIX: Use the Factory (updateBuild) to enforce the strict schema
+            // This prevents "ghost keys" (like backStyle on Infield gloves) from persisting.
+            const nextBuild = updateBuild(state.configuration.build, action.payload);
 
-            // Apply strict sanitization to enforce constraints immediately (e.g. Infield -> Open Back)
             const sanitizedConfiguration = sanitize({
                 ...state.configuration,
                 build: nextBuild
@@ -801,7 +800,8 @@ interface BuildOptionProps {
 const BuildOption = ({ isDesktop }: BuildOptionProps) => {
     const { state, dispatch } = useGloveConfigurator();
     const { build: buildConfig } = state.configuration;
-    const onBuildConfigChange = (newConfig: BuildConfig) => dispatch({ type: ACTION_TYPES.UPDATE_BUILD, payload: newConfig });
+    // --- FIX: Use Partial<BuildConfig> for safer updates ---
+    const onBuildConfigChange = (newConfig: Partial<BuildConfig>) => dispatch({ type: ACTION_TYPES.UPDATE_BUILD, payload: newConfig });
 
     const positionGroup = buildOptionsData.find((g: { id: string; }) => g.id === 'position');
     const otherGroups = buildOptionsData.filter((g: { id: string; }) => g.id !== 'position');
@@ -813,7 +813,7 @@ const BuildOption = ({ isDesktop }: BuildOptionProps) => {
                 layout="grid-cols-2"
                 options={leatherOptions}
                 selectedOption={buildConfig.imageSelection}
-                onSelectOption={(value) => onBuildConfigChange({ ...buildConfig, imageSelection: value as 'imgOpt1' | 'imgOpt2' })}
+                onSelectOption={(value) => onBuildConfigChange({ imageSelection: value as 'imgOpt1' | 'imgOpt2' })}
             />
             {positionGroup && (
                 <OptionGroup
@@ -823,12 +823,9 @@ const BuildOption = ({ isDesktop }: BuildOptionProps) => {
                     layout={positionGroup.layout}
                     selectedOption={buildConfig.position}
                     onSelectOption={(value) => {
-                        const newConfig = { ...buildConfig, position: value as BuildConfig['position'] };
-                        // When user selects Outfield or Pitcher, default them to an OPEN back
-                        if (['out', 'pit'].includes(value)) {
-                            (newConfig as any).backStyle = 'opn';
-                        }
-                        onBuildConfigChange(newConfig);
+                        // --- FIX: SIMPLIFIED HANDLER ---
+                        // We no longer manually set backStyle. The Factory 'updateBuild' handles defaults/stripping.
+                        onBuildConfigChange({ position: value as BuildConfig['position'] });
                     }}
                 />
             )}
@@ -841,7 +838,6 @@ const BuildOption = ({ isDesktop }: BuildOptionProps) => {
                     layout="grid-cols-2"
                     selectedOption={(buildConfig as any).backStyle}
                     onSelectOption={(value) => onBuildConfigChange({
-                        ...buildConfig,
                         backStyle: value as 'opn' | 'cls'
                     } as any)}
                 />
@@ -854,7 +850,7 @@ const BuildOption = ({ isDesktop }: BuildOptionProps) => {
                     options={group.options}
                     layout={group.layout}
                     selectedOption={buildConfig[group.id as keyof Omit<BuildConfig, 'imageSelection' | 'position' | 'backStyle' | 'webType'>]}
-                    onSelectOption={(value) => onBuildConfigChange({ ...buildConfig, [group.id]: value })}
+                    onSelectOption={(value) => onBuildConfigChange({ [group.id]: value })}
                 />
             ))}
         </div>
@@ -913,8 +909,8 @@ const WebOptions = () => {
     const { build: buildConfig } = state.configuration;
 
     const handleWebTypeChange = (newWebType: WebTypeId) => {
-        const newBuildConfig = { ...state.configuration.build, webType: newWebType };
-        dispatch({ type: ACTION_TYPES.UPDATE_BUILD, payload: newBuildConfig });
+        // --- FIX: Use Partial Update ---
+        dispatch({ type: ACTION_TYPES.UPDATE_BUILD, payload: { webType: newWebType } });
     };
 
     // --- DEFINITION-DRIVEN FILTERING ---
