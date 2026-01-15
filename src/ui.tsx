@@ -34,7 +34,12 @@ import {
     GloveConfiguration,
     // --- ADDED FOR CLAUDE'S FIX (TRANSLATION) ---
     getPresetConfig,
-    PresetId
+    PresetId,
+    UIPartGroup,
+    UIPartGroupGallery,
+    UIPartGroupSingle,
+    UIPartGroupDual, // <--- ADDED per instructions
+    CommerceState
 } from './logic';
 import { updateBuild } from './product-data'; // <--- NEW: Import directly from domain layer
 import React, { useState, useRef, useLayoutEffect, useCallback, useEffect, createContext, useContext, useReducer, ReactNode, ReactElement, useMemo } from 'react';
@@ -80,35 +85,6 @@ export const useScrollGradients = (scrollableRef: React.RefObject<HTMLElement | 
     return { isTopGradientVisible, isBottomGradientVisible };
 };
 // --- END: NEW SCROLL GRADIENT HOOK ---
-
-
-// --- NEW PRESENTATION TYPES (from Step 1) ---
-export interface UIPartGroupSingle {
-    id: string;
-    type: 'single';
-    title: string;
-    zoneKey: ZoneKey;
-}
-
-export interface UIPartGroupDual {
-    id: string;
-    type: 'dual';
-    title: string;
-    outerZoneKey: ZoneKey;
-    innerZoneKey: ZoneKey;
-}
-
-export interface UIPartGroupGallery {
-    id: string;
-    type: 'gallery';
-    title: string;
-}
-
-export type UIPartGroup = UIPartGroupSingle | UIPartGroupDual | UIPartGroupGallery;
-
-export interface UIPresentationConfig {
-    [shellName: string]: UIPartGroup[]; 
-}
 
 // --- CORE TYPE DEFINITIONS ARE NOW IMPORTED FROM LOGIC.TSX ---
 

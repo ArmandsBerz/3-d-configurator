@@ -38,6 +38,7 @@ import {
     UIPartGroup,
     UIPartGroupGallery,
     UIPartGroupSingle,
+    UIPartGroupDual, // <--- ADDED per instructions
     CommerceState,
     // --- IMPORTED MOVED LOGIC ---
     colorIndexById,
@@ -71,6 +72,7 @@ export type {
     UIPartGroup,
     UIPartGroupGallery,
     UIPartGroupSingle,
+    UIPartGroupDual, // <--- ADDED per instructions
     CommerceState,
     PresetId
 };
