@@ -15,6 +15,7 @@ import {
     // getModelNameForBuild, // REMOVED per fix
     webTypeOptions,
     getHexById,
+    getPaletteIndexById,    // <--- ADDED: Needed for local Controller
     ColorId,
     WebTypeId,
     Font,
@@ -27,7 +28,8 @@ import {
     generateShareableURL,
     // --- IMPORTED FROM LOGIC (The Brain) ---
     resolveProduct,         // <--- NEW: The Router
-    GloveLogicController,   // <--- NEW: Imported Engine (moved from here)
+    // GloveLogicController, // REMOVED: Now defined locally to fix circular dependency
+    sanitize,               // <--- NEW: The Sanitizer (imported for reducer)
     // --- ADDED FOR STEP 3: THE SWITCH IMPLEMENTATION ---
     GloveConfiguration,
     // --- ADDED FOR CLAUDE'S FIX (TRANSLATION) ---
@@ -276,12 +278,15 @@ const gloveConfigReducer = (state: AppState, action: GloveAction): AppState => {
                 ...action.payload
             };
 
+            // Apply strict sanitization to enforce constraints immediately (e.g. Infield -> Open Back)
+            const sanitizedConfiguration = sanitize({
+                ...state.configuration,
+                build: nextBuild
+            });
+
             return {
                 ...state,
-                configuration: {
-                    ...state.configuration,
-                    build: nextBuild,
-                },
+                configuration: sanitizedConfiguration,
                 commerce: {
                     ...state.commerce,
                     variantId: null, 
@@ -2081,6 +2086,87 @@ const UI = () => {
             )}
         </div>
     );
+};
+
+// ===================================================================
+// --- LOGIC CONTROLLER (THE "ENGINE") ---
+// ===================================================================
+
+const GloveLogicController = () => {
+    const { state } = useGloveConfigurator();
+    const sceneManager = useContext(SceneContext);
+
+    useEffect(() => {
+        const updateSceneAsync = async () => {
+            if (!sceneManager || !sceneManager.isReady()) {
+                return;
+            }
+
+            try {
+                const { configuration } = state;
+                
+                // 1. RESOLVE PRODUCT (The Single Source of Truth)
+                const definition = resolveProduct(configuration.build);
+
+                // 2. UPDATE SHELL ASSET
+                await sceneManager.updateBuild(definition.assets.shellModel);
+
+                // 3. UPDATE WEB ASSET
+                // Map the user's generic 'webType' (e.g. 'trp') to the specific GLB (e.g. 'trapOB')
+                const webModelFilename = definition.assets.validWebs[configuration.build.webType];
+
+                if (webModelFilename) {
+                    await sceneManager.updateWeb(webModelFilename);
+                } else {
+                    // Should be prevented by sanitizer, but safe guard:
+                    await sceneManager.updateWeb(''); 
+                }
+
+                // 4. UPDATE ZONES (Definition-Driven)
+                // We iterate ONLY the zones defined in the active cartridge.
+                for (const [zoneKey, zoneDef] of Object.entries(definition.zones)) {
+                    const colorState = configuration[zoneKey as ZoneKey];
+                    if (!colorState) continue;
+
+                    const paletteIndex = getPaletteIndexById(colorState.colorId);
+
+                    // Apply to Shell?
+                    if (zoneDef.materialTarget === 'shell' || zoneDef.materialTarget === 'both') {
+                        sceneManager.updateShellZonePointer(zoneDef.shaderIndex, paletteIndex);
+                    }
+                    
+                    // Apply to Web?
+                    if (zoneDef.materialTarget === 'web' || zoneDef.materialTarget === 'both') {
+                        sceneManager.updateWebZonePointer(zoneDef.shaderIndex, paletteIndex);
+                    }
+                }
+
+                // 5. UPDATE TEXT
+                // (Text uses the universal lookup helpers for now)
+                sceneManager.updateText({
+                    zone: 'thumbName',
+                    text: configuration.thumbName.text,
+                    font: configuration.thumbName.font,
+                    color: getHexById(configuration.thumbName.colorId),
+                });
+
+                sceneManager.updateText({
+                    zone: 'pinkyName',
+                    text: configuration.pinkyName.text,
+                    font: configuration.pinkyName.font,
+                    color: getHexById(configuration.pinkyName.colorId),
+                });
+
+            } catch (error) {
+                console.error("Failed to update scene:", error);
+            }
+        };
+
+        updateSceneAsync();
+
+    }, [state, sceneManager]);
+
+    return null;
 };
 
 // 3. Update your main App component to include the controller.

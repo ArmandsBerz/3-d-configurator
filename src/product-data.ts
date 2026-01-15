@@ -598,6 +598,214 @@ export const PRESETS = {
 
 export type PresetId = keyof typeof PRESETS;
 
+// ===================================================================
+// 8. HELPERS & DOMAIN LOGIC
+// ===================================================================
+
+// --- Index Lookup for 3D Performance ---
+export const colorIndexById = new Map<ColorId, number>(
+    COLOR_OPTIONS.map((opt, idx) => [opt.id, idx])
+);
+
+export const getPaletteIndexById = (id: ColorId): number =>
+    colorIndexById.get(id) ?? 0;
+
+// --- Hex Lookup for UI/Canvas ---
+export const colorLookupMap = new Map(COLOR_OPTIONS.map(option => [option.id, option]));
+
+export const getHexById = (id: ColorId): HexColor =>
+    colorLookupMap.get(id)?.hex || '#FFFFFF';
+
+// ===================================================================
+// 9. SANITIZATION LOGIC (THE "BOUNCER")
+// ===================================================================
+
+export const deepCopy = <T,>(obj: T): T => {
+    if (typeof structuredClone === 'function') {
+        return structuredClone(obj);
+    }
+    return JSON.parse(JSON.stringify(obj));
+};
+
+export const sanitize = (config: GloveConfiguration): GloveConfiguration => {
+    let nextConfig = deepCopy(config);
+    let iterations = 0;
+    const MAX_ITERATIONS = 3; // Prevent infinite loops
+
+    // 1. RE-RESOLVE LOOP (The "Infield Paradox" Fix)
+    while (iterations < MAX_ITERATIONS) {
+        const def = resolveProduct(nextConfig.build);
+        let changed = false;
+
+        // Constraint: Forced Back Style
+        if (def.constraints.forcedBackStyle) {
+            if (nextConfig.build.backStyle !== def.constraints.forcedBackStyle) {
+                nextConfig.build.backStyle = def.constraints.forcedBackStyle;
+                changed = true;
+            }
+        }
+
+        if (!changed) break; 
+        iterations++;
+    }
+
+    // 2. GET FINAL DEFINITION
+    const def = resolveProduct(nextConfig.build);
+
+    // 3. SANITIZE WEB TYPE
+    if (!def.assets.validWebs[nextConfig.build.webType]) {
+        const validWebKeys = Object.keys(def.assets.validWebs) as WebTypeId[];
+        if (validWebKeys.length > 0) {
+            nextConfig.build.webType = validWebKeys[0];
+        }
+    }
+
+    return nextConfig;
+};
+
+// ===================================================================
+// 10. PRESET HANDLING LOGIC
+// ===================================================================
+
+const fillMissing = (incoming: Partial<GloveConfiguration>): GloveConfiguration => {
+    const base = deepCopy(PRESETS['open-back']);
+    
+    return {
+        ...base,
+        ...incoming,
+        build: {
+            ...base.build,
+            ...(incoming.build || {})
+        }
+    };
+};
+
+export const getPresetConfig = (id: PresetId): GloveConfiguration => {
+    const rawPreset = PRESETS[id];
+    
+    if (!rawPreset) {
+        return deepCopy(PRESETS['open-back']);
+    }
+
+    return sanitize(fillMissing(rawPreset));
+};
+
+// ===================================================================
+// 11. SERIALIZATION LAYER (URL HANDLING)
+// ===================================================================
+
+export const URL_KEY_MAP: { [key in ZoneKey | keyof Omit<GloveConfiguration, ZoneKey> | keyof BuildConfig]?: string } = {
+    thumbName: 'tn',
+    pinkyName: 'pn',
+    palette: 'pa',
+    imageSelection: 'is',
+    position: 'po',
+    size: 'sz',
+    handOpeningSize: 'ho',
+    stiffness: 'sf',
+    throwingHand: 'th',
+    backStyle: 'bs',
+    webType: 'wt',
+    ...Object.fromEntries(Object.values(ZONES).map(zone => [zone, zone.replace('zone', 'z')]))
+};
+
+const REVERSE_URL_KEY_MAP: { [key: string]: string } = Object.fromEntries(
+    Object.entries(URL_KEY_MAP).map(([key, value]) => [value as string, key])
+);
+
+const encodeText = (text: string): string => {
+    const utf8Bytes = new TextEncoder().encode(text);
+    const base64 = btoa(String.fromCharCode(...utf8Bytes));
+    return base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+};
+
+const decodeText = (encoded: string): string => {
+    try {
+        let base64 = encoded.replace(/-/g, '+').replace(/_/g, '/');
+        while (base64.length % 4) {
+            base64 += '=';
+        }
+        const binaryString = atob(base64);
+        const bytes = Uint8Array.from(binaryString, c => c.charCodeAt(0));
+        return new TextDecoder().decode(bytes);
+    } catch (e) {
+        return encoded;
+    }
+};
+
+export const serialize = (config: GloveConfiguration): string => {
+    const pairs: string[] = [];
+
+    // 1. Serialize Build Configuration
+    for (const [key, value] of Object.entries(config.build)) {
+        const shortKey = URL_KEY_MAP[key as keyof typeof URL_KEY_MAP];
+        if (shortKey) {
+            pairs.push(`${shortKey}-${value}`);
+        }
+    }
+
+    // 2. Serialize Text Parts
+    const { thumbName, pinkyName } = config;
+    const encodedThumbText = encodeText(thumbName.text);
+    pairs.push(`${URL_KEY_MAP.thumbName}-${encodedThumbText}~${thumbName.font}~${thumbName.colorId}`);
+
+    const encodedPinkyText = encodeText(pinkyName.text);
+    pairs.push(`${URL_KEY_MAP.pinkyName}-${encodedPinkyText}~${pinkyName.font}~${pinkyName.colorId}`);
+
+    // 3. Serialize Zone Colors
+    for (const key in config) {
+        if (key.startsWith('zone')) {
+            const zoneKey = key as ZoneKey;
+            const shortKey = URL_KEY_MAP[zoneKey];
+            if (shortKey) {
+                pairs.push(`${shortKey}-${config[zoneKey].colorId}`);
+            }
+        }
+    }
+
+    return pairs.join('|');
+};
+
+export const deserialize = (encodedString: string): GloveConfiguration => {
+    const config = deepCopy(initialState.configuration); 
+    
+    let pairs = encodedString.split('|');
+    if (pairs.length === 1 && encodedString.includes('_')) {
+        pairs = encodedString.split('_');
+    }
+
+    for (const pair of pairs) {
+        const separatorIndex = pair.indexOf('-');
+        if (separatorIndex === -1) continue;
+
+        const key = pair.substring(0, separatorIndex);
+        const value = pair.substring(separatorIndex + 1);
+
+        const longKey = REVERSE_URL_KEY_MAP[key];
+        if (!longKey) continue;
+
+        if (longKey === 'thumbName' || longKey === 'pinkyName') {
+            const [text, font, colorId] = value.split('~');
+            if (text !== undefined) config[longKey].text = decodeText(text);
+            if (font !== undefined) config[longKey].font = font as Font;
+            if (colorId !== undefined) config[longKey].colorId = colorId as ColorId;
+            continue;
+        }
+
+        if (longKey.startsWith('zone')) {
+            config[longKey as ZoneKey] = { colorId: value as ColorId };
+        } else if (longKey in config.build) {
+            // @ts-ignore
+            config.build[longKey] = value;
+        }
+    }
+
+    return sanitize(config);
+};
+
+export const cloneInitialConfig = (): GloveConfiguration =>
+    deepCopy(initialState.configuration);
+
 export const initialState: AppState = {
     configuration: PRESETS['open-back'],
     commerce: {
