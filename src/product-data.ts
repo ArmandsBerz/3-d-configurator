@@ -630,14 +630,13 @@ export const deepCopy = <T,>(obj: T): T => {
 export const sanitize = (config: GloveConfiguration): GloveConfiguration => {
     let nextConfig = deepCopy(config);
     let iterations = 0;
-    const MAX_ITERATIONS = 3; // Prevent infinite loops
+    const MAX_ITERATIONS = 3; 
 
-    // 1. RE-RESOLVE LOOP (The "Infield Paradox" Fix)
+    // 1. RE-RESOLVE LOOP
     while (iterations < MAX_ITERATIONS) {
         const def = resolveProduct(nextConfig.build);
         let changed = false;
 
-        // Constraint: Forced Back Style
         if (def.constraints.forcedBackStyle) {
             if (nextConfig.build.backStyle !== def.constraints.forcedBackStyle) {
                 nextConfig.build.backStyle = def.constraints.forcedBackStyle;
@@ -649,7 +648,6 @@ export const sanitize = (config: GloveConfiguration): GloveConfiguration => {
         iterations++;
     }
 
-    // 2. GET FINAL DEFINITION
     const def = resolveProduct(nextConfig.build);
 
     // 3. SANITIZE WEB TYPE
@@ -658,6 +656,36 @@ export const sanitize = (config: GloveConfiguration): GloveConfiguration => {
         if (validWebKeys.length > 0) {
             nextConfig.build.webType = validWebKeys[0];
         }
+    }
+
+    // 4. SANITIZE ZONES (The Fix)
+    // We create a Set for O(1) lookups
+    const validColorIds = new Set(def.constraints.validPalette);
+    const fallbackColor = def.constraints.validPalette[0] as ColorId;
+
+    // Check every key that looks like a zone
+    for (const key of Object.keys(nextConfig)) {
+        if (key.startsWith('zone')) {
+            const zoneKey = key as ZoneKey;
+            const zoneState = nextConfig[zoneKey];
+
+            // If this zone exists in state but has an invalid color
+            if (zoneState && !validColorIds.has(zoneState.colorId)) {
+                // Reset it to the specific zone default, or the global fallback
+                const zoneDef = def.zones[zoneKey];
+                const newColor = zoneDef?.defaultColor || fallbackColor;
+                
+                nextConfig[zoneKey] = { colorId: newColor };
+            }
+        }
+    }
+
+    // Check Text Colors too
+    if (!validColorIds.has(nextConfig.thumbName.colorId)) {
+        nextConfig.thumbName.colorId = fallbackColor;
+    }
+    if (!validColorIds.has(nextConfig.pinkyName.colorId)) {
+        nextConfig.pinkyName.colorId = fallbackColor;
     }
 
     return nextConfig;
