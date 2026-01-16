@@ -1,6 +1,6 @@
 // src/viewer.tsx
 
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, createContext, useContext } from 'react';
 import {
     Engine, // Changed for bindForSubMesh signature
     Scene,
@@ -1082,6 +1082,14 @@ const BabylonCanvas = ({ onSceneReady, initialModelName }: BabylonCanvasProps) =
     }, [onSceneReady]);
 
     return <canvas ref={reactCanvas} style={{ width: '100%', height: '100%', outline: 'none' }} />;
+};
+
+export const SceneContext = createContext<SceneManager | null>(null);
+
+export const useScene = () => {
+    const context = useContext(SceneContext);
+    if (!context) { throw new Error('useScene must be used within a SceneProvider'); }
+    return context;
 };
 
 export default BabylonCanvas;

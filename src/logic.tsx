@@ -1,7 +1,5 @@
 // src/logic.tsx
 
-import { createContext, useContext, useEffect } from 'react';
-import { SceneManager } from './viewer';
 import * as fflate from 'fflate';
 // REMOVED: import { useGloveConfigurator } from './ui'; 
 
@@ -182,12 +180,4 @@ export const generateShareableURL = (config: GloveConfiguration): string => {
     const versionedPayload = `${CONFIG_VERSION}:${processedData}`;
     const baseURL = window.location.origin + window.location.pathname;
     return `${baseURL}?config=${versionedPayload}`;
-};
-
-export const SceneContext = createContext<SceneManager | null>(null);
-
-export const useScene = () => {
-    const context = useContext(SceneContext);
-    if (!context) { throw new Error('useScene must be used within a SceneProvider'); }
-    return context;
 };

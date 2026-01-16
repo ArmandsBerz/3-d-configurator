@@ -1,9 +1,8 @@
 // src/ui.tsx
 
 import 'wicg-inert';
-import { SceneManager } from './viewer';
+import { SceneManager, SceneContext } from './viewer';
 import {
-    SceneContext,
     leatherOptions,
     fontOptions,
     COLOR_OPTIONS,
