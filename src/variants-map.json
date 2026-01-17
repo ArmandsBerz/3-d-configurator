@@ -3,7 +3,7 @@
   "keyParts": ["shell", "imageSelection", "size"],
   "default": "45807344418972",
   "map": {
-    "catchers": "45807344418972",
+    "catcher": "45807344418972",
 
     "first-base": "45810730729628",
     "first-base|1300": "45810730729628",
