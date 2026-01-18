@@ -6,7 +6,7 @@ import {
     leatherOptions,
     fontOptions,
     COLOR_OPTIONS,
-    buildOptionsData,
+    // buildOptionsData, // REMOVED: Dependency broken per Phase 3
     initialState,
     ZONES,
     HexColor,
@@ -38,7 +38,8 @@ import {
     UIPartGroupGallery,
     UIPartGroupSingle,
     UIPartGroupDual, // <--- ADDED per instructions
-    CommerceState
+    CommerceState,
+    resolveBuildGroups // <--- ADDED: The Resolver Bridge
 } from './logic';
 import { updateBuild } from './product-data'; // <--- NEW: Import directly from domain layer
 import React, { useState, useRef, useLayoutEffect, useCallback, useEffect, createContext, useContext, useReducer, ReactNode, ReactElement, useMemo } from 'react';
@@ -693,9 +694,10 @@ const Option = React.forwardRef<HTMLButtonElement, OptionProps>(
     )
 );
 
+// --- MODIFICATION: Updated to accept Readonly options ---
 interface OptionGroupProps {
     title: string;
-    options: { id: string, label: string }[];
+    options: readonly { id: string, label: string }[];
     layout: string;
     selectedOption: string;
     onSelectOption: (id: string) => void;
@@ -730,9 +732,10 @@ const OptionGroup = ({ title, options, layout, selectedOption, onSelectOption }:
     );
 };
 
+// --- MODIFICATION: Updated to accept Readonly options ---
 interface ImageGroupProps {
     title: string;
-    options: { id: string, title: string }[];
+    options: readonly { id: string, title: string }[];
     layout: string;
     selectedOption: string;
     onSelectOption: (id: string) => void;
@@ -778,8 +781,13 @@ const BuildOption = ({ isDesktop }: BuildOptionProps) => {
     // --- FIX: Use Partial<BuildConfig> for safer updates ---
     const onBuildConfigChange = (newConfig: Partial<BuildConfig>) => dispatch({ type: ACTION_TYPES.UPDATE_BUILD, payload: newConfig });
 
-    const positionGroup = buildOptionsData.find((g: { id: string; }) => g.id === 'position');
-    const otherGroups = buildOptionsData.filter((g: { id: string; }) => g.id !== 'position');
+    // --- PHASE 3: USE RESOLVER INSTEAD OF GLOBAL LIST ---
+    const definition = resolveProduct(buildConfig);
+    const buildGroups = resolveBuildGroups(definition);
+
+    // Filter position group explicitly (same behavior as before)
+    const positionGroup = buildGroups.find(g => g.id === 'position');
+    const otherGroups = buildGroups.filter(g => g.id !== 'position');
 
     return (
         <div className={`space-y-6 ${!isDesktop ? 'pb-4' : ''}`}>
@@ -818,7 +826,8 @@ const BuildOption = ({ isDesktop }: BuildOptionProps) => {
                 />
             )}
 
-            {otherGroups.map((group: { id: string; title: string; options: { id: string, label: string }[]; layout: string; }) => (
+            {/* --- MODIFICATION: Updated map callback to allow readonly options --- */}
+            {otherGroups.map((group) => (
                 <OptionGroup
                     key={group.id}
                     title={group.title}
@@ -967,16 +976,25 @@ const OrderSummaryInfo = () => {
     const definition = resolveProduct(build);
     const uiGroups = definition.uiGroups;
 
+    // --- PHASE 3: USE RESOLVER FOR SUMMARY LABELS ---
+    const buildGroups = resolveBuildGroups(definition);
+
+    // --- MODIFICATION: Updated helper to allow readonly options ---
     const getBuildLabel = (key: string, value: string): string => {
         if (key === 'imageSelection') return leatherOptions.find((opt: { id: string }) => opt.id === value)?.title || value;
         if (key === 'webType') return webTypeOptions.find((opt: { id: string }) => opt.id === value)?.title || value;
-        const group = buildOptionsData.find((g: { id: string }) => g.id === key);
-        return group?.options.find((o: { id: string }) => o.id === value)?.label || value;
+        
+        // --- PHASE 3 FIX: USE RESOLVED GROUPS ---
+        // This eliminates the TypeScript "Union" error because buildGroups contains standardized objects.
+        const group = buildGroups.find(g => g.id === key);
+        return group?.options.find(o => o.id === value)?.label || value;
     };
+    
     const getBuildTitle = (key: string): string => {
         if (key === 'imageSelection') return "Glove Leather";
         if (key === 'webType') return "Web Type";
-        return buildOptionsData.find((g: { id: string }) => g.id === key)?.title || key;
+        // Also use resolved groups for title lookup for consistency
+        return buildGroups.find(g => g.id === key)?.title || key;
     };
 
     // Helper to get color name from ID

@@ -64,13 +64,113 @@ export const COLOR_OPTIONS = [
     { id: 'wt', name: 'White', hex: '#FFFFFF' }, // Added White if missing
 ] as const;
 
-// --- PALETTE SYSTEM IMPLEMENTATION ---
+// --- PALETTE SYSTEM IMPLEMENTATION (COLORS) ---
 export const PALETTES = {
     universal: COLOR_OPTIONS
 } as const;
 
 export type PaletteId = keyof typeof PALETTES;
 export type ColorId = typeof COLOR_OPTIONS[number]['id'];
+
+// ===================================================================
+// 2.5 REGISTRIES & PALETTES (THE NEW UNIVERSE)
+// ===================================================================
+
+// --- 1. LEATHER REGISTRY ---
+export const LEATHER_REGISTRY = {
+    'imgOpt1': { label: 'Japanese Kip' },
+    'imgOpt2': { label: 'American Steerhide' }
+} as const;
+
+export type BuildLeatherId = keyof typeof LEATHER_REGISTRY;
+
+export const LEATHER_PALETTES = {
+    universal: ['imgOpt1', 'imgOpt2']
+} as const satisfies Record<string, readonly BuildLeatherId[]>; //
+
+export type LeatherPaletteId = keyof typeof LEATHER_PALETTES;
+
+
+// --- 2. SIZE REGISTRY ---
+export const SIZE_REGISTRY = {
+    '1100': { label: '11"' },
+    '1125': { label: '11.25"' },
+    '1150': { label: '11.5"' },
+    '1175': { label: '11.75"' },
+    '1200': { label: '12"' },
+    '1225': { label: '12.25"' },
+    '1250': { label: '12.5"' },
+    '1275': { label: '12.75"' },
+    '1300': { label: '13"' },
+    '3200': { label: '32"' },
+    '3300': { label: '33"' },
+    '3400': { label: '34"' }
+} as const;
+
+export type BuildSizeId = keyof typeof SIZE_REGISTRY;
+
+export const SIZE_PALETTES = {
+    openBack: ['1100', '1125', '1150', '1175', '1200'],
+    closeBack: ['1200', '1225', '1250', '1275', '1300'],
+    firstBase: ['1200', '1250', '1300'],
+    catcher: ['3200', '3300', '3400']
+} as const satisfies Record<string, readonly BuildSizeId[]>; //
+
+export type SizePaletteId = keyof typeof SIZE_PALETTES;
+
+
+// --- 3. HAND OPENING REGISTRY ---
+export const HAND_OPENING_REGISTRY = {
+    'adt': { label: 'ADULT' },
+    'yth': { label: 'YOUTH' }
+} as const;
+
+export type BuildHandId = keyof typeof HAND_OPENING_REGISTRY;
+
+export const HAND_OPENING_PALETTES = {
+    universal: ['adt', 'yth']
+} as const satisfies Record<string, readonly BuildHandId[]>; //
+
+export type HandOpeningPaletteId = keyof typeof HAND_OPENING_PALETTES;
+
+
+// --- 4. STIFFNESS REGISTRY ---
+export const STIFFNESS_REGISTRY = {
+    'stf': { label: 'STIFF' },
+    'std': { label: 'STANDARD' },
+    'sft': { label: 'SOFT' }
+} as const;
+
+export type BuildStiffnessId = keyof typeof STIFFNESS_REGISTRY;
+
+export const STIFFNESS_PALETTES = {
+    universal: ['stf', 'std', 'sft']
+} as const satisfies Record<string, readonly BuildStiffnessId[]>; //
+
+export type StiffnessPaletteId = keyof typeof STIFFNESS_PALETTES;
+
+
+// --- 5. THROWING HAND REGISTRY ---
+export const THROWING_HAND_REGISTRY = {
+    'rh': { label: 'RIGHT HAND' },
+    'lh': { label: 'LEFT HAND' }
+} as const;
+
+export type BuildThrowingId = keyof typeof THROWING_HAND_REGISTRY;
+
+export const THROWING_HAND_PALETTES = {
+    universal: ['rh', 'lh']
+} as const satisfies Record<string, readonly BuildThrowingId[]>; //
+
+export type ThrowingHandPaletteId = keyof typeof THROWING_HAND_PALETTES;
+
+
+// --- LEGACY SUPPORT (Derived from Registries) ---
+// This ensures UI components importing these still work until Phase 3 migration.
+export const leatherOptions = Object.entries(LEATHER_REGISTRY).map(([id, data]) => ({ id, title: data.label }));
+// Note: buildOptionsData is kept as-is for now to avoid breaking UI before Phase 3.
+const ALL_SIZE_OPTIONS = Object.entries(SIZE_REGISTRY).map(([id, data]) => ({ id, label: data.label }));
+
 
 export const FONT_REGISTRY = [
   { id: 'LOBSTER', label: 'Lobster', baseName: 'lobsterType', targetLineFactor: 0.51 },
@@ -81,9 +181,11 @@ export const fontOptions = FONT_REGISTRY.map(font => ({ id: font.id, label: font
 export type Font = (typeof FONT_REGISTRY)[number]['id'];
 
 // Build Options Data
+// Note: We use ALL_SIZE_OPTIONS here to ensure Typescript Unions cover every possibility.
+// The actual filtered list presented to UI will depend on constraints.
 export const buildOptionsData = [
     { id: 'position', title: 'Position', options: [{id: 'inf', label: 'INFIELD'}, {id: 'out', label: 'OUTFIELD'}, {id: 'pit', label: 'PITCHER'}, {id: 'cat', label: 'CATCHER'}, {id: 'fb', label: 'FIRST BASE'}], layout: 'grid-cols-3' },
-    { id: 'size', title: 'Size', options: [{id: '1100', label: '11"'}, {id: '1125', label: '11.25"'}, {id: '1150', label: '11.5"'}, {id: '1175', label: '11.75"'}, {id: '1200', label: '12"'}], layout: 'grid-cols-3' },
+    { id: 'size', title: 'Size', options: ALL_SIZE_OPTIONS, layout: 'grid-cols-3' }, 
     { id: 'handOpeningSize', title: 'Hand Opening Size', options: [{id: 'adt', label: 'ADULT'}, {id: 'yth', label: 'YOUTH'}], layout: 'grid-cols-2' },
     { id: 'stiffness', title: 'Stiffness', options: [{id: 'stf', label: 'STIFF'}, {id: 'std', label: 'STANDARD'}, {id: 'sft', label: 'SOFT'}], layout: 'grid-cols-3' },
     { id: 'throwingHand', title: 'Throwing Hand', options: [{id: 'rh', label: 'RIGHT HAND'}, {id: 'lh', label: 'LEFT HAND'}], layout: 'grid-cols-2' }
@@ -93,17 +195,8 @@ export const webTypeOptions = [
     { id: 'bsk', title: 'Basket' }, { id: 'bsl', title: 'Basket Lace' }, { id: 'clv', title: 'Closed V' }, { id: 'dhn', title: 'Dual Hinge' }, { id: 'fmt', title: 'Framed Mod Trap' }, { id: 'hwb', title: 'H-Web' }, { id: 'iwb', title: 'I-Web' }, { id: 'lch', title: 'Laced H-Web' }, { id: 'lcs', title: 'Lace Sealing' }, { id: 'mtp', title: 'Mod Trap' }, { id: '1pc', title: 'One Piece' }, { id: 'pst', title: 'Post' }, { id: 'slg', title: 'Sealing' }, { id: 'sp', title: 'Single Post' }, { id: 'spl', title: 'Single Post Lace' }, { id: 'trp', title: 'Trap' }, { id: '2pc', title: 'Two Piece' },
 ];
 
-export const leatherOptions = [
-    { id: 'imgOpt1', title: 'Japanese Kip' },
-    { id: 'imgOpt2', title: 'American Steerhide' }
-];
-
 // Derived Types
 export type BuildPositionId = typeof buildOptionsData[0]['options'][number]['id'];
-export type BuildSizeId = typeof buildOptionsData[1]['options'][number]['id'];
-export type BuildHandId = typeof buildOptionsData[2]['options'][number]['id'];
-export type BuildStiffnessId = typeof buildOptionsData[3]['options'][number]['id'];
-export type BuildThrowingId = typeof buildOptionsData[4]['options'][number]['id'];
 export type BuildBackId = 'opn' | 'cls';
 export type WebTypeId = typeof webTypeOptions[number]['id'];
 
@@ -199,7 +292,16 @@ export interface ProductDefinition {
     // D. CONSTRAINTS (Business Rules)
     constraints: {
         validPalette: string[]; // Whitelist of color IDs
+        validSizes: string[]; // Whitelist of size IDs
     };
+
+    // E. CAPABILITIES (Palette IDs)
+    sizePaletteId: SizePaletteId;
+    leatherPaletteId: LeatherPaletteId;
+    stiffnessPaletteId: StiffnessPaletteId;
+    handOpeningPaletteId: HandOpeningPaletteId;
+    throwingHandPaletteId: ThrowingHandPaletteId;
+    positionPaletteId: 'universal'; // Simplified for now
 }
 
 // ===================================================================
@@ -243,6 +345,12 @@ interface ProductBlueprint {
     validWebs: Record<string, string>;
     specificZones: Record<string, Partial<ZoneDefinition>>; // Overrides
     uiGroups: UIPartGroup[];
+    // NEW: Palette ID References
+    sizePalette: SizePaletteId;
+    leatherPalette?: LeatherPaletteId;
+    stiffnessPalette?: StiffnessPaletteId;
+    handOpeningPalette?: HandOpeningPaletteId;
+    throwingHandPalette?: ThrowingHandPaletteId;
 }
 
 // Simple Deep Freeze Implementation
@@ -330,8 +438,17 @@ const compileProduct = (blueprint: ProductBlueprint): ProductDefinition => {
         zones: finalZones,
         uiGroups: blueprint.uiGroups,
         constraints: {
-            validPalette: COLOR_OPTIONS.map(c => c.id)
-        }
+            validPalette: COLOR_OPTIONS.map(c => c.id),
+            // FIX: Removed .map(s => s.id) because the palette is now ALREADY a list of IDs.
+            validSizes: [...SIZE_PALETTES[blueprint.sizePalette]] 
+        },
+        // NEW: Assign Palettes (Default to universal if not specified)
+        sizePaletteId: blueprint.sizePalette,
+        leatherPaletteId: blueprint.leatherPalette || 'universal',
+        stiffnessPaletteId: blueprint.stiffnessPalette || 'universal',
+        handOpeningPaletteId: blueprint.handOpeningPalette || 'universal',
+        throwingHandPaletteId: blueprint.throwingHandPalette || 'universal',
+        positionPaletteId: 'universal'
     };
 
     return deepFreeze(cartridge);
@@ -345,6 +462,7 @@ const PRODUCT_REGISTRY = {
     'open-back': compileProduct({
         id: 'open-back',
         shellModel: 'openBack',
+        sizePalette: 'openBack', //
         validWebs: { 
             bsk: 'basketOB', bsl: 'basketLaceOB', clv: 'closedVOB', dhn: 'dualHingeOB', 
             fmt: 'framedModTrapOB', hwb: 'hOB', iwb: 'iOB', lch: 'lacedHOB', lcs: 'laceSealingOB', 
@@ -382,6 +500,7 @@ const PRODUCT_REGISTRY = {
     'close-back': compileProduct({
         id: 'close-back',
         shellModel: 'closeBack',
+        sizePalette: 'closeBack', //
         validWebs: { 
             bsk: 'basketCB', clv: 'closedVCB', dhn: 'dualHingeCB', fmt: 'framedModTrapCB', 
             hwb: 'hCB', lch: 'lacedHCB', lcs: 'laceSealingCB', mtp: 'modTrapCB', 
@@ -415,6 +534,7 @@ const PRODUCT_REGISTRY = {
     'first-base': compileProduct({
         id: 'first-base',
         shellModel: 'firstBase',
+        sizePalette: 'firstBase', //
         validWebs: { pst: 'postFB', '2pc': 'twoPieceFB' },
         specificZones: {
             [ZONES.THUMB_INNER]:    { shaderIndex: 1, displayName: 'Primary U-Piece' },
@@ -441,6 +561,7 @@ const PRODUCT_REGISTRY = {
     'catcher': compileProduct({
         id: 'catcher',
         shellModel: 'catcher',
+        sizePalette: 'catcher', //
         validWebs: { '2pc': 'twoPieceCM' },
         specificZones: {
             [ZONES.INDEX]: { shaderIndex: 2, displayName: 'Shell Back' },
@@ -578,7 +699,7 @@ export const PRESETS = {
     } as GloveConfiguration,
 
     'catcher': {
-        build: { palette: 'universal', imageSelection: 'imgOpt1', position: 'cat', size: '1200', handOpeningSize: 'adt', stiffness: 'std', throwingHand: 'rh', webType: '2pc' },
+        build: { palette: 'universal', imageSelection: 'imgOpt1', position: 'cat', size: '3200', handOpeningSize: 'adt', stiffness: 'std', throwingHand: 'rh', webType: '2pc' },
         thumbName: { type: 'text', text: 'Catcher', font: 'LOBSTER', colorId: 'gd' },
         pinkyName: { type: 'text', text: 'Mitt', font: 'ROBOTO', colorId: 'gd' },
         [ZONES.THUMB_INNER]:    { colorId: 'bl' }, 
