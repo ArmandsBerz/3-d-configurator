@@ -834,7 +834,8 @@ const BuildOption = ({ isDesktop }: BuildOptionProps) => {
                     options={group.options}
                     layout={group.layout}
                     selectedOption={buildConfig[group.id as keyof Omit<BuildConfig, 'imageSelection' | 'position' | 'backStyle' | 'webType'>]}
-                    onSelectOption={(value) => onBuildConfigChange({ [group.id]: value })}
+                    // --- FIX FOR GOTCHA B: TYPE ASSERTION FOR COMPUTED KEY ---
+                    onSelectOption={(value) => onBuildConfigChange({ [group.id]: value } as Partial<BuildConfig>)}
                 />
             ))}
         </div>

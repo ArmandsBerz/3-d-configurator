@@ -114,7 +114,16 @@ export {
 // --- BUILD GROUP RESOLVER (PHASE 2) ---
 // ===================================================================
 
-const resolveBuildGroups = (def: ProductDefinition) => {
+// FIX FOR GOTCHA A: Explicit Interface to prevent Union inference
+export interface UIBuildGroup {
+    id: string;
+    title: string;
+    options: readonly { id: string; label: string }[];
+    layout: string;
+}
+
+// FIX FOR GOTCHA A: Explicit Return Type (: UIBuildGroup[])
+const resolveBuildGroups = (def: ProductDefinition): UIBuildGroup[] => {
     // 1. Position Group (Explicitly First)
     const positionGroup = {
         id: 'position',

@@ -842,6 +842,38 @@ export const sanitize = (config: GloveConfiguration): GloveConfiguration => {
         }
     }
 
+    // --- NEW: SANITIZE BUILD OPTIONS ---
+    // Validate Size
+    if (!def.constraints.validSizes.includes(nextConfig.build.size)) {
+        // Fallback to first valid size
+        nextConfig.build.size = def.constraints.validSizes[0] as BuildSizeId;
+    }
+
+    // Validate Stiffness
+    const validStiffnesses = STIFFNESS_PALETTES[def.stiffnessPaletteId];
+    if (!validStiffnesses.includes(nextConfig.build.stiffness)) {
+        nextConfig.build.stiffness = validStiffnesses[0];
+    }
+
+    // Validate Hand Opening
+    const validHandOpenings = HAND_OPENING_PALETTES[def.handOpeningPaletteId];
+    if (!validHandOpenings.includes(nextConfig.build.handOpeningSize)) {
+        nextConfig.build.handOpeningSize = validHandOpenings[0];
+    }
+
+    // Validate Throwing Hand
+    const validThrowingHands = THROWING_HAND_PALETTES[def.throwingHandPaletteId];
+    if (!validThrowingHands.includes(nextConfig.build.throwingHand)) {
+        nextConfig.build.throwingHand = validThrowingHands[0];
+    }
+
+    // Validate Leather
+    const validLeathers = LEATHER_PALETTES[def.leatherPaletteId];
+    if (!validLeathers.includes(nextConfig.build.imageSelection)) {
+        nextConfig.build.imageSelection = validLeathers[0];
+    }
+    // -----------------------------------
+
     // 4. SANITIZE ZONES (Color Validation)
     const validColorIds = new Set(def.constraints.validPalette);
     const fallbackColor = def.constraints.validPalette[0] as ColorId;
