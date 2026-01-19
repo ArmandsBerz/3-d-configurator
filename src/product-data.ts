@@ -76,6 +76,24 @@ export type ColorId = typeof COLOR_OPTIONS[number]['id'];
 // 2.5 REGISTRIES & PALETTES (THE NEW UNIVERSE)
 // ===================================================================
 
+// --- 0. POSITION REGISTRY ---
+export const POSITION_REGISTRY = {
+    'inf': { label: 'INFIELD' },
+    'out': { label: 'OUTFIELD' },
+    'pit': { label: 'PITCHER' },
+    'cat': { label: 'CATCHER' },
+    'fb':  { label: 'FIRST BASE' }
+} as const;
+
+export type BuildPositionId = keyof typeof POSITION_REGISTRY;
+
+export const POSITION_PALETTES = {
+    universal: ['inf', 'out', 'pit', 'cat', 'fb']
+} as const satisfies Record<string, readonly BuildPositionId[]>;
+
+export type PositionPaletteId = keyof typeof POSITION_PALETTES;
+
+
 // --- 1. LEATHER REGISTRY ---
 export const LEATHER_REGISTRY = {
     'imgOpt1': { label: 'Japanese Kip' },
@@ -196,7 +214,7 @@ export const webTypeOptions = [
 ];
 
 // Derived Types
-export type BuildPositionId = typeof buildOptionsData[0]['options'][number]['id'];
+// export type BuildPositionId = typeof buildOptionsData[0]['options'][number]['id']; // REPLACED BY REGISTRY
 export type BuildBackId = 'opn' | 'cls';
 export type WebTypeId = typeof webTypeOptions[number]['id'];
 
@@ -301,7 +319,7 @@ export interface ProductDefinition {
     stiffnessPaletteId: StiffnessPaletteId;
     handOpeningPaletteId: HandOpeningPaletteId;
     throwingHandPaletteId: ThrowingHandPaletteId;
-    positionPaletteId: 'universal'; // Simplified for now
+    positionPaletteId: PositionPaletteId;
 }
 
 // ===================================================================

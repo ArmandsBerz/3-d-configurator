@@ -49,6 +49,8 @@ import {
     deserialize,
     cloneInitialConfig,
     // --- NEW IMPORTS PHASE 2 ---
+    POSITION_REGISTRY, // <--- ADDED per instructions
+    POSITION_PALETTES, // <--- ADDED per instructions
     LEATHER_REGISTRY, // <--- ADDED for Leather logic
     LEATHER_PALETTES, // <--- ADDED for Leather logic
     SIZE_REGISTRY,
@@ -142,16 +144,18 @@ const resolveBuildGroups = (def: ProductDefinition): UIBuildGroup[] => {
     };
 
     // 1. Position Group (Explicitly First)
+    const positionPaletteId = def.positionPaletteId;
+    const positionIds = POSITION_PALETTES[positionPaletteId];
+    // Map IDs to Labels via Registry
+    const positionOptions = positionIds.map(id => ({
+        id,
+        label: POSITION_REGISTRY[id].label
+    }));
+    
     const positionGroup = {
         id: 'position',
         title: 'Position',
-        options: [
-            {id: 'inf', label: 'INFIELD'},
-            {id: 'out', label: 'OUTFIELD'},
-            {id: 'pit', label: 'PITCHER'},
-            {id: 'cat', label: 'CATCHER'},
-            {id: 'fb', label: 'FIRST BASE'}
-        ],
+        options: positionOptions,
         layout: 'grid-cols-3'
     };
 
