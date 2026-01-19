@@ -792,7 +792,7 @@ const BuildOption = ({ isDesktop }: BuildOptionProps) => {
     const positionGroup = buildGroups.find(g => g.id === 'position');
     
     // --- NEW: Filter out 'imageSelection' as well so it doesn't appear twice ---
-    const otherGroups = buildGroups.filter(g => g.id !== 'position' && g.id !== 'imageSelection');
+    const otherGroups = buildGroups.filter(g => g.id !== 'position' && g.id !== 'imageSelection' && g.id !== 'webType');
 
     return (
         <div className={`space-y-6 ${!isDesktop ? 'pb-4' : ''}`}>
@@ -887,22 +887,22 @@ const WebOptions = () => {
     const { build: buildConfig } = state.configuration;
 
     const handleWebTypeChange = (newWebType: WebTypeId) => {
-        // --- FIX: Use Partial Update ---
         dispatch({ type: ACTION_TYPES.UPDATE_BUILD, payload: { webType: newWebType } });
     };
 
-    // --- DEFINITION-DRIVEN FILTERING ---
-    // Only show web options that are valid for the current glove definition
+    // --- PHASE 3 FIX: USE RESOLVER ---
+    // No more manual filtering! The Logic layer already did the work.
     const definition = resolveProduct(buildConfig);
-    const validWebs = definition.assets.validWebs;
-    const filteredWebOptions = webTypeOptions.filter(opt => validWebs[opt.id]);
+    const buildGroups = resolveBuildGroups(definition);
+    const webGroup = buildGroups.find(g => g.id === 'webType');
 
     return (
         <div className="space-y-6">
             <ImageGroup
                 title="Web Type"
                 layout="grid-cols-3"
-                options={filteredWebOptions} // <--- Filtered List
+                // Map 'label' to 'title' for ImageGroup, use empty array fallback
+                options={webGroup ? webGroup.options.map(o => ({ id: o.id, title: o.label })) : []}
                 selectedOption={buildConfig.webType}
                 onSelectOption={handleWebTypeChange}
             />

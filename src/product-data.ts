@@ -224,9 +224,29 @@ export const buildOptionsData = [
     { id: 'throwingHand', title: 'Throwing Hand', options: [{id: 'rh', label: 'RIGHT HAND'}, {id: 'lh', label: 'LEFT HAND'}], layout: 'grid-cols-2' }
 ];
 
-export const webTypeOptions = [
-    { id: 'bsk', title: 'Basket' }, { id: 'bsl', title: 'Basket Lace' }, { id: 'clv', title: 'Closed V' }, { id: 'dhn', title: 'Dual Hinge' }, { id: 'fmt', title: 'Framed Mod Trap' }, { id: 'hwb', title: 'H-Web' }, { id: 'iwb', title: 'I-Web' }, { id: 'lch', title: 'Laced H-Web' }, { id: 'lcs', title: 'Lace Sealing' }, { id: 'mtp', title: 'Mod Trap' }, { id: '1pc', title: 'One Piece' }, { id: 'pst', title: 'Post' }, { id: 'slg', title: 'Sealing' }, { id: 'sp', title: 'Single Post' }, { id: 'spl', title: 'Single Post Lace' }, { id: 'trp', title: 'Trap' }, { id: '2pc', title: 'Two Piece' },
-];
+// --- 6. WEB REGISTRY (Refactored from Array) ---
+export const WEB_REGISTRY = {
+    'bsk': { label: 'Basket' },
+    'bsl': { label: 'Basket Lace' },
+    'clv': { label: 'Closed V' },
+    'dhn': { label: 'Dual Hinge' },
+    'fmt': { label: 'Framed Mod Trap' },
+    'hwb': { label: 'H-Web' },
+    'iwb': { label: 'I-Web' },
+    'lch': { label: 'Laced H-Web' },
+    'lcs': { label: 'Lace Sealing' },
+    'mtp': { label: 'Mod Trap' },
+    '1pc': { label: 'One Piece' },
+    'pst': { label: 'Post' },
+    'slg': { label: 'Sealing' },
+    'sp':  { label: 'Single Post' },
+    'spl': { label: 'Single Post Lace' },
+    'trp': { label: 'Trap' },
+    '2pc': { label: 'Two Piece' },
+} as const;
+
+// Legacy Support (Derived): Keeps existing code working while we migrate
+export const webTypeOptions = Object.entries(WEB_REGISTRY).map(([id, data]) => ({ id, title: data.label }));
 
 // Derived Types
 // export type BuildPositionId = typeof buildOptionsData[0]['options'][number]['id']; // REPLACED BY REGISTRY

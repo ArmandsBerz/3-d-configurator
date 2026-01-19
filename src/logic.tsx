@@ -62,7 +62,8 @@ import {
     THROWING_HAND_REGISTRY,
     THROWING_HAND_PALETTES,
     BACK_STYLE_REGISTRY, // <--- ADDED per instructions
-    BACK_STYLE_PALETTES // <--- ADDED per instructions
+    BACK_STYLE_PALETTES, // <--- ADDED per instructions
+    WEB_REGISTRY // <--- ADDED per instructions
 } from './product-data';
 
 // --- RE-EXPORT EVERYTHING FOR CONSUMERS (UI.TSX, VIEWER.TSX) ---
@@ -179,6 +180,23 @@ const resolveBuildGroups = (def: ProductDefinition): UIBuildGroup[] => {
         };
     }
 
+    // 1.7 Web Type Group (Dynamic from Assets)
+    // The "Palette" for webs is strictly the keys of the validWebs map.
+    const validWebIds = Object.keys(def.assets.validWebs);
+    
+    const webOptions = validWebIds.map(id => ({
+        id,
+        // @ts-ignore - Safe because schema validation ensures validWebs only contains valid IDs
+        label: WEB_REGISTRY[id]?.label || id 
+    }));
+
+    const webGroup = {
+        id: 'webType',
+        title: 'Web Type',
+        options: webOptions,
+        layout: 'grid-cols-3'
+    };
+
     // 2. Size Group
     const sizePaletteId = def.sizePaletteId;
     const sizeIds = SIZE_PALETTES[sizePaletteId];
@@ -241,6 +259,7 @@ const resolveBuildGroups = (def: ProductDefinition): UIBuildGroup[] => {
         positionGroup,
         backStyleGroup, // Added to return array (conditional)
         sizeGroup,
+        webGroup, // <--- Add it to the list!
         handGroup,
         stiffnessGroup,
         throwingGroup
