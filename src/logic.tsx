@@ -49,6 +49,8 @@ import {
     deserialize,
     cloneInitialConfig,
     // --- NEW IMPORTS PHASE 2 ---
+    LEATHER_REGISTRY, // <--- ADDED for Leather logic
+    LEATHER_PALETTES, // <--- ADDED for Leather logic
     SIZE_REGISTRY,
     SIZE_PALETTES,
     STIFFNESS_REGISTRY,
@@ -124,6 +126,21 @@ export interface UIBuildGroup {
 
 // FIX FOR GOTCHA A: Explicit Return Type (: UIBuildGroup[])
 const resolveBuildGroups = (def: ProductDefinition): UIBuildGroup[] => {
+    // 0. Leather Group (Added per instructions)
+    const leatherPaletteId = def.leatherPaletteId;
+    const leatherIds = LEATHER_PALETTES[leatherPaletteId];
+    // Map IDs to Labels via Registry
+    const leatherOptionsMapped = leatherIds.map(id => ({
+        id,
+        label: LEATHER_REGISTRY[id].label
+    }));
+    const leatherGroup = {
+        id: 'imageSelection',
+        title: 'Glove Leather',
+        options: leatherOptionsMapped,
+        layout: 'grid-cols-2'
+    };
+
     // 1. Position Group (Explicitly First)
     const positionGroup = {
         id: 'position',
@@ -196,6 +213,7 @@ const resolveBuildGroups = (def: ProductDefinition): UIBuildGroup[] => {
     };
 
     return [
+        leatherGroup, // Added to return array
         positionGroup,
         sizeGroup,
         handGroup,

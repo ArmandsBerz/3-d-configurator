@@ -785,16 +785,22 @@ const BuildOption = ({ isDesktop }: BuildOptionProps) => {
     const definition = resolveProduct(buildConfig);
     const buildGroups = resolveBuildGroups(definition);
 
+    // --- NEW: Find leather group specifically ---
+    const leatherGroup = buildGroups.find(g => g.id === 'imageSelection');
+
     // Filter position group explicitly (same behavior as before)
     const positionGroup = buildGroups.find(g => g.id === 'position');
-    const otherGroups = buildGroups.filter(g => g.id !== 'position');
+    
+    // --- NEW: Filter out 'imageSelection' as well so it doesn't appear twice ---
+    const otherGroups = buildGroups.filter(g => g.id !== 'position' && g.id !== 'imageSelection');
 
     return (
         <div className={`space-y-6 ${!isDesktop ? 'pb-4' : ''}`}>
             <ImageGroup
                 title="Glove Leather"
                 layout="grid-cols-2"
-                options={leatherOptions}
+                // --- NEW: Use dynamic options from leatherGroup, mapping label -> title ---
+                options={leatherGroup ? leatherGroup.options.map(o => ({ id: o.id, title: o.label })) : []}
                 selectedOption={buildConfig.imageSelection}
                 onSelectOption={(value) => onBuildConfigChange({ imageSelection: value as 'imgOpt1' | 'imgOpt2' })}
             />
