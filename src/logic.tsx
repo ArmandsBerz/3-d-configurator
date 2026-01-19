@@ -60,7 +60,9 @@ import {
     HAND_OPENING_REGISTRY,
     HAND_OPENING_PALETTES,
     THROWING_HAND_REGISTRY,
-    THROWING_HAND_PALETTES
+    THROWING_HAND_PALETTES,
+    BACK_STYLE_REGISTRY, // <--- ADDED per instructions
+    BACK_STYLE_PALETTES // <--- ADDED per instructions
 } from './product-data';
 
 // --- RE-EXPORT EVERYTHING FOR CONSUMERS (UI.TSX, VIEWER.TSX) ---
@@ -159,6 +161,24 @@ const resolveBuildGroups = (def: ProductDefinition): UIBuildGroup[] => {
         layout: 'grid-cols-3'
     };
 
+    // 1.5 Back Style Group (Conditional)
+    let backStyleGroup: UIBuildGroup | null = null;
+    
+    if (def.backStylePaletteId) {
+        const backStyleIds = BACK_STYLE_PALETTES[def.backStylePaletteId];
+        const backStyleOptions = backStyleIds.map(id => ({
+            id,
+            label: BACK_STYLE_REGISTRY[id].label
+        }));
+
+        backStyleGroup = {
+            id: 'backStyle',
+            title: 'Back Style',
+            options: backStyleOptions,
+            layout: 'grid-cols-2'
+        };
+    }
+
     // 2. Size Group
     const sizePaletteId = def.sizePaletteId;
     const sizeIds = SIZE_PALETTES[sizePaletteId];
@@ -219,11 +239,12 @@ const resolveBuildGroups = (def: ProductDefinition): UIBuildGroup[] => {
     return [
         leatherGroup, // Added to return array
         positionGroup,
+        backStyleGroup, // Added to return array (conditional)
         sizeGroup,
         handGroup,
         stiffnessGroup,
         throwingGroup
-    ];
+    ].filter((g): g is UIBuildGroup => g !== null); // Filter out nulls
 };
 
 // ===================================================================

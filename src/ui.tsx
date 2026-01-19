@@ -819,19 +819,6 @@ const BuildOption = ({ isDesktop }: BuildOptionProps) => {
                 />
             )}
 
-            {/* Conditionally render the Back Style selector */}
-            {['out', 'pit'].includes(buildConfig.position) && (
-                <OptionGroup
-                    title="Back Style"
-                    options={[{ id: 'opn', label: 'OPEN' }, { id: 'cls', label: 'CLOSE' }]}
-                    layout="grid-cols-2"
-                    selectedOption={(buildConfig as any).backStyle}
-                    onSelectOption={(value) => onBuildConfigChange({
-                        backStyle: value as 'opn' | 'cls'
-                    } as any)}
-                />
-            )}
-
             {/* --- MODIFICATION: Updated map callback to allow readonly options --- */}
             {otherGroups.map((group) => (
                 <OptionGroup

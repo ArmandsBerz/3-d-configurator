@@ -94,6 +94,21 @@ export const POSITION_PALETTES = {
 export type PositionPaletteId = keyof typeof POSITION_PALETTES;
 
 
+// --- 0.5. BACK STYLE REGISTRY (NEW) ---
+export const BACK_STYLE_REGISTRY = {
+    'opn': { label: 'OPEN' },
+    'cls': { label: 'CLOSE' }
+} as const;
+
+export type BuildBackStyleId = keyof typeof BACK_STYLE_REGISTRY;
+
+export const BACK_STYLE_PALETTES = {
+    universal: ['opn', 'cls']
+} as const satisfies Record<string, readonly BuildBackStyleId[]>;
+
+export type BackStylePaletteId = keyof typeof BACK_STYLE_PALETTES;
+
+
 // --- 1. LEATHER REGISTRY ---
 export const LEATHER_REGISTRY = {
     'imgOpt1': { label: 'Japanese Kip' },
@@ -320,6 +335,7 @@ export interface ProductDefinition {
     handOpeningPaletteId: HandOpeningPaletteId;
     throwingHandPaletteId: ThrowingHandPaletteId;
     positionPaletteId: PositionPaletteId;
+    backStylePaletteId?: BackStylePaletteId; // <--- NEW: Optional!
 }
 
 // ===================================================================
@@ -369,6 +385,7 @@ interface ProductBlueprint {
     stiffnessPalette?: StiffnessPaletteId;
     handOpeningPalette?: HandOpeningPaletteId;
     throwingHandPalette?: ThrowingHandPaletteId;
+    backStylePalette?: BackStylePaletteId; // <--- NEW: Optional!
 }
 
 // Simple Deep Freeze Implementation
@@ -466,7 +483,8 @@ const compileProduct = (blueprint: ProductBlueprint): ProductDefinition => {
         stiffnessPaletteId: blueprint.stiffnessPalette || 'universal',
         handOpeningPaletteId: blueprint.handOpeningPalette || 'universal',
         throwingHandPaletteId: blueprint.throwingHandPalette || 'universal',
-        positionPaletteId: 'universal'
+        positionPaletteId: 'universal',
+        backStylePaletteId: blueprint.backStylePalette, // <--- Pass through!
     };
 
     return deepFreeze(cartridge);
@@ -519,6 +537,7 @@ const PRODUCT_REGISTRY = {
         id: 'close-back',
         shellModel: 'closeBack',
         sizePalette: 'closeBack', //
+        backStylePalette: 'universal', // <--- This enables the dropdown!
         validWebs: { 
             bsk: 'basketCB', clv: 'closedVCB', dhn: 'dualHingeCB', fmt: 'framedModTrapCB', 
             hwb: 'hCB', lch: 'lacedHCB', lcs: 'laceSealingCB', mtp: 'modTrapCB', 
