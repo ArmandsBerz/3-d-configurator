@@ -657,9 +657,16 @@ export const resolveProduct = (build: BuildConfig): ProductDefinition => {
     // 2. Back Style Routing (Only for Outfield/Pitcher)
     if (build.position === 'out' || build.position === 'pit') {
         // Safe because the Type Guard (Union) ensures backStyle exists for 'out'|'pit'
-        return build.backStyle === 'cls' 
-            ? PRODUCT_REGISTRY['close-back'] 
-            : PRODUCT_REGISTRY['open-back'];
+        if (build.backStyle === 'cls') {
+            return PRODUCT_REGISTRY['close-back'];
+        } else {
+            // FIX: Inject capability for Outfielders to switch back!
+            // We clone the open-back definition and attach the palette.
+            return {
+                ...PRODUCT_REGISTRY['open-back'],
+                backStylePaletteId: 'universal' 
+            };
+        }
     }
     
     // 3. Default (Infield -> Open Back)
