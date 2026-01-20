@@ -119,7 +119,8 @@ export const LEATHER_REGISTRY = {
 export type BuildLeatherId = keyof typeof LEATHER_REGISTRY;
 
 export const LEATHER_PALETTES = {
-    universal: ['imgOpt1', 'imgOpt2', 'imgOpt3'] // Added imgOpt3
+    universal: ['imgOpt1', 'imgOpt2', 'imgOpt3'], // Added imgOpt3 for Fielding Gloves
+    mitts: ['imgOpt1', 'imgOpt2'] // Original 2 options for Mitts
 } as const satisfies Record<string, readonly BuildLeatherId[]>; //
 
 export type LeatherPaletteId = keyof typeof LEATHER_PALETTES;
@@ -520,6 +521,7 @@ const PRODUCT_REGISTRY = {
         id: 'open-back',
         shellModel: 'openBack',
         sizePalette: 'openBack', //
+        leatherPalette: 'universal', // <--- Set to universal (has 3 options)
         validWebs: { 
             bsk: 'basketOB', bsl: 'basketLaceOB', clv: 'closedVOB', dhn: 'dualHingeOB', 
             fmt: 'framedModTrapOB', hwb: 'hOB', iwb: 'iOB', lch: 'lacedHOB', lcs: 'laceSealingOB', 
@@ -558,6 +560,7 @@ const PRODUCT_REGISTRY = {
         id: 'close-back',
         shellModel: 'closeBack',
         sizePalette: 'closeBack', //
+        leatherPalette: 'universal', // <--- Set to universal (has 3 options)
         backStylePalette: 'universal', // <--- This enables the dropdown!
         validWebs: { 
             bsk: 'basketCB', clv: 'closedVCB', dhn: 'dualHingeCB', fmt: 'framedModTrapCB', 
@@ -593,6 +596,7 @@ const PRODUCT_REGISTRY = {
         id: 'first-base',
         shellModel: 'firstBase',
         sizePalette: 'firstBase', //
+        leatherPalette: 'mitts', // <--- Set to mitts (has 2 options)
         validWebs: { pst: 'postFB', '2pc': 'twoPieceFB' },
         specificZones: {
             [ZONES.THUMB_INNER]:    { shaderIndex: 1, displayName: 'Primary U-Piece' },
@@ -620,6 +624,7 @@ const PRODUCT_REGISTRY = {
         id: 'catcher',
         shellModel: 'catcher',
         sizePalette: 'catcher', //
+        leatherPalette: 'mitts', // <--- Set to mitts (has 2 options)
         validWebs: { '2pc': 'twoPieceCM' },
         specificZones: {
             [ZONES.INDEX]: { shaderIndex: 2, displayName: 'Shell Back' },
@@ -933,7 +938,7 @@ export const sanitize = (config: GloveConfiguration): GloveConfiguration => {
     }
 
     // Validate Leather
-    const validLeathers = LEATHER_PALETTES[def.leatherPaletteId];
+    const validLeathers = LEATHER_PALETTES[def.leatherPaletteId] as readonly BuildLeatherId[];
     if (!validLeathers.includes(nextConfig.build.imageSelection)) {
         nextConfig.build.imageSelection = validLeathers[0];
     }
