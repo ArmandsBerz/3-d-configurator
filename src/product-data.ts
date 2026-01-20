@@ -112,13 +112,14 @@ export type BackStylePaletteId = keyof typeof BACK_STYLE_PALETTES;
 // --- 1. LEATHER REGISTRY ---
 export const LEATHER_REGISTRY = {
     'imgOpt1': { label: 'Japanese Kip' },
-    'imgOpt2': { label: 'American Steerhide' }
+    'imgOpt2': { label: 'American Steerhide' },
+    'imgOpt3': { label: 'Cowhide' } // Added Cowhide
 } as const;
 
 export type BuildLeatherId = keyof typeof LEATHER_REGISTRY;
 
 export const LEATHER_PALETTES = {
-    universal: ['imgOpt1', 'imgOpt2']
+    universal: ['imgOpt1', 'imgOpt2', 'imgOpt3'] // Added imgOpt3
 } as const satisfies Record<string, readonly BuildLeatherId[]>; //
 
 export type LeatherPaletteId = keyof typeof LEATHER_PALETTES;
@@ -143,9 +144,9 @@ export const SIZE_REGISTRY = {
 export type BuildSizeId = keyof typeof SIZE_REGISTRY;
 
 export const SIZE_PALETTES = {
-    openBack: ['1100', '1125', '1150', '1175', '1200'],
+    openBack: ['1100', '1125', '1150', '1175', '1200', '1225', '1250', '1275'], // Updated sizes
     closeBack: ['1200', '1225', '1250', '1275', '1300'],
-    firstBase: ['1200', '1250', '1300'],
+    firstBase: ['1300'], // Updated to only 13"
     catcher: ['3200', '3300', '3400']
 } as const satisfies Record<string, readonly BuildSizeId[]>; //
 
@@ -256,7 +257,7 @@ export type WebTypeId = typeof webTypeOptions[number]['id'];
 // --- STRICT SCHEMA: DISCRIMINATED UNION ---
 interface BuildConfigBase {
     palette: PaletteId;
-    imageSelection: 'imgOpt1' | 'imgOpt2';
+    imageSelection: 'imgOpt1' | 'imgOpt2' | 'imgOpt3'; // Added imgOpt3
     size: BuildSizeId;
     handOpeningSize: BuildHandId;
     stiffness: BuildStiffnessId;
