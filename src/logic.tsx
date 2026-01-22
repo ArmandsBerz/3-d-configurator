@@ -2,6 +2,7 @@
 
 import * as fflate from 'fflate';
 // REMOVED: import { useGloveConfigurator } from './ui'; 
+import VARIANTS_MAP from './variants-map.json'; // <--- NEW: Import the Map
 
 // --- IMPORT THE DATABASE (The "Universe" of the Glove) ---
 import {
@@ -51,8 +52,8 @@ import {
     // --- NEW IMPORTS PHASE 2 ---
     POSITION_REGISTRY, // <--- ADDED per instructions
     POSITION_PALETTES, // <--- ADDED per instructions
-    LEATHER_REGISTRY, // <--- ADDED for Leather logic
-    LEATHER_PALETTES, // <--- ADDED for Leather logic
+    LEATHER_REGISTRY, // <--- ADDED per instructions
+    LEATHER_PALETTES, // <--- ADDED per instructions
     SIZE_REGISTRY,
     SIZE_PALETTES,
     STIFFNESS_REGISTRY,
@@ -280,6 +281,48 @@ export interface LoadResult {
     status: LoadStatus;
 }
 
+// Helper: Convert Config -> Shell Key (The "1st part" of your map)
+const getShellKey = (build: BuildConfig): string => {
+    if (build.position === 'cat') return 'catcher';
+    if (build.position === 'fb') return 'first-base';
+    // Logic for 'out' or 'pit' depends on back style
+    if (build.position === 'out' || build.position === 'pit') {
+        // We assume 'cls' maps to close-back, everything else to open-back
+        return build.backStyle === 'cls' ? 'close-back' : 'open-back';
+    }
+    // Default fallback for infield (or anything else) is open-back
+    return 'open-back';
+};
+
+// --- NEW: PHASE 2 EXIT HELPER (The "Throw") ---
+// Use this in ui.tsx to resolve the ID before syncing back
+export const getVariantIdForConfig = (config: GloveConfiguration): string | null => {
+    const shell = getShellKey(config.build);
+    const leather = config.build.imageSelection;
+    const size = config.build.size;
+
+    // HIERARCHICAL MATCHING (Level 3 -> Level 2 -> Level 1)
+    
+    // 1. Try "shell|leather|size" (Level 3 Precision)
+    const keyLevel3 = `${shell}|${leather}|${size}`;
+    // @ts-ignore
+    if (VARIANTS_MAP.map[keyLevel3]) return String(VARIANTS_MAP.map[keyLevel3]);
+
+    // 2. Try "shell|leather" (Level 2 Precision)
+    const keyLevel2 = `${shell}|${leather}`;
+    // @ts-ignore
+    if (VARIANTS_MAP.map[keyLevel2]) return String(VARIANTS_MAP.map[keyLevel2]);
+
+    // 3. Try "shell" (Level 1 Precision)
+    const keyLevel1 = shell;
+    // @ts-ignore
+    if (VARIANTS_MAP.map[keyLevel1]) return String(VARIANTS_MAP.map[keyLevel1]);
+
+    // 4. Default ID (If provided in JSON)
+    // @ts-ignore
+    return VARIANTS_MAP.default ? String(VARIANTS_MAP.default) : null;
+};
+
 export const loadConfigurationFromURL = (): LoadResult => {
     try {
         const urlParams = new URLSearchParams(window.location.search);
@@ -287,21 +330,97 @@ export const loadConfigurationFromURL = (): LoadResult => {
 
         // 1. Handle Empty/New Load
         if (!versionedPayload) {
-            const entryFamily = urlParams.get('entry_family');
+            const entryHint = urlParams.get('entry');
             const entryVariant = urlParams.get('entry_variant');
 
-            if (!entryFamily && !entryVariant) {
-                const entryHint = urlParams.get('entry');
-                if (entryHint && entryHint in PRESETS) {
-                     return { 
-                        configuration: getPresetConfig(entryHint as PresetId), 
-                        status: 'success' 
-                    };
+            // --- NEW: PHASE 1 ENTRY LOGIC (The "Catch") ---
+            // If we have a specific Variant ID, try to reverse-lookup it
+            if (entryVariant) {
+                // 1. Reverse Search the Map
+                // @ts-ignore - Object.entries on JSON module's map property
+                const mapEntry = Object.entries(VARIANTS_MAP.map).find(([k, v]) => String(v) === entryVariant);
+                
+                if (mapEntry) {
+                    const keyString = mapEntry[0]; // e.g., "open-back|imgOpt1|1100" or "catcher"
+                    const parts = keyString.split('|');
+                    
+                    // We only parse what is present. 
+                    // Part 0 = Shell
+                    // Part 1 = Leather (Optional)
+                    // Part 2 = Size (Optional)
+                    
+                    if (parts.length > 0) {
+                        const shell = parts[0];
+                        const leather = parts[1];
+                        const size = parts[2];
+
+                        // 3. STRICT VALIDATION (Family Check)
+                        let isCompatible = true;
+                        
+                        if (entryHint && entryHint in PRESETS) {
+                            const presetConfig = getPresetConfig(entryHint as PresetId);
+                            const presetShell = getShellKey(presetConfig.build);
+                            
+                            // If the Map says "catcher" but the user clicked "Infield" (open-back), BLOCK IT.
+                            if (presetShell !== shell) {
+                                console.warn(`Security: Blocked variant injection. Variant Family (${shell}) does not match Entry Preset (${presetShell} / ${entryHint}).`);
+                                isCompatible = false;
+                            }
+                        }
+
+                        if (isCompatible) {
+                            // 4. Apply Config Safe & Sound
+                            // We ONLY inject the properties that exist in the key.
+                            // Everything else (web, colors, etc) stays at default.
+                            const config = cloneInitialConfig();
+
+                            // Inject Shell Logic (Position mapping)
+                            if (shell === 'catcher') config.build.position = 'cat';
+                            else if (shell === 'first-base') config.build.position = 'fb';
+                            else if (shell === 'close-back') {
+                                // Close back usually implies Outfield or Pitcher in this system
+                                // We default to Outfield for safety if injecting 'close-back'
+                                config.build.position = 'out'; 
+                                // (Note: updateBuild factory in product-data will handle setting backStyle='cls' automatically if needed)
+                            }
+                            else if (shell === 'open-back') {
+                                config.build.position = 'inf';
+                            }
+
+                            // Inject Leather
+                            if (leather) {
+                                // @ts-ignore - Cast string to ID
+                                config.build.imageSelection = leather;
+                            }
+
+                            // Inject Size
+                            if (size) {
+                                // @ts-ignore - Cast string to ID
+                                config.build.size = size;
+                            }
+                            
+                            // 5. Sanitize to ensure the injection resulted in a valid build
+                            const cleanConfig = sanitize(config);
+
+                            return { 
+                                configuration: cleanConfig, 
+                                variantId: entryVariant, 
+                                status: 'success' 
+                            };
+                        }
+                    }
                 }
-                return { configuration: cloneInitialConfig(), status: 'empty' };
             }
-            
-            return { configuration: cloneInitialConfig(), variantId: entryVariant || null, status: 'success' };
+            // -----------------------------------------------
+
+            // Standard Preset Load
+            if (entryHint && entryHint in PRESETS) {
+                 return { 
+                    configuration: getPresetConfig(entryHint as PresetId), 
+                    status: 'success' 
+                };
+            }
+            return { configuration: cloneInitialConfig(), status: 'empty' };
         }
 
         // 2. Handle Config Load
@@ -342,7 +461,7 @@ export const generateShareableURL = (config: GloveConfiguration): string => {
     const processedData = btoa(fflate.strFromU8(compressed, true))
         .replace(/\+/g, '-')
         .replace(/\//g, '_')
-        .replace(/=/g, '');
+        .replace(/\=/g, '');
 
     const versionedPayload = `${CONFIG_VERSION}:${processedData}`;
     const baseURL = window.location.origin + window.location.pathname;
