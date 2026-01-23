@@ -39,9 +39,11 @@ import {
     UIPartGroupSingle,
     UIPartGroupDual, // <--- ADDED per instructions
     CommerceState,
-    resolveBuildGroups // <--- ADDED: The Resolver Bridge
+    resolveBuildGroups, // <--- ADDED: The Resolver Bridge
+    // NEW: Imports for strict typing in BuildOption
+    BuildPositionId
 } from './logic';
-import { updateBuild } from './product-data'; // <--- NEW: Import directly from domain layer
+import { updateBuild, BuildLeatherId } from './product-data'; // <--- NEW: Import directly from domain layer
 import React, { useState, useRef, useLayoutEffect, useCallback, useEffect, createContext, useContext, useReducer, ReactNode, ReactElement, useMemo } from 'react';
 import BabylonCanvas from './viewer';
 import { SummaryIcon, BackArrowIcon, CheckmarkIcon, LongArrowRightIcon, CaretRightIcon, CaretDownIcon, CaretUpIcon, ShareIcon, CollapseIcon, ExpandIcon, DragIcon, ZoomIcon, CloseIcon } from './icons';
@@ -189,7 +191,7 @@ const BRIDGE_MESSAGE_TYPES = {
     COMPLETE_ORDER: 'COMPLETE_ORDER', 
     REQUEST_SHARE: 'REQUEST_SHARE',
     SHARE_COMPLETE: 'SHARE_COMPLETE',
-    SYNC_BACK: 'SYNC_BACK', 
+    // SYNC_BACK REMOVED
 } as const;
 
 type BridgeMessage =
@@ -212,15 +214,8 @@ type BridgeMessage =
         type: typeof BRIDGE_MESSAGE_TYPES.SHARE_COMPLETE;
         success: boolean;
         errorMessage?: string;
-    }
-    | {
-        type: typeof BRIDGE_MESSAGE_TYPES.SYNC_BACK;
-        payload: {
-            size: string;
-            leather: string;
-            webStyle: string;
-        };
     };
+    // SYNC_BACK REMOVED from Union
 
 const isInIframe = (): boolean => {
     if (typeof window === 'undefined') return false;
@@ -528,9 +523,8 @@ const URLSyncController = () => {
                         });
                     }
                 } catch (err) {
-                    if (process.env.NODE_ENV === 'development') {
-                        console.warn('[Bridge] URLSyncController failed', err, newUrl);
-                    }
+                    // process.env check removed to prevent crashes
+                    console.warn('[Bridge] URLSyncController failed', err, newUrl);
                 }
             }, 300),
         []
@@ -694,15 +688,15 @@ const Option = React.forwardRef<HTMLButtonElement, OptionProps>(
     )
 );
 
-// --- MODIFICATION: Updated to accept Readonly options ---
-interface OptionGroupProps {
+// --- MODIFICATION: Updated to GENERIC Component <T> ---
+interface OptionGroupProps<T extends string> {
     title: string;
-    options: readonly { id: string, label: string }[];
+    options: readonly { id: T; label: string }[];
     layout: string;
-    selectedOption: string;
-    onSelectOption: (id: string) => void;
+    selectedOption: T;
+    onSelectOption: (id: T) => void;
 }
-const OptionGroup = ({ title, options, layout, selectedOption, onSelectOption }: OptionGroupProps) => {
+const OptionGroup = <T extends string>({ title, options, layout, selectedOption, onSelectOption }: OptionGroupProps<T>) => {
     const { containerRef, itemRefs, showNavigationHint, gridEventHandlers, activeIndex, setActiveIndex } = useGridNavigation<HTMLDivElement>(options.length);
     const itemRefsCasted = itemRefs as React.MutableRefObject<React.RefObject<HTMLButtonElement>[]>;
 
@@ -732,15 +726,15 @@ const OptionGroup = ({ title, options, layout, selectedOption, onSelectOption }:
     );
 };
 
-// --- MODIFICATION: Updated to accept Readonly options ---
-interface ImageGroupProps {
+// --- MODIFICATION: Updated to GENERIC Component <T> ---
+interface ImageGroupProps<T extends string> {
     title: string;
-    options: readonly { id: string, title: string }[];
+    options: readonly { id: T; title: string }[];
     layout: string;
-    selectedOption: string;
-    onSelectOption: (id: string) => void;
+    selectedOption: T;
+    onSelectOption: (id: T) => void;
 }
-const ImageGroup = ({ title, options, layout, selectedOption, onSelectOption }: ImageGroupProps) => {
+const ImageGroup = <T extends string>({ title, options, layout, selectedOption, onSelectOption }: ImageGroupProps<T>) => {
     const { containerRef, itemRefs, showNavigationHint, gridEventHandlers, activeIndex, setActiveIndex } = useGridNavigation<HTMLDivElement>(options.length);
     const itemRefsCasted = itemRefs as React.MutableRefObject<React.RefObject<HTMLButtonElement>[]>;
 
@@ -796,25 +790,28 @@ const BuildOption = ({ isDesktop }: BuildOptionProps) => {
 
     return (
         <div className={`space-y-6 ${!isDesktop ? 'pb-4' : ''}`}>
-            <ImageGroup
+            {/* UPDATED: Generic ImageGroup usage with strict typing */}
+            <ImageGroup<BuildLeatherId>
                 title="Glove Leather"
                 layout="grid-cols-2"
-                // --- NEW: Use dynamic options from leatherGroup, mapping label -> title ---
-                options={leatherGroup ? leatherGroup.options.map(o => ({ id: o.id, title: o.label })) : []}
+                // --- NEW: Use dynamic options from leatherGroup, casting IDs to Strict Type ---
+                options={leatherGroup ? leatherGroup.options.map(o => ({ id: o.id as BuildLeatherId, title: o.label })) : []}
                 selectedOption={buildConfig.imageSelection}
-                onSelectOption={(value) => onBuildConfigChange({ imageSelection: value as 'imgOpt1' | 'imgOpt2' })}
+                onSelectOption={(value) => onBuildConfigChange({ imageSelection: value })}
             />
+            
+            {/* UPDATED: Generic OptionGroup usage with strict typing */}
             {positionGroup && (
-                <OptionGroup
+                <OptionGroup<BuildPositionId>
                     key={positionGroup.id}
                     title={positionGroup.title}
-                    options={positionGroup.options}
+                    options={positionGroup.options.map(o => ({ id: o.id as BuildPositionId, label: o.label }))}
                     layout={positionGroup.layout}
                     selectedOption={buildConfig.position}
                     onSelectOption={(value) => {
                         // --- FIX: SIMPLIFIED HANDLER ---
                         // We no longer manually set backStyle. The Factory 'updateBuild' handles defaults/stripping.
-                        onBuildConfigChange({ position: value as BuildConfig['position'] });
+                        onBuildConfigChange({ position: value });
                     }}
                 />
             )}
@@ -898,11 +895,13 @@ const WebOptions = () => {
 
     return (
         <div className="space-y-6">
-            <ImageGroup
+            {/* UPDATED: Using Generic Component <T> to enforce type safety */}
+            <ImageGroup<WebTypeId>
                 title="Web Type"
                 layout="grid-cols-3"
                 // Map 'label' to 'title' for ImageGroup, use empty array fallback
-                options={webGroup ? webGroup.options.map(o => ({ id: o.id, title: o.label })) : []}
+                // STRICT TYPE RECOVERY: Casting the generic string ID back to WebTypeId
+                options={webGroup ? webGroup.options.map(o => ({ id: o.id as WebTypeId, title: o.label })) : []}
                 selectedOption={buildConfig.webType}
                 onSelectOption={handleWebTypeChange}
             />
@@ -1733,26 +1732,11 @@ const UI = () => {
     // --- END MODIFICATION ---
 
     const handleExitCustomizer = useCallback(() => {
-        // 1. PREPARE THE DATA
-        // The contract now matches this exactly, so no errors.
-        const payload = {
-            size: configuration.build.size,
-            leather: configuration.build.imageSelection,
-            webStyle: configuration.build.webType
-        };
-
-        // 2. SEND DATA (Type-safe!)
-        postToParent({
-            type: BRIDGE_MESSAGE_TYPES.SYNC_BACK,
-            payload: payload
-        });
-
-        // 3. THEN EXIT
+        // ONLY SEND EXIT SIGNAL
         postToParent({
             type: BRIDGE_MESSAGE_TYPES.EXIT_APP,
         });
-        
-    }, [configuration]);
+    }, []);
 
     // --- MODIFICATION C: handleCompleteOrder UX Guard ---
     const handleCompleteOrder = useCallback(() => {
@@ -1779,9 +1763,8 @@ const UI = () => {
                 },
             });
         } catch (err) {
-            if (process.env.NODE_ENV === 'development') {
-                console.warn('[Bridge] handleCompleteOrder failed', err, configUrl);
-            }
+            // process.env check removed to prevent crashes
+            console.warn('[Bridge] handleCompleteOrder failed', err, configUrl);
         }
     }, [commerce, configuration]);
     // --- END MODIFICATION C ---

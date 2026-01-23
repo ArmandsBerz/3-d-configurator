@@ -247,13 +247,18 @@ export const WEB_REGISTRY = {
     '2pc': { label: 'Two Piece' },
 } as const;
 
-// Legacy Support (Derived): Keeps existing code working while we migrate
-export const webTypeOptions = Object.entries(WEB_REGISTRY).map(([id, data]) => ({ id, title: data.label }));
+// FIX A: Derive Type DIRECTLY from Registry Keys
+export type WebTypeId = keyof typeof WEB_REGISTRY;
+
+// Legacy Support (Derived): Cast ID to WebTypeId to satisfy the compiler
+export const webTypeOptions = Object.entries(WEB_REGISTRY).map(([id, data]) => ({ 
+    id: id as WebTypeId, 
+    title: data.label 
+}));
 
 // Derived Types
 // export type BuildPositionId = typeof buildOptionsData[0]['options'][number]['id']; // REPLACED BY REGISTRY
 export type BuildBackId = 'opn' | 'cls';
-export type WebTypeId = typeof webTypeOptions[number]['id'];
 
 // --- STRICT SCHEMA: DISCRIMINATED UNION ---
 interface BuildConfigBase {
@@ -906,6 +911,7 @@ export const sanitize = (config: GloveConfiguration): GloveConfiguration => {
 
     // 3. SANITIZE WEB TYPE
     if (!def.assets.validWebs[nextConfig.build.webType]) {
+        // IMPROVEMENT: Cast keys to WebTypeId[] for safety now that the type is correct
         const validWebKeys = Object.keys(def.assets.validWebs) as WebTypeId[];
         if (validWebKeys.length > 0) {
             nextConfig.build.webType = validWebKeys[0];
