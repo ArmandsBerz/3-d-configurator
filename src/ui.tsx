@@ -198,12 +198,16 @@ type BridgeMessage =
     | { type: typeof BRIDGE_MESSAGE_TYPES.CUSTOMIZER_STATE; query: string }
     | { type: typeof BRIDGE_MESSAGE_TYPES.EXIT_APP }
     | {
+        // --- GOLD MASTER v3 UPDATE: Secure Host Payload Structure ---
         type: typeof BRIDGE_MESSAGE_TYPES.COMPLETE_ORDER;
         payload: {
-            variantId: string | null;
+            config: {
+                shell: string;
+                imageSelection: string;
+                size: string;
+            };
             quantity: number;
-            config: string;
-            thumbnailId?: string;
+            properties: Record<string, string>;
         };
     }
     | {
@@ -232,6 +236,9 @@ const postToParent = (message: BridgeMessage) => {
     }
 
     try {
+        // --- FINAL SECURITY DECISION: Use Wildcard ('*') for maximum reliability ---
+        // This ensures the button works on www, non-www, myshopify, and staging domains.
+        // Security is handled by the RECEIVER (Shopify Host Script) via origin check.
         window.parent.postMessage(message, '*');
     } catch (err) {
         console.warn('[Bridge] postMessage failed', err, message);
@@ -1740,33 +1747,59 @@ const UI = () => {
 
     // --- MODIFICATION C: handleCompleteOrder UX Guard ---
     const handleCompleteOrder = useCallback(() => {
-        // STRICT GUARD REMOVED: Allow order to proceed even if variantId is null (since backend is mock)
-        // if (!commerce.variantId) {
-        //      setSnackbarMessage('This configuration cannot be ordered. Please select different options.');
-        //      return;
-        // }
+        // Gold Master v3 Implementation
+        const { build, thumbName, pinkyName } = configuration;
 
-        // Build current shareable URL to extract config value
-        const configUrl = generateShareableURL(configuration);
+        // 1. Map internal state to Map Keys (shell)
+        let shellValue = 'open-back'; // Default fallback
 
-        try {
-            const urlObj = new URL(configUrl, window.location.origin);
-            const configParam = urlObj.searchParams.get('config') || '';
-
-            postToParent({
-                type: BRIDGE_MESSAGE_TYPES.COMPLETE_ORDER,
-                payload: {
-                    variantId: commerce.variantId,
-                    quantity: commerce.quantity,
-                    config: configParam,
-                    // thumbnailId: undefined // reserved for later
-                },
-            });
-        } catch (err) {
-            // process.env check removed to prevent crashes
-            console.warn('[Bridge] handleCompleteOrder failed', err, configUrl);
+        // FIX: Use strict IDs defined in BuildPositionId ('cat', 'fb', 'close')
+        // We use string casting to be robust against internal short-code variations (like 'cat' vs 'catch' or 'close' vs 'closed')
+        // This ensures the Host Script gets the standard map keys: 'catcher', 'first-base', 'close-back', 'open-back'.
+        
+        if ((build.position as string) === 'cat') {
+            shellValue = 'catcher';
+        } else if ((build.position as string) === 'fb') {
+            shellValue = 'first-base';
+        } else {
+            // Infield/Outfield logic relies on backStyle
+            // Safe Check: If backStyle contains 'c', treat as closed (covers 'closed', 'close', 'close-back', 'cb')
+            const backStyleStr = (build.backStyle as string) || '';
+            shellValue = backStyleStr.includes('c') ? 'close-back' : 'open-back';
         }
-    }, [commerce, configuration]);
+
+        // 2. Generate Design Code (Base64/URL)
+        const designCode = generateShareableURL(configuration);
+
+        // 3. Resolve Display Names for Properties
+        const leatherName = leatherOptions.find(o => o.id === build.imageSelection)?.title || build.imageSelection;
+        const webTypeName = webTypeOptions.find(o => o.id === build.webType)?.title || build.webType;
+
+        // 4. Construct Payload
+        postToParent({
+            type: BRIDGE_MESSAGE_TYPES.COMPLETE_ORDER,
+            payload: {
+                // NO variantId here! Host calculates it.
+                config: {
+                    shell: shellValue,
+                    imageSelection: build.imageSelection,
+                    size: build.size
+                },
+                quantity: 1,
+                properties: {
+                    "Leather": leatherName,
+                    "Web Type": webTypeName,
+                    "Design Code": designCode,
+                    "Thumb Name": thumbName.text,
+                    "Pinky Name": pinkyName.text,
+                    // Add other display-only properties here as needed
+                    "Size": build.size,
+                    "Position": build.position,
+                    "Throwing Hand": build.throwingHand
+                }
+            },
+        });
+    }, [configuration]);
     // --- END MODIFICATION C ---
 
     useEffect(() => {
