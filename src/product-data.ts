@@ -213,9 +213,6 @@ export const CART_LABELS = {
 // --- LEGACY SUPPORT (Derived from Registries) ---
 // This ensures UI components importing these still work until Phase 3 migration.
 export const leatherOptions = Object.entries(LEATHER_REGISTRY).map(([id, data]) => ({ id, title: data.label }));
-// Note: buildOptionsData is kept as-is for now to avoid breaking UI before Phase 3.
-const ALL_SIZE_OPTIONS = Object.entries(SIZE_REGISTRY).map(([id, data]) => ({ id, label: data.label }));
-
 
 export const FONT_REGISTRY = [
   { id: 'LOBSTER', label: 'Lobster', baseName: 'lobsterType', targetLineFactor: 0.51 },
@@ -224,17 +221,6 @@ export const FONT_REGISTRY = [
 
 export const fontOptions = FONT_REGISTRY.map(font => ({ id: font.id, label: font.label }));
 export type Font = (typeof FONT_REGISTRY)[number]['id'];
-
-// Build Options Data
-// Note: We use ALL_SIZE_OPTIONS here to ensure Typescript Unions cover every possibility.
-// The actual filtered list presented to UI will depend on constraints.
-export const buildOptionsData = [
-    { id: 'position', title: 'Position', options: [{id: 'inf', label: 'INFIELD'}, {id: 'out', label: 'OUTFIELD'}, {id: 'pit', label: 'PITCHER'}, {id: 'cat', label: 'CATCHER'}, {id: 'fb', label: 'FIRST BASE'}], layout: 'grid-cols-3' },
-    { id: 'size', title: 'Size', options: ALL_SIZE_OPTIONS, layout: 'grid-cols-3' }, 
-    { id: 'handOpeningSize', title: 'Hand Opening Size', options: [{id: 'adt', label: 'ADULT'}, {id: 'yth', label: 'YOUTH'}], layout: 'grid-cols-2' },
-    { id: 'stiffness', title: 'Stiffness', options: [{id: 'stf', label: 'STIFF'}, {id: 'std', label: 'STANDARD'}, {id: 'sft', label: 'SOFT'}], layout: 'grid-cols-3' },
-    { id: 'throwingHand', title: 'Throwing Hand', options: [{id: 'rh', label: 'RIGHT HAND'}, {id: 'lh', label: 'LEFT HAND'}], layout: 'grid-cols-2' }
-];
 
 // --- 6. WEB REGISTRY (Refactored from Array) ---
 export const WEB_REGISTRY = {

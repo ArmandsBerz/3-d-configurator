@@ -8,7 +8,6 @@ import * as fflate from 'fflate';
 import {
     ZONES,
     COLOR_OPTIONS,
-    buildOptionsData,
     webTypeOptions,
     leatherOptions,
     fontOptions,
@@ -96,7 +95,6 @@ export type {
 export {
     ZONES,
     COLOR_OPTIONS,
-    buildOptionsData,
     webTypeOptions,
     leatherOptions,
     fontOptions,
