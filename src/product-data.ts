@@ -78,11 +78,11 @@ export type ColorId = typeof COLOR_OPTIONS[number]['id'];
 
 // --- 0. POSITION REGISTRY ---
 export const POSITION_REGISTRY = {
-    'inf': { label: 'INFIELD' },
-    'out': { label: 'OUTFIELD' },
-    'pit': { label: 'PITCHER' },
-    'cat': { label: 'CATCHER' },
-    'fb':  { label: 'FIRST BASE' }
+    'inf': { label: 'Infield' },
+    'out': { label: 'Outfield' },
+    'pit': { label: 'Pitcher' },
+    'cat': { label: 'Catcher' },
+    'fb':  { label: 'First Base' }
 } as const;
 
 export type BuildPositionId = keyof typeof POSITION_REGISTRY;
@@ -156,8 +156,8 @@ export type SizePaletteId = keyof typeof SIZE_PALETTES;
 
 // --- 3. HAND OPENING REGISTRY ---
 export const HAND_OPENING_REGISTRY = {
-    'adt': { label: 'ADULT' },
-    'yth': { label: 'YOUTH' }
+    'adt': { label: 'Adult' },
+    'yth': { label: 'Youth' }
 } as const;
 
 export type BuildHandId = keyof typeof HAND_OPENING_REGISTRY;
@@ -171,9 +171,9 @@ export type HandOpeningPaletteId = keyof typeof HAND_OPENING_PALETTES;
 
 // --- 4. STIFFNESS REGISTRY ---
 export const STIFFNESS_REGISTRY = {
-    'stf': { label: 'STIFF' },
-    'std': { label: 'STANDARD' },
-    'sft': { label: 'SOFT' }
+    'stf': { label: 'Stiff' },
+    'std': { label: 'Standard' },
+    'sft': { label: 'Soft' }
 } as const;
 
 export type BuildStiffnessId = keyof typeof STIFFNESS_REGISTRY;
@@ -187,8 +187,8 @@ export type StiffnessPaletteId = keyof typeof STIFFNESS_PALETTES;
 
 // --- 5. THROWING HAND REGISTRY ---
 export const THROWING_HAND_REGISTRY = {
-    'rh': { label: 'RIGHT HAND' },
-    'lh': { label: 'LEFT HAND' }
+    'rh': { label: 'Right Hand' },
+    'lh': { label: 'Left Hand' }
 } as const;
 
 export type BuildThrowingId = keyof typeof THROWING_HAND_REGISTRY;

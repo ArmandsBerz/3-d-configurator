@@ -111,6 +111,13 @@ export {
     sanitize,
     getPresetConfig,
     // resolveBuildGroups is now exported directly below
+
+    // --- ADDED: REGISTRIES RE-EXPORTS FOR UI.TSX ---
+    SIZE_REGISTRY,
+    POSITION_REGISTRY,
+    THROWING_HAND_REGISTRY,
+    STIFFNESS_REGISTRY,
+    HAND_OPENING_REGISTRY,
 };
 
 // --- LOGIC CONTROLLER REMOVED ---

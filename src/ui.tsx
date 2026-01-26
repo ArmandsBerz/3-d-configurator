@@ -41,7 +41,13 @@ import {
     CommerceState,
     resolveBuildGroups, // <--- ADDED: The Resolver Bridge
     // NEW: Imports for strict typing in BuildOption
-    BuildPositionId
+    BuildPositionId,
+    // --- NEW IMPORTS: REGISTRIES FOR TRANSLATION ---
+    SIZE_REGISTRY,
+    POSITION_REGISTRY,
+    THROWING_HAND_REGISTRY,
+    STIFFNESS_REGISTRY,
+    HAND_OPENING_REGISTRY
 } from './logic';
 import { updateBuild, BuildLeatherId } from './product-data'; // <--- NEW: Import directly from domain layer
 import React, { useState, useRef, useLayoutEffect, useCallback, useEffect, createContext, useContext, useReducer, ReactNode, ReactElement, useMemo } from 'react';
@@ -1775,6 +1781,52 @@ const UI = () => {
         const leatherName = leatherOptions.find(o => o.id === build.imageSelection)?.title || build.imageSelection;
         const webTypeName = webTypeOptions.find(o => o.id === build.webType)?.title || build.webType;
 
+        // --- TRANSLATION FIX START ---
+        // Look up human-readable labels from Registries. Fallback to raw code if lookup fails.
+        // Using strict property access on BuildConfigBase properties (size, position, throwingHand).
+        const sizeLabel = SIZE_REGISTRY[build.size]?.label ?? build.size;
+        // build.position is a union of string literals, so it's a valid index for POSITION_REGISTRY
+        const positionLabel = POSITION_REGISTRY[build.position]?.label ?? build.position;
+        const throwingHandLabel = THROWING_HAND_REGISTRY[build.throwingHand]?.label ?? build.throwingHand;
+        
+        const stiffnessLabel = STIFFNESS_REGISTRY[build.stiffness]?.label ?? build.stiffness;
+        const handOpeningLabel = HAND_OPENING_REGISTRY[build.handOpeningSize]?.label ?? build.handOpeningSize;
+        // --- TRANSLATION FIX END ---
+
+        const properties: Record<string, string> = {
+            "Leather": leatherName,
+            "Web Type": webTypeName,
+            // "Design Code" REMOVED from here to move it to the end
+            "Thumb Name": thumbName.text,
+            "Pinky Name": pinkyName.text,
+            "Size": sizeLabel,           // <--- FIXED: Translated
+            "Position": positionLabel,   // <--- FIXED: Translated
+            "Throwing Hand": throwingHandLabel, // <--- FIXED: Translated
+            "Stiffness": stiffnessLabel, // <--- ADDED
+            "Hand Opening": handOpeningLabel, // <--- ADDED
+        };
+
+        // --- NEW: Add Color Selection for Active Zones ---
+        // We iterate through the current configuration to find active zone colors.
+        const definition = resolveProduct(build); // Resolve definition to get display names
+        
+        Object.entries(configuration).forEach(([key, value]) => {
+            if (key.startsWith('zone')) {
+                const zoneKey = key as ZoneKey;
+                const zoneDef = definition.zones[zoneKey];
+                
+                // Only add if it's a valid zone for this glove type and has a color selection
+                if (zoneDef && value && typeof value === 'object' && 'colorId' in value) {
+                    const colorName = colorLookupMap.get(value.colorId)?.name || value.colorId;
+                    properties[zoneDef.displayName] = colorName;
+                }
+            }
+        });
+        
+        // --- MOVED TO END: Insert Design Code Last ---
+        properties["Design Code"] = designCode;
+        // ------------------------------------------------
+
         // 4. Construct Payload
         postToParent({
             type: BRIDGE_MESSAGE_TYPES.COMPLETE_ORDER,
@@ -1786,17 +1838,7 @@ const UI = () => {
                     size: build.size
                 },
                 quantity: 1,
-                properties: {
-                    "Leather": leatherName,
-                    "Web Type": webTypeName,
-                    "Design Code": designCode,
-                    "Thumb Name": thumbName.text,
-                    "Pinky Name": pinkyName.text,
-                    // Add other display-only properties here as needed
-                    "Size": build.size,
-                    "Position": build.position,
-                    "Throwing Hand": build.throwingHand
-                }
+                properties: properties
             },
         });
     }, [configuration]);
