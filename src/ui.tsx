@@ -48,7 +48,8 @@ import {
     THROWING_HAND_REGISTRY,
     STIFFNESS_REGISTRY,
     HAND_OPENING_REGISTRY,
-    CART_LABELS // <--- NEW IMPORT
+    CART_LABELS, // <--- NEW IMPORT
+    getBuildSummaryRows // <--- Add this
 } from './logic';
 import { updateBuild, BuildLeatherId } from './product-data'; // <--- NEW: Import directly from domain layer
 import React, { useState, useRef, useLayoutEffect, useCallback, useEffect, createContext, useContext, useReducer, ReactNode, ReactElement, useMemo } from 'react';
@@ -977,34 +978,15 @@ const TextPanel = ({ context, onClose, headerRef }: TextPanelProps) => {
 const OrderSummaryInfo = () => {
     const { state } = useGloveConfigurator();
     const { configuration } = state;
-    const { build, thumbName, pinkyName } = configuration;
     
-    // --- RESOLVE PRODUCT ---
-    const definition = resolveProduct(build);
+    // Resolve definition to get rules (needed for helper) + zones (needed for colors)
+    const definition = resolveProduct(configuration.build);
     const uiGroups = definition.uiGroups;
-
-    // --- PHASE 3: USE RESOLVER FOR SUMMARY LABELS ---
-    const buildGroups = resolveBuildGroups(definition);
-
-    // --- MODIFICATION: Updated helper to allow readonly options ---
-    const getBuildLabel = (key: string, value: string): string => {
-        if (key === 'imageSelection') return leatherOptions.find((opt: { id: string }) => opt.id === value)?.title || value;
-        if (key === 'webType') return webTypeOptions.find((opt: { id: string }) => opt.id === value)?.title || value;
-        
-        // --- PHASE 3 FIX: USE RESOLVED GROUPS ---
-        // This eliminates the TypeScript "Union" error because buildGroups contains standardized objects.
-        const group = buildGroups.find(g => g.id === key);
-        return group?.options.find(o => o.id === value)?.label || value;
-    };
     
-    const getBuildTitle = (key: string): string => {
-        if (key === 'imageSelection') return "Glove Leather";
-        if (key === 'webType') return "Web Type";
-        // Also use resolved groups for title lookup for consistency
-        return buildGroups.find(g => g.id === key)?.title || key;
-    };
+    // --- THE FIX: Use Gold Master Helper ---
+    const foundationRows = getBuildSummaryRows(configuration.build, definition);
 
-    // Helper to get color name from ID
+    // Helper for colors
     const getColorName = (colorId: ColorId) => colorLookupMap.get(colorId)?.name || 'Unknown';
 
     return (
@@ -1012,32 +994,39 @@ const OrderSummaryInfo = () => {
             <div>
                 <h3 className="text-lg font-semibold text-white mb-2">Glove Foundation</h3>
                 <div className="space-y-1 pl-2">
-                    {Object.entries(build).map(([key, value]) => <p key={key}><span className="font-semibold text-gray-400">{getBuildTitle(key)}:</span> {getBuildLabel(key, value as string)}</p>)}
+                    {/* Render standard rows from the Helper */}
+                    {foundationRows.map((row) => (
+                        <p key={row.key}>
+                            <span className="font-semibold text-gray-400">{row.key}:</span> {row.value}
+                        </p>
+                    ))}
                 </div>
             </div>
+
+            {/* --- "Color Scheme" & "Personalization" sections remain untouched below --- */}
             <div>
                 <h3 className="text-lg font-semibold text-white mb-2">Color Scheme</h3>
                 <div className="space-y-1 pl-2">
                     {uiGroups.map((group: UIPartGroup) => {
-                        if (group.type === 'single' || group.type === 'gallery') {
-                            const zone = group.type === 'gallery' ? ZONES.WEB : group.zoneKey;
-                            const colorId = configuration[zone]?.colorId;
-                            return <p key={group.id}><span className="font-semibold text-gray-400">{group.title.replace(' Color', '')}:</span> {getColorName(colorId)}</p>;
-                        }
-                        if (group.type === 'dual') {
-                            const outerColorId = configuration[group.outerZoneKey]?.colorId;
-                            const innerColorId = configuration[group.innerZoneKey]?.colorId;
-                            return <p key={group.id}><span className="font-semibold text-gray-400">{group.title.replace(' Color', '')}:</span> Inner: {getColorName(innerColorId)}, Outer: {getColorName(outerColorId)}</p>;
-                        }
-                        return null;
+                         if (group.type === 'single' || group.type === 'gallery') {
+                             const zone = group.type === 'gallery' ? ZONES.WEB : group.zoneKey;
+                             const colorId = configuration[zone]?.colorId;
+                             return <p key={group.id}><span className="font-semibold text-gray-400">{group.title.replace(' Color', '')}:</span> {getColorName(colorId)}</p>;
+                         }
+                         if (group.type === 'dual') {
+                             const outerColorId = configuration[group.outerZoneKey]?.colorId;
+                             const innerColorId = configuration[group.innerZoneKey]?.colorId;
+                             return <p key={group.id}><span className="font-semibold text-gray-400">{group.title.replace(' Color', '')}:</span> Inner: {getColorName(innerColorId)}, Outer: {getColorName(outerColorId)}</p>;
+                         }
+                         return null;
                     })}
                 </div>
             </div>
-            <div>
+             <div>
                 <h3 className="text-lg font-semibold text-white mb-2">Personalization</h3>
                 <div className="space-y-1 pl-2">
-                    <p><span className="font-semibold text-gray-400">Thumb Name:</span> "{thumbName.text}" ({thumbName.font}, {getColorName(thumbName.colorId)})</p>
-                    <p><span className="font-semibold text-gray-400">Pinky Name:</span> "{pinkyName.text}" ({pinkyName.font}, {getColorName(pinkyName.colorId)})</p>
+                    <p><span className="font-semibold text-gray-400">Thumb Name:</span> "{configuration.thumbName.text}" ({configuration.thumbName.font}, {getColorName(configuration.thumbName.colorId)})</p>
+                    <p><span className="font-semibold text-gray-400">Pinky Name:</span> "{configuration.pinkyName.text}" ({configuration.pinkyName.font}, {getColorName(configuration.pinkyName.colorId)})</p>
                 </div>
             </div>
         </div>
@@ -1647,7 +1636,7 @@ const UI = () => {
             // Ensure it is a string and looks like a valid http/https URL
             if (data.type === 'PHANTOM_URL' && typeof data.url === 'string') {
                  if (data.url.startsWith('http')) {
-                     phantomUrlRef.current = data.url;
+                      phantomUrlRef.current = data.url;
                  }
             }
             // ---------------------------------------
@@ -1752,95 +1741,60 @@ const UI = () => {
         });
     }, []);
 
-    // --- MODIFICATION C: handleCompleteOrder UX Guard ---
     const handleCompleteOrder = useCallback(() => {
-        // Gold Master v3 Implementation
         const { build, thumbName, pinkyName } = configuration;
+        const definition = resolveProduct(build); // Need definition for the helper
 
-        // 1. Map internal state to Map Keys (shell)
-        let shellValue = 'open-back'; // Default fallback
-
-        // FIX: Use strict IDs defined in BuildPositionId ('cat', 'fb', 'close')
-        // We use string casting to be robust against internal short-code variations (like 'cat' vs 'catch' or 'close' vs 'closed')
-        // This ensures the Host Script gets the standard map keys: 'catcher', 'first-base', 'close-back', 'open-back'.
-        
-        if ((build.position as string) === 'cat') {
-            shellValue = 'catcher';
-        } else if ((build.position as string) === 'fb') {
-            shellValue = 'first-base';
-        } else {
-            // Infield/Outfield logic relies on backStyle
-            // Safe Check: If backStyle contains 'c', treat as closed (covers 'closed', 'close', 'close-back', 'cb')
+        // 1. Map internal state to Map Keys (shell) - KEEP AS IS
+        let shellValue = 'open-back'; 
+        if ((build.position as string) === 'cat') shellValue = 'catcher';
+        else if ((build.position as string) === 'fb') shellValue = 'first-base';
+        else {
             const backStyleStr = (build.backStyle as string) || '';
             shellValue = backStyleStr.includes('c') ? 'close-back' : 'open-back';
         }
 
-        // 2. Generate Design Code (Base64/URL)
         const designCode = generateShareableURL(configuration);
 
-        // 3. Resolve Display Names for Properties
-        const leatherName = leatherOptions.find(o => o.id === build.imageSelection)?.title || build.imageSelection;
-        const webTypeName = webTypeOptions.find(o => o.id === build.webType)?.title || build.webType;
-
-        // --- TRANSLATION FIX START ---
-        // Look up human-readable labels from Registries. Fallback to raw code if lookup fails.
-        // Using strict property access on BuildConfigBase properties (size, position, throwingHand).
-        const sizeLabel = SIZE_REGISTRY[build.size]?.label ?? build.size;
-        // build.position is a union of string literals, so it's a valid index for POSITION_REGISTRY
-        const positionLabel = POSITION_REGISTRY[build.position]?.label ?? build.position;
-        const throwingHandLabel = THROWING_HAND_REGISTRY[build.throwingHand]?.label ?? build.throwingHand;
+        // --- THE FIX: Use the Gold Master Helper ---
+        // This ensures the Cart properties match the UI exactly.
+        const foundationRows = getBuildSummaryRows(build, definition);
         
-        const stiffnessLabel = STIFFNESS_REGISTRY[build.stiffness]?.label ?? build.stiffness;
-        const handOpeningLabel = HAND_OPENING_REGISTRY[build.handOpeningSize]?.label ?? build.handOpeningSize;
-        // --- TRANSLATION FIX END ---
-
-        const properties: Record<string, string> = {
-            "Leather": leatherName,
-            "Web Type": webTypeName,
-            
-            // --- PERSONALIZATION: THUMB ---
-            [CART_LABELS.THUMB_TEXT]: thumbName.text,
-            [CART_LABELS.THUMB_FONT]: fontOptions.find(f => f.id === thumbName.font)?.label || thumbName.font,
-            [CART_LABELS.THUMB_COLOR]: colorLookupMap.get(thumbName.colorId)?.name || thumbName.colorId,
-
-            // --- PERSONALIZATION: PINKY ---
-            [CART_LABELS.PINKY_TEXT]: pinkyName.text,
-            [CART_LABELS.PINKY_FONT]: fontOptions.find(f => f.id === pinkyName.font)?.label || pinkyName.font,
-            [CART_LABELS.PINKY_COLOR]: colorLookupMap.get(pinkyName.colorId)?.name || pinkyName.colorId,
-            
-            "Size": sizeLabel,
-            "Position": positionLabel,
-            "Throwing Hand": throwingHandLabel,
-            "Stiffness": stiffnessLabel,
-            "Hand Opening": handOpeningLabel,
-        };
-
-        // --- NEW: Add Color Selection for Active Zones ---
-        // We iterate through the current configuration to find active zone colors.
-        const definition = resolveProduct(build); // Resolve definition to get display names
+        const properties: Record<string, string> = {};
         
+        // A. Add Foundation (Position, Size, Leather, etc.)
+        foundationRows.forEach(row => {
+            properties[row.key] = row.value;
+        });
+
+        // B. Add Personalization (Manual add, same as before)
+        properties[CART_LABELS.THUMB_TEXT] = thumbName.text;
+        properties[CART_LABELS.THUMB_FONT] = fontOptions.find(f => f.id === thumbName.font)?.label || thumbName.font;
+        properties[CART_LABELS.THUMB_COLOR] = colorLookupMap.get(thumbName.colorId)?.name || thumbName.colorId;
+        
+        properties[CART_LABELS.PINKY_TEXT] = pinkyName.text;
+        properties[CART_LABELS.PINKY_FONT] = fontOptions.find(f => f.id === pinkyName.font)?.label || pinkyName.font;
+        properties[CART_LABELS.PINKY_COLOR] = colorLookupMap.get(pinkyName.colorId)?.name || pinkyName.colorId;
+
+        // C. Add Active Zone Colors (Keep dynamic zone logic)
         Object.entries(configuration).forEach(([key, value]) => {
             if (key.startsWith('zone')) {
                 const zoneKey = key as ZoneKey;
                 const zoneDef = definition.zones[zoneKey];
-                
-                // Only add if it's a valid zone for this glove type and has a color selection
+                // Only add if zone exists in this definition and has a color
                 if (zoneDef && value && typeof value === 'object' && 'colorId' in value) {
                     const colorName = colorLookupMap.get(value.colorId)?.name || value.colorId;
                     properties[zoneDef.displayName] = colorName;
                 }
             }
         });
-        
-        // --- MOVED TO END: Insert Design Code Last ---
-        properties["Design Code"] = designCode;
-        // ------------------------------------------------
 
-        // 4. Construct Payload
+        // D. Add Design Code
+        properties["Design Code"] = designCode;
+
         postToParent({
             type: BRIDGE_MESSAGE_TYPES.COMPLETE_ORDER,
             payload: {
-                // NO variantId here! Host calculates it.
                 config: {
                     shell: shellValue,
                     imageSelection: build.imageSelection,
@@ -1851,7 +1805,6 @@ const UI = () => {
             },
         });
     }, [configuration]);
-    // --- END MODIFICATION C ---
 
     useEffect(() => {
         const babylonContainer = document.getElementById('babylon-container');

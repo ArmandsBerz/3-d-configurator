@@ -359,3 +359,55 @@ export const generateShareableURL = (config: GloveConfiguration): string => {
     const baseURL = window.location.origin + window.location.pathname;
     return `${baseURL}?config=${versionedPayload}`;
 };
+
+// --- NEW: GOLD MASTER SUMMARY HELPER ---
+export interface SummaryRow {
+    key: string;
+    value: string;
+}
+
+export const getBuildSummaryRows = (build: BuildConfig, definition: ProductDefinition): SummaryRow[] => {
+    const rows: SummaryRow[] = [];
+
+    // 1. Position (Universal)
+    if (build.position && POSITION_REGISTRY[build.position]) {
+        rows.push({ key: "Position", value: POSITION_REGISTRY[build.position].label });
+    }
+
+    // 2. Back Style (Condition: Only if the Definition has a backStylePaletteId)
+    if (definition.backStylePaletteId && build.backStyle && BACK_STYLE_REGISTRY[build.backStyle]) {
+        rows.push({ key: "Back Style", value: BACK_STYLE_REGISTRY[build.backStyle].label });
+    }
+
+    // 3. Size (Universal)
+    if (build.size && SIZE_REGISTRY[build.size]) {
+        rows.push({ key: "Size", value: SIZE_REGISTRY[build.size].label });
+    }
+
+    // 4. Leather (Universal)
+    if (build.imageSelection && LEATHER_REGISTRY[build.imageSelection]) {
+        rows.push({ key: "Leather", value: LEATHER_REGISTRY[build.imageSelection].label });
+    }
+
+    // 5. Web Type (Universal)
+    if (build.webType && WEB_REGISTRY[build.webType]) {
+        rows.push({ key: "Web Type", value: WEB_REGISTRY[build.webType].label });
+    }
+
+    // 6. Stiffness (Universal)
+    if (build.stiffness && STIFFNESS_REGISTRY[build.stiffness]) {
+        rows.push({ key: "Stiffness", value: STIFFNESS_REGISTRY[build.stiffness].label });
+    }
+
+    // 7. Hand Opening (Universal)
+    if (build.handOpeningSize && HAND_OPENING_REGISTRY[build.handOpeningSize]) {
+        rows.push({ key: "Hand Opening", value: HAND_OPENING_REGISTRY[build.handOpeningSize].label });
+    }
+
+    // 8. Throwing Hand (Universal)
+    if (build.throwingHand && THROWING_HAND_REGISTRY[build.throwingHand]) {
+        rows.push({ key: "Throwing Hand", value: THROWING_HAND_REGISTRY[build.throwingHand].label });
+    }
+
+    return rows;
+};
