@@ -199,6 +199,16 @@ export const THROWING_HAND_PALETTES = {
 
 export type ThrowingHandPaletteId = keyof typeof THROWING_HAND_PALETTES;
 
+// --- 5.5 PERSONALIZATION LABELS (THE CART DICTIONARY) ---
+export const CART_LABELS = {
+    THUMB_TEXT: "Thumb Name",
+    THUMB_FONT: "Thumb Name Font",
+    THUMB_COLOR: "Thumb Name Color",
+    PINKY_TEXT: "Pinky Name",
+    PINKY_FONT: "Pinky Name Font",
+    PINKY_COLOR: "Pinky Name Color",
+} as const;
+
 
 // --- LEGACY SUPPORT (Derived from Registries) ---
 // This ensures UI components importing these still work until Phase 3 migration.

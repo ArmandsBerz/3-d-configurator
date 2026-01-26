@@ -47,7 +47,8 @@ import {
     POSITION_REGISTRY,
     THROWING_HAND_REGISTRY,
     STIFFNESS_REGISTRY,
-    HAND_OPENING_REGISTRY
+    HAND_OPENING_REGISTRY,
+    CART_LABELS // <--- NEW IMPORT
 } from './logic';
 import { updateBuild, BuildLeatherId } from './product-data'; // <--- NEW: Import directly from domain layer
 import React, { useState, useRef, useLayoutEffect, useCallback, useEffect, createContext, useContext, useReducer, ReactNode, ReactElement, useMemo } from 'react';
@@ -1796,14 +1797,22 @@ const UI = () => {
         const properties: Record<string, string> = {
             "Leather": leatherName,
             "Web Type": webTypeName,
-            // "Design Code" REMOVED from here to move it to the end
-            "Thumb Name": thumbName.text,
-            "Pinky Name": pinkyName.text,
-            "Size": sizeLabel,           // <--- FIXED: Translated
-            "Position": positionLabel,   // <--- FIXED: Translated
-            "Throwing Hand": throwingHandLabel, // <--- FIXED: Translated
-            "Stiffness": stiffnessLabel, // <--- ADDED
-            "Hand Opening": handOpeningLabel, // <--- ADDED
+            
+            // --- PERSONALIZATION: THUMB ---
+            [CART_LABELS.THUMB_TEXT]: thumbName.text,
+            [CART_LABELS.THUMB_FONT]: fontOptions.find(f => f.id === thumbName.font)?.label || thumbName.font,
+            [CART_LABELS.THUMB_COLOR]: colorLookupMap.get(thumbName.colorId)?.name || thumbName.colorId,
+
+            // --- PERSONALIZATION: PINKY ---
+            [CART_LABELS.PINKY_TEXT]: pinkyName.text,
+            [CART_LABELS.PINKY_FONT]: fontOptions.find(f => f.id === pinkyName.font)?.label || pinkyName.font,
+            [CART_LABELS.PINKY_COLOR]: colorLookupMap.get(pinkyName.colorId)?.name || pinkyName.colorId,
+            
+            "Size": sizeLabel,
+            "Position": positionLabel,
+            "Throwing Hand": throwingHandLabel,
+            "Stiffness": stiffnessLabel,
+            "Hand Opening": handOpeningLabel,
         };
 
         // --- NEW: Add Color Selection for Active Zones ---
