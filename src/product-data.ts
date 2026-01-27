@@ -96,8 +96,8 @@ export type PositionPaletteId = keyof typeof POSITION_PALETTES;
 
 // --- 0.5. BACK STYLE REGISTRY (NEW) ---
 export const BACK_STYLE_REGISTRY = {
-    'opn': { label: 'OPEN' },
-    'cls': { label: 'CLOSE' }
+    'opn': { label: 'Open' },
+    'cls': { label: 'Close' }
 } as const;
 
 export type BuildBackStyleId = keyof typeof BACK_STYLE_REGISTRY;
