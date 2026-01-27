@@ -1626,6 +1626,15 @@ const UI = () => {
     }, []); // Empty dependency array ensures this runs only once on mount
     // --- END MODIFICATION ---
 
+    // --- NEW FIX: Reset visualization expanded state when switching to Desktop ---
+    useEffect(() => {
+        if (isDesktop) {
+            setIsVisualizationExpanded(false);
+            setOpenAccordionOptionMobile(null);
+        }
+    }, [isDesktop]);
+    // --- END FIX ---
+
     // --- NEW: Listen for SHARE_COMPLETE messages from parent (for Snackbar updates) ---
     useEffect(() => {
         const handleParentMessage = (event: MessageEvent) => {
