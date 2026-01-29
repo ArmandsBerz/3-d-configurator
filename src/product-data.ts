@@ -109,6 +109,25 @@ export const BACK_STYLE_PALETTES = {
 export type BackStylePaletteId = keyof typeof BACK_STYLE_PALETTES;
 
 
+// --- 0.7. FINGER PROTECTION REGISTRY (NEW) ---
+export const FINGER_PROTECTION_REGISTRY = {
+    'non': { label: 'None' },
+    'ixp': { label: 'Index Pad' },
+    'mdp': { label: 'Middle Pad' },
+    'ixh': { label: 'Index Hood' },
+    'mdh': { label: 'Middle Hood' }
+} as const;
+
+export type FingerProtectionId = keyof typeof FINGER_PROTECTION_REGISTRY;
+
+export const FINGER_PROTECTION_PALETTES = {
+    openBack: ['non', 'ixp', 'mdp', 'ixh', 'mdh'],
+    noneOnly: ['non'] // For Catcher, First Base, and Close Back
+} as const satisfies Record<string, readonly FingerProtectionId[]>;
+
+export type FingerProtectionPaletteId = keyof typeof FINGER_PROTECTION_PALETTES;
+
+
 // --- 1. LEATHER REGISTRY ---
 export const LEATHER_REGISTRY = {
     'imgOpt1': { label: 'Japanese Kip' },
@@ -265,6 +284,7 @@ interface BuildConfigBase {
     stiffness: BuildStiffnessId;
     throwingHand: BuildThrowingId;
     webType: WebTypeId;
+    fingerProtection: FingerProtectionId;
 }
 
 // Group A: Positions with Back Style
@@ -359,6 +379,7 @@ export interface ProductDefinition {
     throwingHandPaletteId: ThrowingHandPaletteId;
     positionPaletteId: PositionPaletteId;
     backStylePaletteId?: BackStylePaletteId; // <--- NEW: Optional!
+    fingerProtectionPaletteId: FingerProtectionPaletteId;
 }
 
 // ===================================================================
@@ -409,6 +430,7 @@ interface ProductBlueprint {
     handOpeningPalette?: HandOpeningPaletteId;
     throwingHandPalette?: ThrowingHandPaletteId;
     backStylePalette?: BackStylePaletteId; // <--- NEW: Optional!
+    fingerProtectionPalette: FingerProtectionPaletteId;
 }
 
 // Simple Deep Freeze Implementation
@@ -508,6 +530,7 @@ const compileProduct = (blueprint: ProductBlueprint): ProductDefinition => {
         throwingHandPaletteId: blueprint.throwingHandPalette || 'universal',
         positionPaletteId: 'universal',
         backStylePaletteId: blueprint.backStylePalette, // <--- Pass through!
+        fingerProtectionPaletteId: blueprint.fingerProtectionPalette,
     };
 
     return deepFreeze(cartridge);
@@ -521,8 +544,9 @@ const PRODUCT_REGISTRY = {
     'open-back': compileProduct({
         id: 'open-back',
         shellModel: 'openBack',
-        sizePalette: 'openBack', //
-        leatherPalette: 'universal', // <--- Set to universal (has 3 options)
+        sizePalette: 'openBack', 
+        leatherPalette: 'universal', 
+        fingerProtectionPalette: 'openBack',
         validWebs: { 
             bsk: 'basketOB', bsl: 'basketLaceOB', clv: 'closedVOB', dhn: 'dualHingeOB', 
             fmt: 'framedModTrapOB', hwb: 'hOB', iwb: 'iOB', lch: 'lacedHOB', lcs: 'laceSealingOB', 
@@ -560,9 +584,10 @@ const PRODUCT_REGISTRY = {
     'close-back': compileProduct({
         id: 'close-back',
         shellModel: 'closeBack',
-        sizePalette: 'closeBack', //
-        leatherPalette: 'universal', // <--- Set to universal (has 3 options)
-        backStylePalette: 'universal', // <--- This enables the dropdown!
+        sizePalette: 'closeBack', 
+        leatherPalette: 'universal', 
+        backStylePalette: 'universal', 
+        fingerProtectionPalette: 'noneOnly',
         validWebs: { 
             bsk: 'basketCB', clv: 'closedVCB', dhn: 'dualHingeCB', fmt: 'framedModTrapCB', 
             hwb: 'hCB', lch: 'lacedHCB', lcs: 'laceSealingCB', mtp: 'modTrapCB', 
@@ -596,8 +621,9 @@ const PRODUCT_REGISTRY = {
     'first-base': compileProduct({
         id: 'first-base',
         shellModel: 'firstBase',
-        sizePalette: 'firstBase', //
-        leatherPalette: 'mitts', // <--- Set to mitts (has 2 options)
+        sizePalette: 'firstBase', 
+        leatherPalette: 'mitts', 
+        fingerProtectionPalette: 'noneOnly',
         validWebs: { pst: 'postFB', '2pc': 'twoPieceFB' },
         specificZones: {
             [ZONES.THUMB_INNER]:    { shaderIndex: 1, displayName: 'Primary U-Piece' },
@@ -624,8 +650,9 @@ const PRODUCT_REGISTRY = {
     'catcher': compileProduct({
         id: 'catcher',
         shellModel: 'catcher',
-        sizePalette: 'catcher', //
-        leatherPalette: 'mitts', // <--- Set to mitts (has 2 options)
+        sizePalette: 'catcher', 
+        leatherPalette: 'mitts', 
+        fingerProtectionPalette: 'noneOnly',
         validWebs: { '2pc': 'twoPieceCM' },
         specificZones: {
             [ZONES.INDEX]: { shaderIndex: 2, displayName: 'Shell Back' },
@@ -686,7 +713,7 @@ export const resolveProduct = (build: BuildConfig): ProductDefinition => {
 
 export const PRESETS = {
     'open-back': {
-        build: { palette: 'universal', imageSelection: 'imgOpt1', position: 'inf', size: '1100', handOpeningSize: 'adt', stiffness: 'std', throwingHand: 'rh', webType: 'mtp' },
+        build: { palette: 'universal', imageSelection: 'imgOpt1', position: 'inf', size: '1100', handOpeningSize: 'adt', stiffness: 'std', throwingHand: 'rh', webType: 'mtp', fingerProtection: 'non' },
         thumbName: { type: 'text', text: 'Thumb', font: 'LOBSTER', colorId: 'gy' },
         pinkyName: { type: 'text', text: 'Pinky', font: 'ROBOTO', colorId: 'sl' },
         [ZONES.THUMB_INNER]:    { colorId: 'rd' },
@@ -714,7 +741,7 @@ export const PRESETS = {
     } as GloveConfiguration,
 
     'close-back': {
-        build: { palette: 'universal', imageSelection: 'imgOpt1', position: 'out', size: '1275', handOpeningSize: 'adt', stiffness: 'std', throwingHand: 'rh', backStyle: 'cls', webType: 'hwb' },
+        build: { palette: 'universal', imageSelection: 'imgOpt1', position: 'out', size: '1275', handOpeningSize: 'adt', stiffness: 'std', throwingHand: 'rh', backStyle: 'cls', webType: 'hwb', fingerProtection: 'non' },
         thumbName: { type: 'text', text: 'Close', font: 'LOBSTER', colorId: 'gy' },
         pinkyName: { type: 'text', text: 'Back', font: 'ROBOTO', colorId: 'sl' },
         [ZONES.THUMB_INNER]:    { colorId: 'rd' },
@@ -742,7 +769,7 @@ export const PRESETS = {
     } as GloveConfiguration,
 
     'first-base': {
-        build: { palette: 'universal', imageSelection: 'imgOpt1', position: 'fb', size: '1250', handOpeningSize: 'adt', stiffness: 'std', throwingHand: 'rh', webType: 'pst' },
+        build: { palette: 'universal', imageSelection: 'imgOpt1', position: 'fb', size: '1250', handOpeningSize: 'adt', stiffness: 'std', throwingHand: 'rh', webType: 'pst', fingerProtection: 'non' },
         thumbName: { type: 'text', text: 'First', font: 'LOBSTER', colorId: 'br' },
         pinkyName: { type: 'text', text: 'Base', font: 'ROBOTO', colorId: 'br' },
         [ZONES.THUMB_INNER]:    { colorId: 'or' },
@@ -770,7 +797,7 @@ export const PRESETS = {
     } as GloveConfiguration,
 
     'catcher': {
-        build: { palette: 'universal', imageSelection: 'imgOpt1', position: 'cat', size: '3200', handOpeningSize: 'adt', stiffness: 'std', throwingHand: 'rh', webType: '2pc' },
+        build: { palette: 'universal', imageSelection: 'imgOpt1', position: 'cat', size: '3200', handOpeningSize: 'adt', stiffness: 'std', throwingHand: 'rh', webType: '2pc', fingerProtection: 'non' },
         thumbName: { type: 'text', text: 'Catcher', font: 'LOBSTER', colorId: 'gd' },
         pinkyName: { type: 'text', text: 'Mitt', font: 'ROBOTO', colorId: 'gd' },
         [ZONES.THUMB_INNER]:    { colorId: 'bl' }, 
@@ -839,6 +866,7 @@ export const updateBuild = (current: BuildConfig, updates: Partial<BuildConfig>)
         stiffness: updates.stiffness ?? current.stiffness,
         throwingHand: updates.throwingHand ?? current.throwingHand,
         webType: updates.webType ?? current.webType,
+        fingerProtection: (updates.fingerProtection as FingerProtectionId) ?? current.fingerProtection,
     };
 
     // 3. Branch Logic based on Schema Definition
@@ -944,6 +972,12 @@ export const sanitize = (config: GloveConfiguration): GloveConfiguration => {
     if (!validLeathers.includes(nextConfig.build.imageSelection)) {
         nextConfig.build.imageSelection = validLeathers[0];
     }
+
+    // Validate Finger Protection
+    const validProtections = FINGER_PROTECTION_PALETTES[def.fingerProtectionPaletteId] as readonly FingerProtectionId[];
+    if (!validProtections.includes(nextConfig.build.fingerProtection)) {
+        nextConfig.build.fingerProtection = validProtections[0];
+    }
     // -----------------------------------
 
     // 4. SANITIZE ZONES (Color Validation)
@@ -1017,6 +1051,7 @@ export const URL_KEY_MAP: { [key in ZoneKey | keyof Omit<GloveConfiguration, Zon
     throwingHand: 'th',
     backStyle: 'bs',
     webType: 'wt',
+    fingerProtection: 'fp', // <--- Add this
     ...Object.fromEntries(Object.values(ZONES).map(zone => [zone, zone.replace('zone', 'z')]))
 };
 

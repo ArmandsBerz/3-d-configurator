@@ -65,6 +65,9 @@ import {
     BACK_STYLE_PALETTES, // <--- ADDED per instructions
     WEB_REGISTRY, // <--- ADDED per instructions
     CART_LABELS, // <--- ADDED per instructions
+    // --- ADDED PER INSTRUCTIONS ---
+    FINGER_PROTECTION_REGISTRY,
+    FINGER_PROTECTION_PALETTES,
 } from './product-data';
 
 // --- RE-EXPORT EVERYTHING FOR CONSUMERS (UI.TSX, VIEWER.TSX) ---
@@ -188,6 +191,26 @@ export const resolveBuildGroups = (def: ProductDefinition): UIBuildGroup[] => {
         };
     }
 
+    // --- 1.6 FINGER PROTECTION GROUP (ADDED PER INSTRUCTIONS) ---
+    let fingerProtectionGroup: UIBuildGroup | null = null;
+    const protectionPaletteId = def.fingerProtectionPaletteId;
+    const protectionIds = FINGER_PROTECTION_PALETTES[protectionPaletteId];
+
+    // LOGICAL GUARD: Only show the menu if there is something to choose besides 'None'
+    if (protectionIds.length > 1) {
+        const protectionOptions = protectionIds.map(id => ({
+            id,
+            label: FINGER_PROTECTION_REGISTRY[id].label
+        }));
+
+        fingerProtectionGroup = {
+            id: 'fingerProtection',
+            title: 'Finger Protection',
+            options: protectionOptions,
+            layout: 'grid-cols-2'
+        };
+    }
+
     // 1.7 Web Type Group (Dynamic from Assets)
     // The "Palette" for webs is strictly the keys of the validWebs map.
     // TWEAK 3: Strict filtering using the Registry instead of casting
@@ -269,6 +292,7 @@ export const resolveBuildGroups = (def: ProductDefinition): UIBuildGroup[] => {
         leatherGroup, // Added to return array
         positionGroup,
         backStyleGroup, // Added to return array (conditional)
+        fingerProtectionGroup, // Added per instructions
         sizeGroup,
         webGroup, // <--- Add it to the list!
         handGroup,
@@ -405,6 +429,14 @@ export const getBuildSummaryRows = (build: BuildConfig, definition: ProductDefin
     // 8. Throwing Hand (Universal)
     if (build.throwingHand && THROWING_HAND_REGISTRY[build.throwingHand]) {
         rows.push({ key: "Throwing Hand", value: THROWING_HAND_REGISTRY[build.throwingHand].label });
+    }
+
+    // 9. Finger Protection (Universal)
+    if (build.fingerProtection && FINGER_PROTECTION_REGISTRY[build.fingerProtection]) {
+        rows.push({ 
+            key: "Finger Protection", 
+            value: FINGER_PROTECTION_REGISTRY[build.fingerProtection].label 
+        });
     }
 
     return rows;

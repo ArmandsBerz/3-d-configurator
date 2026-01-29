@@ -641,6 +641,15 @@ export class SceneManager {
         this.activeWebPlugin?.updateZonePaletteIndex(zoneIndex, paletteIndex);
     }
 
+    // Add this method inside class SceneManager in viewer.tsx
+    public setPartVisibility(partName: string, isVisible: boolean): void {
+        if (!this.activeShellBundle) return;
+        const part = this.activeShellBundle.parts.get(partName);
+        if (part) {
+            part.setEnabled(isVisible);
+        }
+    }
+
     // --- REWRITTEN: CLEAN SWAP LOGIC ---
     public async updateBuild(modelName: string): Promise<void> {
         if (!modelName || this.activeShellName === modelName) return;

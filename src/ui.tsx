@@ -2154,12 +2154,31 @@ const GloveLogicController = () => {
 
             try {
                 const { configuration } = state;
-                
+                const fp = configuration.build.fingerProtection;
+
                 // 1. RESOLVE PRODUCT (The Single Source of Truth)
                 const definition = resolveProduct(configuration.build);
 
                 // 2. UPDATE SHELL ASSET
                 await sceneManager.updateBuild(definition.assets.shellModel);
+
+                // --- FINGER PROTECTION LOGIC ---
+                // A. Clear all possible protection meshes first
+                const allFpMeshes = ['indexPad', 'middlePad', 'indexHood', 'middleHood'];
+                allFpMeshes.forEach(meshName => sceneManager.setPartVisibility(meshName, false));
+
+                // B. Map ID to Mesh Name and show the selected one
+                const fpMapping: Record<string, string> = {
+                    'ixp': 'indexPad',
+                    'mdp': 'middlePad',
+                    'ixh': 'indexHood',
+                    'mdh': 'middleHood'
+                };
+
+                if (fp !== 'non' && fpMapping[fp]) {
+                    sceneManager.setPartVisibility(fpMapping[fp], true);
+                }
+                // ---------------------------------
 
                 // 3. UPDATE WEB ASSET
                 // Map the user's generic 'webType' (e.g. 'trp') to the specific GLB (e.g. 'trapOB')
