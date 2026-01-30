@@ -121,6 +121,8 @@ export {
     STIFFNESS_REGISTRY,
     HAND_OPENING_REGISTRY,
     CART_LABELS, // <--- ADDED per instructions
+    FINGER_PROTECTION_REGISTRY, // <--- ADDED per instructions
+    FINGER_PROTECTION_PALETTES, // <--- ADDED per instructions
 };
 
 // --- LOGIC CONTROLLER REMOVED ---

@@ -111,14 +111,17 @@ export type BackStylePaletteId = keyof typeof BACK_STYLE_PALETTES;
 
 // --- 0.7. FINGER PROTECTION REGISTRY (NEW) ---
 export const FINGER_PROTECTION_REGISTRY = {
-    'non': { label: 'None' },
-    'ixp': { label: 'Index Pad' },
-    'mdp': { label: 'Middle Pad' },
-    'ixh': { label: 'Index Hood' },
-    'mdh': { label: 'Middle Hood' }
+    'non': { label: 'None', meshName: null },
+    'ixp': { label: 'Index Pad', meshName: 'indexPad' },
+    'mdp': { label: 'Middle Pad', meshName: 'middlePad' },
+    'ixh': { label: 'Index Hood', meshName: 'indexHood' },
+    'mdh': { label: 'Middle Hood', meshName: 'middleHood' }
 } as const;
 
 export type FingerProtectionId = keyof typeof FINGER_PROTECTION_REGISTRY;
+
+// Narrowing: Define the literal types for the meshes
+export type FingerProtectionMeshName = Exclude<typeof FINGER_PROTECTION_REGISTRY[FingerProtectionId]['meshName'], null>;
 
 export const FINGER_PROTECTION_PALETTES = {
     openBack: ['non', 'ixp', 'mdp', 'ixh', 'mdh'],
@@ -356,6 +359,8 @@ export interface ProductDefinition {
         shellModel: string; // 'catcher.glb'
         // STRICT MAP: Only the webs that exist for this shell
         validWebs: Record<string, string>; 
+        // 1. Interface Alignment: Narrowing meshes to registry literals
+        protectionMeshes: FingerProtectionMeshName[];
     };
 
     // B. STRUCTURE (Physics Source of Truth)
@@ -508,12 +513,23 @@ const compileProduct = (blueprint: ProductBlueprint): ProductDefinition => {
         }
     });
 
+    // 3. Mapping Logic Fix & Type Guard Refinement
+    const protectionPalette = FINGER_PROTECTION_PALETTES[blueprint.fingerProtectionPalette] as readonly FingerProtectionId[];
+    const derivedMeshes = protectionPalette
+        .map(id => {
+            // Explicitly handle mapping to handle null vs meshName literals
+            const mesh = FINGER_PROTECTION_REGISTRY[id].meshName;
+            return mesh;
+        })
+        .filter((name): name is FingerProtectionMeshName => name !== null); // Refined Type Guard
+
     // 3. DEEP FREEZE (Immutability)
     const cartridge: ProductDefinition = {
         id: blueprint.id,
         assets: {
             shellModel: blueprint.shellModel,
-            validWebs: blueprint.validWebs
+            validWebs: blueprint.validWebs,
+            protectionMeshes: derivedMeshes
         },
         zones: finalZones,
         uiGroups: blueprint.uiGroups,
