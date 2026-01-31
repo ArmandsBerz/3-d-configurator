@@ -69,6 +69,7 @@ import {
     FINGER_PROTECTION_REGISTRY,
     FINGER_PROTECTION_PALETTES,
 } from './product-data';
+import type { FingerProtectionId } from './product-data'; //
 
 // --- RE-EXPORT EVERYTHING FOR CONSUMERS (UI.TSX, VIEWER.TSX) ---
 export type {
@@ -92,7 +93,8 @@ export type {
     UIPartGroupSingle,
     UIPartGroupDual, // <--- ADDED per instructions
     CommerceState,
-    PresetId
+    PresetId,
+    FingerProtectionId // <--- RE-EXPORTED for UI.tsx consistency
 };
 
 export {
@@ -138,16 +140,15 @@ export const sanitize = (config: GloveConfiguration): GloveConfiguration => {
     // 3. FINGER PROTECTION SAFETY VALVE
     // Check if the definition supports finger protection (length > 1 means choice exists beyond 'None')
     const protectionPaletteId = definition.fingerProtectionPaletteId;
-    const protectionIds = FINGER_PROTECTION_PALETTES[protectionPaletteId];
+    // Widening the array to FingerProtectionId[] to make .includes() type-safe
+    const protectionIds: readonly FingerProtectionId[] = FINGER_PROTECTION_PALETTES[protectionPaletteId]; //
     
-    if (!protectionIds || protectionIds.length <= 1) {
+    if (protectionIds.length <= 1) { //
         // Force state to 'non' if the shell doesn't support pads or hoods
         sanitized.build.fingerProtection = 'non';
-    } else {
+    } else if (!protectionIds.includes(sanitized.build.fingerProtection)) { //
         // Even if supported, ensure the current ID is actually in the allowed palette for this shell
-        if (!protectionIds.includes(sanitized.build.fingerProtection as any)) {
-            sanitized.build.fingerProtection = 'non';
-        }
+        sanitized.build.fingerProtection = 'non';
     }
 
     return sanitized;
@@ -442,18 +443,22 @@ export const getBuildSummaryRows = (build: BuildConfig, definition: ProductDefin
     // 9. Finger Protection (Conditional: Mirrors Text pattern/Accessory logic)
     // Row is included only if it's not 'non' and the product supports more than none.
     const paletteId = definition.fingerProtectionPaletteId;
-    const allowed = FINGER_PROTECTION_PALETTES[paletteId] ?? [];
+    // Widening the array to FingerProtectionId[] to make .includes() type-safe
+    const allowed: readonly FingerProtectionId[] = FINGER_PROTECTION_PALETTES[paletteId]; //
+
     if (
-        build.fingerProtection &&
         build.fingerProtection !== 'non' &&
         allowed.length > 1 &&
-        allowed.includes(build.fingerProtection as any) &&
-        FINGER_PROTECTION_REGISTRY[build.fingerProtection]
+        allowed.includes(build.fingerProtection) //
     ) {
-        rows.push({
-            key: "Finger Protection",
-            value: FINGER_PROTECTION_REGISTRY[build.fingerProtection].label
-        });
+        // Refined protection logic to avoid double-indexing the registry
+        const protectionEntry = FINGER_PROTECTION_REGISTRY[build.fingerProtection]; //
+        if (protectionEntry) {
+            rows.push({
+                key: "Finger Protection",
+                value: protectionEntry.label
+            });
+        }
     }
 
     return rows;
