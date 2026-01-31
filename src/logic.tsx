@@ -217,25 +217,8 @@ export const resolveBuildGroups = (def: ProductDefinition): UIBuildGroup[] => {
         };
     }
 
-    // --- 1.6 FINGER PROTECTION GROUP (ADDED PER INSTRUCTIONS) ---
-    let fingerProtectionGroup: UIBuildGroup | null = null;
-    const protectionPaletteId = def.fingerProtectionPaletteId;
-    const protectionIds = FINGER_PROTECTION_PALETTES[protectionPaletteId];
-
-    // LOGICAL GUARD: Only show the menu if there is something to choose besides 'None'
-    if (protectionIds.length > 1) {
-        const protectionOptions = protectionIds.map(id => ({
-            id,
-            label: FINGER_PROTECTION_REGISTRY[id].label
-        }));
-
-        fingerProtectionGroup = {
-            id: 'fingerProtection',
-            title: 'Finger Protection',
-            options: protectionOptions,
-            layout: 'grid-cols-2'
-        };
-    }
+    // --- 1.6 FINGER PROTECTION GROUP (REMOVED: Stop generating as a build group) ---
+    // Waste removed to align with non-foundational accessory logic.
 
     // 1.7 Web Type Group (Dynamic from Assets)
     // The "Palette" for webs is strictly the keys of the validWebs map.
@@ -318,7 +301,6 @@ export const resolveBuildGroups = (def: ProductDefinition): UIBuildGroup[] => {
         leatherGroup, // Added to return array
         positionGroup,
         backStyleGroup, // Added to return array (conditional)
-        fingerProtectionGroup, // Added per instructions
         sizeGroup,
         webGroup, // <--- Add it to the list!
         handGroup,
@@ -457,8 +439,14 @@ export const getBuildSummaryRows = (build: BuildConfig, definition: ProductDefin
         rows.push({ key: "Throwing Hand", value: THROWING_HAND_REGISTRY[build.throwingHand].label });
     }
 
-    // 9. Finger Protection (Universal)
-    if (build.fingerProtection && FINGER_PROTECTION_REGISTRY[build.fingerProtection]) {
+    // 9. Finger Protection (Conditional: Mirrors Text pattern/Accessory logic)
+    // Row is included only if it's not 'non' and the product supports more than none.
+    if (
+        build.fingerProtection && 
+        build.fingerProtection !== 'non' && 
+        definition.fingerProtectionPaletteId !== 'noneOnly' &&
+        FINGER_PROTECTION_REGISTRY[build.fingerProtection]
+    ) {
         rows.push({ 
             key: "Finger Protection", 
             value: FINGER_PROTECTION_REGISTRY[build.fingerProtection].label 
