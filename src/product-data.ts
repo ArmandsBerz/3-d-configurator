@@ -514,14 +514,9 @@ const compileProduct = (blueprint: ProductBlueprint): ProductDefinition => {
     });
 
     // 3. Mapping Logic Fix & Type Guard Refinement
-    const protectionPalette = FINGER_PROTECTION_PALETTES[blueprint.fingerProtectionPalette] as readonly FingerProtectionId[];
-    const derivedMeshes = protectionPalette
-        .map(id => {
-            // Explicitly handle mapping to handle null vs meshName literals
-            const mesh = FINGER_PROTECTION_REGISTRY[id].meshName;
-            return mesh;
-        })
-        .filter((name): name is FingerProtectionMeshName => name !== null); // Refined Type Guard
+    // TASK 2 FIX: Always include ALL potential protection meshes in the assets list
+    // so the controller can hide/clean them when state switches or model swaps.
+    const derivedMeshes: FingerProtectionMeshName[] = ['indexPad', 'middlePad', 'indexHood', 'middleHood'];
 
     // 3. DEEP FREEZE (Immutability)
     const cartridge: ProductDefinition = {
@@ -651,7 +646,6 @@ const PRODUCT_REGISTRY = {
             { id: 'primaryUPieceGroup', type: 'single', title: 'Primary U-Piece Color', zoneKey: ZONES.THUMB_INNER },
             { id: 'shellBackGroup', type: 'single', title: 'Shell Back Color', zoneKey: ZONES.INDEX },
             { id: 'wristGroup', type: 'single', title: 'Wrist Color', zoneKey: ZONES.WRIST },
-            { id: 'padHoodGroup', type: 'single', title: 'Pad/Hood Color', zoneKey: ZONES.PAD_HOOD },
             { id: 'laceGroup', type: 'single', title: 'Lace Color', zoneKey: ZONES.LACE },
             { id: 'bindingGroup', type: 'single', title: 'Binding Color', zoneKey: ZONES.BINDING },
             { id: 'stitchingGroup', type: 'single', title: 'Stitching Color', zoneKey: ZONES.STITCHING },
@@ -681,7 +675,6 @@ const PRODUCT_REGISTRY = {
             { id: 'shellBaseGroup', type: 'single', title: 'Shell Base Color', zoneKey: ZONES.MIDDLE_INNER },
             { id: 'railsGroup', type: 'single', title: 'Rails Color', zoneKey: ZONES.MIDDLE_OUTER },
             { id: 'wristGroup', type: 'single', title: 'Wrist Color', zoneKey: ZONES.WRIST },
-            { id: 'padHoodGroup', type: 'single', title: 'Pad/Hood Color', zoneKey: ZONES.PAD_HOOD },
             { id: 'laceGroup', type: 'single', title: 'Lace Color', zoneKey: ZONES.LACE },
             { id: 'bindingGroup', type: 'single', title: 'Binding Color', zoneKey: ZONES.BINDING },
             { id: 'stitchingGroup', type: 'single', title: 'Stitching Color', zoneKey: ZONES.STITCHING },

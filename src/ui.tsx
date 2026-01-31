@@ -638,8 +638,9 @@ const AccordionOptionMobile = ({ title, onClose, headerAccessory = null, childre
 
 interface SingleColorPickerProps {
     zoneKey: ZoneKey;
+    subLabel?: string;
 }
-const SingleColorPicker = ({ zoneKey }: SingleColorPickerProps) => {
+const SingleColorPicker = ({ zoneKey, subLabel }: SingleColorPickerProps) => {
     const { state, dispatch } = useGloveConfigurator();
     const colorId = state.configuration[zoneKey]?.colorId;
 
@@ -650,7 +651,12 @@ const SingleColorPicker = ({ zoneKey }: SingleColorPickerProps) => {
         });
     };
 
-    return <ColorSwatchGrid swatches={COLOR_OPTIONS} selectedColorId={colorId} onColorSelect={handleChange} />;
+    return (
+        <div className="option-group-container">
+            {subLabel && <h3 className="text-sm font-semibold text-gray-400 mb-2">{subLabel}</h3>}
+            <ColorSwatchGrid swatches={COLOR_OPTIONS} selectedColorId={colorId} onColorSelect={handleChange} />
+        </div>
+    );
 };
 
 interface DualColorPickerProps {
@@ -706,7 +712,7 @@ const Option = React.forwardRef<HTMLButtonElement, OptionProps>(
 
 // --- MODIFICATION: Updated to GENERIC Component <T> ---
 interface OptionGroupProps<T extends string> {
-    title: string;
+    title?: string;
     options: readonly { id: T; label: string }[];
     layout: string;
     selectedOption: T;
@@ -718,7 +724,7 @@ const OptionGroup = <T extends string>({ title, options, layout, selectedOption,
 
     return (
         <div className="option-group-container">
-            <h3 className="text-sm font-semibold text-gray-400 mb-2">{title}</h3>
+            {title && <h3 className="text-sm font-semibold text-gray-400 mb-2">{title}</h3>}
             <div ref={containerRef} className={`relative grid ${layout} gap-2`} {...gridEventHandlers}>
                 <NavigationHint isVisible={showNavigationHint} />
                 {options.map((option, index) => {
@@ -802,7 +808,7 @@ const BuildOption = ({ isDesktop }: BuildOptionProps) => {
     const positionGroup = buildGroups.find(g => g.id === 'position');
     
     // --- NEW: Filter out 'imageSelection' as well so it doesn't appear twice ---
-    const otherGroups = buildGroups.filter(g => g.id !== 'position' && g.id !== 'imageSelection' && g.id !== 'webType');
+    const otherGroups = buildGroups.filter(g => g.id !== 'position' && g.id !== 'imageSelection' && g.id !== 'webType' && g.id !== 'fingerProtection');
 
     return (
         <div className={`space-y-6 ${!isDesktop ? 'pb-4' : ''}`}>
@@ -1456,14 +1462,88 @@ const AccordionDesktop = ({ openAccordion, setOpenAccordion, colorForApplyAll }:
                         <BuildOption isDesktop={true} />
                     </AccordionOptionDesktop>
 
-                    {currentUiGroups.map((group: UIPartGroup) => {
-                        // --- MODIFICATION: Conditional button logic ---
+                    {/* MANUALLY INJECTED: Web Gallery Slot 2 */}
+                    <AccordionOptionDesktop
+                        title="Web"
+                        isOpen={openAccordion === 'web'}
+                        onToggle={() => handleAccordionToggle('web')}
+                        headerContent={renderHeaderAccessory({ id: 'web', type: 'gallery', title: 'Web' })}
+                        actionButton={
+                            <SecondaryButton
+                                label="Apply to All"
+                                onClick={() => colorForApplyAll && dispatch({ type: ACTION_TYPES.APPLY_COLOR_TO_ALL, payload: { colorId: colorForApplyAll } })}
+                                icon={<CheckmarkIcon />}
+                                disabled={!colorForApplyAll}
+                            />
+                        }
+                    >
+                        <WebOptions />
+                    </AccordionOptionDesktop>
+
+                    {/* MANUALLY INJECTED: Pad/Hood Slot 3 */}
+                    {definition.fingerProtectionPaletteId !== 'noneOnly' && (
+                        <AccordionOptionDesktop
+                            title="Pad / Hood"
+                            isOpen={openAccordion === 'fingerProtection'}
+                            onToggle={() => handleAccordionToggle('fingerProtection')}
+                            headerContent={<ColorIndicator colorId={configuration[ZONES.PAD_HOOD]?.colorId} />}
+                        >
+                            {(() => {
+                                const currentId = configuration.build.fingerProtection;
+                                const typeValue = currentId === 'non' ? 'non' : (currentId.endsWith('p') ? 'pad' : 'hood');
+                                const onBuildConfigChange = (updates: Partial<BuildConfig>) => dispatch({ type: ACTION_TYPES.UPDATE_BUILD, payload: updates });
+
+                                return (
+                                    <div className="space-y-6">
+                                        <OptionGroup<string>
+                                            layout="grid-cols-3"
+                                            options={[
+                                                { id: 'non', label: 'None' },
+                                                { id: 'pad', label: 'Pad' },
+                                                { id: 'hood', label: 'Hood' }
+                                            ]}
+                                            selectedOption={typeValue}
+                                            onSelectOption={(val) => {
+                                                if (val === 'non') {
+                                                    onBuildConfigChange({ fingerProtection: 'non' });
+                                                } else {
+                                                    const currentFinger = currentId.startsWith('md') ? 'md' : 'ix';
+                                                    const suffix = val === 'pad' ? 'p' : 'h';
+                                                    onBuildConfigChange({ fingerProtection: `${currentFinger}${suffix}` as any });
+                                                }
+                                            }}
+                                        />
+
+                                        {typeValue !== 'non' && (
+                                            <>
+                                                <OptionGroup<string>
+                                                    layout="grid-cols-2"
+                                                    options={[
+                                                        { id: 'ix', label: 'Index' },
+                                                        { id: 'md', label: 'Middle' }
+                                                    ]}
+                                                    selectedOption={currentId.startsWith('ix') ? 'ix' : 'md'}
+                                                    onSelectOption={(val) => {
+                                                        const suffix = typeValue === 'pad' ? 'p' : 'h';
+                                                        onBuildConfigChange({ fingerProtection: `${val}${suffix}` as any });
+                                                    }}
+                                                />
+                                                <SingleColorPicker zoneKey={ZONES.PAD_HOOD} subLabel="Color" />
+                                            </>
+                                        )}
+                                    </div>
+                                );
+                            })()}
+                        </AccordionOptionDesktop>
+                    )}
+
+                    {currentUiGroups.filter(g => g.id !== 'web' && g.id !== 'padHoodGroup').map((group: UIPartGroup) => {
                         let actionButton: ReactElement | null = null;
                         let isEligible = false;
                         if (group.type === 'single') {
                             isEligible = definition.zones[group.zoneKey]?.allowApplyToAll ?? false;
                         } else if (group.type === 'dual' || group.type === 'gallery') {
-                            isEligible = true; // Leather and web parts are always eligible
+                            isEligible = true; 
                         }
 
                         if (isEligible) {
@@ -1506,7 +1586,6 @@ const AccordionDesktop = ({ openAccordion, setOpenAccordion, colorForApplyAll }:
                         );
                     })}
 
-                    {/* --- MODIFICATION: Render personalization panels separately --- */}
                     {personalizationGroups.map(group => (
                         <AccordionOptionDesktop
                             key={group.id}
@@ -1514,7 +1593,7 @@ const AccordionDesktop = ({ openAccordion, setOpenAccordion, colorForApplyAll }:
                             isOpen={openAccordion === group.id}
                             onToggle={() => handleAccordionToggle(group.id)}
                             headerContent={<span className="text-sm text-gray-400 truncate max-w-[100px]">{configuration[group.id].text}</span>}
-                            actionButton={null} // No action button for text panels
+                            actionButton={null} 
                         >
                             <TextOption contextId={group.id} />
                         </AccordionOptionDesktop>
@@ -1527,7 +1606,7 @@ const AccordionDesktop = ({ openAccordion, setOpenAccordion, colorForApplyAll }:
 };
 
 interface AccordionMobileProps {
-    onOpenPanel: (group: UIPartGroup | { id: 'build' | TextPartId, title: string }, event: React.MouseEvent<HTMLButtonElement>) => void;
+    onOpenPanel: (group: UIPartGroup | { id: 'build' | 'fingerProtection' | TextPartId, title: string }, event: React.MouseEvent<HTMLButtonElement>) => void;
     openAccordionOptionMobile: MobileAccordionState;
 }
 
@@ -1535,20 +1614,17 @@ const AccordionMobile = React.forwardRef<HTMLElement, AccordionMobileProps>(({ o
     const { state } = useGloveConfigurator();
     const { configuration } = state;
     
-    // --- RESOLVE PRODUCT ---
     const definition = resolveProduct(configuration.build);
     const currentUiGroups = definition.uiGroups;
 
     const { isTopGradientVisible, isBottomGradientVisible } = useScrollGradients(ref as React.RefObject<HTMLElement>);
 
     const buildGroup = { id: 'build' as const, title: 'Build Options' };
-    // --- MODIFICATION: Define personalization panels separately ---
     const personalizationGroups = [
         { id: 'thumbName' as TextPartId, title: 'Thumb Name' },
         { id: 'pinkyName' as TextPartId, title: 'Pinky Name' },
     ];
 
-    // MODIFICATION: Use colorId and lookup map
     const renderAccessory = (group: UIPartGroup) => {
         if (group.type === 'single' || group.type === 'gallery') {
             const zone = group.type === 'gallery' ? ZONES.WEB : group.zoneKey;
@@ -1573,7 +1649,27 @@ const AccordionMobile = React.forwardRef<HTMLElement, AccordionMobileProps>(({ o
                 </div>
             </button>
 
-            {currentUiGroups.map((group: UIPartGroup) => (
+            {/* Mobile Web Promoted */}
+            <button className="w-full h-[56px] bg-[#1C1C1C] flex items-center justify-between px-4 mb-[10px] focus:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-white" onClick={(e) => onOpenPanel({ id: 'web', type: 'gallery', title: 'Web' }, e)}>
+                <div className="flex items-center">
+                    <CaretRightIcon className="h-4 w-auto mr-3" />
+                    <span className="text-lg">Web</span>
+                </div>
+                <ColorIndicator colorId={configuration[ZONES.WEB]?.colorId} />
+            </button>
+
+            {/* Mobile Pad/Hood Promoted */}
+            {definition.fingerProtectionPaletteId !== 'noneOnly' && (
+                <button className="w-full h-[56px] bg-[#1C1C1C] flex items-center justify-between px-4 mb-[10px] focus:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-white" onClick={(e) => onOpenPanel({ id: 'fingerProtection', title: 'Pad / Hood' }, e)}>
+                    <div className="flex items-center">
+                        <CaretRightIcon className="h-4 w-auto mr-3" />
+                        <span className="text-lg">Pad / Hood</span>
+                    </div>
+                    <ColorIndicator colorId={configuration[ZONES.PAD_HOOD]?.colorId} />
+                </button>
+            )}
+
+            {currentUiGroups.filter(g => g.id !== 'web' && g.id !== 'padHoodGroup').map((group: UIPartGroup) => (
                 <button key={group.id} className="w-full h-[56px] bg-[#1C1C1C] flex items-center justify-between px-4 mb-[10px] focus:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-white" onClick={(e) => onOpenPanel(group, e)}>
                     <div className="flex items-center">
                         <CaretRightIcon className="h-4 w-auto mr-3" />
@@ -1583,7 +1679,6 @@ const AccordionMobile = React.forwardRef<HTMLElement, AccordionMobileProps>(({ o
                 </button>
             ))}
 
-            {/* --- MODIFICATION: Render personalization panels separately --- */}
             {personalizationGroups.map(group => (
                 <button key={group.id} className="w-full h-[56px] bg-[#1C1C1C] flex items-center justify-between px-4 mb-[10px] focus:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-white" onClick={(e) => onOpenPanel(group, e)}>
                     <div className="flex items-center">
@@ -1613,43 +1708,33 @@ const UI = () => {
     const mobileListRef = useRef<HTMLElement>(null);
     const triggerButtonRef = useRef<HTMLButtonElement | null>(null);
 
-    // For Desktop state
     const [openAccordion, setOpenAccordion] = useState<string | null>('build');
 
-    // Add this near your other refs (around line 1260)
     const phantomUrlRef = useRef<string | null>(null);
 
-    // --- MODIFICATION: Add useEffect for checking initial load status ---
     useEffect(() => {
         if (initialLoadResult.status === 'failed') {
             setSnackbarMessage("Invalid share link. Showing default glove.");
         }
-    }, []); // Empty dependency array ensures this runs only once on mount
-    // --- END MODIFICATION ---
+    }, []); 
 
-    // --- NEW FIX: Reset visualization expanded state when switching to Desktop ---
     useEffect(() => {
         if (isDesktop) {
             setIsVisualizationExpanded(false);
             setOpenAccordionOptionMobile(null);
         }
     }, [isDesktop]);
-    // --- END FIX ---
 
-    // --- NEW: Listen for SHARE_COMPLETE messages from parent (for Snackbar updates) ---
     useEffect(() => {
         const handleParentMessage = (event: MessageEvent) => {
             const data = event.data;
             if (!data || typeof data !== 'object') return;
 
-            // --- FIX FROM DEEPSEEK: SANITY CHECK ---
-            // Ensure it is a string and looks like a valid http/https URL
             if (data.type === 'PHANTOM_URL' && typeof data.url === 'string') {
                  if (data.url.startsWith('http')) {
                       phantomUrlRef.current = data.url;
                  }
             }
-            // ---------------------------------------
 
             if (data.type === BRIDGE_MESSAGE_TYPES.SHARE_COMPLETE) {
                 if (data.success) {
@@ -1666,17 +1751,15 @@ const UI = () => {
             window.removeEventListener('message', handleParentMessage);
         };
     }, []);
-    // --- END: SHARE_COMPLETE listener ---
 
-    // --- RESOLVE PRODUCT ---
     const definition = resolveProduct(configuration.build);
     const currentUiGroups = definition.uiGroups;
 
-    // --- MODIFICATION: Use helper to determine button eligibility ---
     const colorForApplyAll = useMemo((): ColorId | undefined => {
         let openPanelContext: UIPartGroup | null = null;
         if (isDesktop) {
-            openPanelContext = currentUiGroups.find(g => g.id === openAccordion) || null;
+            if (openAccordion === 'web') openPanelContext = { id: 'web', type: 'gallery', title: 'Web' };
+            else openPanelContext = currentUiGroups.find(g => g.id === openAccordion) || null;
         } else if (openAccordionOptionMobile && 'context' in openAccordionOptionMobile && 'type' in (openAccordionOptionMobile.context as any)) {
             openPanelContext = openAccordionOptionMobile.context as UIPartGroup;
         }
@@ -1693,10 +1776,9 @@ const UI = () => {
         }
 
         if (!definition.zones[representativeZoneKey]?.allowApplyToAll) {
-            return undefined; // If not eligible, no color is available.
+            return undefined; 
         }
 
-        // Default logic: If no interaction yet, default to the most relevant color of the open panel
         if (!lastActivatedPartType) {
             if (openPanelContext?.type === 'dual') {
                 return configuration[openPanelContext.innerZoneKey]?.colorId;
@@ -1730,22 +1812,19 @@ const UI = () => {
         return undefined;
     }, [isDesktop, openAccordion, openAccordionOptionMobile, currentUiGroups, configuration, lastActivatedPartType, definition.zones]);
 
-    // --- NEW PROP FOR MOBILE FOOTER ---
     const showApplyToAllButton = useMemo((): boolean => {
         if (isDesktop || !openAccordionOptionMobile || !('context' in openAccordionOptionMobile)) return false;
 
         const context = openAccordionOptionMobile.context as any;
-        if ('type' in context) { // It's a UIPartGroup
+        if ('type' in context) { 
             if (context.type === 'single') return definition.zones[context.zoneKey]?.allowApplyToAll ?? false;
             if (context.type === 'dual') return true;
             if (context.type === 'gallery') return definition.zones[ZONES.WEB]?.allowApplyToAll ?? false;
         }
         return false;
     }, [isDesktop, openAccordionOptionMobile, definition]);
-    // --- END MODIFICATION ---
 
     const handleExitCustomizer = useCallback(() => {
-        // ONLY SEND EXIT SIGNAL
         postToParent({
             type: BRIDGE_MESSAGE_TYPES.EXIT_APP,
         });
@@ -1753,9 +1832,8 @@ const UI = () => {
 
     const handleCompleteOrder = useCallback(() => {
         const { build, thumbName, pinkyName } = configuration;
-        const definition = resolveProduct(build); // Need definition for the helper
+        const definition = resolveProduct(build); 
 
-        // 1. Map internal state to Map Keys (shell) - KEEP AS IS
         let shellValue = 'open-back'; 
         if ((build.position as string) === 'cat') shellValue = 'catcher';
         else if ((build.position as string) === 'fb') shellValue = 'first-base';
@@ -1766,13 +1844,10 @@ const UI = () => {
 
         const designCode = generateShareableURL(configuration);
 
-        // --- THE FIX: Use the Gold Master Helper ---
-        // This ensures the Cart properties match the UI exactly.
         const foundationRows = getBuildSummaryRows(build, definition);
         
         const properties: Record<string, string> = {};
         
-        // 1. Define "Keys to Ignore" based on Shell Type
         const keysToExclude = new Set<string>();
 
         if (shellValue === 'open-back') {
@@ -1788,14 +1863,12 @@ const UI = () => {
             }
         }
 
-        // 2. Apply the Filter
         foundationRows.forEach(row => {
             if (!keysToExclude.has(row.key)) {
                 properties[row.key] = row.value;
             }
         });
 
-        // B. Add Personalization
         properties[CART_LABELS.THUMB_TEXT] = thumbName.text;
         properties[CART_LABELS.THUMB_FONT] = fontOptions.find(f => f.id === thumbName.font)?.label || thumbName.font;
         properties[CART_LABELS.THUMB_COLOR] = colorLookupMap.get(thumbName.colorId)?.name || thumbName.colorId;
@@ -1804,7 +1877,6 @@ const UI = () => {
         properties[CART_LABELS.PINKY_FONT] = fontOptions.find(f => f.id === pinkyName.font)?.label || pinkyName.font;
         properties[CART_LABELS.PINKY_COLOR] = colorLookupMap.get(pinkyName.colorId)?.name || pinkyName.colorId;
 
-        // C. Add Active Zone Colors
         Object.entries(configuration).forEach(([key, value]) => {
             if (key.startsWith('zone')) {
                 const zoneKey = key as ZoneKey;
@@ -1816,7 +1888,6 @@ const UI = () => {
             }
         });
 
-        // D. Add Design Code
         properties["Design Code"] = designCode;
 
         postToParent({
@@ -1909,7 +1980,7 @@ const UI = () => {
         };
     }, [isDesktop, openAccordionOptionMobile, isVisualizationExpanded]);
 
-    const handleOpenPanel = (group: UIPartGroup | { id: 'build' | TextPartId, title: string }, event: React.MouseEvent<HTMLButtonElement>) => {
+    const handleOpenPanel = (group: UIPartGroup | { id: 'build' | 'fingerProtection' | TextPartId, title: string }, event: React.MouseEvent<HTMLButtonElement>) => {
         triggerButtonRef.current = event.currentTarget;
         if (group.id === 'build') {
             setOpenAccordionOptionMobile({ name: 'BUILD' });
@@ -1917,6 +1988,8 @@ const UI = () => {
             setOpenAccordionOptionMobile({ name: 'GALLERY', context: group });
         } else if ('zoneKey' in group || 'outerZoneKey' in group) {
             setOpenAccordionOptionMobile({ name: 'COLOR', context: group as UIPartGroup });
+        } else if (group.id === 'fingerProtection') {
+            setOpenAccordionOptionMobile({ name: 'TEXT', context: { id: 'thumbName', title: 'Pad / Hood' } }); // Logic remapped below
         } else {
             if (group.id === 'thumbName' || group.id === 'pinkyName') {
                 setOpenAccordionOptionMobile({ name: 'TEXT', context: { id: group.id, title: group.title } });
@@ -1963,6 +2036,48 @@ const UI = () => {
     const renderMobilePanel = () => {
         if (!openAccordionOptionMobile) return null;
 
+        // Custom renderer for promoted Pad/Hood
+        if (openAccordionOptionMobile.name === 'TEXT' && openAccordionOptionMobile.context.title === 'Pad / Hood') {
+            const currentId = configuration.build.fingerProtection;
+            const typeValue = currentId === 'non' ? 'non' : (currentId.endsWith('p') ? 'pad' : 'hood');
+            const onBuildConfigChange = (updates: Partial<BuildConfig>) => dispatch({ type: ACTION_TYPES.UPDATE_BUILD, payload: updates });
+
+            return (
+                <AccordionOptionMobile title="Pad / Hood" onClose={handleClosePanel} headerRef={panelHeaderRef}>
+                    <div className="space-y-6">
+                        <OptionGroup<string>
+                            layout="grid-cols-3"
+                            options={[
+                                { id: 'non', label: 'None' },
+                                { id: 'pad', label: 'Pad' },
+                                { id: 'hood', label: 'Hood' }
+                            ]}
+                            selectedOption={typeValue}
+                            onSelectOption={(val) => {
+                                if (val === 'non') onBuildConfigChange({ fingerProtection: 'non' });
+                                else {
+                                    const currentFinger = currentId.startsWith('md') ? 'md' : 'ix';
+                                    const suffix = val === 'pad' ? 'p' : 'h';
+                                    onBuildConfigChange({ fingerProtection: `${currentFinger}${suffix}` as any });
+                                }
+                            }}
+                        />
+                        {typeValue !== 'non' && (
+                            <>
+                                <OptionGroup<string>
+                                    layout="grid-cols-2"
+                                    options={[{ id: 'ix', label: 'Index' }, { id: 'md', label: 'Middle' }]}
+                                    selectedOption={currentId.startsWith('ix') ? 'ix' : 'md'}
+                                    onSelectOption={(val) => onBuildConfigChange({ fingerProtection: `${val}${typeValue === 'pad' ? 'p' : 'h'}` as any })}
+                                />
+                                <SingleColorPicker zoneKey={ZONES.PAD_HOOD} subLabel="Color" />
+                            </>
+                        )}
+                    </div>
+                </AccordionOptionMobile>
+            );
+        }
+
         switch (openAccordionOptionMobile.name) {
             case 'SUMMARY':
                 return <SummaryPanel onClose={handleClosePanel} headerRef={panelHeaderRef} />;
@@ -1987,14 +2102,12 @@ const UI = () => {
     return (
         <div ref={appContainerRef} className="flex flex-col lg:relative w-full h-full bg-transparent text-white">
 
-            {/* --- SNACKBAR RENDER --- */}
             {snackbarMessage && (
                 <Snackbar
                     message={snackbarMessage}
                     onClose={() => setSnackbarMessage(null)} 
                 />
             )}
-            {/* --- END SNACKBAR RENDER --- */}
 
             {isLoading && (
                 <div className="absolute inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 pointer-events-auto">
@@ -2120,28 +2233,21 @@ const GloveLogicController = () => {
             try {
                 const { configuration } = state;
 
-                // 1. RESOLVE PRODUCT (The Single Source of Truth)
                 const definition = resolveProduct(configuration.build);
 
-                // 2. UPDATE SHELL ASSET
                 await sceneManager.updateBuild(definition.assets.shellModel);
 
-                // --- FINGER PROTECTION LOGIC (REFACTORED) ---
-                // A. Clear all protection meshes supported by this specific shell
                 definition.assets.protectionMeshes.forEach(meshName => {
                     sceneManager.setPartVisibility(meshName, false);
                 });
 
-                // B. Map current ID to Mesh Name via Registry and show the selected one
                 const currentFpId = configuration.build.fingerProtection;
                 const activeMeshName = FINGER_PROTECTION_REGISTRY[currentFpId].meshName;
                 
                 if (activeMeshName) {
                     sceneManager.setPartVisibility(activeMeshName, true);
                 }
-                // ---------------------------------
 
-                // 3. UPDATE WEB ASSET
                 const webModelFilename = definition.assets.validWebs[configuration.build.webType];
 
                 if (webModelFilename) {
@@ -2150,7 +2256,6 @@ const GloveLogicController = () => {
                     await sceneManager.updateWeb(''); 
                 }
 
-                // 4. UPDATE ZONES (Definition-Driven)
                 for (const [zoneKey, zoneDef] of Object.entries(definition.zones)) {
                     const colorState = configuration[zoneKey as ZoneKey];
                     if (!colorState) continue;
@@ -2166,7 +2271,6 @@ const GloveLogicController = () => {
                     }
                 }
 
-                // 5. UPDATE TEXT
                 sceneManager.updateText({
                     zone: 'thumbName',
                     text: configuration.thumbName.text,

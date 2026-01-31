@@ -43,7 +43,7 @@ import {
     getPaletteIndexById,
     colorLookupMap,
     getHexById,
-    sanitize,
+    sanitize as originalSanitize,
     getPresetConfig,
     serialize,
     deserialize,
@@ -110,7 +110,6 @@ export {
     getPaletteIndexById,
     colorLookupMap,
     getHexById,
-    sanitize,
     getPresetConfig,
     // resolveBuildGroups is now exported directly below
 
@@ -125,9 +124,34 @@ export {
     FINGER_PROTECTION_PALETTES, // <--- ADDED per instructions
 };
 
-// --- LOGIC CONTROLLER REMOVED ---
-// GloveLogicController has been removed to break the circular dependency. 
-// It should be implemented in the UI layer (ui.tsx) where the context resides.
+// ===================================================================
+// --- SANITIZATION LOGIC ---
+// ===================================================================
+
+export const sanitize = (config: GloveConfiguration): GloveConfiguration => {
+    // 1. First, run the base sanitization (handles webTypes and position defaults)
+    const sanitized = originalSanitize(config);
+    
+    // 2. Resolve the product based on the current build
+    const definition = resolveProduct(sanitized.build);
+    
+    // 3. FINGER PROTECTION SAFETY VALVE
+    // Check if the definition supports finger protection (length > 1 means choice exists beyond 'None')
+    const protectionPaletteId = definition.fingerProtectionPaletteId;
+    const protectionIds = FINGER_PROTECTION_PALETTES[protectionPaletteId];
+    
+    if (!protectionIds || protectionIds.length <= 1) {
+        // Force state to 'non' if the shell doesn't support pads or hoods
+        sanitized.build.fingerProtection = 'non';
+    } else {
+        // Even if supported, ensure the current ID is actually in the allowed palette for this shell
+        if (!protectionIds.includes(sanitized.build.fingerProtection as any)) {
+            sanitized.build.fingerProtection = 'non';
+        }
+    }
+
+    return sanitized;
+};
 
 // ===================================================================
 // --- BUILD GROUP RESOLVER (PHASE 2) ---
