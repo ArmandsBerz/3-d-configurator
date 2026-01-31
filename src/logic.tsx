@@ -441,15 +441,18 @@ export const getBuildSummaryRows = (build: BuildConfig, definition: ProductDefin
 
     // 9. Finger Protection (Conditional: Mirrors Text pattern/Accessory logic)
     // Row is included only if it's not 'non' and the product supports more than none.
+    const paletteId = definition.fingerProtectionPaletteId;
+    const allowed = FINGER_PROTECTION_PALETTES[paletteId] ?? [];
     if (
-        build.fingerProtection && 
-        build.fingerProtection !== 'non' && 
-        definition.fingerProtectionPaletteId !== 'noneOnly' &&
+        build.fingerProtection &&
+        build.fingerProtection !== 'non' &&
+        allowed.length > 1 &&
+        allowed.includes(build.fingerProtection as any) &&
         FINGER_PROTECTION_REGISTRY[build.fingerProtection]
     ) {
-        rows.push({ 
-            key: "Finger Protection", 
-            value: FINGER_PROTECTION_REGISTRY[build.fingerProtection].label 
+        rows.push({
+            key: "Finger Protection",
+            value: FINGER_PROTECTION_REGISTRY[build.fingerProtection].label
         });
     }
 
