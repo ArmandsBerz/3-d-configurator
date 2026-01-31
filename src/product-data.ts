@@ -439,15 +439,17 @@ interface ProductBlueprint {
 }
 
 // Simple Deep Freeze Implementation
-const deepFreeze = <T>(obj: T): T => {
+const deepFreeze = <T extends object>(obj: T): T => {
     // Retrieve the property names defined on object
     const propNames = Object.getOwnPropertyNames(obj);
 
+    const rec = obj as Record<string, unknown>;
+
     // Freeze properties before freezing self
     for (const name of propNames) {
-        const value = (obj as any)[name];
+        const value = rec[name];
         if (value && typeof value === "object") {
-            deepFreeze(value);
+            deepFreeze(value as object);
         }
     }
 
@@ -866,6 +868,9 @@ export const updateBuild = (current: BuildConfig, updates: Partial<BuildConfig>)
     // 1. Determine the Target Position
     const nextPosition = updates.position ?? current.position;
 
+    const hasBackStyle = (b: unknown): b is { backStyle: BuildBackId } =>
+      typeof b === "object" && b !== null && "backStyle" in b;
+
     // 2. Base Properties (Explicitly extract common keys to avoid leaking 'backStyle')
     const base: BuildConfigBase = {
         palette: updates.palette ?? current.palette,
@@ -875,7 +880,7 @@ export const updateBuild = (current: BuildConfig, updates: Partial<BuildConfig>)
         stiffness: updates.stiffness ?? current.stiffness,
         throwingHand: updates.throwingHand ?? current.throwingHand,
         webType: updates.webType ?? current.webType,
-        fingerProtection: (updates.fingerProtection as FingerProtectionId) ?? current.fingerProtection,
+        fingerProtection: updates.fingerProtection ?? current.fingerProtection,
     };
 
     // 3. Branch Logic based on Schema Definition
@@ -891,18 +896,10 @@ export const updateBuild = (current: BuildConfig, updates: Partial<BuildConfig>)
         // CASE: Target REQUIRES backStyle
         // Determine what the backStyle should be.
         
-        // Did the update provide one?
-        let nextBack = (updates as any).backStyle;
-        
-        // If not, did the current one have one?
-        if (!nextBack && 'backStyle' in current) {
-            nextBack = current.backStyle;
-        }
-        
-        // If still nothing (e.g. coming from Infield), default to 'opn'
-        if (!nextBack) {
-            nextBack = 'opn'; 
-        }
+        let nextBack: BuildBackId =
+          (hasBackStyle(updates) ? updates.backStyle : undefined) ??
+          (hasBackStyle(current) ? current.backStyle : undefined) ??
+          'opn';
 
         return {
             ...base,
@@ -977,13 +974,13 @@ export const sanitize = (config: GloveConfiguration): GloveConfiguration => {
     }
 
     // Validate Leather
-    const validLeathers = LEATHER_PALETTES[def.leatherPaletteId] as readonly BuildLeatherId[];
+    const validLeathers: readonly BuildLeatherId[] = LEATHER_PALETTES[def.leatherPaletteId];
     if (!validLeathers.includes(nextConfig.build.imageSelection)) {
         nextConfig.build.imageSelection = validLeathers[0];
     }
 
     // Validate Finger Protection
-    const validProtections = FINGER_PROTECTION_PALETTES[def.fingerProtectionPaletteId] as readonly FingerProtectionId[];
+    const validProtections: readonly FingerProtectionId[] = FINGER_PROTECTION_PALETTES[def.fingerProtectionPaletteId];
     if (!validProtections.includes(nextConfig.build.fingerProtection)) {
         nextConfig.build.fingerProtection = validProtections[0];
     }

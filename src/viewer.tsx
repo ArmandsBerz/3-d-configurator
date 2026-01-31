@@ -367,9 +367,10 @@ if (u_enableSdf > 0.5) {
 class AssetManager {
     private cache = new Map<string, Promise<AssetContainer>>();
     constructor(private scene: Scene) { }
-    private _handlePreloadError(assetName: string, error: any): void {
+    private _handlePreloadError(assetName: string, error: unknown): void {
         if (process.env.NODE_ENV === 'development') {
-            console.debug(`[AssetManager] Preload failed for "${assetName}":`, error);
+            const message = error instanceof Error ? error.message : String(error);
+            console.debug(`[AssetManager] Preload failed for "${assetName}":`, message);
         }
     }
     public async getAsset(name: string): Promise<AssetContainer> {
@@ -775,9 +776,9 @@ export class SceneManager {
         textMat.roughness = 0.1;
         
         try {
-            (textMat as any).albedoColor = Color3.FromHexString(color);
+            textMat.albedoColor = Color3.FromHexString(color);
         } catch {
-            (textMat as any).albedoColor = new Color3(1, 1, 1);
+            textMat.albedoColor = new Color3(1, 1, 1);
         }
 
         const signature = `${font}:${text}`;
