@@ -52,7 +52,7 @@ import {
     getBuildSummaryRows, // <--- Add this
     FINGER_PROTECTION_REGISTRY // <--- NEW IMPORT for Controller
 } from './logic';
-import { updateBuild, BuildLeatherId } from './product-data'; // <--- NEW: Import directly from domain layer
+import { updateBuild, BuildLeatherId, FingerProtectionId } from './product-data'; // <--- NEW: Import directly from domain layer
 import React, { useState, useRef, useLayoutEffect, useCallback, useEffect, createContext, useContext, useReducer, ReactNode, ReactElement, useMemo } from 'react';
 import BabylonCanvas from './viewer';
 import { SummaryIcon, BackArrowIcon, CheckmarkIcon, LongArrowRightIcon, CaretRightIcon, CaretDownIcon, CaretUpIcon, ShareIcon, CollapseIcon, ExpandIcon, DragIcon, ZoomIcon, CloseIcon } from './icons';
@@ -955,11 +955,11 @@ const ColorPanel = ({ context, onClose, headerRef }: ColorPanelProps) => {
                     outerZoneKey={context.outerZoneKey}
                     innerZoneKey={context.innerZoneKey}
                 />
-            ) : (
+            ) : context.type === 'single' ? (
                 <SingleColorPicker
-                    zoneKey={(context as UIPartGroupSingle).zoneKey}
+                    zoneKey={context.zoneKey}
                 />
-            )}
+            ) : null}
         </AccordionOptionMobile>
     );
 };
@@ -1015,17 +1015,17 @@ const OrderSummaryInfo = () => {
                 <h3 className="text-lg font-semibold text-white mb-2">Color Scheme</h3>
                 <div className="space-y-1 pl-2">
                     {uiGroups.map((group: UIPartGroup) => {
-                         if (group.type === 'single' || group.type === 'gallery') {
+                          if (group.type === 'single' || group.type === 'gallery') {
                              const zone = group.type === 'gallery' ? ZONES.WEB : group.zoneKey;
                              const colorId = configuration[zone]?.colorId;
                              return <p key={group.id}><span className="font-semibold text-gray-400">{group.title.replace(' Color', '')}:</span> {getColorName(colorId)}</p>;
-                         }
-                         if (group.type === 'dual') {
+                          }
+                          if (group.type === 'dual') {
                              const outerColorId = configuration[group.outerZoneKey]?.colorId;
                              const innerColorId = configuration[group.innerZoneKey]?.colorId;
                              return <p key={group.id}><span className="font-semibold text-gray-400">{group.title.replace(' Color', '')}:</span> Inner: {getColorName(innerColorId)}, Outer: {getColorName(outerColorId)}</p>;
-                         }
-                         return null;
+                          }
+                          return null;
                     })}
                 </div>
             </div>
@@ -1422,7 +1422,7 @@ const AccordionDesktop = ({ openAccordion, setOpenAccordion, colorForApplyAll }:
 
     const handleAccordionToggle = (accordionId: string) => {
         if (openAccordion !== accordionId) {
-            dispatch({ type: 'RESET_LAST_ACTIVATED_PART_TYPE' } as any);
+            dispatch({ type: 'RESET_LAST_ACTIVATED_PART_TYPE' as const });
         }
         setOpenAccordion(openAccordion === accordionId ? null : accordionId);
     };
@@ -1509,7 +1509,7 @@ const AccordionDesktop = ({ openAccordion, setOpenAccordion, colorForApplyAll }:
                                                 } else {
                                                     const currentFinger = currentId.startsWith('md') ? 'md' : 'ix';
                                                     const suffix = val === 'pad' ? 'p' : 'h';
-                                                    onBuildConfigChange({ fingerProtection: `${currentFinger}${suffix}` as any });
+                                                    onBuildConfigChange({ fingerProtection: `${currentFinger}${suffix}` as FingerProtectionId });
                                                 }
                                             }}
                                         />
@@ -1525,7 +1525,7 @@ const AccordionDesktop = ({ openAccordion, setOpenAccordion, colorForApplyAll }:
                                                     selectedOption={currentId.startsWith('ix') ? 'ix' : 'md'}
                                                     onSelectOption={(val) => {
                                                         const suffix = typeValue === 'pad' ? 'p' : 'h';
-                                                        onBuildConfigChange({ fingerProtection: `${val}${suffix}` as any });
+                                                        onBuildConfigChange({ fingerProtection: `${val}${suffix}` as FingerProtectionId });
                                                     }}
                                                 />
                                                 <SingleColorPicker zoneKey={ZONES.PAD_HOOD} subLabel="Color" />
@@ -1694,6 +1694,12 @@ const AccordionMobile = React.forwardRef<HTMLElement, AccordionMobileProps>(({ o
     );
 });
 
+// --- NEW HELPER FOR TYPE NARROWING ---
+function getUIPartGroupFromMobileState(s: MobileAccordionState): UIPartGroup | null {
+    if (!s) return null;
+    if (s.name === 'COLOR' || s.name === 'GALLERY') return s.context;
+    return null;
+}
 
 // --- Main UI Component ---
 const UI = () => {
@@ -1760,8 +1766,8 @@ const UI = () => {
         if (isDesktop) {
             if (openAccordion === 'web') openPanelContext = { id: 'web', type: 'gallery', title: 'Web' };
             else openPanelContext = currentUiGroups.find(g => g.id === openAccordion) || null;
-        } else if (openAccordionOptionMobile && 'context' in openAccordionOptionMobile && 'type' in (openAccordionOptionMobile.context as any)) {
-            openPanelContext = openAccordionOptionMobile.context as UIPartGroup;
+        } else {
+            openPanelContext = getUIPartGroupFromMobileState(openAccordionOptionMobile);
         }
 
         if (!openPanelContext) return undefined;
@@ -1813,14 +1819,15 @@ const UI = () => {
     }, [isDesktop, openAccordion, openAccordionOptionMobile, currentUiGroups, configuration, lastActivatedPartType, definition.zones]);
 
     const showApplyToAllButton = useMemo((): boolean => {
-        if (isDesktop || !openAccordionOptionMobile || !('context' in openAccordionOptionMobile)) return false;
+        if (isDesktop) return false;
 
-        const context = openAccordionOptionMobile.context as any;
-        if ('type' in context) { 
-            if (context.type === 'single') return definition.zones[context.zoneKey]?.allowApplyToAll ?? false;
-            if (context.type === 'dual') return true;
-            if (context.type === 'gallery') return definition.zones[ZONES.WEB]?.allowApplyToAll ?? false;
-        }
+        const context = getUIPartGroupFromMobileState(openAccordionOptionMobile);
+        if (!context) return false;
+
+        if (context.type === 'single') return definition.zones[context.zoneKey]?.allowApplyToAll ?? false;
+        if (context.type === 'dual') return true;
+        if (context.type === 'gallery') return definition.zones[ZONES.WEB]?.allowApplyToAll ?? false;
+        
         return false;
     }, [isDesktop, openAccordionOptionMobile, definition]);
 
@@ -1956,7 +1963,7 @@ const UI = () => {
                 container.querySelectorAll<HTMLElement>(
                     'a[href]:not([disabled]), button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), details:not([disabled]), [tabindex]:not([tabindex="-1"])'
                 )
-            ).filter(el => !(el as any).inert && window.getComputedStyle(el).display !== 'none');
+            ).filter(el => !(el as HTMLElement & { inert?: boolean }).inert && window.getComputedStyle(el).display !== 'none');
             if (focusableElements.length === 0) return;
             const firstElement = focusableElements[0];
             const lastElement = focusableElements[focusableElements.length - 1];
@@ -1998,7 +2005,7 @@ const UI = () => {
     };
 
     const handleClosePanel = useCallback(() => {
-        dispatch({ type: 'RESET_LAST_ACTIVATED_PART_TYPE' } as any);
+        dispatch({ type: 'RESET_LAST_ACTIVATED_PART_TYPE' as const });
         setOpenAccordionOptionMobile(null);
     }, [dispatch]);
 
@@ -2058,7 +2065,7 @@ const UI = () => {
                                 else {
                                     const currentFinger = currentId.startsWith('md') ? 'md' : 'ix';
                                     const suffix = val === 'pad' ? 'p' : 'h';
-                                    onBuildConfigChange({ fingerProtection: `${currentFinger}${suffix}` as any });
+                                    onBuildConfigChange({ fingerProtection: `${currentFinger}${suffix}` as FingerProtectionId });
                                 }
                             }}
                         />
@@ -2068,7 +2075,7 @@ const UI = () => {
                                     layout="grid-cols-2"
                                     options={[{ id: 'ix', label: 'Index' }, { id: 'md', label: 'Middle' }]}
                                     selectedOption={currentId.startsWith('ix') ? 'ix' : 'md'}
-                                    onSelectOption={(val) => onBuildConfigChange({ fingerProtection: `${val}${typeValue === 'pad' ? 'p' : 'h'}` as any })}
+                                    onSelectOption={(val) => onBuildConfigChange({ fingerProtection: `${val}${typeValue === 'pad' ? 'p' : 'h'}` as FingerProtectionId })}
                                 />
                                 <SingleColorPicker zoneKey={ZONES.PAD_HOOD} subLabel="Color" />
                             </>
