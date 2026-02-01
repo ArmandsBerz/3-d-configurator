@@ -1496,6 +1496,7 @@ const AccordionDesktop = ({ openAccordion, setOpenAccordion, colorForApplyAll }:
                                 return (
                                     <div className="space-y-6">
                                         <OptionGroup<string>
+                                            title="Type"
                                             layout="grid-cols-3"
                                             options={[
                                                 { id: 'non', label: 'None' },
@@ -1517,6 +1518,7 @@ const AccordionDesktop = ({ openAccordion, setOpenAccordion, colorForApplyAll }:
                                         {typeValue !== 'non' && (
                                             <>
                                                 <OptionGroup<string>
+                                                    title="Finger"
                                                     layout="grid-cols-2"
                                                     options={[
                                                         { id: 'ix', label: 'Index' },
@@ -2053,6 +2055,7 @@ const UI = () => {
                 <AccordionOptionMobile title="Pad / Hood" onClose={handleClosePanel} headerRef={panelHeaderRef}>
                     <div className="space-y-6">
                         <OptionGroup<string>
+                            title="Type"
                             layout="grid-cols-3"
                             options={[
                                 { id: 'non', label: 'None' },
@@ -2072,6 +2075,7 @@ const UI = () => {
                         {typeValue !== 'non' && (
                             <>
                                 <OptionGroup<string>
+                                    title="Finger"
                                     layout="grid-cols-2"
                                     options={[{ id: 'ix', label: 'Index' }, { id: 'md', label: 'Middle' }]}
                                     selectedOption={currentId.startsWith('ix') ? 'ix' : 'md'}
