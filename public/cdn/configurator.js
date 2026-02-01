@@ -98,6 +98,8 @@
   let isIframeLoaded = false;
   // Track the latest requested preset to prevent race conditions
   let pendingPresetId = null;
+  // Store the element that had focus before opening the configurator
+  let lastFocusedElement = null;
 
   // 2. THE SENDER
   function sendSignal(presetId) {
@@ -115,6 +117,9 @@
 
   // 3. THE LOADER
   function openConfigurator(presetId) {
+    // Capture focus before opening
+    lastFocusedElement = document.activeElement;
+
     pendingPresetId = presetId;
 
     // --- ENTRY HINT LOGIC ---
@@ -132,6 +137,8 @@
 
     if (!iframe) {
       iframe = document.createElement('iframe');
+      // Step 1: Add tabindex to ensure it can receive focus
+      iframe.setAttribute('tabindex', '-1');
 
       const configParam = urlParams.get('config');
       const separator = baseUrl.includes('?') ? '&' : '?';
@@ -170,6 +177,11 @@
     }
 
     document.body.classList.add('configurator-open');
+    
+    // Step 2: Force focus into the iframe immediately (using rAF for safety)
+    requestAnimationFrame(() => {
+      if (iframe) iframe.focus();
+    });
   }
 
   // 4. THE LISTENER (Click Handler)
@@ -183,7 +195,7 @@
 
   // 5. THE RECEIVER (Message Handler)
   // Define Allowed Message Types
-  const ALLOWED_TYPES = new Set(['EXIT_APP', 'CUSTOMIZER_STATE', 'COMPLETE_ORDER']);
+  const ALLOWED_TYPES = new Set(['EXIT_APP', 'CUSTOMIZER_STATE', 'COMPLETE_ORDER', 'PHANTOM_URL']);
 
   window.addEventListener('message', (event) => {
     // 1) ORIGIN GUARD (The Bouncer)
@@ -200,6 +212,11 @@
     // --- CASE A: EXIT APP ---
     if (data.type === 'EXIT_APP') {
       document.body.classList.remove('configurator-open');
+      // Restore focus to the original button
+      if (lastFocusedElement) {
+        lastFocusedElement.focus();
+        lastFocusedElement = null;
+      }
       return;
     }
 
