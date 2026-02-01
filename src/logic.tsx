@@ -455,7 +455,7 @@ export const getBuildSummaryRows = (build: BuildConfig, definition: ProductDefin
         const protectionEntry = FINGER_PROTECTION_REGISTRY[build.fingerProtection]; //
         if (protectionEntry) {
             rows.push({
-                key: "Finger Protection",
+                key: "Pad / Hood",
                 value: protectionEntry.label
             });
         }
