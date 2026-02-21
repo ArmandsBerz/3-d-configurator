@@ -457,6 +457,7 @@ export class SceneManager {
     constructor(canvas: HTMLCanvasElement, onReady: (manager: SceneManager) => void, initialModelName: string) {
         this.engine = new Engine(canvas, true, { alpha: true });
         this.scene = new Scene(this.engine);
+        this.scene.useRightHandedSystem = true; // <-- THE CORE FIX FOR RIGHT-HANDED SCENE
         this.assetManager = new AssetManager(this.scene);
         this.scene.clearColor = new Color4(0, 0, 0, 0);
 
