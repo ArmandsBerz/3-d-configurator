@@ -634,6 +634,17 @@ export class SceneManager {
 
     public isReady = (): boolean => this.isSceneReady;
 
+    // --- START NEW CODE: THE RENDER GATE ---
+    public waitForRender(): Promise<void> {
+        return new Promise((resolve) => {
+            // Babylon's built-in check: waits for shaders to compile and textures to be ready
+            this.scene.executeWhenReady(() => {
+                resolve();
+            });
+        });
+    }
+    // --- END NEW CODE ---
+
     public updateShellZonePointer(zoneIndex: number, paletteIndex: number): void {
         this.activeShellBundle?.plugin.updateZonePaletteIndex(zoneIndex, paletteIndex);
     }

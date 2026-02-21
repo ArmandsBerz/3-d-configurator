@@ -55,7 +55,7 @@ import {
 import { updateBuild, BuildLeatherId, FingerProtectionId } from './product-data'; // <--- NEW: Import directly from domain layer
 import React, { useState, useRef, useLayoutEffect, useCallback, useEffect, createContext, useContext, useReducer, ReactNode, ReactElement, useMemo } from 'react';
 import BabylonCanvas from './viewer';
-import { SummaryIcon, BackArrowIcon, CheckmarkIcon, LongArrowRightIcon, CaretRightIcon, CaretDownIcon, CaretUpIcon, ShareIcon, CollapseIcon, ExpandIcon, DragIcon, ZoomIcon, CloseIcon } from './icons';
+import { SummaryIcon, BackArrowIcon, CheckmarkIcon, LongArrowRightIcon, CaretRightIcon, CaretDownIcon, CaretUpIcon, ShareIcon, CollapseIcon, ExpandIcon, DragIcon, ZoomIcon, CloseIcon, Loader } from './icons';
 import { Snackbar } from './snackbar'; 
 
 // --- START: NEW SCROLL GRADIENT HOOK ---
@@ -2120,12 +2120,6 @@ const UI = () => {
                 />
             )}
 
-            {isLoading && (
-                <div className="absolute inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 pointer-events-auto">
-                    <p className="text-white text-xl animate-pulse">Loading...</p>
-                </div>
-            )}
-
             <main ref={mainRef} className={`p-4 flex flex-col items-center justify-center relative bg-transparent overflow-auto h-full w-full ${isVisualizationExpanded ? 'flex-grow' : 'lg:absolute lg:inset-0'}`} style={!isDesktop && !isVisualizationExpanded ? { flexBasis: 'calc(61.8% - 66px)' } : {}}>
                 {!isDesktop && <div className="absolute top-[20px] left-[20px] w-[70px] h-[49px] bg-gray-300 bg-opacity-75 z-10 flex items-center justify-center pointer-events-auto"><p className="font-bold text-xl text-gray-900">LOGO</p></div>}
                 
@@ -2232,7 +2226,7 @@ const UI = () => {
 // ===================================================================
 
 const GloveLogicController = () => {
-    const { state } = useGloveConfigurator();
+    const { state, dispatch } = useGloveConfigurator();
     const sceneManager = useContext(SceneContext);
 
     useEffect(() => {
@@ -2240,6 +2234,8 @@ const GloveLogicController = () => {
             if (!sceneManager || !sceneManager.isReady()) {
                 return;
             }
+
+            dispatch({ type: ACTION_TYPES.SET_LOADING, payload: true });
 
             try {
                 const { configuration } = state;
@@ -2296,14 +2292,18 @@ const GloveLogicController = () => {
                     color: getHexById(configuration.pinkyName.colorId),
                 });
 
+                await sceneManager.waitForRender();
+
             } catch (error) {
                 console.error("Failed to update scene:", error);
+            } finally {
+                dispatch({ type: ACTION_TYPES.SET_LOADING, payload: false });
             }
         };
 
         updateSceneAsync();
 
-    }, [state, sceneManager]);
+    }, [state.configuration, sceneManager, dispatch]);
 
     return null;
 };
@@ -2325,6 +2325,7 @@ const GloveAppContent = () => {
                         initialModelName={initialShellName} 
                     />
                 </div>
+                {state.isLoading && <Loader />}
                 <div id="ui-container" className="absolute inset-0 z-20 pointer-events-none">
                     <UI />
                 </div>
