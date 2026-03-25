@@ -547,11 +547,11 @@ const PRODUCT_REGISTRY = {
             bsl: 'basketLaceOB' 
         },
         specificZones: {
-            [ZONES.THUMB_INNER]:    { shaderIndex: 1, displayName: 'Inner Thumb' },
+            [ZONES.THUMB_INNER]:    { shaderIndex: 1, displayName: 'Inner Thumb', materialTarget: 'both' }, // <--- NOW HITS WEB
             [ZONES.INDEX]:          { shaderIndex: 2, displayName: 'Index Finger' },
-            [ZONES.MIDDLE_INNER]:   { shaderIndex: 3, displayName: 'Inner Middle' },
+            [ZONES.MIDDLE_INNER]:   { shaderIndex: 3, displayName: 'Inner Middle', materialTarget: 'both' }, // <--- NOW HITS WEB
             [ZONES.MIDDLE_OUTER]:   { shaderIndex: 4, displayName: 'Outer Middle' },
-            [ZONES.RING_INNER]:     { shaderIndex: 5, displayName: 'Inner Ring' },
+            [ZONES.RING_INNER]:     { shaderIndex: 5, displayName: 'Inner Ring', materialTarget: 'both' },
             [ZONES.RING_OUTER]:     { shaderIndex: 6, displayName: 'Outer Ring' },
         },
         uiGroups: [
