@@ -40,28 +40,28 @@ export const ZONES = {
 // ===================================================================
 
 export const COLOR_OPTIONS = [
-    { id: 'rd', name: 'Red', hex: '#C62828' },
-    { id: 'pk', name: 'Pink', hex: '#AD1457' },
-    { id: 'pu', name: 'Purple', hex: '#6A1B9A' },
-    { id: 'in', name: 'Indigo', hex: '#4527A0' },
-    { id: 'ry', name: 'Royal', hex: '#283593' },
-    { id: 'bl', name: 'Blue', hex: '#1565C0' },
-    { id: 'lb', name: 'Light Blue', hex: '#0277BD' },
-    { id: 'tl', name: 'Teal', hex: '#00838F' },
-    { id: 'gn', name: 'Green', hex: '#00695C' },
-    { id: 'fr', name: 'Forest', hex: '#2E7D32' },
-    { id: 'lm', name: 'Lime', hex: '#558B2F' },
-    { id: 'ol', name: 'Olive', hex: '#9E9D24' },
-    { id: 'gd', name: 'Gold', hex: '#F9A825' },
-    { id: 'or', name: 'Orange', hex: '#FF8F00' },
-    { id: 'bo', name: 'Burnt Orange', hex: '#EF6C00' },
-    { id: 'ro', name: 'Red Orange', hex: '#D84315' },
-    { id: 'br', name: 'Brown', hex: '#4E342E' },
-    { id: 'ch', name: 'Charcoal', hex: '#424242' },
-    { id: 'gy', name: 'Grey', hex: '#BDBDBD' },
-    { id: 'sl', name: 'Slate', hex: '#37474F' },
-    { id: 'bk', name: 'Black', hex: '#111111' }, // Added Black if missing
-    { id: 'wt', name: 'White', hex: '#FFFFFF' }, // Added White if missing
+    { id: 'rw', name: 'Raw', hex: '#EFE5D3' },
+    { id: 'nt', name: 'Natural', hex: '#E8DBC1' },
+    { id: 'wf', name: 'Warrior Flame', hex: '#7F3907' },
+    { id: 'ea', name: 'Earth', hex: '#4F2F1A' },
+    { id: 'tb', name: 'Tobacco', hex: '#2A0C01' },
+    { id: 'bk', name: 'Black', hex: '#030303' },
+    { id: 'sm', name: 'Smoke', hex: '#2F2D26' },
+    { id: 'tc', name: 'Thundercloud', hex: '#615C4C' },
+    { id: 'nb', name: 'Navajo Bone', hex: '#D4CCB9' },
+    { id: 'wt', name: 'White', hex: '#E8E7E5' },
+    { id: 'oc', name: 'Ocean', hex: '#7CB2CF' },
+    { id: 'ry', name: 'Royal', hex: '#174E91' },
+    { id: 'nv', name: 'Navy', hex: '#132743' },
+    { id: 'cr', name: 'Crown', hex: '#2A2348' },
+    { id: 'wn', name: 'Wine', hex: '#370101' },
+    { id: 'bd', name: 'Blood', hex: '#970203' },
+    { id: 'fi', name: 'Fire', hex: '#D65503' },
+    { id: 'sn', name: 'Sun', hex: '#E7DB2C' },
+    { id: 'gs', name: 'Grass', hex: '#3CAF1C' },
+    { id: 'fo', name: 'Forest', hex: '#25491D' },
+    { id: 'gd', name: 'Gold', hex: '#9D8C5D' },
+    { id: 'sv', name: 'Silver', hex: '#8B8880' }
 ] as const;
 
 // --- PALETTE SYSTEM IMPLEMENTATION (COLORS) ---
@@ -556,21 +556,10 @@ const PRODUCT_REGISTRY = {
         },
         uiGroups: [
             { id: 'web', type: 'gallery', title: 'Web' },
-            { id: 'thumbGroup', type: 'dual', title: 'Thumb Color', outerZoneKey: ZONES.THUMB_OUTER, innerZoneKey: ZONES.THUMB_INNER },
-            { id: 'indexGroup', type: 'single', title: 'Index Color', zoneKey: ZONES.INDEX },
-            { id: 'middleGroup', type: 'dual', title: 'Middle Color', outerZoneKey: ZONES.MIDDLE_OUTER, innerZoneKey: ZONES.MIDDLE_INNER },
-            { id: 'ringGroup', type: 'dual', title: 'Ring Color', outerZoneKey: ZONES.RING_OUTER, innerZoneKey: ZONES.RING_INNER },
-            { id: 'pinkyGroup', type: 'dual', title: 'Pinky Color', outerZoneKey: ZONES.PINKY_OUTER, innerZoneKey: ZONES.PINKY_INNER },
-            { id: 'laceGroup', type: 'single', title: 'Lace Color', zoneKey: ZONES.LACE },
-            { id: 'bindingGroup', type: 'single', title: 'Binding Color', zoneKey: ZONES.BINDING },
-            { id: 'weltingGroup', type: 'single', title: 'Welting Color', zoneKey: ZONES.WELTING },
-            { id: 'stitchingGroup', type: 'single', title: 'Stitching Color', zoneKey: ZONES.STITCHING },
-            { id: 'palmGroup', type: 'single', title: 'Palm Color', zoneKey: ZONES.PALM },
-            { id: 'linerGroup', type: 'single', title: 'Liner Color', zoneKey: ZONES.LINER },
-            { id: 'padHoodGroup', type: 'single', title: 'Pad/Hood Color', zoneKey: ZONES.PAD_HOOD },
-            { id: 'fingerLogoGroup', type: 'single', title: 'Finger Logo Color', zoneKey: ZONES.FINGER_LOGO },
-            { id: 'wristLogoGroup', type: 'single', title: 'Wrist Logo Color', zoneKey: ZONES.WRIST_LOGO },
-            { id: 'wristLogoOutlineGroup', type: 'single', title: 'Wrist Logo Outline Color', zoneKey: ZONES.WRIST_LOGO_OUTLINE },
+            { id: 'thumbGroup', type: 'single', title: 'Inner Thumb', zoneKey: ZONES.THUMB_INNER },
+            { id: 'indexGroup', type: 'single', title: 'Index Finger', zoneKey: ZONES.INDEX },
+            { id: 'middleGroup', type: 'dual', title: 'Middle', outerZoneKey: ZONES.MIDDLE_OUTER, innerZoneKey: ZONES.MIDDLE_INNER },
+            { id: 'ringGroup', type: 'dual', title: 'Ring', outerZoneKey: ZONES.RING_OUTER, innerZoneKey: ZONES.RING_INNER },
         ]
     })
 };
@@ -591,30 +580,17 @@ export const resolveProduct = (build: BuildConfig): ProductDefinition => {
 export const PRESETS = {
     'open-back': {
         build: { palette: 'universal', imageSelection: 'imgOpt1', position: 'inf', size: '1100', handOpeningSize: 'adt', stiffness: 'std', throwingHand: 'rh', webType: 'bsk', fingerProtection: 'non' },
-        thumbName: { type: 'text', text: 'Thumb', font: 'LOBSTER', colorId: 'gy' },
-        pinkyName: { type: 'text', text: 'Pinky', font: 'ROBOTO', colorId: 'sl' },
-        [ZONES.THUMB_INNER]:    { colorId: 'rd' },
-        [ZONES.INDEX]:          { colorId: 'bl' },
-        [ZONES.MIDDLE_INNER]:   { colorId: 'fr' },
-        [ZONES.MIDDLE_OUTER]:   { colorId: 'rd' },
-        [ZONES.RING_INNER]:     { colorId: 'gd' },
-        [ZONES.RING_OUTER]:     { colorId: 'pu' },
-        [ZONES.WEB]:            { colorId: 'rd' },
-        [ZONES.WRIST]:          { colorId: 'sl' },
-        [ZONES.WRIST_STRAP]:    { colorId: 'sl' },
-        [ZONES.PAD_HOOD]:       { colorId: 'br' },
-        [ZONES.THUMB_OUTER]:    { colorId: 'fr' },
-        [ZONES.PINKY_INNER]:    { colorId: 'pu' },
-        [ZONES.PINKY_OUTER]:    { colorId: 'gd' },
-        [ZONES.PALM]:           { colorId: 'br' },
-        [ZONES.LINER]:          { colorId: 'ch' },
-        [ZONES.BINDING]:        { colorId: 'br' },
-        [ZONES.WELTING]:        { colorId: 'br' },
-        [ZONES.LACE]:           { colorId: 'br' },
-        [ZONES.STITCHING]:      { colorId: 'gd' },
-        [ZONES.WRIST_LOGO]:     { colorId: 'gd' },
-        [ZONES.WRIST_LOGO_OUTLINE]: { colorId: 'sl' },
-        [ZONES.FINGER_LOGO]:    { colorId: 'gd' },
+        thumbName: { type: 'text', text: 'Thumb', font: 'LOBSTER', colorId: 'bk' }, // Swapped to Black
+        pinkyName: { type: 'text', text: 'Pinky', font: 'ROBOTO', colorId: 'bk' }, // Swapped to Black
+        
+        // KEEP ONLY YOUR 6 ZONES + WEB
+        [ZONES.WEB]:            { colorId: 'nt' }, // Natural
+        [ZONES.THUMB_INNER]:    { colorId: 'rw' }, // Raw
+        [ZONES.INDEX]:          { colorId: 'bk' }, // Black
+        [ZONES.MIDDLE_INNER]:   { colorId: 'wf' }, // Warrior Flame
+        [ZONES.MIDDLE_OUTER]:   { colorId: 'ea' }, // Earth
+        [ZONES.RING_INNER]:     { colorId: 'tb' }, // Tobacco
+        [ZONES.RING_OUTER]:     { colorId: 'sm' }, // Smoke
     } as GloveConfiguration,
 } as const;
 
