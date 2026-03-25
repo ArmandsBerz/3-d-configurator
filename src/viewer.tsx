@@ -535,20 +535,9 @@ export class SceneManager {
 
         material.albedoTexture = colorIdTexture;
 
-        const detailTexture = new Texture(`${rootUrl}details.png`, this.scene);
-        detailTexture.coordinatesIndex = 0;
-        detailTexture.uScale = 3;
-        detailTexture.vScale = 3;
-        material.detailMap.isEnabled = true;
-        material.detailMap.normalBlendMethod = 1;
-        material.detailMap.texture = detailTexture;
-        material.detailMap.diffuseBlendLevel = 0;
-        material.detailMap.roughnessBlendLevel = 0;
-        material.detailMap.bumpLevel = .35;
-
         const paletteColorsFromLogic: Color3[] =
             COLOR_OPTIONS.map(({ hex }) => Color3.FromHexString(hex).toLinearSpace())
-                .slice(0, 20);
+                .slice(0, 22);
 
         const gloveConfig: ColorSwapConfig = {
             baseColors: [
