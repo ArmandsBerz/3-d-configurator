@@ -525,7 +525,6 @@ const PRODUCT_REGISTRY = {
             [ZONES.RING_OUTER]:     { shaderIndex: 6, displayName: 'Outer Ring' },
         },
         uiGroups: [
-            { id: 'web', type: 'gallery', title: 'Web' },
             { id: 'thumbGroup', type: 'single', title: 'Inner Thumb', zoneKey: ZONES.THUMB_INNER },
             { id: 'indexGroup', type: 'single', title: 'Index Finger', zoneKey: ZONES.INDEX },
             { id: 'outerThumbGroup', type: 'single', title: 'Outer Thumb', zoneKey: ZONES.THUMB_OUTER }, // <--- ADD THIS LINE

@@ -110,6 +110,7 @@ export {
     // --- ADDED: REGISTRIES RE-EXPORTS FOR UI.TSX ---
     SIZE_REGISTRY,
     POSITION_REGISTRY,
+    WEB_REGISTRY,
     STIFFNESS_REGISTRY,
     CART_LABELS, // <--- ADDED per instructions
     FINGER_PROTECTION_REGISTRY, // <--- ADDED per instructions
@@ -226,7 +227,7 @@ export const resolveBuildGroups = (def: ProductDefinition): UIBuildGroup[] => {
 
     const webGroup = {
         id: 'webType',
-        title: 'Web Type',
+        title: 'Cup',
         options: webOptions,
         layout: 'grid-cols-3'
     };
@@ -382,7 +383,7 @@ export const getBuildSummaryRows = (build: BuildConfig, definition: ProductDefin
 
     // 5. Web Type (Universal)
     if (build.webType && WEB_REGISTRY[build.webType]) {
-        rows.push({ key: "Web Type", value: WEB_REGISTRY[build.webType].label });
+        rows.push({ key: "Cup", value: WEB_REGISTRY[build.webType].label });
     }
 
     // 6. Stiffness (Universal)

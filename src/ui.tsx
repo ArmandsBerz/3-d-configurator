@@ -46,6 +46,7 @@ import {
     SIZE_REGISTRY,
     POSITION_REGISTRY,
     STIFFNESS_REGISTRY,
+    WEB_REGISTRY,
     CART_LABELS, // <--- NEW IMPORT
     getBuildSummaryRows, // <--- Add this
     FINGER_PROTECTION_REGISTRY // <--- NEW IMPORT for Controller
@@ -961,10 +962,6 @@ const WebOptions = () => {
                 selectedOption={buildConfig.webType}
                 onSelectOption={handleWebTypeChange}
             />
-            <div className="option-group-container">
-                <h3 className="text-sm font-semibold text-gray-400 mb-2">Cup Color</h3>
-                <SingleColorPicker zoneKey={ZONES.WEB} />
-            </div>
         </div>
     );
 };
@@ -1531,15 +1528,12 @@ const AccordionDesktop = ({ openAccordion, setOpenAccordion, colorForApplyAll }:
                         title="Cup"
                         isOpen={openAccordion === 'web'}
                         onToggle={() => handleAccordionToggle('web')}
-                        headerContent={renderHeaderAccessory({ id: 'web', type: 'gallery', title: 'Cup' })}
-                        actionButton={
-                            <SecondaryButton
-                                label="Apply to All"
-                                onClick={() => colorForApplyAll && dispatch({ type: ACTION_TYPES.APPLY_COLOR_TO_ALL, payload: { colorId: colorForApplyAll } })}
-                                icon={<CheckmarkIcon />}
-                                disabled={!colorForApplyAll}
-                            />
+                        headerContent={
+                            <span className="text-sm text-gray-400 truncate max-w-[100px]">
+                                {WEB_REGISTRY[configuration.build.webType]?.label}
+                            </span>
                         }
+                        actionButton={null}
                     >
                         <WebOptions />
                     </AccordionOptionDesktop>
@@ -1721,7 +1715,9 @@ const AccordionMobile = React.forwardRef<HTMLElement, AccordionMobileProps>(({ o
                     <CaretRightIcon className="h-4 w-auto mr-3" />
                     <span className="text-lg">Cup</span>
                 </div>
-                <ColorIndicator colorId={configuration[ZONES.WEB]?.colorId} />
+                <span className="text-sm text-gray-400 truncate max-w-[100px]">
+                    {WEB_REGISTRY[configuration.build.webType]?.label}
+                </span>
             </button>
 
             {/* Mobile Pad/Hood Promoted */}
@@ -1893,7 +1889,7 @@ const UI = () => {
 
         if (context.type === 'single') return definition.zones[context.zoneKey]?.allowApplyToAll ?? false;
         if (context.type === 'dual') return true;
-        if (context.type === 'gallery') return definition.zones[ZONES.WEB]?.allowApplyToAll ?? false;
+        if (context.type === 'gallery') return false;
         
         return false;
     }, [isDesktop, openAccordionOptionMobile, definition]);
