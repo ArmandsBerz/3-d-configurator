@@ -206,6 +206,22 @@ export const THROWING_HAND_PALETTES = {
 
 export type ThrowingHandPaletteId = keyof typeof THROWING_HAND_PALETTES;
 
+// --- 5.1 STAIN STYLE REGISTRY (NEW) ---
+export const STAIN_STYLE_REGISTRY = {
+    'fd': { label: 'Full Dip' },
+    'hd': { label: 'Half Dip' },
+    'wt': { label: 'Wartip' },
+    'dd': { label: 'Double Dip' }
+} as const;
+
+export type StainStyleId = keyof typeof STAIN_STYLE_REGISTRY;
+
+export const STAIN_STYLE_PALETTES = {
+    universal: ['fd', 'hd', 'wt', 'dd']
+} as const satisfies Record<string, readonly StainStyleId[]>;
+
+export type StainStylePaletteId = keyof typeof STAIN_STYLE_PALETTES;
+
 // --- 5.5 PERSONALIZATION LABELS (THE CART DICTIONARY) ---
 export const CART_LABELS = {
     THUMB_TEXT: "Thumb Name",
@@ -273,6 +289,7 @@ interface BuildConfigBase {
     throwingHand: BuildThrowingId;
     webType: WebTypeId;
     fingerProtection: FingerProtectionId;
+    stainStyle: StainStyleId; // <--- ADD THIS LINE
 }
 
 // SINGLE SCHEMA: Bat configuration
@@ -362,6 +379,7 @@ export interface ProductDefinition {
     positionPaletteId: PositionPaletteId;
     backStylePaletteId?: BackStylePaletteId; // <--- NEW: Optional!
     fingerProtectionPaletteId: FingerProtectionPaletteId;
+    stainStylePaletteId: StainStylePaletteId; // <--- ADD THIS LINE
 }
 
 // ===================================================================
@@ -410,6 +428,7 @@ interface ProductBlueprint {
     throwingHandPalette?: ThrowingHandPaletteId;
     backStylePalette?: BackStylePaletteId; // <--- NEW: Optional!
     fingerProtectionPalette: FingerProtectionPaletteId;
+    stainStylePalette?: StainStylePaletteId; // <--- ADD THIS LINE
 }
 
 // Simple Deep Freeze Implementation
@@ -518,6 +537,7 @@ const compileProduct = (blueprint: ProductBlueprint): ProductDefinition => {
         positionPaletteId: 'universal',
         backStylePaletteId: blueprint.backStylePalette, // <--- Pass through!
         fingerProtectionPaletteId: blueprint.fingerProtectionPalette,
+        stainStylePaletteId: blueprint.stainStylePalette || 'universal', // <--- ADD THIS LINE
     };
 
     return deepFreeze(cartridge);
@@ -550,6 +570,7 @@ const PRODUCT_REGISTRY = {
             { id: 'web', type: 'gallery', title: 'Web' },
             { id: 'thumbGroup', type: 'single', title: 'Inner Thumb', zoneKey: ZONES.THUMB_INNER },
             { id: 'indexGroup', type: 'single', title: 'Index Finger', zoneKey: ZONES.INDEX },
+            { id: 'outerThumbGroup', type: 'single', title: 'Outer Thumb', zoneKey: ZONES.THUMB_OUTER }, // <--- ADD THIS LINE
             { id: 'middleGroup', type: 'dual', title: 'Middle', outerZoneKey: ZONES.MIDDLE_OUTER, innerZoneKey: ZONES.MIDDLE_INNER },
             { id: 'ringGroup', type: 'dual', title: 'Ring', outerZoneKey: ZONES.RING_OUTER, innerZoneKey: ZONES.RING_INNER },
         ]
@@ -571,7 +592,7 @@ export const resolveProduct = (build: BuildConfig): ProductDefinition => {
 
 export const PRESETS = {
     'open-back': {
-        build: { palette: 'universal', imageSelection: 'imgOpt1', position: 'inf', size: '3100', handOpeningSize: 'adt', stiffness: 'std', throwingHand: 'rh', webType: 'bsk', fingerProtection: 'non' },
+        build: { palette: 'universal', imageSelection: 'imgOpt1', position: 'inf', size: '3100', handOpeningSize: 'adt', stiffness: 'std', throwingHand: 'rh', webType: 'bsk', fingerProtection: 'non', stainStyle: 'fd' },
         thumbName: { type: 'text', text: 'Thumb', font: 'LOBSTER', colorId: 'bk' }, // Swapped to Black
         pinkyName: { type: 'text', text: 'Pinky', font: 'ROBOTO', colorId: 'bk' }, // Swapped to Black
         
@@ -579,6 +600,7 @@ export const PRESETS = {
         [ZONES.WEB]:            { colorId: 'nt' }, // Natural
         [ZONES.THUMB_INNER]:    { colorId: 'rw' }, // Raw
         [ZONES.INDEX]:          { colorId: 'bk' }, // Black
+        [ZONES.THUMB_OUTER]:    { colorId: 'bk' }, // <--- ADD THIS LINE (Handle defaults to Black)
         [ZONES.MIDDLE_INNER]:   { colorId: 'wf' }, // Warrior Flame
         [ZONES.MIDDLE_OUTER]:   { colorId: 'ea' }, // Earth
         [ZONES.RING_INNER]:     { colorId: 'tb' }, // Tobacco
@@ -625,6 +647,7 @@ export const updateBuild = (current: BuildConfig, updates: Partial<BuildConfig>)
         throwingHand: updates.throwingHand ?? current.throwingHand,
         webType: updates.webType ?? current.webType,
         fingerProtection: updates.fingerProtection ?? current.fingerProtection,
+        stainStyle: updates.stainStyle ?? current.stainStyle, // <--- ADD THIS LINE
     };
 
     // Return the clean base and strictly lock the position to 'inf' (Bat)
@@ -709,6 +732,12 @@ export const sanitize = (config: GloveConfiguration): GloveConfiguration => {
     if (!validProtections.includes(nextConfig.build.fingerProtection)) {
         nextConfig.build.fingerProtection = validProtections[0];
     }
+
+    // Validate Stain Style (NEW)
+    const validStainStyles: readonly StainStyleId[] = STAIN_STYLE_PALETTES[def.stainStylePaletteId];
+    if (!validStainStyles.includes(nextConfig.build.stainStyle)) {
+        nextConfig.build.stainStyle = validStainStyles[0]; // Restored to keep TS valid
+    }
     // -----------------------------------
 
     // 4. SANITIZE ZONES (Color Validation)
@@ -783,6 +812,7 @@ export const URL_KEY_MAP: { [key in ZoneKey | keyof Omit<GloveConfiguration, Zon
     backStyle: 'bs',
     webType: 'wt',
     fingerProtection: 'fp', // <--- Add this
+    stainStyle: 'ss', // <--- ADD THIS LINE
     ...Object.fromEntries(Object.values(ZONES).map(zone => [zone, zone.replace('zone', 'z')]))
 };
 

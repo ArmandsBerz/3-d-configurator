@@ -52,7 +52,7 @@ import {
     getBuildSummaryRows, // <--- Add this
     FINGER_PROTECTION_REGISTRY // <--- NEW IMPORT for Controller
 } from './logic';
-import { updateBuild, BuildLeatherId, FingerProtectionId } from './product-data'; // <--- NEW: Import directly from domain layer
+import { updateBuild, BuildLeatherId, FingerProtectionId, StainStyleId } from './product-data';
 import React, { useState, useRef, useLayoutEffect, useCallback, useEffect, createContext, useContext, useReducer, ReactNode, ReactElement, useMemo } from 'react';
 import BabylonCanvas from './viewer';
 import { SummaryIcon, BackArrowIcon, CheckmarkIcon, LongArrowRightIcon, CaretRightIcon, CaretDownIcon, CaretUpIcon, ShareIcon, CollapseIcon, ExpandIcon, DragIcon, ZoomIcon, CloseIcon, Loader } from './icons';
@@ -279,15 +279,37 @@ const gloveConfigReducer = (state: AppState, action: GloveAction): AppState => {
                 },
             };
         }
-        case ACTION_TYPES.UPDATE_ZONE_COLOR:
+        case ACTION_TYPES.UPDATE_ZONE_COLOR: {
+            const { zoneKey, colorId, partType } = action.payload;
+            const currentStyle = state.configuration.build.stainStyle || 'fd';
+
+            // 1. Define the Rules: Which zones are "Followers" of the one clicked?
+            const RULES: Record<string, ZoneKey[]> = {
+                'fd': [ZONES.INDEX, ZONES.THUMB_INNER, ZONES.THUMB_OUTER], // Full Dip: Paint all 3
+                'hd': zoneKey === ZONES.INDEX ? [ZONES.INDEX, ZONES.THUMB_INNER] : [zoneKey], // Half Dip: Barrel leads Tip
+                'wt': zoneKey === ZONES.INDEX ? [ZONES.INDEX, ZONES.THUMB_OUTER] : [zoneKey], // Wartip: Barrel leads Handle
+                'dd': [zoneKey] // Double Dip: Standard 1-to-1
+            };
+
+            // 2. Decide which zones to update
+            const affectedZones = (currentStyle === 'fd' && (zoneKey === ZONES.INDEX || zoneKey === ZONES.THUMB_INNER || zoneKey === ZONES.THUMB_OUTER)) 
+                ? RULES['fd'] 
+                : RULES[currentStyle] || [zoneKey];
+
+            const zoneUpdates: any = {};
+            affectedZones.forEach((z) => {
+                zoneUpdates[z] = { colorId };
+            });
+
             return {
                 ...state,
                 configuration: {
                     ...state.configuration,
-                    [action.payload.zoneKey]: { colorId: action.payload.colorId },
+                    ...zoneUpdates,
                 },
-                lastActivatedPartType: action.payload.partType,
+                lastActivatedPartType: partType,
             };
+        }
         case 'RESET_LAST_ACTIVATED_PART_TYPE':
             return {
                 ...state,
@@ -813,6 +835,7 @@ const BuildOption = ({ isDesktop }: BuildOptionProps) => {
     return (
         <div className={`space-y-6 ${!isDesktop ? 'pb-4' : ''}`}>
             {/* UPDATED: Generic ImageGroup usage with strict typing */}
+            
             <ImageGroup<BuildLeatherId>
                 title="Wood Type"
                 layout="grid-cols-2"
@@ -837,6 +860,19 @@ const BuildOption = ({ isDesktop }: BuildOptionProps) => {
                     }}
                 />
             )}
+
+            <OptionGroup<StainStyleId>
+                title="Stain Style"
+                layout="grid-cols-2"
+                options={[
+                    { id: 'fd', label: 'Full Dip' },
+                    { id: 'hd', label: 'Half Dip' },
+                    { id: 'wt', label: 'Wartip' },
+                    { id: 'dd', label: 'Double Dip' }
+                ]}
+                selectedOption={buildConfig.stainStyle}
+                onSelectOption={(value) => onBuildConfigChange({ stainStyle: value })}
+            />
 
             {/* --- MODIFICATION: Updated map callback to allow readonly options --- */}
             {otherGroups.map((group) => (
@@ -987,8 +1023,10 @@ const OrderSummaryInfo = () => {
     const { configuration } = state;
     
     // Resolve definition to get rules (needed for helper) + zones (needed for colors)
+    // --- RESOLVE PRODUCT ---
     const definition = resolveProduct(configuration.build);
-    const uiGroups = definition.uiGroups;
+    const rawUiGroups = definition.uiGroups;
+    const uiGroups = getFilteredBatGroups(rawUiGroups, configuration.build.stainStyle);
     
     // --- THE FIX: Use Gold Master Helper ---
     const foundationRows = getBuildSummaryRows(configuration.build, definition);
@@ -1391,6 +1429,34 @@ const OverviewDesktop = ({ onComplete }: { onComplete: () => void }) => {
     );
 };
 
+
+// --- THE UI TRANSLATOR ---
+const getFilteredBatGroups = (uiGroups: UIPartGroup[], style: string): UIPartGroup[] => {
+    const barrelGroup = uiGroups.find(g => g.id === 'indexGroup');
+    const tipGroup = uiGroups.find(g => g.id === 'thumbGroup');
+    const handleGroup = uiGroups.find(g => g.id === 'outerThumbGroup');
+    
+    const otherGroups = uiGroups.filter(g => 
+        g.id !== 'indexGroup' && g.id !== 'thumbGroup' && g.id !== 'outerThumbGroup'
+    );
+
+    const result: UIPartGroup[] = [...otherGroups];
+
+    if (style === 'fd') {
+        if (barrelGroup) result.push({ ...barrelGroup, title: 'Bat Color' });
+    } else if (style === 'hd') {
+        if (handleGroup) result.push({ ...handleGroup, title: 'Handle Color' });
+        if (barrelGroup) result.push({ ...barrelGroup, title: 'Barrel Color' });
+    } else if (style === 'wt') {
+        if (barrelGroup) result.push({ ...barrelGroup, title: 'Bat Color' });
+        if (tipGroup)    result.push({ ...tipGroup,    title: 'Wartip Color' });
+    } else if (style === 'dd') {
+        if (handleGroup) result.push({ ...handleGroup, title: 'Handle Color' });
+        if (barrelGroup) result.push({ ...barrelGroup, title: 'Barrel Color' });
+        if (tipGroup)    result.push({ ...tipGroup,    title: 'Wartip Color' });
+    }
+    return result;
+};
 // --- Main Accordion Components ---
 const AccordionDesktop = ({ openAccordion, setOpenAccordion, colorForApplyAll }: {
     openAccordion: string | null;
@@ -1402,8 +1468,10 @@ const AccordionDesktop = ({ openAccordion, setOpenAccordion, colorForApplyAll }:
     const { configuration } = state;
     
     // --- RESOLVE PRODUCT ---
+    // --- RESOLVE PRODUCT ---
     const definition = resolveProduct(configuration.build);
-    const currentUiGroups = definition.uiGroups;
+    const rawUiGroups = definition.uiGroups;
+    const currentUiGroups = getFilteredBatGroups(rawUiGroups, configuration.build.stainStyle);
 
     const accordionContainerRef = useRef<HTMLDivElement>(null);
     const desktopAccordionContainerRef = useRef<HTMLDivElement>(null);
@@ -1617,7 +1685,8 @@ const AccordionMobile = React.forwardRef<HTMLElement, AccordionMobileProps>(({ o
     const { configuration } = state;
     
     const definition = resolveProduct(configuration.build);
-    const currentUiGroups = definition.uiGroups;
+    const rawUiGroups = definition.uiGroups;
+    const currentUiGroups = getFilteredBatGroups(rawUiGroups, configuration.build.stainStyle);
 
     const { isTopGradientVisible, isBottomGradientVisible } = useScrollGradients(ref as React.RefObject<HTMLElement>);
 
@@ -1761,7 +1830,8 @@ const UI = () => {
     }, []);
 
     const definition = resolveProduct(configuration.build);
-    const currentUiGroups = definition.uiGroups;
+    const rawUiGroups = definition.uiGroups;
+    const currentUiGroups = getFilteredBatGroups(rawUiGroups, configuration.build.stainStyle);
 
     const colorForApplyAll = useMemo((): ColorId | undefined => {
         let openPanelContext: UIPartGroup | null = null;
