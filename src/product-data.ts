@@ -143,27 +143,20 @@ export type LeatherPaletteId = keyof typeof LEATHER_PALETTES;
 
 // --- 2. SIZE REGISTRY ---
 export const SIZE_REGISTRY = {
-    '1100': { label: '11"' },
-    '1125': { label: '11.25"' },
-    '1150': { label: '11.5"' },
-    '1175': { label: '11.75"' },
-    '1200': { label: '12"' },
-    '1225': { label: '12.25"' },
-    '1250': { label: '12.5"' },
-    '1275': { label: '12.75"' },
-    '1300': { label: '13"' },
+    '3100': { label: '31"' },
     '3200': { label: '32"' },
+    '3250': { label: '32.5"' },
     '3300': { label: '33"' },
-    '3400': { label: '34"' }
+    '3350': { label: '33.5"' },
+    '3400': { label: '34"' },
+    '3450': { label: '34.5"' },
+    '3500': { label: '35"' }
 } as const;
 
 export type BuildSizeId = keyof typeof SIZE_REGISTRY;
 
 export const SIZE_PALETTES = {
-    openBack: ['1100', '1125', '1150', '1175', '1200', '1225', '1250', '1275'], // Updated sizes
-    closeBack: ['1200', '1225', '1250', '1275', '1300'],
-    firstBase: ['1300'], // Updated to only 13"
-    catcher: ['3200', '3300', '3400']
+    openBack: ['3100', '3200', '3250', '3300', '3350', '3400', '3450', '3500'], // Updated sizes
 } as const satisfies Record<string, readonly BuildSizeId[]>; //
 
 export type SizePaletteId = keyof typeof SIZE_PALETTES;
@@ -579,7 +572,7 @@ export const resolveProduct = (build: BuildConfig): ProductDefinition => {
 
 export const PRESETS = {
     'open-back': {
-        build: { palette: 'universal', imageSelection: 'imgOpt1', position: 'inf', size: '1100', handOpeningSize: 'adt', stiffness: 'std', throwingHand: 'rh', webType: 'bsk', fingerProtection: 'non' },
+        build: { palette: 'universal', imageSelection: 'imgOpt1', position: 'inf', size: '3100', handOpeningSize: 'adt', stiffness: 'std', throwingHand: 'rh', webType: 'bsk', fingerProtection: 'non' },
         thumbName: { type: 'text', text: 'Thumb', font: 'LOBSTER', colorId: 'bk' }, // Swapped to Black
         pinkyName: { type: 'text', text: 'Pinky', font: 'ROBOTO', colorId: 'bk' }, // Swapped to Black
         
