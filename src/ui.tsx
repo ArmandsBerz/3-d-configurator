@@ -814,7 +814,7 @@ const BuildOption = ({ isDesktop }: BuildOptionProps) => {
         <div className={`space-y-6 ${!isDesktop ? 'pb-4' : ''}`}>
             {/* UPDATED: Generic ImageGroup usage with strict typing */}
             <ImageGroup<BuildLeatherId>
-                title="Glove Leather"
+                title="Wood Type"
                 layout="grid-cols-2"
                 // --- NEW: Use dynamic options from leatherGroup, casting IDs to Strict Type ---
                 options={leatherGroup ? leatherGroup.options.map(o => ({ id: o.id as BuildLeatherId, title: o.label })) : []}
@@ -919,7 +919,7 @@ const WebOptions = () => {
         <div className="space-y-6">
             {/* UPDATED: Using Generic Component <T> to enforce type safety */}
             <ImageGroup<WebTypeId>
-                title="Web Type"
+                title="Cup"
                 layout="grid-cols-3"
                 // Map 'label' to 'title' for ImageGroup, use empty array fallback
                 // STRICT TYPE RECOVERY: Casting the generic string ID back to WebTypeId
@@ -928,7 +928,7 @@ const WebOptions = () => {
                 onSelectOption={handleWebTypeChange}
             />
             <div className="option-group-container">
-                <h3 className="text-sm font-semibold text-gray-400 mb-2">Web Color</h3>
+                <h3 className="text-sm font-semibold text-gray-400 mb-2">Cup Color</h3>
                 <SingleColorPicker zoneKey={ZONES.WEB} />
             </div>
         </div>
@@ -1464,10 +1464,10 @@ const AccordionDesktop = ({ openAccordion, setOpenAccordion, colorForApplyAll }:
 
                     {/* MANUALLY INJECTED: Web Gallery Slot 2 */}
                     <AccordionOptionDesktop
-                        title="Web"
+                        title="Cup"
                         isOpen={openAccordion === 'web'}
                         onToggle={() => handleAccordionToggle('web')}
-                        headerContent={renderHeaderAccessory({ id: 'web', type: 'gallery', title: 'Web' })}
+                        headerContent={renderHeaderAccessory({ id: 'web', type: 'gallery', title: 'Cup' })}
                         actionButton={
                             <SecondaryButton
                                 label="Apply to All"
@@ -1652,10 +1652,10 @@ const AccordionMobile = React.forwardRef<HTMLElement, AccordionMobileProps>(({ o
             </button>
 
             {/* Mobile Web Promoted */}
-            <button className="w-full h-[56px] bg-[#1C1C1C] flex items-center justify-between px-4 mb-[10px] focus:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-white" onClick={(e) => onOpenPanel({ id: 'web', type: 'gallery', title: 'Web' }, e)}>
+            <button className="w-full h-[56px] bg-[#1C1C1C] flex items-center justify-between px-4 mb-[10px] focus:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-white" onClick={(e) => onOpenPanel({ id: 'web', type: 'gallery', title: 'Cup' }, e)}>
                 <div className="flex items-center">
                     <CaretRightIcon className="h-4 w-auto mr-3" />
-                    <span className="text-lg">Web</span>
+                    <span className="text-lg">Cup</span>
                 </div>
                 <ColorIndicator colorId={configuration[ZONES.WEB]?.colorId} />
             </button>

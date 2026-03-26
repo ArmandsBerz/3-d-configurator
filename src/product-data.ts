@@ -126,15 +126,14 @@ export type FingerProtectionPaletteId = keyof typeof FINGER_PROTECTION_PALETTES;
 
 // --- 1. LEATHER REGISTRY ---
 export const LEATHER_REGISTRY = {
-    'imgOpt1': { label: 'Japanese Kip' },
-    'imgOpt2': { label: 'American Steerhide' },
-    'imgOpt3': { label: 'Cowhide' } // Added Cowhide
+    'imgOpt1': { label: 'Maple' },
+    'imgOpt2': { label: 'Birch' }
 } as const;
 
 export type BuildLeatherId = keyof typeof LEATHER_REGISTRY;
 
 export const LEATHER_PALETTES = {
-    universal: ['imgOpt1', 'imgOpt2', 'imgOpt3'], // Added imgOpt3 for Fielding Gloves
+    universal: ['imgOpt1', 'imgOpt2'], // Added imgOpt3 for Fielding Gloves
     mitts: ['imgOpt1', 'imgOpt2'] // Original 2 options for Mitts
 } as const satisfies Record<string, readonly BuildLeatherId[]>; //
 
@@ -232,8 +231,8 @@ export type Font = (typeof FONT_REGISTRY)[number]['id'];
 
 // --- 6. WEB REGISTRY (Refactored from Array) ---
 export const WEB_REGISTRY = {
-    'bsk': { label: 'Basket' },
-    'bsl': { label: 'Basket Lace' },
+    'bsk': { label: 'Uncupped' },
+    'bsl': { label: 'Cupped' },
     'clv': { label: 'Closed V' },
     'dhn': { label: 'Dual Hinge' },
     'fmt': { label: 'Framed Mod Trap' },
@@ -267,7 +266,7 @@ export type BuildBackId = 'opn';
 // --- STRICT SCHEMA: DISCRIMINATED UNION ---
 interface BuildConfigBase {
     palette: PaletteId;
-    imageSelection: 'imgOpt1' | 'imgOpt2' | 'imgOpt3'; // Added imgOpt3
+    imageSelection: 'imgOpt1' | 'imgOpt2'; // Added imgOpt3
     size: BuildSizeId;
     handOpeningSize: BuildHandId;
     stiffness: BuildStiffnessId;
@@ -379,7 +378,7 @@ const ASSET_MANIFEST: Set<string> = new Set([
 
 // Universal Parts (The "Base Class")
 const UNIVERSAL_PARTS: Record<string, ZoneDefinition> = {
-    [ZONES.WEB]:        { shaderIndex: 30, displayName: 'Web', materialTarget: 'web', allowApplyToAll: true },
+    [ZONES.WEB]:        { shaderIndex: 30, displayName: 'Cup', materialTarget: 'web', allowApplyToAll: true },
     [ZONES.WRIST]:      { shaderIndex: 26, displayName: 'Wrist', materialTarget: 'shell', allowApplyToAll: true },
     [ZONES.LACE]:       { shaderIndex: 29, displayName: 'Lace', materialTarget: 'both', allowApplyToAll: true },
     [ZONES.STITCHING]:  { shaderIndex: 31, displayName: 'Stitching', materialTarget: 'both', allowApplyToAll: false }, // Rule colocated!
