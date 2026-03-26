@@ -227,9 +227,6 @@ export const CART_LABELS = {
     THUMB_TEXT: "Thumb Name",
     THUMB_FONT: "Thumb Name Font",
     THUMB_COLOR: "Thumb Name Color",
-    PINKY_TEXT: "Pinky Name",
-    PINKY_FONT: "Pinky Name Font",
-    PINKY_COLOR: "Pinky Name Color",
 } as const;
 
 
@@ -312,7 +309,6 @@ export interface SingleColorState {
 export type GloveConfiguration = {
     build: BuildConfig;
     thumbName: TextPart;
-    pinkyName: TextPart;
 } & Record<ZoneKey, SingleColorState>;
 
 export interface CommerceState {
@@ -594,8 +590,7 @@ export const PRESETS = {
     'open-back': {
         build: { palette: 'universal', imageSelection: 'imgOpt1', position: 'inf', size: '3100', handOpeningSize: 'adt', stiffness: 'std', throwingHand: 'rh', webType: 'bsk', fingerProtection: 'non', stainStyle: 'fd' },
         thumbName: { type: 'text', text: 'Thumb', font: 'LOBSTER', colorId: 'bk' }, // Swapped to Black
-        pinkyName: { type: 'text', text: 'Pinky', font: 'ROBOTO', colorId: 'bk' }, // Swapped to Black
-        
+
         // KEEP ONLY YOUR 6 ZONES + WEB
         [ZONES.WEB]:            { colorId: 'nt' }, // Natural
         [ZONES.THUMB_INNER]:    { colorId: 'rw' }, // Raw
@@ -760,9 +755,6 @@ export const sanitize = (config: GloveConfiguration): GloveConfiguration => {
     if (!validColorIds.has(nextConfig.thumbName.colorId)) {
         nextConfig.thumbName.colorId = fallbackColor;
     }
-    if (!validColorIds.has(nextConfig.pinkyName.colorId)) {
-        nextConfig.pinkyName.colorId = fallbackColor;
-    }
 
     return nextConfig;
 };
@@ -801,7 +793,6 @@ export const getPresetConfig = (id: PresetId): GloveConfiguration => {
 
 export const URL_KEY_MAP: { [key in ZoneKey | keyof Omit<GloveConfiguration, ZoneKey> | keyof BuildConfig]?: string } = {
     thumbName: 'tn',
-    pinkyName: 'pn',
     palette: 'pa',
     imageSelection: 'is',
     position: 'po',
@@ -854,12 +845,9 @@ export const serialize = (config: GloveConfiguration): string => {
     }
 
     // 2. Serialize Text Parts
-    const { thumbName, pinkyName } = config;
+    const { thumbName } = config;
     const encodedThumbText = encodeText(thumbName.text);
     pairs.push(`${URL_KEY_MAP.thumbName}-${encodedThumbText}~${thumbName.font}~${thumbName.colorId}`);
-
-    const encodedPinkyText = encodeText(pinkyName.text);
-    pairs.push(`${URL_KEY_MAP.pinkyName}-${encodedPinkyText}~${pinkyName.font}~${pinkyName.colorId}`);
 
     // 3. Serialize Zone Colors
     for (const key in config) {
@@ -893,7 +881,7 @@ export const deserialize = (encodedString: string): GloveConfiguration => {
         const longKey = REVERSE_URL_KEY_MAP[key];
         if (!longKey) continue;
 
-        if (longKey === 'thumbName' || longKey === 'pinkyName') {
+        if (longKey === 'thumbName') {
             const [text, font, colorId] = value.split('~');
             if (text !== undefined) config[longKey].text = decodeText(text);
             if (font !== undefined) config[longKey].font = font as Font;

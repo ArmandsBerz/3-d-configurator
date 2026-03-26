@@ -122,7 +122,7 @@ export type GloveAction =
 // --- END: Core Type Definitions ---
 
 // --- START: ADD NEW PANEL PROP TYPES (Refactored) ---
-type TextPartId = 'thumbName' | 'pinkyName';
+type TextPartId = 'thumbName';
 
 interface BuildPanelProps {
     onClose: () => void;
@@ -1071,7 +1071,6 @@ const OrderSummaryInfo = () => {
                 <h3 className="text-lg font-semibold text-white mb-2">Personalization</h3>
                 <div className="space-y-1 pl-2">
                     <p><span className="font-semibold text-gray-400">Thumb Name:</span> "{configuration.thumbName.text}" ({configuration.thumbName.font}, {getColorName(configuration.thumbName.colorId)})</p>
-                    <p><span className="font-semibold text-gray-400">Pinky Name:</span> "{configuration.pinkyName.text}" ({configuration.pinkyName.font}, {getColorName(configuration.pinkyName.colorId)})</p>
                 </div>
             </div>
         </div>
@@ -1484,9 +1483,8 @@ const AccordionDesktop = ({ openAccordion, setOpenAccordion, colorForApplyAll }:
     const buildGroup = { id: 'build', title: 'Build Options' };
     // --- MODIFICATION: Define personalization panels separately ---
     const personalizationGroups = [
-        { id: 'thumbName' as TextPartId, title: 'Thumb Name' },
-        { id: 'pinkyName' as TextPartId, title: 'Pinky Name' },
-    ];
+    { id: 'thumbName' as TextPartId, title: 'Thumb Name' },
+];
 
     const handleAccordionToggle = (accordionId: string) => {
         if (openAccordion !== accordionId) {
@@ -1693,7 +1691,6 @@ const AccordionMobile = React.forwardRef<HTMLElement, AccordionMobileProps>(({ o
     const buildGroup = { id: 'build' as const, title: 'Build Options' };
     const personalizationGroups = [
         { id: 'thumbName' as TextPartId, title: 'Thumb Name' },
-        { id: 'pinkyName' as TextPartId, title: 'Pinky Name' },
     ];
 
     const renderAccessory = (group: UIPartGroup) => {
@@ -1910,7 +1907,7 @@ const UI = () => {
     }, []);
 
     const handleCompleteOrder = useCallback(() => {
-        const { build, thumbName, pinkyName } = configuration;
+        const { build, thumbName } = configuration;
         const definition = resolveProduct(build); 
 
         let shellValue = 'open-back'; 
@@ -1952,10 +1949,6 @@ const UI = () => {
         properties[CART_LABELS.THUMB_FONT] = fontOptions.find(f => f.id === thumbName.font)?.label || thumbName.font;
         properties[CART_LABELS.THUMB_COLOR] = colorLookupMap.get(thumbName.colorId)?.name || thumbName.colorId;
         
-        properties[CART_LABELS.PINKY_TEXT] = pinkyName.text;
-        properties[CART_LABELS.PINKY_FONT] = fontOptions.find(f => f.id === pinkyName.font)?.label || pinkyName.font;
-        properties[CART_LABELS.PINKY_COLOR] = colorLookupMap.get(pinkyName.colorId)?.name || pinkyName.colorId;
-
         Object.entries(configuration).forEach(([key, value]) => {
             if (key.startsWith('zone')) {
                 const zoneKey = key as ZoneKey;
@@ -2353,13 +2346,6 @@ const GloveLogicController = () => {
                     text: configuration.thumbName.text,
                     font: configuration.thumbName.font,
                     color: getHexById(configuration.thumbName.colorId),
-                });
-
-                sceneManager.updateText({
-                    zone: 'pinkyName',
-                    text: configuration.pinkyName.text,
-                    font: configuration.pinkyName.font,
-                    color: getHexById(configuration.pinkyName.colorId),
                 });
 
                 await sceneManager.waitForRender();
