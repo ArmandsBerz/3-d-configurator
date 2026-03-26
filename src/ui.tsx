@@ -45,9 +45,7 @@ import {
     // --- NEW IMPORTS: REGISTRIES FOR TRANSLATION ---
     SIZE_REGISTRY,
     POSITION_REGISTRY,
-    THROWING_HAND_REGISTRY,
     STIFFNESS_REGISTRY,
-    HAND_OPENING_REGISTRY,
     CART_LABELS, // <--- NEW IMPORT
     getBuildSummaryRows, // <--- Add this
     FINGER_PROTECTION_REGISTRY // <--- NEW IMPORT for Controller
@@ -878,7 +876,7 @@ const BuildOption = ({ isDesktop }: BuildOptionProps) => {
             {otherGroups.map((group) => (
                 <OptionGroup
                     key={group.id}
-                    title={group.title}
+                    title={group.id === 'stiffness' ? 'Drop Weight' : group.title}
                     options={group.options}
                     layout={group.layout}
                     selectedOption={buildConfig[group.id as keyof Omit<BuildConfig, 'imageSelection' | 'position' | 'backStyle' | 'webType'>]}

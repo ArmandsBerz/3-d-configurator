@@ -28,9 +28,7 @@ import {
     WebTypeId,
     BuildPositionId,
     BuildSizeId,
-    BuildHandId,
     BuildStiffnessId,
-    BuildThrowingId,
     BuildBackId,
     TextPart,
     UIPartGroup,
@@ -57,10 +55,6 @@ import {
     SIZE_PALETTES,
     STIFFNESS_REGISTRY,
     STIFFNESS_PALETTES,
-    HAND_OPENING_REGISTRY,
-    HAND_OPENING_PALETTES,
-    THROWING_HAND_REGISTRY,
-    THROWING_HAND_PALETTES,
     BACK_STYLE_REGISTRY, // <--- ADDED per instructions
     BACK_STYLE_PALETTES, // <--- ADDED per instructions
     WEB_REGISTRY, // <--- ADDED per instructions
@@ -83,9 +77,7 @@ export type {
     WebTypeId,
     BuildPositionId,
     BuildSizeId,
-    BuildHandId,
     BuildStiffnessId,
-    BuildThrowingId,
     BuildBackId,
     TextPart,
     UIPartGroup,
@@ -118,9 +110,7 @@ export {
     // --- ADDED: REGISTRIES RE-EXPORTS FOR UI.TSX ---
     SIZE_REGISTRY,
     POSITION_REGISTRY,
-    THROWING_HAND_REGISTRY,
     STIFFNESS_REGISTRY,
-    HAND_OPENING_REGISTRY,
     CART_LABELS, // <--- ADDED per instructions
     FINGER_PROTECTION_REGISTRY, // <--- ADDED per instructions
     FINGER_PROTECTION_PALETTES, // <--- ADDED per instructions
@@ -256,20 +246,6 @@ export const resolveBuildGroups = (def: ProductDefinition): UIBuildGroup[] => {
         layout: 'grid-cols-3' // Inject Layout
     };
 
-    // 3. Hand Opening Group
-    const handPaletteId = def.handOpeningPaletteId;
-    const handIds = HAND_OPENING_PALETTES[handPaletteId];
-    const handOptions = handIds.map(id => ({ 
-        id, 
-        label: HAND_OPENING_REGISTRY[id].label 
-    }));
-    const handGroup = { 
-        id: 'handOpeningSize', 
-        title: 'Hand Opening Size', 
-        options: handOptions, 
-        layout: 'grid-cols-2' 
-    };
-
     // 4. Stiffness Group
     const stiffnessPaletteId = def.stiffnessPaletteId;
     const stiffnessIds = STIFFNESS_PALETTES[stiffnessPaletteId];
@@ -284,29 +260,13 @@ export const resolveBuildGroups = (def: ProductDefinition): UIBuildGroup[] => {
         layout: 'grid-cols-3' 
     };
 
-    // 5. Throwing Hand Group
-    const throwingPaletteId = def.throwingHandPaletteId;
-    const throwingIds = THROWING_HAND_PALETTES[throwingPaletteId];
-    const throwingOptions = throwingIds.map(id => ({ 
-        id, 
-        label: THROWING_HAND_REGISTRY[id].label 
-    }));
-    const throwingGroup = { 
-        id: 'throwingHand', 
-        title: 'Throwing Hand', 
-        options: throwingOptions, 
-        layout: 'grid-cols-2' 
-    };
-
     return [
         leatherGroup, // Added to return array
         positionGroup,
         backStyleGroup, // Added to return array (conditional)
         sizeGroup,
         webGroup, // <--- Add it to the list!
-        handGroup,
         stiffnessGroup,
-        throwingGroup
     ].filter((g): g is UIBuildGroup => g !== null); // Filter out nulls
 };
 
@@ -427,17 +387,7 @@ export const getBuildSummaryRows = (build: BuildConfig, definition: ProductDefin
 
     // 6. Stiffness (Universal)
     if (build.stiffness && STIFFNESS_REGISTRY[build.stiffness]) {
-        rows.push({ key: "Stiffness", value: STIFFNESS_REGISTRY[build.stiffness].label });
-    }
-
-    // 7. Hand Opening (Universal)
-    if (build.handOpeningSize && HAND_OPENING_REGISTRY[build.handOpeningSize]) {
-        rows.push({ key: "Hand Opening", value: HAND_OPENING_REGISTRY[build.handOpeningSize].label });
-    }
-
-    // 8. Throwing Hand (Universal)
-    if (build.throwingHand && THROWING_HAND_REGISTRY[build.throwingHand]) {
-        rows.push({ key: "Throwing Hand", value: THROWING_HAND_REGISTRY[build.throwingHand].label });
+        rows.push({ key: "Drop Weight", value: STIFFNESS_REGISTRY[build.stiffness].label });
     }
 
     // 9. Finger Protection (Conditional: Mirrors Text pattern/Accessory logic)

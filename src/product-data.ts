@@ -161,26 +161,11 @@ export const SIZE_PALETTES = {
 export type SizePaletteId = keyof typeof SIZE_PALETTES;
 
 
-// --- 3. HAND OPENING REGISTRY ---
-export const HAND_OPENING_REGISTRY = {
-    'adt': { label: 'Adult' },
-    'yth': { label: 'Youth' }
-} as const;
-
-export type BuildHandId = keyof typeof HAND_OPENING_REGISTRY;
-
-export const HAND_OPENING_PALETTES = {
-    universal: ['adt', 'yth']
-} as const satisfies Record<string, readonly BuildHandId[]>; //
-
-export type HandOpeningPaletteId = keyof typeof HAND_OPENING_PALETTES;
-
-
 // --- 4. STIFFNESS REGISTRY ---
 export const STIFFNESS_REGISTRY = {
-    'stf': { label: 'Stiff' },
-    'std': { label: 'Standard' },
-    'sft': { label: 'Soft' }
+    'stf': { label: '-3oz' },
+    'std': { label: '-2oz' },
+    'sft': { label: '-1oz' }
 } as const;
 
 export type BuildStiffnessId = keyof typeof STIFFNESS_REGISTRY;
@@ -190,21 +175,6 @@ export const STIFFNESS_PALETTES = {
 } as const satisfies Record<string, readonly BuildStiffnessId[]>; //
 
 export type StiffnessPaletteId = keyof typeof STIFFNESS_PALETTES;
-
-
-// --- 5. THROWING HAND REGISTRY ---
-export const THROWING_HAND_REGISTRY = {
-    'rh': { label: 'Right Hand' },
-    'lh': { label: 'Left Hand' }
-} as const;
-
-export type BuildThrowingId = keyof typeof THROWING_HAND_REGISTRY;
-
-export const THROWING_HAND_PALETTES = {
-    universal: ['rh', 'lh']
-} as const satisfies Record<string, readonly BuildThrowingId[]>; //
-
-export type ThrowingHandPaletteId = keyof typeof THROWING_HAND_PALETTES;
 
 // --- 5.1 STAIN STYLE REGISTRY (NEW) ---
 export const STAIN_STYLE_REGISTRY = {
@@ -281,9 +251,7 @@ interface BuildConfigBase {
     palette: PaletteId;
     imageSelection: 'imgOpt1' | 'imgOpt2'; // Added imgOpt3
     size: BuildSizeId;
-    handOpeningSize: BuildHandId;
     stiffness: BuildStiffnessId;
-    throwingHand: BuildThrowingId;
     webType: WebTypeId;
     fingerProtection: FingerProtectionId;
     stainStyle: StainStyleId; // <--- ADD THIS LINE
@@ -370,8 +338,6 @@ export interface ProductDefinition {
     sizePaletteId: SizePaletteId;
     leatherPaletteId: LeatherPaletteId;
     stiffnessPaletteId: StiffnessPaletteId;
-    handOpeningPaletteId: HandOpeningPaletteId;
-    throwingHandPaletteId: ThrowingHandPaletteId;
     positionPaletteId: PositionPaletteId;
     backStylePaletteId?: BackStylePaletteId; // <--- NEW: Optional!
     fingerProtectionPaletteId: FingerProtectionPaletteId;
@@ -420,8 +386,6 @@ interface ProductBlueprint {
     sizePalette: SizePaletteId;
     leatherPalette?: LeatherPaletteId;
     stiffnessPalette?: StiffnessPaletteId;
-    handOpeningPalette?: HandOpeningPaletteId;
-    throwingHandPalette?: ThrowingHandPaletteId;
     backStylePalette?: BackStylePaletteId; // <--- NEW: Optional!
     fingerProtectionPalette: FingerProtectionPaletteId;
     stainStylePalette?: StainStylePaletteId; // <--- ADD THIS LINE
@@ -528,8 +492,6 @@ const compileProduct = (blueprint: ProductBlueprint): ProductDefinition => {
         sizePaletteId: blueprint.sizePalette,
         leatherPaletteId: blueprint.leatherPalette || 'universal',
         stiffnessPaletteId: blueprint.stiffnessPalette || 'universal',
-        handOpeningPaletteId: blueprint.handOpeningPalette || 'universal',
-        throwingHandPaletteId: blueprint.throwingHandPalette || 'universal',
         positionPaletteId: 'universal',
         backStylePaletteId: blueprint.backStylePalette, // <--- Pass through!
         fingerProtectionPaletteId: blueprint.fingerProtectionPalette,
@@ -588,7 +550,7 @@ export const resolveProduct = (build: BuildConfig): ProductDefinition => {
 
 export const PRESETS = {
     'open-back': {
-        build: { palette: 'universal', imageSelection: 'imgOpt1', position: 'inf', size: '3100', handOpeningSize: 'adt', stiffness: 'std', throwingHand: 'rh', webType: 'bsk', fingerProtection: 'non', stainStyle: 'fd' },
+        build: { palette: 'universal', imageSelection: 'imgOpt1', position: 'inf', size: '3100', stiffness: 'std', webType: 'bsk', fingerProtection: 'non', stainStyle: 'fd' },
         thumbName: { type: 'text', text: 'Thumb', font: 'LOBSTER', colorId: 'bk' }, // Swapped to Black
 
         // KEEP ONLY YOUR 6 ZONES + WEB
@@ -637,9 +599,7 @@ export const updateBuild = (current: BuildConfig, updates: Partial<BuildConfig>)
         palette: updates.palette ?? current.palette,
         imageSelection: updates.imageSelection ?? current.imageSelection,
         size: updates.size ?? current.size,
-        handOpeningSize: updates.handOpeningSize ?? current.handOpeningSize,
         stiffness: updates.stiffness ?? current.stiffness,
-        throwingHand: updates.throwingHand ?? current.throwingHand,
         webType: updates.webType ?? current.webType,
         fingerProtection: updates.fingerProtection ?? current.fingerProtection,
         stainStyle: updates.stainStyle ?? current.stainStyle, // <--- ADD THIS LINE
@@ -702,18 +662,6 @@ export const sanitize = (config: GloveConfiguration): GloveConfiguration => {
     const validStiffnesses = STIFFNESS_PALETTES[def.stiffnessPaletteId];
     if (!validStiffnesses.includes(nextConfig.build.stiffness)) {
         nextConfig.build.stiffness = validStiffnesses[0];
-    }
-
-    // Validate Hand Opening
-    const validHandOpenings = HAND_OPENING_PALETTES[def.handOpeningPaletteId];
-    if (!validHandOpenings.includes(nextConfig.build.handOpeningSize)) {
-        nextConfig.build.handOpeningSize = validHandOpenings[0];
-    }
-
-    // Validate Throwing Hand
-    const validThrowingHands = THROWING_HAND_PALETTES[def.throwingHandPaletteId];
-    if (!validThrowingHands.includes(nextConfig.build.throwingHand)) {
-        nextConfig.build.throwingHand = validThrowingHands[0];
     }
 
     // Validate Leather
@@ -797,9 +745,7 @@ export const URL_KEY_MAP: { [key in ZoneKey | keyof Omit<GloveConfiguration, Zon
     imageSelection: 'is',
     position: 'po',
     size: 'sz',
-    handOpeningSize: 'ho',
     stiffness: 'sf',
-    throwingHand: 'th',
     backStyle: 'bs',
     webType: 'wt',
     fingerProtection: 'fp', // <--- Add this
