@@ -834,22 +834,12 @@ const BuildOption = ({ isDesktop }: BuildOptionProps) => {
 
     return (
         <div className={`space-y-6 ${!isDesktop ? 'pb-4' : ''}`}>
-            {/* UPDATED: Generic ImageGroup usage with strict typing */}
-            
-            <ImageGroup<BuildLeatherId>
-                title="Wood Type"
-                layout="grid-cols-2"
-                // --- NEW: Use dynamic options from leatherGroup, casting IDs to Strict Type ---
-                options={leatherGroup ? leatherGroup.options.map(o => ({ id: o.id as BuildLeatherId, title: o.label })) : []}
-                selectedOption={buildConfig.imageSelection}
-                onSelectOption={(value) => onBuildConfigChange({ imageSelection: value })}
-            />
-            
+
             {/* UPDATED: Generic OptionGroup usage with strict typing */}
             {positionGroup && (
                 <OptionGroup<BuildPositionId>
                     key={positionGroup.id}
-                    title={positionGroup.title}
+                    title="Model" //
                     options={positionGroup.options.map(o => ({ id: o.id as BuildPositionId, label: o.label }))}
                     layout={positionGroup.layout}
                     selectedOption={buildConfig.position}
@@ -860,6 +850,16 @@ const BuildOption = ({ isDesktop }: BuildOptionProps) => {
                     }}
                 />
             )}
+            
+            <ImageGroup<BuildLeatherId>
+                title="Wood Type"
+                layout="grid-cols-2"
+                // --- NEW: Use dynamic options from leatherGroup, casting IDs to Strict Type ---
+                options={leatherGroup ? leatherGroup.options.map(o => ({ id: o.id as BuildLeatherId, title: o.label })) : []}
+                selectedOption={buildConfig.imageSelection}
+                onSelectOption={(value) => onBuildConfigChange({ imageSelection: value })}
+            />
+    
 
             <OptionGroup<StainStyleId>
                 title="Stain Style"
@@ -1037,7 +1037,7 @@ const OrderSummaryInfo = () => {
     return (
         <div className="text-base text-gray-300 space-y-4 p-1">
             <div>
-                <h3 className="text-lg font-semibold text-white mb-2">Glove Foundation</h3>
+                <h3 className="text-lg font-semibold text-white mb-2">Bat</h3>
                 <div className="space-y-1 pl-2">
                     {/* Render standard rows from the Helper */}
                     {foundationRows.map((row) => (
@@ -1928,11 +1928,11 @@ const UI = () => {
 
         if (shellValue === 'open-back') {
             keysToExclude.add('Size');
-            keysToExclude.add('Leather');
+            keysToExclude.add('Wood Type');
         } else if (shellValue === 'close-back') {
-            keysToExclude.add('Leather');
+            keysToExclude.add('Wood Type');
         } else {
-            keysToExclude.add('Position');
+            keysToExclude.add('Model');
             
             if (shellValue === 'first-base') {
                  keysToExclude.add('Size');

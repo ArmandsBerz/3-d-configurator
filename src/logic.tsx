@@ -402,7 +402,7 @@ export const getBuildSummaryRows = (build: BuildConfig, definition: ProductDefin
 
     // 1. Position (Universal)
     if (build.position && POSITION_REGISTRY[build.position]) {
-        rows.push({ key: "Position", value: POSITION_REGISTRY[build.position].label });
+        rows.push({ key: "Model", value: POSITION_REGISTRY[build.position].label });
     }
 
     // 2. Back Style (Condition: Only if the Definition has a backStylePaletteId)
@@ -417,7 +417,7 @@ export const getBuildSummaryRows = (build: BuildConfig, definition: ProductDefin
 
     // 4. Leather (Universal)
     if (build.imageSelection && LEATHER_REGISTRY[build.imageSelection]) {
-        rows.push({ key: "Leather", value: LEATHER_REGISTRY[build.imageSelection].label });
+        rows.push({ key: "Wood Type", value: LEATHER_REGISTRY[build.imageSelection].label });
     }
 
     // 5. Web Type (Universal)
