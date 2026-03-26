@@ -222,8 +222,8 @@ export const CART_LABELS = {
 export const leatherOptions = Object.entries(LEATHER_REGISTRY).map(([id, data]) => ({ id, title: data.label }));
 
 export const FONT_REGISTRY = [
-  { id: 'LOBSTER', label: 'Lobster', baseName: 'lobsterType', targetLineFactor: 0.32 },
-  { id: 'ROBOTO', label: 'Roboto', baseName: 'robotoType', targetLineFactor: 0.32 },
+  { id: 'LOBSTER', label: 'Lobster', baseName: 'lobsterType', targetLineFactor: 0.35 },
+  { id: 'ROBOTO', label: 'Roboto', baseName: 'robotoType', targetLineFactor: 0.35 },
 ] as const;
 
 export const fontOptions = FONT_REGISTRY.map(font => ({ id: font.id, label: font.label }));

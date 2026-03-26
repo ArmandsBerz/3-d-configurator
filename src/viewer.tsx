@@ -51,11 +51,19 @@ class ColorSwapPlugin extends MaterialPluginBase {
     public blendRadius = 1.01;
     public blendStrength = 1.5;
     public enableSdf = 1.0;
+    
+    // --- NEW: Added for Clear Coat Tint Multiplier ---
+    public tintRatio = 1; 
+
     private _isEnabled = false;
     private _markAllDefinesAsDirty: () => void;
 
     private _sdfTex?: Texture;
     public setSDFTexture(t: Texture) { this._sdfTex = t; }
+
+    // --- NEW: Custom sampler for ID Map so Albedo can hold the wood grain ---
+    private _idTex?: Texture;
+    public setIDTexture(t: Texture) { this._idTex = t; }
 
     constructor(material: PBRBaseMaterial, config: ColorSwapConfig) {
         super(material, "ColorSwap", 200, { "COLOR_SWAP": false });
@@ -178,6 +186,7 @@ class ColorSwapPlugin extends MaterialPluginBase {
         samplers.push("pointerLUT");
         samplers.push("paletteLUT");
         samplers.push("sdfTex");
+        samplers.push("idTex"); // <--- NEW: Request ID texture sampler
     }
 
     prepareDefines(defines: MaterialDefines) {
@@ -190,12 +199,14 @@ class ColorSwapPlugin extends MaterialPluginBase {
                 { name: "blendRadius", size: 1, type: "float" },
                 { name: "blendStrength", size: 1, type: "float" },
                 { name: "u_enableSdf", size: 1, type: "float" },
+                { name: "tintRatio", size: 1, type: "float" }, // <--- NEW: Send slider to GPU
             ],
             fragment: `
 #ifdef COLOR_SWAP
 uniform float blendRadius;
 uniform float blendStrength;
 uniform float u_enableSdf;
+uniform float tintRatio;
 #endif
 `
         };
@@ -206,6 +217,7 @@ uniform float u_enableSdf;
             uniformBuffer.updateFloat("blendRadius", this.blendRadius);
             uniformBuffer.updateFloat("blendStrength", this.blendStrength);
             uniformBuffer.updateFloat("u_enableSdf", this.enableSdf);
+            uniformBuffer.updateFloat("tintRatio", this.tintRatio); // <--- NEW: Bind slider value
 
             const effect = this._material?.getEffect();
             if (effect) {
@@ -213,6 +225,7 @@ uniform float u_enableSdf;
                 effect.setTexture("pointerLUT", this._pointerLUT);
                 effect.setTexture("paletteLUT", this._paletteLUT);
                 if (this._sdfTex) effect.setTexture("sdfTex", this._sdfTex);
+                if (this._idTex) effect.setTexture("idTex", this._idTex); // <--- NEW: Bind ID texture
             }
         }
     }
@@ -228,6 +241,7 @@ uniform float u_enableSdf;
                 uniform sampler2D pointerLUT;
                 uniform sampler2D paletteLUT;
                 uniform sampler2D sdfTex;
+                uniform sampler2D idTex; // <--- NEW: ID Map sampler
 
                 int decodeIndex(vec4 c) { return int(c.r * 255.0 + 0.5); }
 
@@ -278,6 +292,7 @@ uniform float u_enableSdf;
                 #endif
             `;
 
+            // --- REWRITTEN: Now reads from idTex instead of albedoSampler, and uses Multiply mix ---
             const updateAlbedoGLSL = `
 #ifdef COLOR_SWAP
 if (u_enableSdf > 0.5) {
@@ -288,10 +303,10 @@ if (u_enableSdf > 0.5) {
   vec2 dir = g / glen;
 
   float px = max(fwidth(vAlbedoUV.x) + fwidth(vAlbedoUV.y), 1e-5);
-  vec2 duv = dir * px;
+  vec2 duv = dir * px * 3.0;
 
-  vec3 idA = srgbToLinear(texture2D(albedoSampler, vAlbedoUV - duv).rgb);
-  vec3 idB = srgbToLinear(texture2D(albedoSampler, vAlbedoUV + duv).rgb);
+  vec3 idA = srgbToLinear(texture2D(idTex, vAlbedoUV - duv).rgb); // Changed to idTex
+  vec3 idB = srgbToLinear(texture2D(idTex, vAlbedoUV + duv).rgb); // Changed to idTex
 
   int  zA = findZone(idA);
   int  zB = findZone(idB);
@@ -300,11 +315,18 @@ if (u_enableSdf > 0.5) {
 
   float wMin = 0.8 * px;
   float w    = max(max(sd_fwidth * blendStrength, 1e-6), wMin);
-  float t = smoothstep(0.5 - blendRadius * w, 0.5 + blendRadius * w, sd);
-  surfaceAlbedo.rgb = mix(palB, palA, t);
+  float t = smoothstep(0.5 - 3.0 * w, 0.5 + 3.0 * w, sd);
+  vec3 targetColor = mix(palB, palA, t);
+  
+  // Step 1: Deep Stain
+  vec3 stainedWood = surfaceAlbedo.rgb * targetColor;
+  // Step 2: Tinted Glaze (25% solid, 75% stain)
+  vec3 hybridColor = mix(stainedWood, targetColor, 0.5);
+  // Step 3: Final Slider
+  surfaceAlbedo.rgb = mix(surfaceAlbedo.rgb, hybridColor, tintRatio);
 
 } else {
-  vec3  id0 = srgbToLinear(texture2D(albedoSampler, vAlbedoUV).rgb);
+  vec3  id0 = srgbToLinear(texture2D(idTex, vAlbedoUV).rgb); // Changed to idTex
   float L0  = dot(id0, vec3(0.299, 0.587, 0.114));
   vec2  g   = vec2(dFdx(L0), dFdy(L0));
   float glen = max(length(g), 1e-6);
@@ -326,31 +348,38 @@ if (u_enableSdf > 0.5) {
   vec3 accum = vec3(0.0);
   float sumw = 0.0;
 
-  vec3 idS0 = srgbToLinear(texture2D(albedoSampler, vAlbedoUV + off0).rgb);
+  vec3 idS0 = srgbToLinear(texture2D(idTex, vAlbedoUV + off0).rgb); // Changed to idTex
   int  z0   = findZone(idS0);
   vec3 pal0 = zoneToPalette(z0);
   accum += pal0 * w0;
   sumw  += w0;
 
-  vec3 idS1 = srgbToLinear(texture2D(albedoSampler, vAlbedoUV + off1).rgb);
+  vec3 idS1 = srgbToLinear(texture2D(idTex, vAlbedoUV + off1).rgb); // Changed to idTex
   int  z1   = findZone(idS1);
   vec3 pal1 = zoneToPalette(z1);
   accum += pal1 * w1;
   sumw  += w1;
 
-  vec3 idS2 = srgbToLinear(texture2D(albedoSampler, vAlbedoUV + off2).rgb);
+  vec3 idS2 = srgbToLinear(texture2D(idTex, vAlbedoUV + off2).rgb); // Changed to idTex
   int  z2   = findZone(idS2);
   vec3 pal2 = zoneToPalette(z2);
   accum += pal2 * w2;
   sumw  += w2;
 
-  vec3 idS3 = srgbToLinear(texture2D(albedoSampler, vAlbedoUV + off3).rgb);
+  vec3 idS3 = srgbToLinear(texture2D(idTex, vAlbedoUV + off3).rgb); // Changed to idTex
   int  z3   = findZone(idS3);
   vec3 pal3 = zoneToPalette(z3);
   accum += pal3 * w3;
   sumw  += w3;
 
-  surfaceAlbedo.rgb = accum / sumw;
+  vec3 targetColor = accum / sumw;
+  
+  // Step 1: Deep Stain
+  vec3 stainedWood = surfaceAlbedo.rgb * targetColor;
+  // Step 2: Tinted Glaze (25% solid, 75% stain)
+  vec3 hybridColor = mix(stainedWood, targetColor, 0.5);
+  // Step 3: Final Slider
+  surfaceAlbedo.rgb = mix(surfaceAlbedo.rgb, hybridColor, tintRatio);
 }
 #endif
 `;
@@ -504,7 +533,7 @@ export class SceneManager {
                     let enableSdf = 1.0;
                     if (validPixels > 0) {
                         const pixelHeight = maxY - minY;
-                        const SDF_PIXEL_HEIGHT_THRESHOLD = 470.0;
+                        const SDF_PIXEL_HEIGHT_THRESHOLD = 1070.0;
                         enableSdf = (pixelHeight > SDF_PIXEL_HEIGHT_THRESHOLD) ? 1.0 : 0.0;
                     } else {
                         enableSdf = 0.0;
@@ -533,7 +562,13 @@ export class SceneManager {
         colorIdTexture.wrapU = colorIdTexture.wrapV = Constants.TEXTURE_CLAMP_ADDRESSMODE;
         colorIdTexture.hasAlpha = false;
 
-        material.albedoTexture = colorIdTexture;
+        // --- NEW: Enable Babylon Native Clear Coat ---
+        material.clearCoat.isEnabled = true;
+        material.clearCoat.isTintEnabled = true;
+        material.clearCoat.tintThickness = 1.0;
+
+        // --- REMOVED: material.albedoTexture = colorIdTexture; ---
+        // (We leave the Albedo alone so the GLB's wood grain stays visible)
 
         const paletteColorsFromLogic: Color3[] =
             COLOR_OPTIONS.map(({ hex }) => Color3.FromHexString(hex).toLinearSpace())
@@ -560,7 +595,9 @@ export class SceneManager {
         );
         sdfTexture.gammaSpace = false;
         sdfTexture.wrapU = sdfTexture.wrapV = Constants.TEXTURE_CLAMP_ADDRESSMODE;
+        
         plugin.setSDFTexture(sdfTexture);
+        plugin.setIDTexture(colorIdTexture); // <--- NEW: Give the plugin the ID map secretly
 
         return plugin;
     }
@@ -769,7 +806,7 @@ export class SceneManager {
 
         textMat.opacityTexture = opacityDT;
         textMat.bumpTexture = normalDT;
-        textMat.bumpTexture.level = 3.0;
+        textMat.bumpTexture.level = 1.0;
         textMat.useAlphaFromAlbedoTexture = false;
         textMat.transparencyMode = PBRMaterial.PBRMATERIAL_ALPHABLEND;
         textMat.unlit = false;
@@ -802,17 +839,36 @@ export class SceneManager {
         const targetLine = texH * targetLineFactor;
         const scale = targetLine / Math.max(common.lineHeight, 1);
         const lineAdvance = common.lineHeight * scale;
+// --- 1. PRE-PASS: MEASURE TOTAL WIDTH ---
+        let totalWidth = 0;
+        let measurePrevCode = -1;
+        for (const ch of text) {
+            const code = ch.codePointAt(0)!;
+            if (measurePrevCode >= 0) {
+                totalWidth += (kern.get(`${measurePrevCode},${code}`) ?? 0) * scale;
+            }
+            const g = chars.get(code);
+            if (g) {
+                totalWidth += g.xadvance * scale;
+            } else {
+                const space = chars.get(32);
+                totalWidth += (space ? space.xadvance : common.lineHeight * 0.35) * scale;
+            }
+            measurePrevCode = code;
+        }
 
-        const paddingX = 16;
-        let penX = paddingX;
+        // --- 2. CALCULATE CENTERED STARTING POSITIONS ---
+        // (texW - totalWidth) / 2 centers the text horizontally
+        let penX = (texW - totalWidth) * 0.5; 
 
         const lineTopY = (texH - lineAdvance) * 0.5;
         let penY = lineTopY + common.base * scale;
 
+        // --- 3. DRAWING LOOP ---
         let prevCode = -1;
         for (const ch of text) {
             if (ch === '\n') {
-                penX = paddingX;
+                penX = (texW - totalWidth) * 0.5; 
                 penY += lineAdvance;
                 prevCode = -1;
                 continue;
