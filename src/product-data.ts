@@ -511,7 +511,7 @@ const PRODUCT_REGISTRY = {
         shellModel: 'openBack', // <--- Your bat!
         sizePalette: 'openBack', 
         leatherPalette: 'universal', 
-        fingerProtectionPalette: 'openBack',
+        fingerProtectionPalette: 'noneOnly',
         validWebs: { 
             bsk: 'basketOB', 
             bsl: 'basketLaceOB' 
