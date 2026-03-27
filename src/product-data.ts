@@ -528,8 +528,6 @@ const PRODUCT_REGISTRY = {
             { id: 'thumbGroup', type: 'single', title: 'Inner Thumb', zoneKey: ZONES.THUMB_INNER },
             { id: 'indexGroup', type: 'single', title: 'Index Finger', zoneKey: ZONES.INDEX },
             { id: 'outerThumbGroup', type: 'single', title: 'Outer Thumb', zoneKey: ZONES.THUMB_OUTER }, // <--- ADD THIS LINE
-            { id: 'middleGroup', type: 'dual', title: 'Middle', outerZoneKey: ZONES.MIDDLE_OUTER, innerZoneKey: ZONES.MIDDLE_INNER },
-            { id: 'ringGroup', type: 'dual', title: 'Ring', outerZoneKey: ZONES.RING_OUTER, innerZoneKey: ZONES.RING_INNER },
         ]
     })
 };
@@ -549,7 +547,7 @@ export const resolveProduct = (build: BuildConfig): ProductDefinition => {
 
 export const PRESETS = {
     'open-back': {
-        build: { palette: 'universal', imageSelection: 'imgOpt1', position: 'inf', size: '3100', stiffness: 'std', webType: 'bsk', fingerProtection: 'non', stainStyle: 'fd' },
+        build: { palette: 'universal', imageSelection: 'imgOpt1', position: 'inf', size: '3100', stiffness: 'std', webType: 'bsk', fingerProtection: 'non', stainStyle: 'dd' },
         thumbName: { type: 'text', text: 'Thumb', font: 'LOBSTER', colorId: 'bk' }, // Swapped to Black
 
         // KEEP ONLY YOUR 6 ZONES + WEB
