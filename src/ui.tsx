@@ -1065,7 +1065,7 @@ const OrderSummaryInfo = () => {
              <div>
                 <h3 className="text-lg font-semibold text-white mb-2">Personalization</h3>
                 <div className="space-y-1 pl-2">
-                    <p><span className="font-semibold text-gray-400">Thumb Name:</span> "{configuration.thumbName.text}" ({configuration.thumbName.font}, {getColorName(configuration.thumbName.colorId)})</p>
+                    <p><span className="font-semibold text-gray-400">Custom Engraving:</span> "{configuration.thumbName.text}" ({configuration.thumbName.font}, {getColorName(configuration.thumbName.colorId)})</p>
                 </div>
             </div>
         </div>
@@ -1478,7 +1478,7 @@ const AccordionDesktop = ({ openAccordion, setOpenAccordion, colorForApplyAll }:
     const buildGroup = { id: 'build', title: 'Build Options' };
     // --- MODIFICATION: Define personalization panels separately ---
     const personalizationGroups = [
-    { id: 'thumbName' as TextPartId, title: 'Thumb Name' },
+    { id: 'thumbName' as TextPartId, title: 'Custom Engraving' },
 ];
 
     const handleAccordionToggle = (accordionId: string) => {
@@ -1682,7 +1682,7 @@ const AccordionMobile = React.forwardRef<HTMLElement, AccordionMobileProps>(({ o
 
     const buildGroup = { id: 'build' as const, title: 'Build Options' };
     const personalizationGroups = [
-        { id: 'thumbName' as TextPartId, title: 'Thumb Name' },
+        { id: 'thumbName' as TextPartId, title: 'Custom Engraving' },
     ];
 
     const renderAccessory = (group: UIPartGroup) => {

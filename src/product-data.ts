@@ -194,9 +194,9 @@ export type StainStylePaletteId = keyof typeof STAIN_STYLE_PALETTES;
 
 // --- 5.5 PERSONALIZATION LABELS (THE CART DICTIONARY) ---
 export const CART_LABELS = {
-    THUMB_TEXT: "Thumb Name",
-    THUMB_FONT: "Thumb Name Font",
-    THUMB_COLOR: "Thumb Name Color",
+    THUMB_TEXT: "Custom Engraving",
+    THUMB_FONT: "Engraving Font",
+    THUMB_COLOR: "Engraving Color",
 } as const;
 
 
@@ -548,13 +548,13 @@ export const resolveProduct = (build: BuildConfig): ProductDefinition => {
 export const PRESETS = {
     'open-back': {
         build: { palette: 'universal', imageSelection: 'imgOpt1', position: 'inf', size: '3100', stiffness: 'std', webType: 'bsk', fingerProtection: 'non', stainStyle: 'dd' },
-        thumbName: { type: 'text', text: 'Thumb', font: 'LOBSTER', colorId: 'bk' }, // Swapped to Black
+        thumbName: { type: 'text', text: 'Name', font: 'LOBSTER', colorId: 'bk' }, // Swapped to Black
 
         // KEEP ONLY YOUR 6 ZONES + WEB
         [ZONES.WEB]:            { colorId: 'nt' }, // Natural
         [ZONES.THUMB_INNER]:    { colorId: 'rw' }, // Raw
-        [ZONES.INDEX]:          { colorId: 'bk' }, // Black
-        [ZONES.THUMB_OUTER]:    { colorId: 'bk' }, // <--- ADD THIS LINE (Handle defaults to Black)
+        [ZONES.INDEX]:          { colorId: 'sn' }, // Black
+        [ZONES.THUMB_OUTER]:    { colorId: 'bd' }, // <--- ADD THIS LINE (Handle defaults to Black)
         [ZONES.MIDDLE_INNER]:   { colorId: 'wf' }, // Warrior Flame
         [ZONES.MIDDLE_OUTER]:   { colorId: 'ea' }, // Earth
         [ZONES.RING_INNER]:     { colorId: 'tb' }, // Tobacco
