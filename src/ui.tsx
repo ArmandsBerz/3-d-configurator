@@ -2320,20 +2320,7 @@ const GloveLogicController = () => {
                     await sceneManager.updateWeb(''); 
                 }
 
-                for (const [zoneKey, zoneDef] of Object.entries(definition.zones)) {
-                    const colorState = configuration[zoneKey as ZoneKey];
-                    if (!colorState) continue;
-
-                    const paletteIndex = getPaletteIndexById(colorState.colorId);
-
-                    if (zoneDef.materialTarget === 'shell' || zoneDef.materialTarget === 'both') {
-                        sceneManager.updateShellZonePointer(zoneDef.shaderIndex, paletteIndex);
-                    }
-                    
-                    if (zoneDef.materialTarget === 'web' || zoneDef.materialTarget === 'both') {
-                        sceneManager.updateWebZonePointer(zoneDef.shaderIndex, paletteIndex);
-                    }
-                }
+                sceneManager.syncConfiguration(configuration, definition);
 
                 sceneManager.updateText({
                     zone: 'thumbName',

@@ -25,7 +25,16 @@ import {
     AbstractMesh, // Added AbstractMesh
 } from '@babylonjs/core';
 import "@babylonjs/loaders";
-import { COLOR_OPTIONS, FONT_REGISTRY, Font } from './product-data';
+import { 
+    COLOR_OPTIONS, 
+    FONT_REGISTRY, 
+    Font,
+    resolveVisualState,      // <--- ADD THIS
+    getPaletteIndexById,     // <--- ADD THIS
+    ProductDefinition,       // <--- ADD THIS (for typing)
+    GloveConfiguration,      // <--- ADD THIS (for typing)
+    ZoneKey                  // <--- ADD THIS
+ } from './product-data';
 
 // --- INTERFACE FOR PLUGIN CONFIGURATION ---
 interface ColorSwapConfig {
@@ -678,6 +687,32 @@ export class SceneManager {
 
     public updateWebZonePointer(zoneIndex: number, paletteIndex: number): void {
         this.activeWebPlugin?.updateZonePaletteIndex(zoneIndex, paletteIndex);
+    }
+
+    public syncConfiguration(config: GloveConfiguration, product: ProductDefinition): void {
+        if (!this.activeShellBundle) return;
+
+        // 1. Get the "Resolved" visual truth from the brain we just built
+        const activeColors = resolveVisualState(config);
+
+        // 2. Loop through every zone defined for this specific bat
+        Object.entries(product.zones).forEach(([zoneKey, zoneDef]) => {
+            const colorId = activeColors[zoneKey as ZoneKey];
+            
+            if (colorId) {
+                const paletteIndex = getPaletteIndexById(colorId);
+                
+                // Update the Shell Plugin (The Bat)
+                if (zoneDef.materialTarget === 'shell' || zoneDef.materialTarget === 'both') {
+                    this.updateShellZonePointer(zoneDef.shaderIndex, paletteIndex);
+                }
+                
+                // Update the Web Plugin (If applicable)
+                if (zoneDef.materialTarget === 'web' || zoneDef.materialTarget === 'both') {
+                    this.updateWebZonePointer(zoneDef.shaderIndex, paletteIndex);
+                }
+            }
+        });
     }
 
     // Add this method inside class SceneManager in viewer.tsx

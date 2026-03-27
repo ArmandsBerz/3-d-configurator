@@ -584,6 +584,52 @@ export const colorLookupMap = new Map(COLOR_OPTIONS.map(option => [option.id, op
 export const getHexById = (id: ColorId): HexColor =>
     colorLookupMap.get(id)?.hex || '#FFFFFF';
 
+
+// --- THE NEW VISUAL RESOLVER ---
+/**
+ * Intercepts the raw user state and returns the ACTUAL colors the 3D model 
+ * should render based on the active stain style.
+ */
+
+export const resolveVisualState = (config: GloveConfiguration): Record<ZoneKey, ColorId> => {
+    const stainStyle = config.build.stainStyle;
+    
+    // 1. Copy EVERY zone's current color from the state so no clicks are lost
+    const visualColors = {} as Record<ZoneKey, ColorId>;
+    for (const key of Object.keys(config)) {
+        if (key.startsWith('zone')) {
+            visualColors[key as ZoneKey] = config[key as ZoneKey].colorId;
+        }
+    }
+
+    // 2. Map the exact 3 Bat parts based on your UI
+    const handleZone = ZONES.THUMB_OUTER;
+    const barrelZone = ZONES.INDEX;
+    const wartipZone = ZONES.THUMB_INNER;
+
+    // 3. APPLY YOUR EXACT 4 RULES
+    if (stainStyle === 'fd') {
+        // FULL DIP: One color for handle, barrel, wartip. (Everything matches Handle).
+        visualColors[barrelZone] = visualColors[handleZone];
+        visualColors[wartipZone] = visualColors[handleZone];
+
+    } else if (stainStyle === 'hd') {
+        // HALF DIP: One color for handle. Other for barrel + wartip. (Wartip matches Barrel).
+        visualColors[wartipZone] = visualColors[barrelZone];
+
+    } else if (stainStyle === 'wt') {
+        // WARTIP: One color for handle + barrel. Other for wartip. (Barrel matches Handle).
+        visualColors[barrelZone] = visualColors[handleZone];
+
+    } else if (stainStyle === 'dd') {
+        // DOUBLE DIP: One color for handle, one for barrel, one for wartip.
+        // ALL 3 ARE INDEPENDENT. We do absolutely nothing here. 
+        // Your UI clicks will pass straight to the 3D model without being hijacked.
+    }
+
+    return visualColors;
+};
+
 // ===================================================================
 // 9. SANITIZATION LOGIC (THE "BOUNCER")
 // ===================================================================
