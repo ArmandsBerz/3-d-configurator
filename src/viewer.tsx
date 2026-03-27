@@ -305,33 +305,16 @@ uniform float tintRatio;
             const updateAlbedoGLSL = `
 #ifdef COLOR_SWAP
 if (u_enableSdf > 0.5) {
-  float sd = texture2D(sdfTex, vAlbedoUV).r;
-  float sd_fwidth = fwidth(sd);
-  vec2 g  = vec2(dFdx(sd), dFdy(sd));
-  float glen = max(length(g), 1e-6);
-  vec2 dir = g / glen;
+  // 1. Just read the exact pixel directly from the ID map (No offsets, no derivatives)
+  vec3 idColor = srgbToLinear(texture2D(idTex, vAlbedoUV).rgb);
 
-  float px = max(fwidth(vAlbedoUV.x) + fwidth(vAlbedoUV.y), 1e-5);
-  vec2 duv = dir * px * 3.0;
-
-  vec3 idA = srgbToLinear(texture2D(idTex, vAlbedoUV - duv).rgb); // Changed to idTex
-  vec3 idB = srgbToLinear(texture2D(idTex, vAlbedoUV + duv).rgb); // Changed to idTex
-
-  int  zA = findZone(idA);
-  int  zB = findZone(idB);
-  vec3 palA = zoneToPalette(zA);
-  vec3 palB = zoneToPalette(zB);
-
-  float wMin = 0.8 * px;
-  float w    = max(max(sd_fwidth * blendStrength, 1e-6), wMin);
-  float t = smoothstep(0.5 - 3.0 * w, 0.5 + 3.0 * w, sd);
-  vec3 targetColor = mix(palB, palA, t);
+  // 2. Find the zone for that exact pixel
+  int z = findZone(idColor);
+  vec3 targetColor = zoneToPalette(z);
   
-  // Step 1: Deep Stain
+  // 3. Apply your new color mixing logic
   vec3 stainedWood = surfaceAlbedo.rgb * targetColor;
-  // Step 2: Tinted Glaze (25% solid, 75% stain)
   vec3 hybridColor = mix(stainedWood, targetColor, 0.5);
-  // Step 3: Final Slider
   surfaceAlbedo.rgb = mix(surfaceAlbedo.rgb, hybridColor, tintRatio);
 
 } else {
