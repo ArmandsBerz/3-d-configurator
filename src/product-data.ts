@@ -40,7 +40,7 @@ export const ZONES = {
 // ===================================================================
 
 export const COLOR_OPTIONS = [
-    { id: 'rw', name: 'Raw', hex: '#EFE5D3FF' },
+    { id: 'rw', name: 'Raw', hex: '#EFE5D3' },
     { id: 'nt', name: 'Natural', hex: '#ECD8AD' },
     { id: 'wf', name: 'Warrior Flame', hex: '#7F3907' },
     { id: 'ea', name: 'Earth', hex: '#4F2F1A' },
@@ -548,13 +548,13 @@ export const resolveProduct = (build: BuildConfig): ProductDefinition => {
 export const PRESETS = {
     'open-back': {
         build: { palette: 'universal', imageSelection: 'imgOpt1', position: 'inf', size: '3100', stiffness: 'std', webType: 'bsk', fingerProtection: 'non', stainStyle: 'dd' },
-        thumbName: { type: 'text', text: 'Name', font: 'LOBSTER', colorId: 'bk' }, // Swapped to Black
+        thumbName: { type: 'text', text: 'Name', font: 'LOBSTER', colorId: 'sm' }, // Swapped to Black
 
         // KEEP ONLY YOUR 6 ZONES + WEB
         [ZONES.WEB]:            { colorId: 'nt' }, // Natural
-        [ZONES.THUMB_INNER]:    { colorId: 'rw' }, // Raw
-        [ZONES.INDEX]:          { colorId: 'sn' }, // Black
-        [ZONES.THUMB_OUTER]:    { colorId: 'bd' }, // <--- ADD THIS LINE (Handle defaults to Black)
+        [ZONES.THUMB_INNER]:    { colorId: 'bk' }, // Raw
+        [ZONES.INDEX]:          { colorId: 'bd' }, // Black
+        [ZONES.THUMB_OUTER]:    { colorId: 'nt' }, // <--- ADD THIS LINE (Handle defaults to Black)
         [ZONES.MIDDLE_INNER]:   { colorId: 'wf' }, // Warrior Flame
         [ZONES.MIDDLE_OUTER]:   { colorId: 'ea' }, // Earth
         [ZONES.RING_INNER]:     { colorId: 'tb' }, // Tobacco
