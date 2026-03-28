@@ -189,7 +189,7 @@ export const ICONS = {
 
 export const NUMERIC_CONSTANTS = {
     SCROLL_THRESHOLD: 1,
-    DESKTOP_BREAKPOINT: '1024px',
+    DESKTOP_BREAKPOINT: '1280px',
 } as const;
 
 // --- BRIDGE PROTOCOL & HELPERS ---
@@ -1420,19 +1420,19 @@ const OverviewDesktop = ({ onComplete }: { onComplete: () => void }) => {
     };
 
     return (
-        <div ref={containerRef} className="flex lg:absolute lg:bottom-[60px] lg:right-[60px] fixed w-full bottom-[-1rem] flex-row items-center gap-4 lg:flex-col lg:justify-end lg:w-auto lg:h-auto lg:gap-0 pointer-events-auto">
-            <div className="lg:w-[400px] text-[#999999] font-black text-[1.3rem] my-0 lg:mb-2.5 mx-0 flex flex-col justify-end lg:h-auto h-[80.8vh]">
+        <div ref={containerRef} className="flex xl:absolute xl:bottom-[60px] xl:right-[60px] fixed w-full bottom-[-1rem] flex-row items-center gap-4 xl:flex-col xl:justify-end xl:w-auto xl:h-auto xl:gap-0 pointer-events-auto">
+            <div className="xl:w-[400px] text-[#999999] font-black text-[1.3rem] my-0 xl:mb-2.5 mx-0 flex flex-col justify-end xl:h-auto h-[80.8vh]">
                 <OverviewButton onClick={handleToggle} isDesktop={true} isOpen={agnosticAccordionOpen} />
                 <div
                     id="overview-content"
-                    className={`bg-[#222222] transition-[height] duration-300 ease-in ${agnosticAccordionOpen ? 'overflow-y-scroll h-auto lg:h-[calc(100vh-335px)]' : 'overflow-hidden h-0'} focus:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-white show-thin-scrollbar`}
+                    className={`bg-[#222222] transition-[height] duration-300 ease-in ${agnosticAccordionOpen ? 'overflow-y-scroll h-auto xl:h-[calc(100vh-335px)]' : 'overflow-hidden h-0'} focus:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-white show-thin-scrollbar`}
                 >
                     <div className="text-base py-3.5 px-6">
                         <OrderSummaryInfo />
                     </div>
                 </div>
             </div>
-            <div className="lg:w-[400px] w-full self-end mb-[1.9rem] mr-[2.5rem] lg:m-0 z-[1]">
+            <div className="xl:w-[400px] w-full self-end mb-[1.9rem] mr-[2.5rem] xl:m-0 z-[1]">
                 <OrderButtonController
                     isSummaryVisible={agnosticAccordionOpen}
                     onReviewClick={handleOpen}
@@ -2195,7 +2195,7 @@ const UI = () => {
     };
 
     return (
-        <div ref={appContainerRef} className={`flex ${!isDesktop && isLandscape ? 'flex-row-reverse' : 'flex-col'} lg:relative w-full h-full bg-transparent text-white`}>
+        <div ref={appContainerRef} className={`flex ${!isDesktop && isLandscape ? 'flex-row-reverse' : 'flex-col'} xl:relative w-full h-full bg-transparent text-white`}>
 
             {snackbarMessage && (
                 <Snackbar
@@ -2204,7 +2204,7 @@ const UI = () => {
                 />
             )}
 
-            <main ref={mainRef} className={`p-4 flex flex-col items-center justify-center relative bg-transparent overflow-auto h-full w-full ${isVisualizationExpanded ? 'flex-grow' : 'lg:absolute lg:inset-0'}`} style={!isDesktop && !isVisualizationExpanded ? { flexBasis: 'calc(61.8% - 66px)' } : {}}>
+            <main ref={mainRef} className={`p-4 flex flex-col items-center justify-center relative bg-transparent overflow-auto h-full w-full ${isVisualizationExpanded ? 'flex-grow' : 'xl:absolute xl:inset-0'}`} style={!isDesktop && !isVisualizationExpanded ? { flexBasis: 'calc(61.8% - 66px)' } : {}}>
                 {!isDesktop && <div className="absolute top-[20px] left-[20px] w-[70px] h-[49px] bg-gray-300 bg-opacity-75 z-10 flex items-center justify-center pointer-events-auto"><p className="font-bold text-xl text-gray-900">LOGO</p></div>}
                 
                 {isDesktop ? (
