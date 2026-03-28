@@ -568,7 +568,7 @@ interface AccordionOptionHeaderProps {
 const AccordionOptionHeader = React.forwardRef<HTMLButtonElement, AccordionOptionHeaderProps>(
     ({ title, onClick, accessoryContent, icon, isOpen, variant, controlsId }, ref) => {
         const baseClasses = "w-full flex justify-between items-center text-left focus:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-white";
-        const variantClasses = variant === VARIANTS.LAYOUT.DESKTOP ? "p-4 h-[56px] hover:bg-[#2A2A2A] transition-colors" : "py-3 h-[56px] mb-3 text_white";
+        const variantClasses = variant === VARIANTS.LAYOUT.DESKTOP ? "p-4 h-[56px] hover:bg-[#2A2A2A] transition-colors" : "py-3 h-[56px] text-white";
         return (
             <button ref={ref} onClick={onClick} className={`${baseClasses} ${variantClasses}`} aria-expanded={isOpen} aria-controls={controlsId}>
                 <div className="flex items-center space-x-3">
@@ -1137,7 +1137,8 @@ const FooterMobile = ({ openPanelName, onClosePanel, onReviewClick, onCompleteOr
 
     if (!openPanelName || isSummaryOpen) {
         return (
-            <footer className="flex-shrink-0 bg-[#161616] flex items-center justify-start pb-[20px] px-[14px] pt-[10px]">
+            // Apply this to BOTH footer tags in FooterMobile:
+            <footer className="flex-shrink-0 bg-[#161616] flex items-center justify-start pb-[20px] px-[14px] pt-[0px]">
                 <div className="w-full grid grid-cols-[1fr_1.618fr] gap-[10px]">
                     <OverviewActionController
                         isOpen={isSummaryOpen}
@@ -1184,7 +1185,7 @@ const FooterMobile = ({ openPanelName, onClosePanel, onReviewClick, onCompleteOr
     }
 
     return (
-        <footer className="flex-shrink-0 bg-[#161616] flex items-center justify_start pb-[20px] px-[14px] pt-[10px]">
+        <footer className="flex-shrink-0 bg-[#161616] flex items-center justify_start pb-[20px] px-[14px] pt-[0px]">
             {panelSpecificFooter}
         </footer>
     );
