@@ -40,8 +40,8 @@ export const ZONES = {
 // ===================================================================
 
 export const COLOR_OPTIONS = [
-    { id: 'rw', name: 'Raw', hex: '#EFE5D3' },
-    { id: 'nt', name: 'Natural', hex: '#E8DBC1' },
+    { id: 'rw', name: 'Raw', hex: '#EFE5D3FF' },
+    { id: 'nt', name: 'Natural', hex: '#ECD8AD' },
     { id: 'wf', name: 'Warrior Flame', hex: '#7F3907' },
     { id: 'ea', name: 'Earth', hex: '#4F2F1A' },
     { id: 'tb', name: 'Tobacco', hex: '#2A0C01' },

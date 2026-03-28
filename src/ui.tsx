@@ -2348,6 +2348,8 @@ const GloveLogicController = () => {
 const GloveAppContent = () => {
     const [sceneManager, setSceneManager] = useState<SceneManager | null>(null);
 
+    const isDesktop = useBreakpoint(); 
+
     const { state } = useGloveConfigurator();
     const definition = resolveProduct(state.configuration.build);
     const initialShellName = definition.assets.shellModel;
@@ -2360,6 +2362,7 @@ const GloveAppContent = () => {
                     <BabylonCanvas
                         onSceneReady={setSceneManager}
                         initialModelName={initialShellName} 
+                        isDesktop={isDesktop}
                     />
                 </div>
                 {state.isLoading && <Loader />}

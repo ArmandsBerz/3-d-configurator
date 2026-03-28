@@ -22,7 +22,8 @@ import {
     Texture,
     RawTexture,
     SubMesh,
-    AbstractMesh, // Added AbstractMesh
+    AbstractMesh,
+    CubeTexture,
 } from '@babylonjs/core';
 import "@babylonjs/loaders";
 import { 
@@ -485,14 +486,30 @@ export class SceneManager {
         this.camera = new ArcRotateCamera("camera", Math.PI / 2, Math.PI / 2, 2.4, Vector3.Zero(), this.scene);
         this.camera.minZ = 0.1;
         this.camera.attachControl(canvas, true);
-        new HemisphericLight("light", new Vector3(0, 1, 0), this.scene);
+        
+        const hemiLight = new HemisphericLight("hemiLight", new Vector3(0, 1, 0), this.scene);
+
+// Turn the strength down (dimmer)
+hemiLight.intensity = 0.8;
+
+        const degreesToRotate = 45; 
+        const envTexture = CubeTexture.CreateFromPrefilteredData(`${process.env.PUBLIC_URL || ''}/assets/environment.env`, this.scene);
 
         this.camera.fov = 0.3;
         this.camera.lowerRadiusLimit = 1;
         this.camera.upperRadiusLimit = 3;
         this.camera.panningSensibility = 0;
         this.camera.wheelPrecision = 200;
+        // 1. Rotate it slightly
+        envTexture.rotationY = degreesToRotate * (Math.PI / 180); 
 
+        // 2. Assign the texture to the scene
+        this.scene.environmentTexture = envTexture;
+
+        // 3. Increase the overall lighting strength slightly (Default is 1.0)
+        this.scene.environmentIntensity = 1.6;
+
+        
         this._bitmapFontReady = this._initBitmapFonts();
 
         this.loadInitialAssets(onReady, initialModelName);
@@ -664,6 +681,22 @@ export class SceneManager {
     }
     // --- END NEW CODE ---
 
+    // ==========================================
+    // ADD THIS NEW METHOD HERE
+    // ==========================================
+    public updateCameraForView(isDesktop: boolean) {
+        if (!this.camera) return;
+
+        if (isDesktop) {
+            // DESKTOP: Tighter radius
+            this.camera.radius = 2.4;
+        } else {
+            // MOBILE: Pulled back radius so the whole glove fits
+            this.camera.radius = 4.5; 
+        }
+    }
+    // ==========================================
+
     public updateShellZonePointer(zoneIndex: number, paletteIndex: number): void {
         this.activeShellBundle?.plugin.updateZonePaletteIndex(zoneIndex, paletteIndex);
     }
@@ -803,7 +836,14 @@ export class SceneManager {
         if (!this._bitmapFontReady) return;
         if (this._fonts.size === 0) return;
 
-        let fontData = this._fonts.get(font as FontId) || this._fonts.get('LOBSTER' as FontId) || Array.from(this._fonts.values())[0];
+        // 1. Try to get the specific font, or fallback to LOBSTER
+        let fontData = this._fonts.get(font as FontId) || this._fonts.get('LOBSTER' as FontId);
+        
+        // 2. If neither exist, safely grab the very first loaded font
+        if (!fontData && this._fonts.size > 0) {
+            fontData = Array.from(this._fonts.values())[0];
+        }
+
         if (!fontData) return;
 
         const { image: img, common, chars, kern } = fontData;
@@ -1055,25 +1095,43 @@ export class SceneManager {
     }
 }
 
+// Add isDesktop to the props interface
 interface BabylonCanvasProps {
     onSceneReady: (sceneManager: SceneManager) => void;
     initialModelName: string;
+    isDesktop: boolean; // <--- ADD THIS
 }
 
-const BabylonCanvas = ({ onSceneReady, initialModelName }: BabylonCanvasProps) => {
+const BabylonCanvas = ({ onSceneReady, initialModelName, isDesktop }: BabylonCanvasProps) => { // <--- ADD isDesktop HERE
     const reactCanvas = useRef<HTMLCanvasElement | null>(null);
+    const sceneManagerRef = useRef<SceneManager | null>(null); // <--- ADD THIS REF to hold the instance
 
+    // 1. Initial Setup Effect
     useEffect(() => {
         const { current: canvas } = reactCanvas;
         if (!canvas) return;
 
-        const sceneManager = new SceneManager(canvas, onSceneReady, initialModelName);
+        // Store the instance in the ref so we can access it later
+        sceneManagerRef.current = new SceneManager(canvas, (manager) => {
+            // Set initial camera instantly on load
+            manager.updateCameraForView(isDesktop);
+            onSceneReady(manager);
+        }, initialModelName);
 
         return () => {
-            sceneManager.dispose();
+            sceneManagerRef.current?.dispose();
+            sceneManagerRef.current = null;
         };
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [onSceneReady]);
+
+    // 2. The Clean Break Effect
+    // Fires ONLY when isDesktop changes (resize between mobile/desktop)
+    useEffect(() => {
+        if (sceneManagerRef.current) {
+            sceneManagerRef.current.updateCameraForView(isDesktop);
+        }
+    }, [isDesktop]);
 
     return <canvas ref={reactCanvas} style={{ width: '100%', height: '100%', outline: 'none' }} />;
 };
