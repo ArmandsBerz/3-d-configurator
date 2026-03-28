@@ -1235,6 +1235,8 @@ const useBreakpoint = (breakpoint: string = NUMERIC_CONSTANTS.DESKTOP_BREAKPOINT
     return isMatch;
 };
 
+
+
 const NavigationHint = ({ isVisible }: { isVisible: boolean }) => {
     if (!isVisible) return null;
 
@@ -1244,6 +1246,24 @@ const NavigationHint = ({ isVisible }: { isVisible: boolean }) => {
             <p className="text-white text-sm font-semibold">Use arrow keys to navigate</p>
         </div>
     );
+};
+
+const useOrientation = () => {
+    const getIsLandscape = () => typeof window !== 'undefined' ? window.innerWidth > window.innerHeight : false;
+    const [isLandscape, setIsLandscape] = useState(getIsLandscape);
+
+    useEffect(() => {
+        const handleResize = () => setIsLandscape(getIsLandscape());
+        window.addEventListener('resize', handleResize);
+        window.addEventListener('orientationchange', handleResize);
+        
+        return () => {
+            window.removeEventListener('resize', handleResize);
+            window.removeEventListener('orientationchange', handleResize);
+        };
+    }, []);
+
+    return isLandscape;
 };
 
 const useGridNavigation = <T extends HTMLElement>(itemCount: number) => {
@@ -1766,6 +1786,7 @@ function getUIPartGroupFromMobileState(s: MobileAccordionState): UIPartGroup | n
 // --- Main UI Component ---
 const UI = () => {
     const isDesktop = useBreakpoint();
+    const isLandscape = useOrientation();
     const { state, dispatch } = useGloveConfigurator();
     const { configuration, commerce, isLoading, lastActivatedPartType } = state as AppState; // Cast to our extended AppState
     const [snackbarMessage, setSnackbarMessage] = useState<string | null>(null); // State for Snackbar message
@@ -1982,8 +2003,14 @@ const UI = () => {
             window.requestAnimationFrame(() => {
                 for (let entry of entries) {
                     const { inlineSize: width, blockSize: height } = entry.borderBoxSize[0];
+                    
+                    // 1. Sync the Size
                     babylonContainer.style.width = `${width}px`;
                     babylonContainer.style.height = `${height}px`;
+                    
+                    // 2. NEW: Sync the Position!
+                    babylonContainer.style.left = `${mainEl.offsetLeft}px`;
+                    babylonContainer.style.top = `${mainEl.offsetTop}px`;
                 }
             });
         });
@@ -2168,7 +2195,7 @@ const UI = () => {
     };
 
     return (
-        <div ref={appContainerRef} className="flex flex-col lg:relative w-full h-full bg-transparent text-white">
+        <div ref={appContainerRef} className={`flex ${!isDesktop && isLandscape ? 'flex-row-reverse' : 'flex-col'} lg:relative w-full h-full bg-transparent text-white`}>
 
             {snackbarMessage && (
                 <Snackbar
@@ -2358,7 +2385,7 @@ const GloveAppContent = () => {
         <SceneContext.Provider value={sceneManager}>
 
             <div id="app-root" className="relative w-full h-[100dvh] bg-[#161616]">
-                <div id="babylon-container" className="absolute inset-0 z-10">
+                <div id="babylon-container" className="absolute z-10 origin-top-left">
                     <BabylonCanvas
                         onSceneReady={setSceneManager}
                         initialModelName={initialShellName} 
