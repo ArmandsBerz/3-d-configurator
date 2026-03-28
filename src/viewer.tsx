@@ -493,7 +493,11 @@ export class SceneManager {
 hemiLight.intensity = 0.8;
 
         const degreesToRotate = 45; 
-        const envTexture = CubeTexture.CreateFromPrefilteredData(`${process.env.PUBLIC_URL || ''}/assets/environment.env`, this.scene);
+        const envTexture = CubeTexture.CreateFromPrefilteredData(
+    `${process.env.PUBLIC_URL || ''}/assets/environment.envMap`, 
+    this.scene,
+    ".env" // <-- THIS IS THE OVERRIDE. It tells Babylon "Treat this as a .env format even though the server thinks it's a .envMap"
+);
 
         this.camera.fov = 0.3;
         this.camera.lowerRadiusLimit = 1;
@@ -692,7 +696,7 @@ hemiLight.intensity = 0.8;
             this.camera.radius = 2.4;
         } else {
             // MOBILE: Pulled back radius so the whole glove fits
-            this.camera.radius = 4.5; 
+            this.camera.radius = 5; 
         }
     }
     // ==========================================
