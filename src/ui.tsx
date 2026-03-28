@@ -190,7 +190,7 @@ export const ICONS = {
 
 export const NUMERIC_CONSTANTS = {
     SCROLL_THRESHOLD: 1,
-    DESKTOP_BREAKPOINT: '1024px',
+    DESKTOP_BREAKPOINT: '1280px',
 } as const;
 
 // --- BRIDGE PROTOCOL & HELPERS ---
@@ -1214,6 +1214,24 @@ const NavigationHint = ({ isVisible }: { isVisible: boolean }) => {
     );
 };
 
+const useOrientation = () => {
+    const getIsLandscape = () => typeof window !== 'undefined' ? window.innerWidth > window.innerHeight : false;
+    const [isLandscape, setIsLandscape] = useState(getIsLandscape);
+
+    useEffect(() => {
+        const handleResize = () => setIsLandscape(getIsLandscape());
+        window.addEventListener('resize', handleResize);
+        window.addEventListener('orientationchange', handleResize);
+        
+        return () => {
+            window.removeEventListener('resize', handleResize);
+            window.removeEventListener('orientationchange', handleResize);
+        };
+    }, []);
+
+    return isLandscape;
+};
+
 const useGridNavigation = <T extends HTMLElement>(itemCount: number) => {
     const [showNavigationHint, setShowNavigationHint] = useState(false);
     const [activeIndex, setActiveIndex] = useState(0);
@@ -1368,19 +1386,19 @@ const OverviewDesktop = ({ onComplete }: { onComplete: () => void }) => {
     };
 
     return (
-        <div ref={containerRef} className="flex lg:absolute lg:bottom-[60px] lg:right-[60px] fixed w-full bottom-[-1rem] flex-row items-center gap-4 lg:flex-col lg:justify-end lg:w-auto lg:h-auto lg:gap-0 pointer-events-auto">
-            <div className="lg:w-[400px] text-[#999999] font-black text-[1.3rem] my-0 lg:mb-2.5 mx-0 flex flex-col justify-end lg:h-auto h-[80.8vh]">
+        <div ref={containerRef} className="flex xl:absolute xl:bottom-[60px] xl:right-[60px] fixed w-full bottom-[-1rem] flex-row items-center gap-4 xl:flex-col xl:justify-end xl:w-auto xl:h-auto xl:gap-0 pointer-events-auto">
+            <div className="xl:w-[400px] text-[#999999] font-black text-[1.3rem] my-0 xl:mb-2.5 mx-0 flex flex-col justify-end xl:h-auto h-[80.8vh]">
                 <OverviewButton onClick={handleToggle} isDesktop={true} isOpen={agnosticAccordionOpen} />
                 <div
                     id="overview-content"
-                    className={`bg-[#222222] transition-[height] duration-300 ease-in ${agnosticAccordionOpen ? 'overflow-y-scroll h-auto lg:h-[calc(100vh-335px)]' : 'overflow-hidden h-0'} focus:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-white show-thin-scrollbar`}
+                    className={`bg-[#222222] transition-[height] duration-300 ease-in ${agnosticAccordionOpen ? 'overflow-y-scroll h-auto xl:h-[calc(100vh-335px)]' : 'overflow-hidden h-0'} focus:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-white show-thin-scrollbar`}
                 >
                     <div className="text-base py-3.5 px-6">
                         <OrderSummaryInfo />
                     </div>
                 </div>
             </div>
-            <div className="lg:w-[400px] w-full self-end mb-[1.9rem] mr-[2.5rem] lg:m-0 z-[1]">
+            <div className="xl:w-[400px] w-full self-end mb-[1.9rem] mr-[2.5rem] xl:m-0 z-[1]">
                 <OrderButtonController
                     isSummaryVisible={agnosticAccordionOpen}
                     onReviewClick={handleOpen}
@@ -1706,6 +1724,7 @@ function getUIPartGroupFromMobileState(s: MobileAccordionState): UIPartGroup | n
 // --- Main UI Component ---
 const UI = () => {
     const isDesktop = useBreakpoint();
+    const isLandscape = useOrientation();
     const { state, dispatch } = useGloveConfigurator();
     const { configuration, commerce, isLoading, lastActivatedPartType } = state as AppState; // Cast to our extended AppState
     const [snackbarMessage, setSnackbarMessage] = useState<string | null>(null); // State for Snackbar message
@@ -1925,8 +1944,16 @@ const UI = () => {
             window.requestAnimationFrame(() => {
                 for (let entry of entries) {
                     const { inlineSize: width, blockSize: height } = entry.borderBoxSize[0];
+                                        
+                    // 1. Sync the Size
+
                     babylonContainer.style.width = `${width}px`;
                     babylonContainer.style.height = `${height}px`;
+
+                    // 2. NEW: Sync the Position!
+                    babylonContainer.style.left = `${mainEl.offsetLeft}px`;
+                    babylonContainer.style.top = `${mainEl.offsetTop}px`;
+
                 }
             });
         });
@@ -2111,7 +2138,7 @@ const UI = () => {
     };
 
     return (
-        <div ref={appContainerRef} className="flex flex-col lg:relative w-full h-full bg-transparent text-white">
+        <div ref={appContainerRef} className={`flex ${!isDesktop && isLandscape ? 'flex-row-reverse' : 'flex-col'} xl:relative w-full h-full bg-transparent text-white`}> 
 
             {snackbarMessage && (
                 <Snackbar
@@ -2120,7 +2147,7 @@ const UI = () => {
                 />
             )}
 
-            <main ref={mainRef} className={`p-4 flex flex-col items-center justify-center relative bg-transparent overflow-auto h-full w-full ${isVisualizationExpanded ? 'flex-grow' : 'lg:absolute lg:inset-0'}`} style={!isDesktop && !isVisualizationExpanded ? { flexBasis: 'calc(61.8% - 66px)' } : {}}>
+            <main ref={mainRef} className={`p-4 flex flex-col items-center justify-center relative bg-transparent overflow-auto h-full w-full ${isVisualizationExpanded ? 'flex-grow' : 'xl:absolute xl:inset-0'}`} style={!isDesktop && !isVisualizationExpanded ? { flexBasis: 'calc(61.8% - 66px)' } : {}}>
                 {!isDesktop && <div className="absolute top-[20px] left-[20px] w-[70px] h-[49px] bg-gray-300 bg-opacity-75 z-10 flex items-center justify-center pointer-events-auto"><p className="font-bold text-xl text-gray-900">LOGO</p></div>}
                 
                 {isDesktop ? (
@@ -2319,7 +2346,7 @@ const GloveAppContent = () => {
         <SceneContext.Provider value={sceneManager}>
 
             <div id="app-root" className="relative w-full h-[100dvh] bg-[#161616]">
-                <div id="babylon-container" className="absolute inset-0 z-10">
+                <div id="babylon-container" className="absolute z-10 origin-top-left">
                     <BabylonCanvas
                         onSceneReady={setSceneManager}
                         initialModelName={initialShellName} 
