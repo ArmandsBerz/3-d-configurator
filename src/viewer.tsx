@@ -761,7 +761,7 @@ hemiLight.intensity = 0.8;
             targetAlpha = this.camera.alpha + alphaDiff;
             targetBeta = this.camera.beta + betaDiff;
             
-            targetRadius = 2.0; 
+            targetRadius = 1.2; 
         }
 
         // --- EXECUTE THE MOVE ---
