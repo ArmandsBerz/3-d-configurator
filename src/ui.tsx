@@ -1801,6 +1801,39 @@ const UI = () => {
 
     const phantomUrlRef = useRef<string | null>(null);
 
+    const sceneManager = useContext(SceneContext);
+
+    // --- NEW: CAMERA ROUTER EFFECT ---
+    // Watches the UI state and moves the camera automatically
+    useEffect(() => {
+        if (!sceneManager) return;
+
+        let isDetailViewOpen = false;
+
+        if (isDesktop) {
+            // Check desktop accordion state
+            if (openAccordion === 'thumbName' || openAccordion === 'web') {
+                isDetailViewOpen = true;
+            }
+        } else {
+            // Check mobile panel state
+            if (
+                (openAccordionOptionMobile?.name === 'TEXT' && openAccordionOptionMobile.context.id === 'thumbName') ||
+                (openAccordionOptionMobile?.name === 'GALLERY' && openAccordionOptionMobile.context.id === 'web')
+            ) {
+                isDetailViewOpen = true;
+            }
+        }
+
+        // Route the camera based on what is open
+        if (isDetailViewOpen) {
+            sceneManager.focusOnLocator('focus2');
+        } else {
+            sceneManager.focusOnLocator('focus1');
+        }
+    }, [openAccordion, openAccordionOptionMobile, isDesktop, sceneManager]);
+    // --- END CAMERA ROUTER ---
+
     useEffect(() => {
         if (initialLoadResult.status === 'failed') {
             setSnackbarMessage("Invalid share link. Showing default glove.");

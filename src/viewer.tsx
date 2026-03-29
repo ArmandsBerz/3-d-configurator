@@ -6,6 +6,9 @@ import {
     Scene,
     ArcRotateCamera,
     Vector3,
+    Animation,
+    CubicEase,
+    EasingFunction,
     HemisphericLight,
     Mesh,
     Color4,
@@ -701,6 +704,85 @@ hemiLight.intensity = 0.8;
     }
     // ==========================================
 
+    public focusOnLocator(locatorName: string, animate: boolean = true): void {
+        if (!this.camera || !this.scene) return;
+
+        const targetNode = this.scene.getTransformNodeByName(locatorName);
+        
+        if (!targetNode) {
+            console.warn(`[SceneManager] Could not find locator: ${locatorName}`);
+            return; 
+        }
+
+        // --- EXTRACT IDEAL ROTATION FROM EMPTY ---
+        const direction = targetNode.forward.scale(-1); 
+        const idealAlpha = Math.atan2(direction.z, direction.x);
+        const clampedY = Math.max(-1.0, Math.min(1.0, direction.y));
+        const idealBeta = Math.acos(clampedY);
+
+        let targetAlpha = this.camera.alpha;
+        let targetBeta = this.camera.beta;
+        let targetRadius = this.camera.radius;
+
+        // --- SPLIT LOGIC BASED ON LOCATOR ---
+        if (locatorName === 'focus1') {
+            // MACRO VIEW
+            const MIN_SAFE_ZOOM = 1.4; 
+            targetRadius = Math.max(this.camera.radius, MIN_SAFE_ZOOM);
+
+            // Calculate the shortest path difference
+            const alphaDiff = Math.atan2(
+                Math.sin(idealAlpha - this.camera.alpha), 
+                Math.cos(idealAlpha - this.camera.alpha)
+            );
+            const betaDiff = Math.atan2(
+                Math.sin(idealBeta - this.camera.beta), 
+                Math.cos(idealBeta - this.camera.beta)
+            );
+
+            // NUDGE ROTATION: Apply only 30% of the difference
+            const blendFactor = 0.2; 
+            targetAlpha = this.camera.alpha + (alphaDiff * blendFactor);
+            targetBeta = this.camera.beta + (betaDiff * blendFactor);
+
+        } else {
+            // DETAIL VIEW (focus2)
+            // Calculate the shortest path difference
+            const alphaDiff = Math.atan2(
+                Math.sin(idealAlpha - this.camera.alpha), 
+                Math.cos(idealAlpha - this.camera.alpha)
+            );
+            const betaDiff = Math.atan2(
+                Math.sin(idealBeta - this.camera.beta), 
+                Math.cos(idealBeta - this.camera.beta)
+            );
+
+            // STRICT ROTATION: Apply 100% of the difference
+            targetAlpha = this.camera.alpha + alphaDiff;
+            targetBeta = this.camera.beta + betaDiff;
+            
+            targetRadius = 2.0; 
+        }
+
+        // --- EXECUTE THE MOVE ---
+        if (animate) {
+            const ease = new CubicEase();
+            ease.setEasingMode(EasingFunction.EASINGMODE_EASEINOUT);
+
+            Animation.CreateAndStartAnimation("animTarget", this.camera, "target", 60, 36, this.camera.target, targetNode.absolutePosition, 2, ease);
+            Animation.CreateAndStartAnimation("animAlpha", this.camera, "alpha", 60, 36, this.camera.alpha, targetAlpha, 2, ease);
+            Animation.CreateAndStartAnimation("animBeta", this.camera, "beta", 60, 36, this.camera.beta, targetBeta, 2, ease);
+            Animation.CreateAndStartAnimation("animRadius", this.camera, "radius", 60, 36, this.camera.radius, targetRadius, 2, ease);
+        } else {
+            // SNAP INSTANTLY ON INITIAL LOAD
+            this.camera.target = targetNode.absolutePosition.clone();
+            // On initial load, give them the 100% perfect angle, not the 30% blended one
+            this.camera.alpha = idealAlpha;
+            this.camera.beta = idealBeta;
+            this.camera.radius = targetRadius;
+        }
+    }
+
     public updateShellZonePointer(zoneIndex: number, paletteIndex: number): void {
         this.activeShellBundle?.plugin.updateZonePaletteIndex(zoneIndex, paletteIndex);
     }
@@ -789,7 +871,11 @@ hemiLight.intensity = 0.8;
         // 5. Update Active References
         this.activeShellBundle = bundle;
         this.activeShellName = modelName;
+
+        // 6. Set the Default Camera Focus
+        this.focusOnLocator('focus1', false);
     }
+
 
     public async updateWeb(webModelName: string): Promise<void> {
         if (!webModelName) {
