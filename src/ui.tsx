@@ -2345,9 +2345,13 @@ const UI = () => {
 const GloveLogicController = () => {
     const { state, dispatch } = useGloveConfigurator();
     const sceneManager = useContext(SceneContext);
+    
+    // --- 1. ADD THIS REF: The Execution Queue Lock ---
+    const updateQueueRef = useRef<Promise<void>>(Promise.resolve());
 
     useEffect(() => {
-        const updateSceneAsync = async () => {
+        // --- 2. WRAP THE LOGIC: Chain every new update to the end of the previous one ---
+        updateQueueRef.current = updateQueueRef.current.then(async () => {
             if (!sceneManager || !sceneManager.isReady()) {
                 return;
             }
@@ -2356,10 +2360,11 @@ const GloveLogicController = () => {
 
             try {
                 const { configuration } = state;
-
                 const definition = resolveProduct(configuration.build);
 
+                console.log("[DIAGNOSTIC] 1. Starting updateBuild...");
                 await sceneManager.updateBuild(definition.assets.shellModel);
+                console.log("[DIAGNOSTIC] 1. SUCCESS");
 
                 definition.assets.protectionMeshes.forEach(meshName => {
                     sceneManager.setPartVisibility(meshName, false);
@@ -2367,20 +2372,25 @@ const GloveLogicController = () => {
 
                 const currentFpId = configuration.build.fingerProtection;
                 const activeMeshName = FINGER_PROTECTION_REGISTRY[currentFpId].meshName;
-                
                 if (activeMeshName) {
                     sceneManager.setPartVisibility(activeMeshName, true);
                 }
 
                 const webModelFilename = definition.assets.validWebs[configuration.build.webType];
 
+                console.log("[DIAGNOSTIC] 2. Starting updateWeb...");
                 if (webModelFilename) {
                     await sceneManager.updateWeb(webModelFilename);
                 } else {
                     await sceneManager.updateWeb(''); 
                 }
+                console.log("[DIAGNOSTIC] 2. SUCCESS");
 
                 sceneManager.syncConfiguration(configuration, definition);
+
+                console.log("[DIAGNOSTIC] 3. Waiting for fontsReady...");
+                await sceneManager.fontsReady; 
+                console.log("[DIAGNOSTIC] 3. SUCCESS");
 
                 sceneManager.updateText({
                     zone: 'thumbName',
@@ -2389,16 +2399,16 @@ const GloveLogicController = () => {
                     color: getHexById(configuration.thumbName.colorId),
                 });
 
+                console.log("[DIAGNOSTIC] 4. Waiting for Babylon render (waitForRender)...");
                 await sceneManager.waitForRender();
+                console.log("[DIAGNOSTIC] 4. SUCCESS - ENTIRE BLOCK CLEARED");
 
             } catch (error) {
                 console.error("Failed to update scene:", error);
             } finally {
                 dispatch({ type: ACTION_TYPES.SET_LOADING, payload: false });
             }
-        };
-
-        updateSceneAsync();
+        });
 
     }, [state.configuration, sceneManager, dispatch]);
 

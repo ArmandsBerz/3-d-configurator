@@ -479,6 +479,12 @@ export class SceneManager {
     private _normalDTs = new Map<string, DynamicTexture>();
     private _lastText = new Map<string, string>();
 
+    // --- ADD THE NEW GETTER RIGHT HERE ---
+    public get fontsReady(): Promise<void> | null {
+        return this._bitmapFontReady;
+    }
+    // -------------------------------------
+
     constructor(canvas: HTMLCanvasElement, onReady: (manager: SceneManager) => void, initialModelName: string) {
         this.engine = new Engine(canvas, true, { alpha: true });
         this.scene = new Scene(this.engine);
