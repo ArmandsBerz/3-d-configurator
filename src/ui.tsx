@@ -56,6 +56,9 @@ import React, { useState, useRef, useLayoutEffect, useCallback, useEffect, creat
 import BabylonCanvas from './viewer';
 import { SummaryIcon, BackArrowIcon, CheckmarkIcon, LongArrowRightIcon, CaretRightIcon, CaretDownIcon, CaretUpIcon, ShareIcon, CollapseIcon, ExpandIcon, DragIcon, ZoomIcon, CloseIcon, Loader } from './icons';
 import { Snackbar } from './snackbar'; 
+// @ts-ignore
+import LogoImage from './WARSTIC_warstripes_bone.png';
+
 
 // --- START: NEW SCROLL GRADIENT HOOK ---
 export const useScrollGradients = (scrollableRef: React.RefObject<HTMLElement | null>) => {
@@ -1529,7 +1532,9 @@ const AccordionDesktop = ({ openAccordion, setOpenAccordion, colorForApplyAll }:
 
     return (
         <div ref={desktopAccordionContainerRef} className="absolute top-0 left-0 bottom-0 w-[440px] z-10 bg-[#161616] p-10 pointer-events-none">
-            <div className="absolute z-20 w-[70px] h-[49px] bg-gray-300 bg-opacity-75 flex items-center justify-center pointer-events-auto"><p className="font-bold text-xl text-gray-900">LOGO</p></div>
+            <div className="absolute z-20 w-[165px] h-auto flex items-center justify-center pointer-events-auto">
+    <img src={LogoImage} alt="Warstic" className="w-full h-auto object-contain" />
+</div>
             <div className={`absolute ${isScrolled ? 'top-[82px]' : 'top-[142px]'} bottom-4 left-[40px] w-[400px] pointer-events-auto transition-all duration-30 ease-in-out overflow-hidden`}>
                 <ScrollGradient position={POSITIONS.TOP} isVisible={isTopGradientVisible} />
                 <div ref={accordionContainerRef} className="h-full overflow-y-auto space-y-4 focus:outline-none focus-visible:outline focus-visible:outline-4 focus-visible:outline-white focus-visible:outline-offset-[-4px] show-thin-scrollbar">
@@ -2238,7 +2243,11 @@ const UI = () => {
             )}
 
             <main ref={mainRef} className={`p-4 flex flex-col items-center justify-center relative bg-transparent overflow-auto h-full w-full ${isVisualizationExpanded ? 'flex-grow' : 'xl:absolute xl:inset-0'}`} style={!isDesktop && !isVisualizationExpanded ? { flexBasis: 'calc(61.8% - 66px)' } : {}}>
-                {!isDesktop && <div className="absolute top-[20px] left-[20px] w-[70px] h-[49px] bg-gray-300 bg-opacity-75 z-10 flex items-center justify-center pointer-events-auto"><p className="font-bold text-xl text-gray-900">LOGO</p></div>}
+                {!isDesktop && (
+    <div className="absolute top-[20px] left-[20px] w-[100px] h-auto z-10 flex items-center justify-center pointer-events-auto">
+        <img src={LogoImage} alt="Warstic" className="w-full h-auto object-contain" />
+    </div>
+)}
                 
                 {isDesktop ? (
                     <div className="absolute top-[20px] right-[20px] z-20 flex flex-row-reverse items-center gap_[25px] pointer-events-auto">
