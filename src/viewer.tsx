@@ -448,7 +448,7 @@ const FONT_CONFIG = Object.fromEntries(
 interface ShellBundle {
     container: AssetContainer;
     material: PBRMaterial;
-    plugin: ColorSwapPlugin;
+    plugins: ColorSwapPlugin[]; // <--- Changed to an array
     // Map of specific parts by role ("shell", "thumbName", "indexHood", etc.)
     parts: Map<string, AbstractMesh>;
 }
@@ -605,6 +605,8 @@ hemiLight.intensity = 0.8;
             return null;
         }
 
+        const plugins: ColorSwapPlugin[] = [];
+
         // Find material
         const material = container.materials.find(m => m.name === 'gloveMat') as PBRMaterial;
         if (!material) {
@@ -612,8 +614,21 @@ hemiLight.intensity = 0.8;
             return null;
         }
 
-        // Setup plugin (only once per bundle)
-        const plugin = this._setupMaterialWithPlugin(material, modelName);
+        // 1. Grab Main Material
+        if (material) {
+            plugins.push(this._setupMaterialWithPlugin(material, modelName));
+        }
+
+        // 2. Grab Logo Materials
+        const logo1Mat = container.materials.find(m => m.name === 'logo1') as PBRMaterial;
+        if (logo1Mat) {
+            plugins.push(this._setupMaterialWithPlugin(logo1Mat, 'logo1'));
+        }
+
+        const logo2Mat = container.materials.find(m => m.name === 'logo2') as PBRMaterial;
+        if (logo2Mat) {
+            plugins.push(this._setupMaterialWithPlugin(logo2Mat, 'logo2'));
+        }
 
         // Index the parts (Optional meshes)
         // We look for them by name. If they exist, we store them.
@@ -640,7 +655,7 @@ hemiLight.intensity = 0.8;
         return {
             container,
             material,
-            plugin,
+            plugins, // <--- Return the array
             parts
         };
     }
@@ -760,7 +775,9 @@ hemiLight.intensity = 0.8;
     }
 
     public updateShellZonePointer(zoneIndex: number, paletteIndex: number): void {
-        this.activeShellBundle?.plugin.updateZonePaletteIndex(zoneIndex, paletteIndex);
+        this.activeShellBundle?.plugins.forEach(plugin => {
+            plugin.updateZonePaletteIndex(zoneIndex, paletteIndex);
+        });
     }
 
     public updateWebZonePointer(zoneIndex: number, paletteIndex: number): void {
@@ -1038,7 +1055,7 @@ hemiLight.intensity = 0.8;
     public dispose() {
         // Updated dispose logic for bundles
         this.shellBundles.forEach(bundle => {
-            bundle.plugin.dispose();
+            bundle.plugins.forEach(plugin => plugin.dispose()); // <--- Loop dispose
             // Container dispose is optional but good practice if you want to free memory completely
             // bundle.container.dispose(); 
         });
