@@ -78,7 +78,7 @@ export type ColorId = typeof COLOR_OPTIONS[number]['id'];
 
 // --- 0. POSITION REGISTRY ---
 export const POSITION_REGISTRY = {
-    'inf': { label: 'WSBNSBR' } // <--- Renamed so your UI actually says "Bat"
+    'inf': { label: 'Auburn' } // <--- Renamed so your UI actually says "Bat"
 } as const;
 
 export type BuildPositionId = keyof typeof POSITION_REGISTRY;

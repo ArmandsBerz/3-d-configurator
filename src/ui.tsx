@@ -57,7 +57,7 @@ import BabylonCanvas from './viewer';
 import { SummaryIcon, BackArrowIcon, CheckmarkIcon, LongArrowRightIcon, CaretRightIcon, CaretDownIcon, CaretUpIcon, ShareIcon, CollapseIcon, ExpandIcon, DragIcon, ZoomIcon, CloseIcon, Loader } from './icons';
 import { Snackbar } from './snackbar'; 
 // @ts-ignore
-import LogoImage from './WARSTIC_warstripes_bone.png';
+import LogoImage from './mitchell-bat-co-trademark.png';
 
 
 // --- START: NEW SCROLL GRADIENT HOOK ---
@@ -867,10 +867,10 @@ const BuildOption = ({ isDesktop }: BuildOptionProps) => {
                 title="Stain Style"
                 layout="grid-cols-2"
                 options={[
-                    { id: 'fd', label: 'Full Dip' },
-                    { id: 'hd', label: 'Half Dip' },
-                    { id: 'wt', label: 'Wartip' },
-                    { id: 'dd', label: 'Double Dip' }
+                    { id: 'fd', label: 'Color Pattern 1' },
+                    { id: 'hd', label: 'Color Pattern 2' },
+                    { id: 'wt', label: 'Color Pattern 3' },
+                    { id: 'dd', label: 'Color Pattern 4' }
                 ]}
                 selectedOption={buildConfig.stainStyle}
                 onSelectOption={(value) => onBuildConfigChange({ stainStyle: value })}
@@ -1466,11 +1466,11 @@ const getFilteredBatGroups = (uiGroups: UIPartGroup[], style: string): UIPartGro
         if (barrelGroup) result.push({ ...barrelGroup, title: 'Barrel Color' });
     } else if (style === 'wt') {
         if (barrelGroup) result.push({ ...barrelGroup, title: 'Bat Color' });
-        if (tipGroup)    result.push({ ...tipGroup,    title: 'Wartip Color' });
+        if (tipGroup)    result.push({ ...tipGroup,    title: 'Tip Color' });
     } else if (style === 'dd') {
-        if (handleGroup) result.push({ ...handleGroup, title: 'Handle Color' });
-        if (barrelGroup) result.push({ ...barrelGroup, title: 'Barrel Color' });
-        if (tipGroup)    result.push({ ...tipGroup,    title: 'Wartip Color' });
+        if (handleGroup) result.push({ ...handleGroup, title: 'Color 1' });
+        if (barrelGroup) result.push({ ...barrelGroup, title: 'Color 2' });
+        if (tipGroup)    result.push({ ...tipGroup,    title: 'Coloe 3' });
     }
     return result;
 };
@@ -1532,9 +1532,10 @@ const AccordionDesktop = ({ openAccordion, setOpenAccordion, colorForApplyAll }:
 
     return (
         <div ref={desktopAccordionContainerRef} className="absolute top-0 left-0 bottom-0 w-[440px] z-10 bg-[#161616] p-10 pointer-events-none">
-            <div className="absolute z-20 w-[165px] h-auto flex items-center justify-center pointer-events-auto">
-    <img src={LogoImage} alt="Warstic" className="w-full h-auto object-contain" />
-</div>
+    {/* Just added -mt-5 here to pull it up 20px against the parent's padding */}
+    <div className="absolute z-20 -mt-5 w-[145px] h-auto flex items-center justify-center pointer-events-auto">
+        <img src={LogoImage} alt="Warstic" className="w-full h-auto object-contain" />
+    </div>
             <div className={`absolute ${isScrolled ? 'top-[82px]' : 'top-[142px]'} bottom-4 left-[40px] w-[400px] pointer-events-auto transition-all duration-30 ease-in-out overflow-hidden`}>
                 <ScrollGradient position={POSITIONS.TOP} isVisible={isTopGradientVisible} />
                 <div ref={accordionContainerRef} className="h-full overflow-y-auto space-y-4 focus:outline-none focus-visible:outline focus-visible:outline-4 focus-visible:outline-white focus-visible:outline-offset-[-4px] show-thin-scrollbar">
