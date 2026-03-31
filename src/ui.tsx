@@ -1470,7 +1470,7 @@ const getFilteredBatGroups = (uiGroups: UIPartGroup[], style: string): UIPartGro
     } else if (style === 'dd') {
         if (handleGroup) result.push({ ...handleGroup, title: 'Color 1' });
         if (barrelGroup) result.push({ ...barrelGroup, title: 'Color 2' });
-        if (tipGroup)    result.push({ ...tipGroup,    title: 'Coloe 3' });
+        if (tipGroup)    result.push({ ...tipGroup,    title: 'Color 3' });
     }
     return result;
 };
