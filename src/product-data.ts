@@ -40,28 +40,28 @@ export const ZONES = {
 // ===================================================================
 
 export const COLOR_OPTIONS = [
-    { id: 'rw', name: 'Raw', hex: '#EFE5D3' },
-    { id: 'nt', name: 'Natural', hex: '#ECD8AD' },
-    { id: 'wf', name: 'Warrior Flame', hex: '#7F3907' },
-    { id: 'ea', name: 'Earth', hex: '#4F2F1A' },
-    { id: 'tb', name: 'Tobacco', hex: '#2A0C01' },
-    { id: 'bk', name: 'Black', hex: '#030303' },
-    { id: 'sm', name: 'Smoke', hex: '#2F2D26' },
-    { id: 'tc', name: 'Thundercloud', hex: '#615C4C' },
-    { id: 'nb', name: 'Navajo Bone', hex: '#D4CCB9' },
-    { id: 'wt', name: 'White', hex: '#E8E7E5' },
-    { id: 'oc', name: 'Ocean', hex: '#7CB2CF' },
-    { id: 'ry', name: 'Royal', hex: '#174E91' },
-    { id: 'nv', name: 'Navy', hex: '#132743' },
-    { id: 'cr', name: 'Crown', hex: '#2A2348' },
-    { id: 'wn', name: 'Wine', hex: '#370101' },
-    { id: 'bd', name: 'Blood', hex: '#970203' },
-    { id: 'fi', name: 'Fire', hex: '#D65503' },
-    { id: 'sn', name: 'Sun', hex: '#E7DB2C' },
-    { id: 'gs', name: 'Grass', hex: '#3CAF1C' },
-    { id: 'fo', name: 'Forest', hex: '#25491D' },
-    { id: 'gd', name: 'Gold', hex: '#9D8C5D' },
-    { id: 'sv', name: 'Silver', hex: '#8B8880' }
+    { id: 'rw', name: 'Raw', hex: '#F4EBE0' }, // Lightened to a cleaner, fresh birch/ash look
+    { id: 'nt', name: 'Natural', hex: '#ECD8AD' }, // DO NOT TOUCH - Left exactly as is
+    { id: 'wf', name: 'Warrior Flame', hex: '#B3411A' }, // Richer, more vibrant burnt orange/copper
+    { id: 'ea', name: 'Earth', hex: '#5A3824' }, // Warmer, more saturated walnut brown
+    { id: 'tb', name: 'Tobacco', hex: '#3E1E0F' }, // Deepened to a rich, glossy mahogany
+    { id: 'bk', name: 'Black', hex: '#111111' }, // Deep, true athletic black (slightly off #000 for paint realism)
+    { id: 'sm', name: 'Smoke', hex: '#55565A' }, // Shifted to a standard cool athletic charcoal/away-grey
+    { id: 'tc', name: 'Thundercloud', hex: '#8A8D8F' }, // Cleaned up to a crisp, neutral steel grey
+    { id: 'nb', name: 'Navajo Bone', hex: '#E5DCCB' }, // Warmer, vintage athletic cream (like throwback uniforms)
+    { id: 'wt', name: 'White', hex: '#FFFFFF' }, // Shifted to pure white for those crisp, popping stripes
+    { id: 'oc', name: 'Ocean', hex: '#0085CA' }, // Vibrant Carolina/Powder blue
+    { id: 'ry', name: 'Royal', hex: '#0033A0' }, // True, vivid collegiate royal blue
+    { id: 'nv', name: 'Navy', hex: '#0C2340' }, // Deepened to perfectly match the Auburn/Mariners dark navy in your images
+    { id: 'cr', name: 'Crown', hex: '#461D7C' }, // Saturated collegiate purple (think LSU or Washington)
+    { id: 'wn', name: 'Wine', hex: '#782F40' }, // Shifted to a true FSU Garnet / ASU Maroon
+    { id: 'bd', name: 'Blood', hex: '#CC0000' }, // Brightened to a classic, popping team red
+    { id: 'fi', name: 'Fire', hex: '#E8491B' }, // Bright, vivid Auburn/Syracuse athletic orange
+    { id: 'sn', name: 'Sun', hex: '#FFC72C' }, // True ASU bright athletic gold/yellow
+    { id: 'gs', name: 'Grass', hex: '#00843D' }, // Vibrant, saturated Kelly Green
+    { id: 'fo', name: 'Forest', hex: '#18453B' }, // Deep, rich collegiate forest green
+    { id: 'gd', name: 'Gold', hex: '#CBA052' }, // Shifted to the "Vegas Gold" seen on the Vandy and FSU bats
+    { id: 'sv', name: 'Silver', hex: '#A2AAAD' }  // Crisp, cool metallic silver
 ] as const;
 
 // --- PALETTE SYSTEM IMPLEMENTATION (COLORS) ---
@@ -205,8 +205,8 @@ export const CART_LABELS = {
 export const leatherOptions = Object.entries(LEATHER_REGISTRY).map(([id, data]) => ({ id, title: data.label }));
 
 export const FONT_REGISTRY = [
-  { id: 'LOBSTER', label: 'Lobster', baseName: 'lobsterType', targetLineFactor: 0.35 },
-  { id: 'ROBOTO', label: 'Roboto', baseName: 'robotoType', targetLineFactor: 0.35 },
+  { id: 'LOBSTER', label: 'Lobster', baseName: 'lobsterType', targetLineFactor: 0.55 },
+  { id: 'ROBOTO', label: 'Roboto', baseName: 'robotoType', targetLineFactor: 0.55 },
 ] as const;
 
 export const fontOptions = FONT_REGISTRY.map(font => ({ id: font.id, label: font.label }));
