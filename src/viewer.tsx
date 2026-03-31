@@ -528,49 +528,19 @@ hemiLight.intensity = 0.8;
         this.loadInitialAssets(onReady, initialModelName);
 
         this.engine.runRenderLoop(() => {
-            // --- PIXEL BUDGET LOGIC (SDF TOGGLE) ---
-            if (this.activeShellBundle && this.activeShellName) {
-                const shellMesh = this.activeShellBundle.parts.get('shell');
-                if (shellMesh) {
-                    shellMesh.computeWorldMatrix(true);
-
-                    const localCorners = shellMesh.getBoundingInfo().boundingBox.vectors;
-                    const worldMatrix = shellMesh.getWorldMatrix();
-                    const transformMatrix = this.scene.getTransformMatrix();
-                    const viewport = this.camera.viewport.toGlobal(this.engine.getRenderWidth(), this.engine.getRenderHeight());
-
-                    let minY = Infinity;
-                    let maxY = -Infinity;
-                    let validPixels = 0;
-
-                    for (const corner of localCorners) {
-                        const screenPos = Vector3.Project(corner, worldMatrix, transformMatrix, viewport);
-                        if (screenPos.z > 0 && screenPos.z < 1) {
-                            minY = Math.min(minY, screenPos.y);
-                            maxY = Math.max(maxY, screenPos.y);
-                            validPixels++;
-                        }
-                    }
-
-                    let enableSdf = 1.0;
-                    if (validPixels > 0) {
-                        const pixelHeight = maxY - minY;
-                        const SDF_PIXEL_HEIGHT_THRESHOLD = 1070.0;
-                        enableSdf = (pixelHeight > SDF_PIXEL_HEIGHT_THRESHOLD) ? 1.0 : 0.0;
-                    } else {
-                        enableSdf = 0.0;
-                    }
-
-                    this.activeShellBundle.plugin.enableSdf = enableSdf;
-                    if (this.activeWebPlugin) {
-                        this.activeWebPlugin.enableSdf = enableSdf;
-                    }
-                }
-            }
-            // --- END PIXEL BUDGET LOGIC ---
-
-            this.scene.render();
+    // 1. Force the exact-pixel read 100% of the time to kill the sparkles
+    if (this.activeShellBundle) {
+        this.activeShellBundle.plugins.forEach(plugin => {
+            plugin.enableSdf = 1.0; 
         });
+    }
+    if (this.activeWebPlugin) {
+        this.activeWebPlugin.enableSdf = 1.0;
+    }
+
+    // 2. Render the scene
+    this.scene.render();
+});
 
         this.resizeObserver = new ResizeObserver(() => this.engine.resize());
         this.resizeObserver.observe(canvas);
