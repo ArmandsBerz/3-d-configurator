@@ -2,7 +2,7 @@
   "name": "armcustomizer",
   "version": "0.1.0",
   "private": true,
-  "homepage": "/build3",
+  "homepage": "/demowoodymeadows",
   "dependencies": {
     "@babylonjs/addons": "8.34.0",
     "@babylonjs/core": "8.34.0",

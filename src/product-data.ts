@@ -78,7 +78,7 @@ export type ColorId = typeof COLOR_OPTIONS[number]['id'];
 
 // --- 0. POSITION REGISTRY ---
 export const POSITION_REGISTRY = {
-    'inf': { label: 'Auburn' } // <--- Renamed so your UI actually says "Bat"
+    'inf': { label: 'M318' } // <--- Renamed so your UI actually says "Bat"
 } as const;
 
 export type BuildPositionId = keyof typeof POSITION_REGISTRY;
@@ -205,8 +205,8 @@ export const CART_LABELS = {
 export const leatherOptions = Object.entries(LEATHER_REGISTRY).map(([id, data]) => ({ id, title: data.label }));
 
 export const FONT_REGISTRY = [
-  { id: 'LOBSTER', label: 'Lobster', baseName: 'lobsterType', targetLineFactor: 0.55 },
-  { id: 'ROBOTO', label: 'Roboto', baseName: 'robotoType', targetLineFactor: 0.55 },
+  { id: 'LOBSTER', label: 'Lobster', baseName: 'lobsterType', targetLineFactor: 0.40 },
+  { id: 'ROBOTO', label: 'Roboto', baseName: 'robotoType', targetLineFactor: 0.40 },
 ] as const;
 
 export const fontOptions = FONT_REGISTRY.map(font => ({ id: font.id, label: font.label }));
@@ -373,7 +373,7 @@ const UNIVERSAL_PARTS: Record<string, ZoneDefinition> = {
     [ZONES.PINKY_OUTER]:{ shaderIndex: 8, displayName: 'Outer Pinky', materialTarget: 'shell', allowApplyToAll: true },
     [ZONES.WRIST_LOGO]: { shaderIndex: 22, displayName: 'Wrist Logo', materialTarget: 'shell', allowApplyToAll: false },
     [ZONES.WRIST_LOGO_OUTLINE]: { shaderIndex: 23, displayName: 'Wrist Logo Outline', materialTarget: 'shell', allowApplyToAll: false },
-    [ZONES.FINGER_LOGO]: { shaderIndex: 21, displayName: 'Finger Logo', materialTarget: 'shell', allowApplyToAll: false },
+    [ZONES.FINGER_LOGO]: { shaderIndex: 21, displayName: 'Logo', materialTarget: 'shell', allowApplyToAll: false },
 };
 
 interface ProductBlueprint {
@@ -527,7 +527,8 @@ const PRODUCT_REGISTRY = {
         uiGroups: [
             { id: 'thumbGroup', type: 'single', title: 'Inner Thumb', zoneKey: ZONES.THUMB_INNER },
             { id: 'indexGroup', type: 'single', title: 'Index Finger', zoneKey: ZONES.INDEX },
-            { id: 'outerThumbGroup', type: 'single', title: 'Outer Thumb', zoneKey: ZONES.THUMB_OUTER }, // <--- ADD THIS LINE
+            { id: 'outerThumbGroup', type: 'single', title: 'Outer Thumb', zoneKey: ZONES.THUMB_OUTER },
+            { id: 'fingerLogoGroup', type: 'single', title: 'Logo', zoneKey: ZONES.FINGER_LOGO },
         ]
     })
 };
@@ -548,7 +549,7 @@ export const resolveProduct = (build: BuildConfig): ProductDefinition => {
 export const PRESETS = {
     'open-back': {
         build: { palette: 'universal', imageSelection: 'imgOpt1', position: 'inf', size: '3100', stiffness: 'std', webType: 'bsk', fingerProtection: 'non', stainStyle: 'dd' },
-        thumbName: { type: 'text', text: 'Name', font: 'LOBSTER', colorId: 'sm' }, // Swapped to Black
+        thumbName: { type: 'text', text: 'Name', font: 'ROBOTO', colorId: 'sm' }, // Swapped to Black
 
         // KEEP ONLY YOUR 6 ZONES + WEB
         [ZONES.WEB]:            { colorId: 'nt' }, // Natural
@@ -559,6 +560,7 @@ export const PRESETS = {
         [ZONES.MIDDLE_OUTER]:   { colorId: 'ea' }, // Earth
         [ZONES.RING_INNER]:     { colorId: 'tb' }, // Tobacco
         [ZONES.RING_OUTER]:     { colorId: 'sm' }, // Smoke
+        [ZONES.FINGER_LOGO]:    { colorId: 'wt' },
     } as GloveConfiguration,
 } as const;
 
