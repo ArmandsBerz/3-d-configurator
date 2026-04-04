@@ -57,7 +57,7 @@ import BabylonCanvas from './viewer';
 import { SummaryIcon, BackArrowIcon, CheckmarkIcon, LongArrowRightIcon, CaretRightIcon, CaretDownIcon, CaretUpIcon, ShareIcon, CollapseIcon, ExpandIcon, DragIcon, ZoomIcon, CloseIcon, Loader } from './icons';
 import { Snackbar } from './snackbar'; 
 // @ts-ignore
-import LogoImage from './WM Logo.png';
+import LogoImage from './LVSportsLogo.svg';
 
 
 // --- START: NEW SCROLL GRADIENT HOOK ---
@@ -1533,7 +1533,7 @@ const AccordionDesktop = ({ openAccordion, setOpenAccordion, colorForApplyAll }:
     return (
         <div ref={desktopAccordionContainerRef} className="absolute top-0 left-0 bottom-0 w-[440px] z-10 bg-[#161616] p-10 pointer-events-none">
     {/* Just added -mt-5 here to pull it up 20px against the parent's padding */}
-    <div className="absolute z-20 -mt-5 w-[125px] h-auto flex items-center justify-center pointer-events-auto">
+    <div className="absolute z-20 -mt-4 w-[145px] h-auto flex items-center justify-center pointer-events-auto">
         <img src={LogoImage} alt="Warstic" className="w-full h-auto object-contain" />
     </div>
             <div className={`absolute ${isScrolled ? 'top-[82px]' : 'top-[142px]'} bottom-4 left-[40px] w-[400px] pointer-events-auto transition-all duration-30 ease-in-out overflow-hidden`}>
@@ -2245,7 +2245,7 @@ const UI = () => {
 
             <main ref={mainRef} className={`p-4 flex flex-col items-center justify-center relative bg-transparent overflow-auto h-full w-full ${isVisualizationExpanded ? 'flex-grow' : 'xl:absolute xl:inset-0'}`} style={!isDesktop && !isVisualizationExpanded ? { flexBasis: 'calc(61.8% - 66px)' } : {}}>
                 {!isDesktop && (
-    <div className="absolute top-[20px] left-[20px] w-[100px] h-auto z-10 flex items-center justify-center pointer-events-auto">
+    <div className="absolute top-[20px] left-[20px] w-[120px] h-auto z-10 flex items-center justify-center pointer-events-auto">
         <img src={LogoImage} alt="Warstic" className="w-full h-auto object-contain" />
     </div>
 )}

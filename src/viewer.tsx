@@ -949,9 +949,15 @@ hemiLight.intensity = 0.8;
         textMat.bumpTexture = normalDT;
         textMat.bumpTexture.level = 1.0;
         textMat.useAlphaFromAlbedoTexture = false;
-        textMat.transparencyMode = PBRMaterial.PBRMATERIAL_ALPHABLEND;
+        
+        // 1. Force the cutout mode instead of blend
+        textMat.transparencyMode = PBRMaterial.PBRMATERIAL_ALPHATEST; 
+        
+        // 2. Set the threshold for the text edge
+        textMat.alphaCutOff = 0.4; 
+        
         textMat.unlit = false;
-        textMat.metallic = 0;
+        textMat.metallic = 1;
         textMat.roughness = 0.1;
         
         try {

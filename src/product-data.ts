@@ -78,7 +78,7 @@ export type ColorId = typeof COLOR_OPTIONS[number]['id'];
 
 // --- 0. POSITION REGISTRY ---
 export const POSITION_REGISTRY = {
-    'inf': { label: 'M318' } // <--- Renamed so your UI actually says "Bat"
+    'inf': { label: 'TJ1' } // <--- Renamed so your UI actually says "Bat"
 } as const;
 
 export type BuildPositionId = keyof typeof POSITION_REGISTRY;
@@ -517,9 +517,10 @@ const PRODUCT_REGISTRY = {
             bsl: 'basketLaceOB' 
         },
         specificZones: {
-            [ZONES.THUMB_INNER]:    { shaderIndex: 1, displayName: 'Inner Thumb', materialTarget: 'both' }, // <--- NOW HITS WEB
+            [ZONES.THUMB_INNER]:    { shaderIndex: 1, displayName: 'Inner Thumb', materialTarget: 'both' },
             [ZONES.INDEX]:          { shaderIndex: 2, displayName: 'Index Finger' },
-            [ZONES.MIDDLE_INNER]:   { shaderIndex: 3, displayName: 'Inner Middle', materialTarget: 'both' }, // <--- NOW HITS WEB
+            // ---> CHANGED Inner Middle to Stripe <---
+            [ZONES.MIDDLE_INNER]:   { shaderIndex: 3, displayName: 'Stripe', materialTarget: 'both' }, 
             [ZONES.MIDDLE_OUTER]:   { shaderIndex: 4, displayName: 'Outer Middle' },
             [ZONES.RING_INNER]:     { shaderIndex: 5, displayName: 'Inner Ring', materialTarget: 'both' },
             [ZONES.RING_OUTER]:     { shaderIndex: 6, displayName: 'Outer Ring' },
@@ -528,6 +529,8 @@ const PRODUCT_REGISTRY = {
             { id: 'thumbGroup', type: 'single', title: 'Inner Thumb', zoneKey: ZONES.THUMB_INNER },
             { id: 'indexGroup', type: 'single', title: 'Index Finger', zoneKey: ZONES.INDEX },
             { id: 'outerThumbGroup', type: 'single', title: 'Outer Thumb', zoneKey: ZONES.THUMB_OUTER },
+            // ---> ADD STRIPE UI MAPPED TO MIDDLE INNER <---
+            { id: 'stripeGroup', type: 'single', title: 'Stripe', zoneKey: ZONES.MIDDLE_INNER },
             { id: 'fingerLogoGroup', type: 'single', title: 'Logo', zoneKey: ZONES.FINGER_LOGO },
         ]
     })
@@ -556,7 +559,7 @@ export const PRESETS = {
         [ZONES.THUMB_INNER]:    { colorId: 'bk' }, // Raw
         [ZONES.INDEX]:          { colorId: 'bd' }, // Black
         [ZONES.THUMB_OUTER]:    { colorId: 'nt' }, // <--- ADD THIS LINE (Handle defaults to Black)
-        [ZONES.MIDDLE_INNER]:   { colorId: 'wf' }, // Warrior Flame
+        [ZONES.MIDDLE_INNER]:   { colorId: 'wt' }, // White
         [ZONES.MIDDLE_OUTER]:   { colorId: 'ea' }, // Earth
         [ZONES.RING_INNER]:     { colorId: 'tb' }, // Tobacco
         [ZONES.RING_OUTER]:     { colorId: 'sm' }, // Smoke
