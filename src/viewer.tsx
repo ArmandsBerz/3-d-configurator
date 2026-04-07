@@ -309,26 +309,24 @@ uniform float tintRatio;
             const updateAlbedoGLSL = `
 #ifdef COLOR_SWAP
 if (u_enableSdf > 0.5) {
-  // 1. Just read the exact pixel directly from the ID map (No offsets, no derivatives)
-  vec3 idColor = srgbToLinear(texture2D(idTex, vAlbedoUV).rgb);
+  // 1. Read directly from the ID map using the safe vMainUV1 coordinate
+  vec3 idColor = srgbToLinear(texture2D(idTex, vMainUV1).rgb);
 
-  // 2. Find the zone for that exact pixel
+  // 2. Find the zone
   int z = findZone(idColor);
   vec3 targetColor = zoneToPalette(z);
   
-  // 3. Apply your new color mixing logic
-  vec3 stainedWood = surfaceAlbedo.rgb * targetColor;
-  vec3 hybridColor = mix(stainedWood, targetColor, 0.5);
-  surfaceAlbedo.rgb = mix(surfaceAlbedo.rgb, hybridColor, tintRatio);
+  // 3. MULTIPLY SWAP: preserve detail map variation
+  surfaceAlbedo.rgb *= targetColor;
 
 } else {
-  vec3  id0 = srgbToLinear(texture2D(idTex, vAlbedoUV).rgb); // Changed to idTex
+  vec3  id0 = srgbToLinear(texture2D(idTex, vMainUV1).rgb);
   float L0  = dot(id0, vec3(0.299, 0.587, 0.114));
   vec2  g   = vec2(dFdx(L0), dFdy(L0));
   float glen = max(length(g), 1e-6);
   vec2  dir  = g / glen;
 
-  float fp = max(fwidth(vAlbedoUV.x) + fwidth(vAlbedoUV.y), 1e-5);
+  float fp = max(fwidth(vMainUV1.x) + fwidth(vMainUV1.y), 1e-5);
   vec2  duv = dir * fp;
 
   vec2 off0 = -1.5 * duv;
@@ -344,38 +342,32 @@ if (u_enableSdf > 0.5) {
   vec3 accum = vec3(0.0);
   float sumw = 0.0;
 
-  vec3 idS0 = srgbToLinear(texture2D(idTex, vAlbedoUV + off0).rgb); // Changed to idTex
+  vec3 idS0 = srgbToLinear(texture2D(idTex, vMainUV1 + off0).rgb);
   int  z0   = findZone(idS0);
   vec3 pal0 = zoneToPalette(z0);
   accum += pal0 * w0;
   sumw  += w0;
 
-  vec3 idS1 = srgbToLinear(texture2D(idTex, vAlbedoUV + off1).rgb); // Changed to idTex
+  vec3 idS1 = srgbToLinear(texture2D(idTex, vMainUV1 + off1).rgb);
   int  z1   = findZone(idS1);
   vec3 pal1 = zoneToPalette(z1);
   accum += pal1 * w1;
   sumw  += w1;
 
-  vec3 idS2 = srgbToLinear(texture2D(idTex, vAlbedoUV + off2).rgb); // Changed to idTex
+  vec3 idS2 = srgbToLinear(texture2D(idTex, vMainUV1 + off2).rgb);
   int  z2   = findZone(idS2);
   vec3 pal2 = zoneToPalette(z2);
   accum += pal2 * w2;
   sumw  += w2;
 
-  vec3 idS3 = srgbToLinear(texture2D(idTex, vAlbedoUV + off3).rgb); // Changed to idTex
+  vec3 idS3 = srgbToLinear(texture2D(idTex, vMainUV1 + off3).rgb);
   int  z3   = findZone(idS3);
   vec3 pal3 = zoneToPalette(z3);
   accum += pal3 * w3;
   sumw  += w3;
 
-  vec3 targetColor = accum / sumw;
-  
-  // Step 1: Deep Stain
-  vec3 stainedWood = surfaceAlbedo.rgb * targetColor;
-  // Step 2: Tinted Glaze (25% solid, 75% stain)
-  vec3 hybridColor = mix(stainedWood, targetColor, 0.5);
-  // Step 3: Final Slider
-  surfaceAlbedo.rgb = mix(surfaceAlbedo.rgb, hybridColor, tintRatio);
+  // MULTIPLY SWAP: preserve detail map variation
+  surfaceAlbedo.rgb *= accum / sumw;
 }
 #endif
 `;
@@ -554,13 +546,27 @@ hemiLight.intensity = 0.8;
         colorIdTexture.wrapU = colorIdTexture.wrapV = Constants.TEXTURE_CLAMP_ADDRESSMODE;
         colorIdTexture.hasAlpha = false;
 
-        // --- NEW: Enable Babylon Native Clear Coat ---
-        material.clearCoat.isEnabled = true;
-        material.clearCoat.isTintEnabled = true;
-        material.clearCoat.tintThickness = 1.0;
+        const detailTexture = new Texture(`${rootUrl}details.png`, this.scene);
+        detailTexture.uScale = 6;  // Tiles the pattern 3 times horizontally
+        detailTexture.vScale = 6;  // Tiles the pattern 3 times vertically
+        
+        material.detailMap.isEnabled = true;
+        material.detailMap.texture = detailTexture;
+        material.detailMap.normalBlendMethod = 1; // 1 = RNM (High-quality normal blending)
+        
+        // CRITICAL FIX: These tell Babylon to read the channels you packed
+        material.detailMap.diffuseBlendLevel = 0.3;   // Reads RED channel (Teardrops)
+        material.detailMap.roughnessBlendLevel = 1; // Reads BLUE channel (Roughness)
+        material.detailMap.bumpLevel = 0.5;
 
-        // --- REMOVED: material.albedoTexture = colorIdTexture; ---
-        // (We leave the Albedo alone so the GLB's wood grain stays visible)
+        // WHITE BASE TRICK: Pure white so detail map variation passes through cleanly,
+        // then the plugin multiplies the palette color on top.
+        material.albedoTexture = RawTexture.CreateRGBTexture(
+            new Uint8Array([255, 255, 255]),
+            1,
+            1,
+            this.scene
+        );
 
         const paletteColorsFromLogic: Color3[] =
             COLOR_OPTIONS.map(({ hex }) => Color3.FromHexString(hex).toLinearSpace())
@@ -933,7 +939,7 @@ hemiLight.intensity = 0.8;
 
         let opacityDT = this._opacityDTs.get(zone);
         let normalDT = this._normalDTs.get(zone);
-        const texW = 512, texH = 256; 
+        const texW = 2048, texH = 1024; 
         if (!opacityDT) {
             opacityDT = new DynamicTexture(`${zone}_opacity`, { width: texW, height: texH }, this.scene, false);
             opacityDT.hasAlpha = true;
