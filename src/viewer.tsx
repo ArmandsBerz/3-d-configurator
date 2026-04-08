@@ -282,26 +282,40 @@ uniform float u_enableSdf;
 #ifdef COLOR_SWAP
 if (u_enableSdf > 0.5) {
   float sd = texture2D(sdfTex, vAlbedoUV).r;
+  float texel = 1.0 / 2048.0;
+
+  // 1. Calculate TRUE gradient purely in UV Space (ignore the camera entirely)
+  float sdU = texture2D(sdfTex, vAlbedoUV + vec2(texel, 0.0)).r;
+  float sdV = texture2D(sdfTex, vAlbedoUV + vec2(0.0, texel)).r;
+  
+  vec2 uvGrad = vec2(sdU - sd, sdV - sd);
+  float glen = max(length(uvGrad), 1e-6);
+  vec2 uvDir = uvGrad / glen; // This vector now points strictly INWARD on the texture
+
+  // 2. Calculate step size (keep hybrid approach to protect zoom-outs)
+  float screenPx = max(fwidth(vAlbedoUV.x) + fwidth(vAlbedoUV.y), 1e-5);
+  float minStep = texel * 1.5; 
+  float samplingStep = max(screenPx, minStep); 
+
+  // 3. Step exactly perpendicular to the edge
+  vec2 duv = uvDir * samplingStep;
+
+  // Because uvDir points INWARD (toward higher SDF):
+  // +duv steps INSIDE the shape
+  // -duv steps OUTSIDE the shape
+  vec3 idIn  = srgbToLinear(texture2D(albedoSampler, vAlbedoUV + duv).rgb);
+  vec3 idOut = srgbToLinear(texture2D(albedoSampler, vAlbedoUV - duv).rgb);
+
+  vec3 palIn  = zoneToPalette(findZone(idIn));
+  vec3 palOut = zoneToPalette(findZone(idOut));
+
+  // 4. Blend it. (t = 1.0 is inside, t = 0.0 is outside)
   float sd_fwidth = fwidth(sd);
-  vec2 g  = vec2(dFdx(sd), dFdy(sd));
-  float glen = max(length(g), 1e-6);
-  vec2 dir = g / glen;
-
-  float px = max(fwidth(vAlbedoUV.x) + fwidth(vAlbedoUV.y), 1e-5);
-  vec2 duv = dir * px;
-
-  vec3 idA = srgbToLinear(texture2D(albedoSampler, vAlbedoUV - duv).rgb);
-  vec3 idB = srgbToLinear(texture2D(albedoSampler, vAlbedoUV + duv).rgb);
-
-  int  zA = findZone(idA);
-  int  zB = findZone(idB);
-  vec3 palA = zoneToPalette(zA);
-  vec3 palB = zoneToPalette(zB);
-
-  float wMin = 0.8 * px;
+  float wMin = 0.8 * screenPx; 
   float w    = max(max(sd_fwidth * blendStrength, 1e-6), wMin);
   float t = smoothstep(0.5 - blendRadius * w, 0.5 + blendRadius * w, sd);
-  surfaceAlbedo.rgb = mix(palB, palA, t);
+  
+  surfaceAlbedo.rgb = mix(palOut, palIn, t);
 
 } else {
   vec3  id0 = srgbToLinear(texture2D(albedoSampler, vAlbedoUV).rgb);
@@ -310,8 +324,13 @@ if (u_enableSdf > 0.5) {
   float glen = max(length(g), 1e-6);
   vec2  dir  = g / glen;
 
-  float fp = max(fwidth(vAlbedoUV.x) + fwidth(vAlbedoUV.y), 1e-5);
-  vec2  duv = dir * fp;
+  // --- HYBRID FIX APPLIED TO FALLBACK AS WELL ---
+  float screenFp = max(fwidth(vAlbedoUV.x) + fwidth(vAlbedoUV.y), 1e-5);
+  float minFp = (1.0 / 2048.0) * 1.5;
+  float samplingFp = max(screenFp, minFp);
+  
+  vec2  duv = dir * samplingFp;
+  // ----------------------------------------------
 
   vec2 off0 = -1.5 * duv;
   vec2 off1 = -0.5 * duv;
