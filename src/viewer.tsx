@@ -254,7 +254,7 @@ uniform float tintRatio;
                 uniform sampler2D pointerLUT;
                 uniform sampler2D paletteLUT;
                 uniform sampler2D sdfTex;
-                uniform sampler2D idTex; // <--- NEW: ID Map sampler
+                uniform sampler2D idTex; 
 
                 int decodeIndex(vec4 c) { return int(c.r * 255.0 + 0.5); }
 
@@ -305,69 +305,69 @@ uniform float tintRatio;
                 #endif
             `;
 
-            // --- REWRITTEN: Now reads from idTex instead of albedoSampler, and uses Multiply mix ---
             const updateAlbedoGLSL = `
 #ifdef COLOR_SWAP
 if (u_enableSdf > 0.5) {
-  // 1. Read directly from the ID map using the safe vMainUV1 coordinate
-  vec3 idColor = srgbToLinear(texture2D(idTex, vMainUV1).rgb);
+  // --- ADVANCED UV-SPACE SDF LOGIC ---
+  float sd = texture2D(sdfTex, vMainUV1).r;
+  float texel = 1.0 / 2048.0;
 
-  // 2. Find the zone
-  int z = findZone(idColor);
-  vec3 targetColor = zoneToPalette(z);
+  // 1. Calculate TRUE gradient purely in UV Space 
+  // We sample the SDF at an offset to see which way the "hill" goes
+  float sdU = texture2D(sdfTex, vMainUV1 + vec2(texel, 0.0)).r;
+  float sdV = texture2D(sdfTex, vMainUV1 + vec2(0.0, texel)).r;
   
-  // 3. MULTIPLY SWAP: preserve detail map variation
-  surfaceAlbedo.rgb *= targetColor;
+  vec2 uvGrad = vec2(sdU - sd, sdV - sd);
+  float glen = max(length(uvGrad), 1e-6);
+  vec2 uvDir = uvGrad / glen; 
+
+  // 2. Calculate dynamic step size based on screen fwidth
+  float screenPx = max(fwidth(vMainUV1.x) + fwidth(vMainUV1.y), 1e-5);
+  float minStep = texel * 1.5; 
+  float samplingStep = max(screenPx, minStep); 
+
+  // 3. Step INWARD and OUTWARD along the gradient to find the two zones
+  vec2 duv = uvDir * samplingStep;
+  vec3 idIn  = srgbToLinear(texture2D(idTex, vMainUV1 + duv).rgb);
+  vec3 idOut = srgbToLinear(texture2D(idTex, vMainUV1 - duv).rgb);
+
+  vec3 palIn  = zoneToPalette(findZone(idIn));
+  vec3 palOut = zoneToPalette(findZone(idOut));
+
+  // 4. Smoothstep blend based on the SDF value (0.5 is the edge)
+  float sd_fwidth = fwidth(sd);
+  float wMin = 0.8 * screenPx; 
+  float w    = max(max(sd_fwidth * blendStrength, 1e-6), wMin);
+  float t = smoothstep(0.5 - blendRadius * w, 0.5 + blendRadius * w, sd);
+  
+  // 5. Apply the swapped color to the Albedo (Multiply for wood/leather detail)
+  surfaceAlbedo.rgb *= mix(palOut, palIn, t);
 
 } else {
+  // --- HIGH QUALITY FALLBACK (4-TAP GAUSSIAN BLUR) ---
   vec3  id0 = srgbToLinear(texture2D(idTex, vMainUV1).rgb);
   float L0  = dot(id0, vec3(0.299, 0.587, 0.114));
   vec2  g   = vec2(dFdx(L0), dFdy(L0));
   float glen = max(length(g), 1e-6);
   vec2  dir  = g / glen;
 
-  float fp = max(fwidth(vMainUV1.x) + fwidth(vMainUV1.y), 1e-5);
-  vec2  duv = dir * fp;
+  float screenFp = max(fwidth(vMainUV1.x) + fwidth(vMainUV1.y), 1e-5);
+  float minFp = (1.0 / 2048.0) * 1.5;
+  float samplingFp = max(screenFp, minFp);
+  
+  vec2  duv = dir * samplingFp;
 
-  vec2 off0 = -1.5 * duv;
-  vec2 off1 = -0.5 * duv;
-  vec2 off2 =  0.5 * duv;
-  vec2 off3 =  1.5 * duv;
+  vec3 idS0 = srgbToLinear(texture2D(idTex, vMainUV1 - 1.5 * duv).rgb);
+  vec3 idS1 = srgbToLinear(texture2D(idTex, vMainUV1 - 0.5 * duv).rgb);
+  vec3 idS2 = srgbToLinear(texture2D(idTex, vMainUV1 + 0.5 * duv).rgb);
+  vec3 idS3 = srgbToLinear(texture2D(idTex, vMainUV1 + 1.5 * duv).rgb);
 
-  float w0 = 0.2;
-  float w1 = 0.3;
-  float w2 = 0.3;
-  float w3 = 0.2;
+  vec3 accum = (zoneToPalette(findZone(idS0)) * 0.2) +
+               (zoneToPalette(findZone(idS1)) * 0.3) +
+               (zoneToPalette(findZone(idS2)) * 0.3) +
+               (zoneToPalette(findZone(idS3)) * 0.2);
 
-  vec3 accum = vec3(0.0);
-  float sumw = 0.0;
-
-  vec3 idS0 = srgbToLinear(texture2D(idTex, vMainUV1 + off0).rgb);
-  int  z0   = findZone(idS0);
-  vec3 pal0 = zoneToPalette(z0);
-  accum += pal0 * w0;
-  sumw  += w0;
-
-  vec3 idS1 = srgbToLinear(texture2D(idTex, vMainUV1 + off1).rgb);
-  int  z1   = findZone(idS1);
-  vec3 pal1 = zoneToPalette(z1);
-  accum += pal1 * w1;
-  sumw  += w1;
-
-  vec3 idS2 = srgbToLinear(texture2D(idTex, vMainUV1 + off2).rgb);
-  int  z2   = findZone(idS2);
-  vec3 pal2 = zoneToPalette(z2);
-  accum += pal2 * w2;
-  sumw  += w2;
-
-  vec3 idS3 = srgbToLinear(texture2D(idTex, vMainUV1 + off3).rgb);
-  int  z3   = findZone(idS3);
-  vec3 pal3 = zoneToPalette(z3);
-  accum += pal3 * w3;
-  sumw  += w3;
-
-  // MULTIPLY SWAP: preserve detail map variation
-  surfaceAlbedo.rgb *= accum / sumw;
+  surfaceAlbedo.rgb *= accum;
 }
 #endif
 `;
@@ -547,8 +547,8 @@ hemiLight.intensity = 0.8;
         colorIdTexture.hasAlpha = false;
 
         const detailTexture = new Texture(`${rootUrl}details.png`, this.scene);
-        detailTexture.uScale = 6;  // Tiles the pattern 3 times horizontally
-        detailTexture.vScale = 6;  // Tiles the pattern 3 times vertically
+        detailTexture.uScale = 10;  // Tiles the pattern 3 times horizontally
+        detailTexture.vScale = 10;  // Tiles the pattern 3 times vertically
         
         material.detailMap.isEnabled = true;
         material.detailMap.texture = detailTexture;
