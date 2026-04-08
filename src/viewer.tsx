@@ -467,8 +467,8 @@ export class SceneManager {
 
     private _bitmapFontReady: Promise<void> | null = null;
     private _fonts = new Map<FontId, BitmapFontData>();
-    private _opacityDTs = new Map<string, DynamicTexture>();
-    private _normalDTs = new Map<string, DynamicTexture>();
+    private _textDTs = new Map<string, DynamicTexture>(); // Single atlas holding ID (RGB) + Cutout (Alpha)
+    private _textPlugins = new Map<string, ColorSwapPlugin>(); // Tracks shader instances for text
     private _lastText = new Map<string, string>();
 
     // --- ADD THE NEW GETTER RIGHT HERE ---
@@ -936,55 +936,75 @@ hemiLight.intensity = 0.8;
         if (!fontData) return;
 
         const { image: img, common, chars, kern } = fontData;
-
-        let opacityDT = this._opacityDTs.get(zone);
-        let normalDT = this._normalDTs.get(zone);
+let textDT = this._textDTs.get(zone);
         const texW = 2048, texH = 1024; 
-        if (!opacityDT) {
-            opacityDT = new DynamicTexture(`${zone}_opacity`, { width: texW, height: texH }, this.scene, false);
-            opacityDT.hasAlpha = true;
-            this._opacityDTs.set(zone, opacityDT);
-        }
-        if (!normalDT) {
-            normalDT = new DynamicTexture(`${zone}_normal`, { width: texW, height: texH }, this.scene, false);
-            normalDT.hasAlpha = true;
-            this._normalDTs.set(zone, normalDT);
+        if (!textDT) {
+            textDT = new DynamicTexture(`${zone}_id_map`, { width: texW, height: texH }, this.scene, false);
+            textDT.hasAlpha = true;
+            this._textDTs.set(zone, textDT);
         }
 
-        textMat.opacityTexture = opacityDT;
-        textMat.bumpTexture = normalDT;
-        textMat.bumpTexture.level = 1.0;
+        textMat.opacityTexture = textDT; // Uses the Alpha channel from the canvas
+        textMat.bumpTexture = null; // Kill the normal map
         textMat.useAlphaFromAlbedoTexture = false;
-        
-        // 1. Force the cutout mode instead of blend
         textMat.transparencyMode = PBRMaterial.PBRMATERIAL_ALPHATEST; 
-        
-        // 2. Set the threshold for the text edge
         textMat.alphaCutOff = 0.4; 
         
         textMat.unlit = false;
-        textMat.metallic = 1;
-        textMat.roughness = 0.1;
+        textMat.metallic = 0;
+        textMat.roughness = 0.45;
         
-        try {
-            textMat.albedoColor = Color3.FromHexString(color);
-        } catch {
-            textMat.albedoColor = new Color3(1, 1, 1);
+        // Pure white base so the shader multiplies the palette color cleanly
+        textMat.albedoColor = new Color3(1, 1, 1);
+        
+        // --- HOOK INTO THE SHADER ---
+        let plugin = this._textPlugins.get(zone);
+        if (!plugin) {
+            const paletteColorsFromLogic = COLOR_OPTIONS
+                .map(({ hex }) => Color3.FromHexString(hex).toLinearSpace())
+                .slice(0, 22);
+
+            // Using your standard 32-zone color array
+            const textConfig: ColorSwapConfig = {
+                baseColors: [
+                    "#FF0000", "#00FFFF", "#80FF00", "#7F00FF", "#FFBF00", "#0040FF", "#00FF40", "#FF00BF",
+                    "#FF6000", "#009FFF", "#20FF00", "#DF00FF", "#DFFF00", "#2000FF", "#00FF9F", "#FF0060",
+                    "#FF3000", "#00CFFF", "#50FF00", "#AF00FF", "#FFEF00", "#0010FF", "#00FF70", "#FF008F",
+                    "#FF8F00", "#0070FF", "#00FF10", "#FF00EF", "#AFFF00", "#5000FF", "#00FFCF", "#FF0030"
+                ],
+                initialReplacements: paletteColorsFromLogic
+            };
+
+            plugin = new ColorSwapPlugin(textMat, textConfig);
+            plugin.setIDTexture(textDT); // Give the shader our canvas
+            plugin.enableSdf = 0.0; // Turn OFF SDF distance field logic for text (fallback to blur/sharp)
+            
+            this._textPlugins.set(zone, plugin);
+            
+            if (this.activeShellBundle && !this.activeShellBundle.plugins.includes(plugin)) {
+                this.activeShellBundle.plugins.push(plugin);
+            }
         }
+
+        // Swap Zone 0 (Pure Red #FF0000 in your font atlas) to the user's chosen text color
+        const paletteIndex = getPaletteIndexById(color as any);
+        plugin.updateZonePaletteIndex(0, paletteIndex); 
+        
+        // NOTE: If you add an outline to your font atlas in pure Cyan (#00FFFF), 
+        // you would control it here like this: 
+        // plugin.updateZonePaletteIndex(1, someOtherPaletteIndex);
+
 
         const signature = `${font}:${text}`;
         const last = this._lastText.get(zone) ?? "";
         if (last === signature) return;
         this._lastText.set(zone, signature);
 
-        const ctxA = opacityDT.getContext();
-        const ctxN = normalDT.getContext();
-        ctxA.clearRect(0, 0, texW, texH);
-        ctxN.clearRect(0, 0, texW, texH);
+        const ctxT = textDT.getContext();
+        ctxT.clearRect(0, 0, texW, texH);
 
         if (!text) {
-            opacityDT.update(false);
-            normalDT.update(false);
+            textDT.update(false);
             return;
         }
 
@@ -1052,19 +1072,22 @@ hemiLight.intensity = 0.8;
             const dstH = Math.max(1, Math.round(srcH * scale));
 
             if (dstX < texW && dstY < texH && dstX + dstW > 0 && dstY + dstH > 0) {
-                ctxA.drawImage(img, srcX, srcY, srcW, srcH, dstX, dstY, dstW, dstH);
-                ctxN.drawImage(img, srcX, srcY, srcW, srcH, dstX, dstY, dstW, dstH);
+                ctxT.drawImage(img, srcX, srcY, srcW, srcH, dstX, dstY, dstW, dstH);
             }
 
             penX += g.xadvance * scale;
             prevCode = code;
         }
 
-        opacityDT.update(false);
-        normalDT.update(false);
+        textDT.update(false);
     };
 
     public dispose() {
+        this._textDTs.forEach(dt => dt.dispose());
+        this._textDTs.clear();
+        this._textPlugins.forEach(plugin => plugin.dispose());
+        this._textPlugins.clear();
+
         // Updated dispose logic for bundles
         this.shellBundles.forEach(bundle => {
             bundle.plugins.forEach(plugin => plugin.dispose()); // <--- Loop dispose
