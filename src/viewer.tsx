@@ -307,13 +307,36 @@ uniform float tintRatio;
 
             const updateAlbedoGLSL = `
 #ifdef COLOR_SWAP
-if (u_enableSdf > 0.5) {
-  // --- ADVANCED UV-SPACE SDF LOGIC ---
+if (u_enableSdf > 1.5) {
+  // --- 1. MSDF TEXT LOGIC ---
+  // Samples the dynamic canvas math
+  vec3 msdfData = texture2D(idTex, vMainUV1).rgb;
+  
+  // Median formula extracts perfectly sharp distance from R, G, and B
+  float sd = max(min(msdfData.r, msdfData.g), min(max(msdfData.r, msdfData.g), msdfData.b));
+  
+  // Anti-aliasing width based on screen resolution
+  float w = max(fwidth(sd), 1e-4);
+  
+  // Masks for the Fill and the Outline
+  float fillMask = smoothstep(0.5 - w, 0.5 + w, sd);
+  float outlineMask = smoothstep(0.4 - w, 0.4 + w, sd);
+  
+  // LOGICAL LINK: We pull the Fill from Slot 1 (The Cyan Group)
+  // And we pull the Outline from Slot 0 (The Red Group)
+  vec3 fillColor = zoneToPalette(1); 
+  vec3 outlineColor = zoneToPalette(0);
+  
+  // Blend colors and punch out the background
+  surfaceAlbedo.rgb = mix(outlineColor, fillColor, fillMask);
+  alpha = outlineMask;
+  if (alpha < 0.01) discard;
+
+} else if (u_enableSdf > 0.5) {
+  // --- 2. ADVANCED UV-SPACE SDF LOGIC (LEATHER MESH) ---
   float sd = texture2D(sdfTex, vMainUV1).r;
   float texel = 1.0 / 2048.0;
 
-  // 1. Calculate TRUE gradient purely in UV Space 
-  // We sample the SDF at an offset to see which way the "hill" goes
   float sdU = texture2D(sdfTex, vMainUV1 + vec2(texel, 0.0)).r;
   float sdV = texture2D(sdfTex, vMainUV1 + vec2(0.0, texel)).r;
   
@@ -321,12 +344,10 @@ if (u_enableSdf > 0.5) {
   float glen = max(length(uvGrad), 1e-6);
   vec2 uvDir = uvGrad / glen; 
 
-  // 2. Calculate dynamic step size based on screen fwidth
   float screenPx = max(fwidth(vMainUV1.x) + fwidth(vMainUV1.y), 1e-5);
   float minStep = texel * 1.5; 
   float samplingStep = max(screenPx, minStep); 
 
-  // 3. Step INWARD and OUTWARD along the gradient to find the two zones
   vec2 duv = uvDir * samplingStep;
   vec3 idIn  = srgbToLinear(texture2D(idTex, vMainUV1 + duv).rgb);
   vec3 idOut = srgbToLinear(texture2D(idTex, vMainUV1 - duv).rgb);
@@ -334,17 +355,15 @@ if (u_enableSdf > 0.5) {
   vec3 palIn  = zoneToPalette(findZone(idIn));
   vec3 palOut = zoneToPalette(findZone(idOut));
 
-  // 4. Smoothstep blend based on the SDF value (0.5 is the edge)
   float sd_fwidth = fwidth(sd);
   float wMin = 0.8 * screenPx; 
   float w    = max(max(sd_fwidth * blendStrength, 1e-6), wMin);
   float t = smoothstep(0.5 - blendRadius * w, 0.5 + blendRadius * w, sd);
   
-  // 5. Apply the swapped color to the Albedo (Multiply for wood/leather detail)
   surfaceAlbedo.rgb *= mix(palOut, palIn, t);
 
 } else {
-  // --- HIGH QUALITY FALLBACK (4-TAP GAUSSIAN BLUR) ---
+  // --- 3. HIGH QUALITY FALLBACK (4-TAP GAUSSIAN BLUR) ---
   vec3  id0 = srgbToLinear(texture2D(idTex, vMainUV1).rgb);
   float L0  = dot(id0, vec3(0.299, 0.587, 0.114));
   vec2  g   = vec2(dFdx(L0), dFdy(L0));
@@ -520,17 +539,19 @@ hemiLight.intensity = 0.8;
         this.loadInitialAssets(onReady, initialModelName);
 
         this.engine.runRenderLoop(() => {
-    // 1. Force the exact-pixel read 100% of the time to kill the sparkles
     if (this.activeShellBundle) {
         this.activeShellBundle.plugins.forEach(plugin => {
-            plugin.enableSdf = 1.0; 
+            // Only force 1.0 on leather/mesh plugins, leave Text (2.0) alone
+            if (plugin.enableSdf < 1.5) {
+                plugin.enableSdf = 1.0; 
+            }
         });
     }
     if (this.activeWebPlugin) {
-        this.activeWebPlugin.enableSdf = 1.0;
+        if (this.activeWebPlugin.enableSdf < 1.5) {
+            this.activeWebPlugin.enableSdf = 1.0;
+        }
     }
-
-    // 2. Render the scene
     this.scene.render();
 });
 
@@ -911,60 +932,51 @@ hemiLight.intensity = 0.8;
         const { zone, text, font, color } = options;
         if (!this.activeShellName) return;
         
-        // Ensure we are looking for the material on the ACTIVE model
-        // Note: Since we use container.addAllToScene, the material is present in the scene.
         const materialName = `${zone}${this.activeShellName.charAt(0).toUpperCase() + this.activeShellName.slice(1)}`;
         const textMat = this.scene.getMaterialByName(materialName) as PBRMaterial;
-        if (!textMat) {
-            // It is expected that some models might NOT have text zones (e.g. Catcher might behave differently)
-            // Just warn loosely or ignore.
-            // console.warn(`Text material "${materialName}" not found on active model.`);
-            return;
-        }
-
+        
+        if (!textMat) return;
         if (!this._bitmapFontReady) return;
         if (this._fonts.size === 0) return;
 
-        // 1. Try to get the specific font, or fallback to LOBSTER
         let fontData = this._fonts.get(font as FontId) || this._fonts.get('LOBSTER' as FontId);
-        
-        // 2. If neither exist, safely grab the very first loaded font
         if (!fontData && this._fonts.size > 0) {
             fontData = Array.from(this._fonts.values())[0];
         }
-
         if (!fontData) return;
 
         const { image: img, common, chars, kern } = fontData;
-let textDT = this._textDTs.get(zone);
-        const texW = 2048, texH = 1024; 
+        let textDT = this._textDTs.get(zone);
+        const texW = 2048, texH = 2048; 
+
         if (!textDT) {
             textDT = new DynamicTexture(`${zone}_id_map`, { width: texW, height: texH }, this.scene, false);
             textDT.hasAlpha = true;
             this._textDTs.set(zone, textDT);
         }
 
-        textMat.opacityTexture = textDT; // Uses the Alpha channel from the canvas
-        textMat.bumpTexture = null; // Kill the normal map
+        // --- 1. MATERIAL & TRANSPARENCY SETUP ---
+        // We null these out because the Custom Shader (ColorSwapPlugin) reads from idTex now
+        textMat.opacityTexture = null; 
+        textMat.albedoTexture = null; 
+        textMat.bumpTexture = null; 
         textMat.useAlphaFromAlbedoTexture = false;
-        textMat.transparencyMode = PBRMaterial.PBRMATERIAL_ALPHATEST; 
-        textMat.alphaCutOff = 0.4; 
+        
+        // ALPHA BLEND is required for the MSDF shader to draw smooth, anti-aliased edges
+        textMat.transparencyMode = PBRMaterial.PBRMATERIAL_ALPHABLEND; 
         
         textMat.unlit = false;
         textMat.metallic = 0;
         textMat.roughness = 0.45;
-        
-        // Pure white base so the shader multiplies the palette color cleanly
         textMat.albedoColor = new Color3(1, 1, 1);
         
-        // --- HOOK INTO THE SHADER ---
+        // --- 2. PLUGIN INITIALIZATION ---
         let plugin = this._textPlugins.get(zone);
         if (!plugin) {
             const paletteColorsFromLogic = COLOR_OPTIONS
                 .map(({ hex }) => Color3.FromHexString(hex).toLinearSpace())
                 .slice(0, 22);
 
-            // Using your standard 32-zone color array
             const textConfig: ColorSwapConfig = {
                 baseColors: [
                     "#FF0000", "#00FFFF", "#80FF00", "#7F00FF", "#FFBF00", "#0040FF", "#00FF40", "#FF00BF",
@@ -976,8 +988,10 @@ let textDT = this._textDTs.get(zone);
             };
 
             plugin = new ColorSwapPlugin(textMat, textConfig);
-            plugin.setIDTexture(textDT); // Give the shader our canvas
-            plugin.enableSdf = 0.0; // Turn OFF SDF distance field logic for text (fallback to blur/sharp)
+            plugin.setIDTexture(textDT); 
+            
+            // CRITICAL: Set to 2.0 to activate the MSDF median() math in the shader
+            plugin.enableSdf = 2.0; 
             
             this._textPlugins.set(zone, plugin);
             
@@ -986,14 +1000,15 @@ let textDT = this._textDTs.get(zone);
             }
         }
 
-        // Swap Zone 0 (Pure Red #FF0000 in your font atlas) to the user's chosen text color
-        const paletteIndex = getPaletteIndexById(color as any);
-        plugin.updateZonePaletteIndex(0, paletteIndex); 
+        // --- 3. COLOR GROUP LINKING ---
+        const fillIndex = getPaletteIndexById(color as any);
         
-        // NOTE: If you add an outline to your font atlas in pure Cyan (#00FFFF), 
-        // you would control it here like this: 
-        // plugin.updateZonePaletteIndex(1, someOtherPaletteIndex);
-
+        // Logical Link: Update Slot 1 (The Cyan / #00FFFF Group)
+        plugin.updateZonePaletteIndex(1, fillIndex); 
+        
+        // Fallback: Also update Slot 0 (The Red / #FF0000 Group) 
+        // This ensures the thin MSDF edges/outlines match the fill color
+        plugin.updateZonePaletteIndex(0, fillIndex); 
 
         const signature = `${font}:${text}`;
         const last = this._lastText.get(zone) ?? "";
@@ -1008,32 +1023,44 @@ let textDT = this._textDTs.get(zone);
             return;
         }
 
-        const targetLineFactor = common.targetLineFactor ?? 0.51;
-        const targetLine = texH * targetLineFactor;
-        const scale = targetLine / Math.max(common.lineHeight, 1);
-        const lineAdvance = common.lineHeight * scale;
-// --- 1. PRE-PASS: MEASURE TOTAL WIDTH ---
-        let totalWidth = 0;
+        // --- 1. PRE-PASS: MEASURE RAW WIDTH ---
+        const tracking = -30; // <-- Adjust this number to change letter spacing
+        
+        let rawWidth = 0;
         let measurePrevCode = -1;
         for (const ch of text) {
             const code = ch.codePointAt(0)!;
             if (measurePrevCode >= 0) {
-                totalWidth += (kern.get(`${measurePrevCode},${code}`) ?? 0) * scale;
+                rawWidth += (kern.get(`${measurePrevCode},${code}`) ?? 0);
             }
             const g = chars.get(code);
             if (g) {
-                totalWidth += g.xadvance * scale;
+                rawWidth += g.xadvance + tracking;
             } else {
                 const space = chars.get(32);
-                totalWidth += (space ? space.xadvance : common.lineHeight * 0.35) * scale;
+                rawWidth += (space ? space.xadvance : common.lineHeight * 0.35) + tracking;
             }
             measurePrevCode = code;
         }
+        
+        if (text.length > 0) {
+            rawWidth -= tracking; // Remove the extra trailing space from the end
+        }
 
-        // --- 2. CALCULATE CENTERED STARTING POSITIONS ---
-        // (texW - totalWidth) / 2 centers the text horizontally
+        // --- 2. SANE, ELEGANT SCALING & CENTERING ---
+        const targetLineFactor = common.targetLineFactor ?? 0.51;
+        const maxScaleY = (texH * targetLineFactor) / Math.max(common.lineHeight, 1);
+        const maxScaleX = (texW * 0.95) / Math.max(rawWidth, 1);
+        
+        const scale = Math.min(maxScaleX, maxScaleY);
+        
+        const totalWidth = rawWidth * scale;
+        const lineAdvance = common.lineHeight * scale;
+        
+        // Horizontal centering based on dynamic Width
         let penX = (texW - totalWidth) * 0.5; 
-
+        
+        // Vertical centering based on dynamic Height
         const lineTopY = (texH - lineAdvance) * 0.5;
         let penY = lineTopY + common.base * scale;
 
@@ -1075,7 +1102,7 @@ let textDT = this._textDTs.get(zone);
                 ctxT.drawImage(img, srcX, srcY, srcW, srcH, dstX, dstY, dstW, dstH);
             }
 
-            penX += g.xadvance * scale;
+            penX += (g.xadvance + tracking) * scale;
             prevCode = code;
         }
 
