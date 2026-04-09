@@ -23,6 +23,7 @@ import {
     RawTexture,
     SubMesh,
     AbstractMesh, // Added AbstractMesh
+    CubeTexture,
 } from '@babylonjs/core';
 import "@babylonjs/loaders";
 import { COLOR_OPTIONS, FONT_REGISTRY, Font } from './product-data';
@@ -483,13 +484,31 @@ export class SceneManager {
         this.camera = new ArcRotateCamera("camera", Math.PI / 2, Math.PI / 2, 3, Vector3.Zero(), this.scene);
         this.camera.minZ = 0.1;
         this.camera.attachControl(canvas, true);
-        new HemisphericLight("light", new Vector3(0, 1, 0), this.scene);
+        
+        const hemiLight = new HemisphericLight("hemiLight", new Vector3(0, 1, 0), this.scene);
+        hemiLight.intensity = 0.8; // Turn the strength down (dimmer)
+
+        const degreesToRotate = 45; 
+        const envTexture = CubeTexture.CreateFromPrefilteredData(
+            `${process.env.PUBLIC_URL || ''}/assets/environment.envMap`, 
+            this.scene,
+            ".env" // <-- THIS IS THE OVERRIDE. It tells Babylon "Treat this as a .env format even though the server thinks it's a .envMap"
+        );
 
         this.camera.fov = 0.3;
         this.camera.lowerRadiusLimit = 1.5;
         this.camera.upperRadiusLimit = 4;
         this.camera.panningSensibility = 0;
         this.camera.wheelPrecision = 150;
+
+        // 1. Rotate it slightly
+        envTexture.rotationY = degreesToRotate * (Math.PI / 180); 
+
+        // 2. Assign the texture to the scene
+        this.scene.environmentTexture = envTexture;
+
+        // 3. Increase the overall lighting strength slightly (Default is 1.0)
+        this.scene.environmentIntensity = 1.6;
 
         this._bitmapFontReady = this._initBitmapFonts();
 
@@ -563,7 +582,7 @@ export class SceneManager {
         material.detailMap.texture = detailTexture;
         material.detailMap.diffuseBlendLevel = 0;
         material.detailMap.roughnessBlendLevel = 0;
-        material.detailMap.bumpLevel = .35;
+        material.detailMap.bumpLevel = .15;
 
         const paletteColorsFromLogic: Color3[] =
             COLOR_OPTIONS.map(({ hex }) => Color3.FromHexString(hex).toLinearSpace())
