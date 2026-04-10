@@ -64,9 +64,9 @@ class ColorSwapPlugin extends MaterialPluginBase {
     public blendRadius = 1.01;
     public blendStrength = 1.5;
     public enableSdf = 1.0;
-    
-    // --- NEW: Added for Clear Coat Tint Multiplier ---
     public tintRatio = 1; 
+    public textColor = new Color3(1, 1, 1); 
+    public outlineColor = new Color3(0, 0, 0); // <--- ADD THIS
 
     private _isEnabled = false;
     private _markAllDefinesAsDirty: () => void;
@@ -212,7 +212,9 @@ class ColorSwapPlugin extends MaterialPluginBase {
                 { name: "blendRadius", size: 1, type: "float" },
                 { name: "blendStrength", size: 1, type: "float" },
                 { name: "u_enableSdf", size: 1, type: "float" },
-                { name: "tintRatio", size: 1, type: "float" }, // <--- NEW: Send slider to GPU
+                { name: "tintRatio", size: 1, type: "float" },
+                { name: "u_textColor", size: 3, type: "vec3" },
+                { name: "u_outlineColor", size: 3, type: "vec3" }, // <--- ADDED
             ],
             fragment: `
 #ifdef COLOR_SWAP
@@ -220,6 +222,8 @@ uniform float blendRadius;
 uniform float blendStrength;
 uniform float u_enableSdf;
 uniform float tintRatio;
+uniform vec3 u_textColor;
+uniform vec3 u_outlineColor; // <--- ADDED
 #endif
 `
         };
@@ -230,7 +234,9 @@ uniform float tintRatio;
             uniformBuffer.updateFloat("blendRadius", this.blendRadius);
             uniformBuffer.updateFloat("blendStrength", this.blendStrength);
             uniformBuffer.updateFloat("u_enableSdf", this.enableSdf);
-            uniformBuffer.updateFloat("tintRatio", this.tintRatio); // <--- NEW: Bind slider value
+            uniformBuffer.updateFloat("tintRatio", this.tintRatio);
+            uniformBuffer.updateColor3("u_textColor", this.textColor);
+            uniformBuffer.updateColor3("u_outlineColor", this.outlineColor); // <--- ADDED
 
             const effect = this._material?.getEffect();
             if (effect) {
@@ -319,13 +325,12 @@ if (u_enableSdf > 1.5) {
   float w = max(fwidth(sd), 1e-4);
   
   // Masks for the Fill and the Outline
-  float fillMask = smoothstep(0.5 - w, 0.5 + w, sd);
-  float outlineMask = smoothstep(0.4 - w, 0.4 + w, sd);
+  float outlineMask = smoothstep(0.5 - w, 0.5 + w, sd); 
+float fillMask = smoothstep(0.6 - w, 0.6 + w, sd);
   
-  // LOGICAL LINK: We pull the Fill from Slot 1 (The Cyan Group)
-  // And we pull the Outline from Slot 0 (The Red Group)
-  vec3 fillColor = zoneToPalette(1); 
-  vec3 outlineColor = zoneToPalette(0);
+  // Fill and Outline are now completely independent
+  vec3 fillColor = srgbToLinear(u_textColor); 
+  vec3 outlineColor = srgbToLinear(u_outlineColor);
   
   // Blend colors and punch out the background
   surfaceAlbedo.rgb = mix(outlineColor, fillColor, fillMask);
@@ -582,12 +587,7 @@ hemiLight.intensity = 0.8;
 
         // WHITE BASE TRICK: Pure white so detail map variation passes through cleanly,
         // then the plugin multiplies the palette color on top.
-        material.albedoTexture = RawTexture.CreateRGBTexture(
-            new Uint8Array([255, 255, 255]),
-            1,
-            1,
-            this.scene
-        );
+        
 
         const paletteColorsFromLogic: Color3[] =
             COLOR_OPTIONS.map(({ hex }) => Color3.FromHexString(hex).toLinearSpace())
@@ -779,7 +779,7 @@ hemiLight.intensity = 0.8;
             targetAlpha = this.camera.alpha + alphaDiff;
             targetBeta = this.camera.beta + betaDiff;
             
-            targetRadius = 1.2; 
+            targetRadius = 1.5; 
         }
 
         // --- EXECUTE THE MOVE ---
@@ -928,8 +928,8 @@ hemiLight.intensity = 0.8;
         });
     }
 
-    public updateText = (options: { zone: string; text: string; font: Font; color: string; }) => {
-        const { zone, text, font, color } = options;
+    public updateText = (options: { zone: string; text: string; font: Font; color: string; outlineColor?: string; }) => {
+        const { zone, text, font, color, outlineColor } = options;
         if (!this.activeShellName) return;
         
         const materialName = `${zone}${this.activeShellName.charAt(0).toUpperCase() + this.activeShellName.slice(1)}`;
@@ -947,7 +947,19 @@ hemiLight.intensity = 0.8;
 
         const { image: img, common, chars, kern } = fontData;
         let textDT = this._textDTs.get(zone);
-        const texW = 2048, texH = 2048; 
+
+        // ==========================================
+        // 1. ZONE-SPECIFIC PROPORTIONS
+        // Change these values to match the actual UV proportions of your meshes!
+        // ==========================================
+       let texW = 2048;
+        let texH = 2048;
+
+        // OVERRIDE: Only change the proportions if the zone is specifically the pinky.
+        if (zone === 'pinkyName') {
+            texW = 2048;
+            texH = 831; // Adjust this height specifically for your pinky mesh UVs
+        }
 
         if (!textDT) {
             textDT = new DynamicTexture(`${zone}_id_map`, { width: texW, height: texH }, this.scene, false);
@@ -956,15 +968,11 @@ hemiLight.intensity = 0.8;
         }
 
         // --- 1. MATERIAL & TRANSPARENCY SETUP ---
-        // We null these out because the Custom Shader (ColorSwapPlugin) reads from idTex now
         textMat.opacityTexture = null; 
         textMat.albedoTexture = null; 
         textMat.bumpTexture = null; 
         textMat.useAlphaFromAlbedoTexture = false;
-        
-        // ALPHA BLEND is required for the MSDF shader to draw smooth, anti-aliased edges
         textMat.transparencyMode = PBRMaterial.PBRMATERIAL_ALPHABLEND; 
-        
         textMat.unlit = false;
         textMat.metallic = 0;
         textMat.roughness = 0.45;
@@ -989,26 +997,19 @@ hemiLight.intensity = 0.8;
 
             plugin = new ColorSwapPlugin(textMat, textConfig);
             plugin.setIDTexture(textDT); 
-            
-            // CRITICAL: Set to 2.0 to activate the MSDF median() math in the shader
             plugin.enableSdf = 2.0; 
             
             this._textPlugins.set(zone, plugin);
-            
-            if (this.activeShellBundle && !this.activeShellBundle.plugins.includes(plugin)) {
-                this.activeShellBundle.plugins.push(plugin);
-            }
         }
 
-        // --- 3. COLOR GROUP LINKING ---
-        const fillIndex = getPaletteIndexById(color as any);
-        
-        // Logical Link: Update Slot 1 (The Cyan / #00FFFF Group)
-        plugin.updateZonePaletteIndex(1, fillIndex); 
-        
-        // Fallback: Also update Slot 0 (The Red / #FF0000 Group) 
-        // This ensures the thin MSDF edges/outlines match the fill color
-        plugin.updateZonePaletteIndex(0, fillIndex); 
+        // --- EXACT HEX COLOR CONTROL ---
+        try {
+            plugin.textColor = Color3.FromHexString(color);
+            plugin.outlineColor = outlineColor ? Color3.FromHexString(outlineColor) : Color3.FromHexString(color);
+        } catch {
+            plugin.textColor = new Color3(1, 1, 1);
+            plugin.outlineColor = new Color3(1, 1, 1);
+        }
 
         const signature = `${font}:${text}`;
         const last = this._lastText.get(zone) ?? "";
@@ -1024,7 +1025,7 @@ hemiLight.intensity = 0.8;
         }
 
         // --- 1. PRE-PASS: MEASURE RAW WIDTH ---
-        const tracking = -30; // <-- Adjust this number to change letter spacing
+        const tracking = -2; 
         
         let rawWidth = 0;
         let measurePrevCode = -1;
@@ -1044,7 +1045,7 @@ hemiLight.intensity = 0.8;
         }
         
         if (text.length > 0) {
-            rawWidth -= tracking; // Remove the extra trailing space from the end
+            rawWidth -= tracking; 
         }
 
         // --- 2. SANE, ELEGANT SCALING & CENTERING ---
@@ -1057,10 +1058,7 @@ hemiLight.intensity = 0.8;
         const totalWidth = rawWidth * scale;
         const lineAdvance = common.lineHeight * scale;
         
-        // Horizontal centering based on dynamic Width
         let penX = (texW - totalWidth) * 0.5; 
-        
-        // Vertical centering based on dynamic Height
         const lineTopY = (texH - lineAdvance) * 0.5;
         let penY = lineTopY + common.base * scale;
 

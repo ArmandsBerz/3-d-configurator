@@ -78,7 +78,7 @@ export type ColorId = typeof COLOR_OPTIONS[number]['id'];
 
 // --- 0. POSITION REGISTRY ---
 export const POSITION_REGISTRY = {
-    'inf': { label: 'TJ1' } // <--- Renamed so your UI actually says "Bat"
+    'inf': { label: 'Full Button' } // <--- Renamed so your UI actually says "Bat"
 } as const;
 
 export type BuildPositionId = keyof typeof POSITION_REGISTRY;
@@ -126,8 +126,8 @@ export type FingerProtectionPaletteId = keyof typeof FINGER_PROTECTION_PALETTES;
 
 // --- 1. LEATHER REGISTRY ---
 export const LEATHER_REGISTRY = {
-    'imgOpt1': { label: 'Maple' },
-    'imgOpt2': { label: 'Birch' }
+    'imgOpt1': { label: 'Pinhole Mesh' },
+    'imgOpt2': { label: 'DriFit' }
 } as const;
 
 export type BuildLeatherId = keyof typeof LEATHER_REGISTRY;
@@ -142,20 +142,17 @@ export type LeatherPaletteId = keyof typeof LEATHER_PALETTES;
 
 // --- 2. SIZE REGISTRY ---
 export const SIZE_REGISTRY = {
-    '3100': { label: '31"' },
-    '3200': { label: '32"' },
-    '3250': { label: '32.5"' },
-    '3300': { label: '33"' },
-    '3350': { label: '33.5"' },
-    '3400': { label: '34"' },
-    '3450': { label: '34.5"' },
-    '3500': { label: '35"' }
+    '3100': { label: 'S' },
+    '3200': { label: 'M' },
+    '3250': { label: 'L' },
+    '3300': { label: 'XL' },
+    '3350': { label: 'XXL' }
 } as const;
 
 export type BuildSizeId = keyof typeof SIZE_REGISTRY;
 
 export const SIZE_PALETTES = {
-    openBack: ['3100', '3200', '3250', '3300', '3350', '3400', '3450', '3500'], // Updated sizes
+    openBack: ['3100', '3200', '3250', '3300', '3350'], // Updated sizes
 } as const satisfies Record<string, readonly BuildSizeId[]>; //
 
 export type SizePaletteId = keyof typeof SIZE_PALETTES;
@@ -197,6 +194,9 @@ export const CART_LABELS = {
     THUMB_TEXT: "Custom Engraving",
     THUMB_FONT: "Engraving Font",
     THUMB_COLOR: "Engraving Color",
+    PINKY_TEXT: "Secondary Engraving",   // <--- ADD THESE
+    PINKY_FONT: "Secondary Font",        // <--- ADD THESE
+    PINKY_COLOR: "Secondary Color",
 } as const;
 
 
@@ -205,8 +205,8 @@ export const CART_LABELS = {
 export const leatherOptions = Object.entries(LEATHER_REGISTRY).map(([id, data]) => ({ id, title: data.label }));
 
 export const FONT_REGISTRY = [
-  { id: 'LOBSTER', label: 'Lobster', baseName: 'lobsterType', targetLineFactor: 1.6 },
-  { id: 'ROBOTO', label: 'Roboto', baseName: 'robotoType', targetLineFactor: 1.6 },
+  { id: 'LOBSTER', label: 'Lobster', baseName: 'lobsterType', targetLineFactor: 1.5 },
+  { id: 'ROBOTO', label: 'Roboto', baseName: 'robotoType', targetLineFactor: 1.4 },
 ] as const;
 
 export const fontOptions = FONT_REGISTRY.map(font => ({ id: font.id, label: font.label }));
@@ -268,6 +268,7 @@ export interface TextPart {
     text: string;
     font: Font;
     colorId: ColorId;
+    outlineColorId: ColorId; // <--- ADDED OUTLINE
 }
 
 export interface SingleColorState {
@@ -277,6 +278,7 @@ export interface SingleColorState {
 export type GloveConfiguration = {
     build: BuildConfig;
     thumbName: TextPart;
+    pinkyName: TextPart;
 } & Record<ZoneKey, SingleColorState>;
 
 export interface CommerceState {
@@ -520,7 +522,7 @@ const PRODUCT_REGISTRY = {
             [ZONES.THUMB_INNER]:    { shaderIndex: 1, displayName: 'Inner Thumb', materialTarget: 'both' },
             [ZONES.INDEX]:          { shaderIndex: 2, displayName: 'Index Finger' },
             // ---> CHANGED Inner Middle to Stripe <---
-            [ZONES.MIDDLE_INNER]:   { shaderIndex: 3, displayName: 'Stripe', materialTarget: 'both' }, 
+            [ZONES.MIDDLE_INNER]:   { shaderIndex: 3, displayName: 'Placket', materialTarget: 'both' }, 
             [ZONES.MIDDLE_OUTER]:   { shaderIndex: 4, displayName: 'Outer Middle' },
             [ZONES.RING_INNER]:     { shaderIndex: 5, displayName: 'Inner Ring', materialTarget: 'both' },
             [ZONES.RING_OUTER]:     { shaderIndex: 6, displayName: 'Outer Ring' },
@@ -530,7 +532,7 @@ const PRODUCT_REGISTRY = {
             { id: 'indexGroup', type: 'single', title: 'Index Finger', zoneKey: ZONES.INDEX },
             { id: 'outerThumbGroup', type: 'single', title: 'Outer Thumb', zoneKey: ZONES.THUMB_OUTER },
             // ---> ADD STRIPE UI MAPPED TO MIDDLE INNER <---
-            { id: 'stripeGroup', type: 'single', title: 'Stripe', zoneKey: ZONES.MIDDLE_INNER },
+            { id: 'stripeGroup', type: 'single', title: 'Placket', zoneKey: ZONES.MIDDLE_INNER },
             { id: 'fingerLogoGroup', type: 'single', title: 'Logo', zoneKey: ZONES.FINGER_LOGO },
         ]
     })
@@ -552,7 +554,8 @@ export const resolveProduct = (build: BuildConfig): ProductDefinition => {
 export const PRESETS = {
     'open-back': {
         build: { palette: 'universal', imageSelection: 'imgOpt1', position: 'inf', size: '3100', stiffness: 'std', webType: 'bsk', fingerProtection: 'non', stainStyle: 'dd' },
-        thumbName: { type: 'text', text: 'Name', font: 'ROBOTO', colorId: 'sm' }, // Swapped to Black
+        thumbName: { type: 'text', text: '3', font: 'ROBOTO', colorId: 'sn', outlineColorId: 'bk' }, 
+        pinkyName: { type: 'text', text: 'Name', font: 'ROBOTO', colorId: 'sn', outlineColorId: 'bk' },
 
         // KEEP ONLY YOUR 6 ZONES + WEB
         [ZONES.WEB]:            { colorId: 'nt' }, // Natural
@@ -563,7 +566,7 @@ export const PRESETS = {
         [ZONES.MIDDLE_OUTER]:   { colorId: 'ea' }, // Earth
         [ZONES.RING_INNER]:     { colorId: 'tb' }, // Tobacco
         [ZONES.RING_OUTER]:     { colorId: 'sm' }, // Smoke
-        [ZONES.FINGER_LOGO]:    { colorId: 'wt' },
+        [ZONES.FINGER_LOGO]:    { colorId: 'bk' },
     } as GloveConfiguration,
 } as const;
 
@@ -612,22 +615,20 @@ export const resolveVisualState = (config: GloveConfiguration): Record<ZoneKey, 
 
     // 3. APPLY YOUR EXACT 4 RULES
     if (stainStyle === 'fd') {
-        // FULL DIP: One color for handle, barrel, wartip. (Everything matches Handle).
-        visualColors[barrelZone] = visualColors[handleZone];
-        visualColors[wartipZone] = visualColors[handleZone];
+        // FULL DIP: UI shows 'Bat Color' (Barrel). Handle and Tip must follow Barrel.
+        visualColors[handleZone] = visualColors[barrelZone];
+        visualColors[wartipZone] = visualColors[barrelZone];
 
     } else if (stainStyle === 'hd') {
-        // HALF DIP: One color for handle. Other for barrel + wartip. (Wartip matches Barrel).
+        // HALF DIP: UI shows Handle and Barrel. Tip must follow Barrel.
         visualColors[wartipZone] = visualColors[barrelZone];
 
     } else if (stainStyle === 'wt') {
-        // WARTIP: One color for handle + barrel. Other for wartip. (Barrel matches Handle).
-        visualColors[barrelZone] = visualColors[handleZone];
+        // WARTIP: UI shows Bat Color (Barrel) and Tip Color. Handle must follow Barrel.
+        visualColors[handleZone] = visualColors[barrelZone];
 
     } else if (stainStyle === 'dd') {
-        // DOUBLE DIP: One color for handle, one for barrel, one for wartip.
-        // ALL 3 ARE INDEPENDENT. We do absolutely nothing here. 
-        // Your UI clicks will pass straight to the 3D model without being hijacked.
+        // DOUBLE DIP: All 3 are independent. We do nothing.
     }
 
     return visualColors;
@@ -751,6 +752,26 @@ export const sanitize = (config: GloveConfiguration): GloveConfiguration => {
     if (!validColorIds.has(nextConfig.thumbName.colorId)) {
         nextConfig.thumbName.colorId = fallbackColor;
     }
+    if (!validColorIds.has(nextConfig.pinkyName.colorId)) { 
+        nextConfig.pinkyName.colorId = fallbackColor;
+    }
+
+    // --- 5. ENFORCE STAIN STYLE HARD-SYNC ---
+    // This physically overwrites the hidden state zones so that when you switch
+    // between dip styles in the UI, the state doesn't hold onto conflicting "ghost" colors.
+    const style = nextConfig.build.stainStyle;
+    const handle = ZONES.THUMB_OUTER;
+    const barrel = ZONES.INDEX;
+    const tip = ZONES.THUMB_INNER;
+
+    if (style === 'fd') {
+        nextConfig[handle].colorId = nextConfig[barrel].colorId;
+        nextConfig[tip].colorId = nextConfig[barrel].colorId;
+    } else if (style === 'hd') {
+        nextConfig[tip].colorId = nextConfig[barrel].colorId;
+    } else if (style === 'wt') {
+        nextConfig[handle].colorId = nextConfig[barrel].colorId;
+    }
 
     return nextConfig;
 };
@@ -789,6 +810,7 @@ export const getPresetConfig = (id: PresetId): GloveConfiguration => {
 
 export const URL_KEY_MAP: { [key in ZoneKey | keyof Omit<GloveConfiguration, ZoneKey> | keyof BuildConfig]?: string } = {
     thumbName: 'tn',
+    pinkyName: 'pn',
     palette: 'pa',
     imageSelection: 'is',
     position: 'po',
@@ -839,9 +861,13 @@ export const serialize = (config: GloveConfiguration): string => {
     }
 
     // 2. Serialize Text Parts
-    const { thumbName } = config;
+    const { thumbName, pinkyName } = config; // <--- Extract pinkyName
+    
     const encodedThumbText = encodeText(thumbName.text);
     pairs.push(`${URL_KEY_MAP.thumbName}-${encodedThumbText}~${thumbName.font}~${thumbName.colorId}`);
+
+    const encodedPinkyText = encodeText(pinkyName.text); // <--- ADD THIS BLOCK
+    pairs.push(`${URL_KEY_MAP.pinkyName}-${encodedPinkyText}~${pinkyName.font}~${pinkyName.colorId}`);
 
     // 3. Serialize Zone Colors
     for (const key in config) {
@@ -875,7 +901,7 @@ export const deserialize = (encodedString: string): GloveConfiguration => {
         const longKey = REVERSE_URL_KEY_MAP[key];
         if (!longKey) continue;
 
-        if (longKey === 'thumbName') {
+        if (longKey === 'thumbName' || longKey === 'pinkyName') { // <--- CHANGE THIS LINE
             const [text, font, colorId] = value.split('~');
             if (text !== undefined) config[longKey].text = decodeText(text);
             if (font !== undefined) config[longKey].font = font as Font;

@@ -124,7 +124,7 @@ export type GloveAction =
 // --- END: Core Type Definitions ---
 
 // --- START: ADD NEW PANEL PROP TYPES (Refactored) ---
-type TextPartId = 'thumbName';
+type TextPartId = 'thumbName' | 'pinkyName';
 
 interface BuildPanelProps {
     onClose: () => void;
@@ -285,19 +285,27 @@ const gloveConfigReducer = (state: AppState, action: GloveAction): AppState => {
             const { zoneKey, colorId, partType } = action.payload;
             const currentStyle = state.configuration.build.stainStyle || 'fd';
 
-            // 1. Define the Rules: Which zones are "Followers" of the one clicked?
-            const RULES: Record<string, ZoneKey[]> = {
-                'fd': [ZONES.INDEX, ZONES.THUMB_INNER, ZONES.THUMB_OUTER], // Full Dip: Paint all 3
-                'hd': zoneKey === ZONES.INDEX ? [ZONES.INDEX, ZONES.THUMB_INNER] : [zoneKey], // Half Dip: Barrel leads Tip
-                'wt': zoneKey === ZONES.INDEX ? [ZONES.INDEX, ZONES.THUMB_OUTER] : [zoneKey], // Wartip: Barrel leads Handle
-                'dd': [zoneKey] // Double Dip: Standard 1-to-1
-            };
+            // 1. Default: Only update the exact zone that was clicked (e.g., Placket, Logo)
+            let affectedZones: ZoneKey[] = [zoneKey];
 
-            // 2. Decide which zones to update
-            const affectedZones = (currentStyle === 'fd' && (zoneKey === ZONES.INDEX || zoneKey === ZONES.THUMB_INNER || zoneKey === ZONES.THUMB_OUTER)) 
-                ? RULES['fd'] 
-                : RULES[currentStyle] || [zoneKey];
+            // 2. Check if the user clicked one of the main 3 "Bat" parts
+            const isBatPart = zoneKey === ZONES.INDEX || zoneKey === ZONES.THUMB_INNER || zoneKey === ZONES.THUMB_OUTER;
 
+            // 3. Apply the linking rules ONLY if they clicked a Bat part
+            if (isBatPart) {
+                if (currentStyle === 'fd') {
+                    // Full Dip: Clicking any bat part paints all 3 bat parts
+                    affectedZones = [ZONES.INDEX, ZONES.THUMB_INNER, ZONES.THUMB_OUTER];
+                } else if (currentStyle === 'hd' && zoneKey === ZONES.INDEX) {
+                    // Half Dip: Barrel leads Tip
+                    affectedZones = [ZONES.INDEX, ZONES.THUMB_INNER];
+                } else if (currentStyle === 'wt' && zoneKey === ZONES.INDEX) {
+                    // Wartip: Barrel leads Handle
+                    affectedZones = [ZONES.INDEX, ZONES.THUMB_OUTER];
+                }
+            }
+
+            // 4. Execute the updates
             const zoneUpdates: any = {};
             affectedZones.forEach((z) => {
                 zoneUpdates[z] = { colorId };
@@ -832,7 +840,7 @@ const BuildOption = ({ isDesktop }: BuildOptionProps) => {
     const positionGroup = buildGroups.find(g => g.id === 'position');
     
     // --- NEW: Filter out 'imageSelection' as well so it doesn't appear twice ---
-    const otherGroups = buildGroups.filter(g => g.id !== 'position' && g.id !== 'imageSelection' && g.id !== 'webType' && g.id !== 'fingerProtection');
+    const otherGroups = buildGroups.filter(g => g.id !== 'position' && g.id !== 'imageSelection' && g.id !== 'webType' && g.id !== 'fingerProtection' && g.id !== 'stiffness');
 
     return (
         <div className={`space-y-6 ${!isDesktop ? 'pb-4' : ''}`}>
@@ -854,7 +862,7 @@ const BuildOption = ({ isDesktop }: BuildOptionProps) => {
             )}
             
             <ImageGroup<BuildLeatherId>
-                title="Wood Type"
+                title="Material"
                 layout="grid-cols-2"
                 // --- NEW: Use dynamic options from leatherGroup, casting IDs to Strict Type ---
                 options={leatherGroup ? leatherGroup.options.map(o => ({ id: o.id as BuildLeatherId, title: o.label })) : []}
@@ -864,13 +872,13 @@ const BuildOption = ({ isDesktop }: BuildOptionProps) => {
     
 
             <OptionGroup<StainStyleId>
-                title="Stain Style"
+                title="Color Pattern"
                 layout="grid-cols-2"
                 options={[
-                    { id: 'fd', label: 'Full Dip' },
-                    { id: 'hd', label: 'Half Dip' },
-                    { id: 'wt', label: 'Barrel Tip' },
-                    { id: 'dd', label: 'Double Dip' }
+                    { id: 'fd', label: 'Single' },
+                    { id: 'hd', label: 'Two-Color' },
+                    { id: 'wt', label: 'Piping' },
+                    { id: 'dd', label: 'Three-Color' }
                 ]}
                 selectedOption={buildConfig.stainStyle}
                 onSelectOption={(value) => onBuildConfigChange({ stainStyle: value })}
@@ -930,9 +938,12 @@ const TextOption = ({ contextId }: TextOptionProps) => {
                 </div>
             </div>
             <div className="option-group-container">
-                <h3 className="text-sm font-semibold text-gray-400 mb-2">Color</h3>
-                {/* MODIFICATION: Use colorId */}
+                <h3 className="text-sm font-semibold text-gray-400 mb-2">Fill Color</h3>
                 <ColorSwatchGrid swatches={COLOR_OPTIONS} selectedColorId={value.colorId} onColorSelect={(colorId) => onChange({ ...value, colorId: colorId })} />
+            </div>
+            <div className="option-group-container mt-4">
+                <h3 className="text-sm font-semibold text-gray-400 mb-2">Outline Color</h3>
+                <ColorSwatchGrid swatches={COLOR_OPTIONS} selectedColorId={value.outlineColorId} onColorSelect={(colorId) => onChange({ ...value, outlineColorId: colorId })} />
             </div>
         </div>
     );
@@ -1020,14 +1031,16 @@ const OrderSummaryInfo = () => {
     const { state } = useGloveConfigurator();
     const { configuration } = state;
     
-    // Resolve definition to get rules (needed for helper) + zones (needed for colors)
     // --- RESOLVE PRODUCT ---
     const definition = resolveProduct(configuration.build);
     const rawUiGroups = definition.uiGroups;
     const uiGroups = getFilteredBatGroups(rawUiGroups, configuration.build.stainStyle);
     
-    // --- THE FIX: Use Gold Master Helper ---
+    // 1. GET ROWS AND FILTER THEM
     const foundationRows = getBuildSummaryRows(configuration.build, definition);
+    const visibleFoundationRows = foundationRows.filter(
+        row => row.key !== 'Cup' && row.key !== 'Drop Weight' && row.key !== 'Stiffness' && row.key !== 'Web'
+    );
 
     // Helper for colors
     const getColorName = (colorId: ColorId) => colorLookupMap.get(colorId)?.name || 'Unknown';
@@ -1037,8 +1050,8 @@ const OrderSummaryInfo = () => {
             <div>
                 <h3 className="text-lg font-semibold text-white mb-2">Bat</h3>
                 <div className="space-y-1 pl-2">
-                    {/* Render standard rows from the Helper */}
-                    {foundationRows.map((row) => (
+                    {/* 2. CRITICAL: MAP OVER 'visibleFoundationRows', NOT 'foundationRows' */}
+                    {visibleFoundationRows.map((row) => (
                         <p key={row.key}>
                             <span className="font-semibold text-gray-400">{row.key}:</span> {row.value}
                         </p>
@@ -1046,7 +1059,6 @@ const OrderSummaryInfo = () => {
                 </div>
             </div>
 
-            {/* --- "Color Scheme" & "Personalization" sections remain untouched below --- */}
             <div>
                 <h3 className="text-lg font-semibold text-white mb-2">Color Scheme</h3>
                 <div className="space-y-1 pl-2">
@@ -1068,7 +1080,11 @@ const OrderSummaryInfo = () => {
              <div>
                 <h3 className="text-lg font-semibold text-white mb-2">Personalization</h3>
                 <div className="space-y-1 pl-2">
-                    <p><span className="font-semibold text-gray-400">Custom Engraving:</span> "{configuration.thumbName.text}" ({configuration.thumbName.font}, {getColorName(configuration.thumbName.colorId)})</p>
+                    <p><span className="font-semibold text-gray-400">Front Letters:</span> "{configuration.thumbName.text}" ({configuration.thumbName.font}, {getColorName(configuration.thumbName.colorId)})</p>
+                    
+                    {configuration.pinkyName.text.trim() !== '' && (
+                         <p><span className="font-semibold text-gray-400">Back Letters:</span> "{configuration.pinkyName.text}" ({configuration.pinkyName.font}, {getColorName(configuration.pinkyName.colorId)})</p>
+                    )}
                 </div>
             </div>
         </div>
@@ -1460,17 +1476,17 @@ const getFilteredBatGroups = (uiGroups: UIPartGroup[], style: string): UIPartGro
     const result: UIPartGroup[] = [...otherGroups];
 
     if (style === 'fd') {
-        if (barrelGroup) result.push({ ...barrelGroup, title: 'Bat Color' });
+        if (barrelGroup) result.push({ ...barrelGroup, title: 'Jersey Color' });
     } else if (style === 'hd') {
-        if (handleGroup) result.push({ ...handleGroup, title: 'Handle Color' });
-        if (barrelGroup) result.push({ ...barrelGroup, title: 'Barrel Color' });
+        if (handleGroup) result.push({ ...handleGroup, title: 'Body Color' });
+        if (barrelGroup) result.push({ ...barrelGroup, title: 'Sleeve Color' });
     } else if (style === 'wt') {
-        if (barrelGroup) result.push({ ...barrelGroup, title: 'Bat Color' });
-        if (tipGroup)    result.push({ ...tipGroup,    title: 'Tip Color' });
+        if (barrelGroup) result.push({ ...barrelGroup, title: 'Jersey Color' });
+        if (tipGroup)    result.push({ ...tipGroup,    title: 'Piping Color' });
     } else if (style === 'dd') {
-        if (handleGroup) result.push({ ...handleGroup, title: 'Handle Color' });
-        if (barrelGroup) result.push({ ...barrelGroup, title: 'Barrel Color' });
-        if (tipGroup)    result.push({ ...tipGroup,    title: 'Tip Color' });
+        if (handleGroup) result.push({ ...handleGroup, title: 'Body Color' });
+        if (barrelGroup) result.push({ ...barrelGroup, title: 'Sleeve Color' });
+        if (tipGroup)    result.push({ ...tipGroup,    title: 'Piping Color' });
     }
     return result;
 };
@@ -1501,8 +1517,9 @@ const AccordionDesktop = ({ openAccordion, setOpenAccordion, colorForApplyAll }:
     const buildGroup = { id: 'build', title: 'Build Options' };
     // --- MODIFICATION: Define personalization panels separately ---
     const personalizationGroups = [
-    { id: 'thumbName' as TextPartId, title: 'Custom Engraving' },
-];
+        { id: 'thumbName' as TextPartId, title: 'Front Letters' },
+        { id: 'pinkyName' as TextPartId, title: 'Back Letters' }, // <--- ADD THIS LINE
+    ];
 
     const handleAccordionToggle = (accordionId: string) => {
         if (openAccordion !== accordionId) {
@@ -1549,20 +1566,6 @@ const AccordionDesktop = ({ openAccordion, setOpenAccordion, colorForApplyAll }:
                         <BuildOption isDesktop={true} />
                     </AccordionOptionDesktop>
 
-                    {/* MANUALLY INJECTED: Web Gallery Slot 2 */}
-                    <AccordionOptionDesktop
-                        title="Cup"
-                        isOpen={openAccordion === 'web'}
-                        onToggle={() => handleAccordionToggle('web')}
-                        headerContent={
-                            <span className="text-sm text-gray-400 truncate max-w-[100px]">
-                                {WEB_REGISTRY[configuration.build.webType]?.label}
-                            </span>
-                        }
-                        actionButton={null}
-                    >
-                        <WebOptions />
-                    </AccordionOptionDesktop>
 
                     {/* MANUALLY INJECTED: Pad/Hood Slot 3 */}
                     {definition.fingerProtectionPaletteId !== 'noneOnly' && (
@@ -1708,7 +1711,8 @@ const AccordionMobile = React.forwardRef<HTMLElement, AccordionMobileProps>(({ o
 
     const buildGroup = { id: 'build' as const, title: 'Build Options' };
     const personalizationGroups = [
-        { id: 'thumbName' as TextPartId, title: 'Custom Engraving' },
+        { id: 'thumbName' as TextPartId, title: 'Front Letters' },
+        { id: 'pinkyName' as TextPartId, title: 'Back Letters' }, // <--- ADD THIS LINE
     ];
 
     const renderAccessory = (group: UIPartGroup) => {
@@ -1733,17 +1737,6 @@ const AccordionMobile = React.forwardRef<HTMLElement, AccordionMobileProps>(({ o
                     <CaretRightIcon className="h-4 w-auto mr-3" />
                     <span className="text-lg">{buildGroup.title}</span>
                 </div>
-            </button>
-
-            {/* Mobile Web Promoted */}
-            <button className="w-full h-[56px] bg-[#1C1C1C] flex items-center justify-between px-4 mb-[10px] focus:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-white" onClick={(e) => onOpenPanel({ id: 'web', type: 'gallery', title: 'Cup' }, e)}>
-                <div className="flex items-center">
-                    <CaretRightIcon className="h-4 w-auto mr-3" />
-                    <span className="text-lg">Cup</span>
-                </div>
-                <span className="text-sm text-gray-400 truncate max-w-[100px]">
-                    {WEB_REGISTRY[configuration.build.webType]?.label}
-                </span>
             </button>
 
             {/* Mobile Pad/Hood Promoted */}
@@ -1809,7 +1802,7 @@ const UI = () => {
 
     const sceneManager = useContext(SceneContext);
 
-    // --- NEW: CAMERA ROUTER EFFECT ---
+   // --- NEW: CAMERA ROUTER EFFECT ---
     // Watches the UI state and moves the camera automatically
     useEffect(() => {
         if (!sceneManager) return;
@@ -1818,14 +1811,16 @@ const UI = () => {
 
         if (isDesktop) {
             // Check desktop accordion state
-            if (openAccordion === 'thumbName' || openAccordion === 'web') {
+            // ONLY triggers focus2 for the Pinky
+            if (openAccordion === 'pinkyName') {
                 isDetailViewOpen = true;
             }
         } else {
             // Check mobile panel state
+            // ONLY triggers focus2 for the Pinky
             if (
-                (openAccordionOptionMobile?.name === 'TEXT' && openAccordionOptionMobile.context.id === 'thumbName') ||
-                (openAccordionOptionMobile?.name === 'GALLERY' && openAccordionOptionMobile.context.id === 'web')
+                openAccordionOptionMobile?.name === 'TEXT' && 
+                openAccordionOptionMobile.context.id === 'pinkyName'
             ) {
                 isDetailViewOpen = true;
             }
@@ -1980,6 +1975,12 @@ const UI = () => {
         
         const keysToExclude = new Set<string>();
 
+        // --- EXCLUDE THESE FROM THE CART ---
+        keysToExclude.add('Stiffness');
+        keysToExclude.add('Drop Weight');
+        keysToExclude.add('Web');
+        keysToExclude.add('Cup');
+
         if (shellValue === 'open-back') {
             keysToExclude.add('Size');
             keysToExclude.add('Wood Type');
@@ -2002,6 +2003,13 @@ const UI = () => {
         properties[CART_LABELS.THUMB_TEXT] = thumbName.text;
         properties[CART_LABELS.THUMB_FONT] = fontOptions.find(f => f.id === thumbName.font)?.label || thumbName.font;
         properties[CART_LABELS.THUMB_COLOR] = colorLookupMap.get(thumbName.colorId)?.name || thumbName.colorId;
+
+        // --- ADD THESE FOR THE CART ---
+        if (configuration.pinkyName.text.trim() !== '') {
+            properties[CART_LABELS.PINKY_TEXT] = configuration.pinkyName.text;
+            properties[CART_LABELS.PINKY_FONT] = fontOptions.find(f => f.id === configuration.pinkyName.font)?.label || configuration.pinkyName.font;
+            properties[CART_LABELS.PINKY_COLOR] = colorLookupMap.get(configuration.pinkyName.colorId)?.name || configuration.pinkyName.colorId;
+        }
         
         Object.entries(configuration).forEach(([key, value]) => {
             if (key.startsWith('zone')) {
@@ -2386,15 +2394,6 @@ const GloveLogicController = () => {
                     sceneManager.setPartVisibility(activeMeshName, true);
                 }
 
-                const webModelFilename = definition.assets.validWebs[configuration.build.webType];
-
-                console.log("[DIAGNOSTIC] 2. Starting updateWeb...");
-                if (webModelFilename) {
-                    await sceneManager.updateWeb(webModelFilename);
-                } else {
-                    await sceneManager.updateWeb(''); 
-                }
-                console.log("[DIAGNOSTIC] 2. SUCCESS");
 
                 sceneManager.syncConfiguration(configuration, definition);
 
@@ -2407,6 +2406,16 @@ const GloveLogicController = () => {
                     text: configuration.thumbName.text,
                     font: configuration.thumbName.font,
                     color: getHexById(configuration.thumbName.colorId),
+                    outlineColor: getHexById(configuration.thumbName.outlineColorId),
+                });
+
+                // --- ADD THIS BRAND NEW BLOCK FOR THE PINKY ---
+                sceneManager.updateText({
+                    zone: 'pinkyName',
+                    text: configuration.pinkyName.text,
+                    font: configuration.pinkyName.font,
+                    color: getHexById(configuration.pinkyName.colorId),
+                    outlineColor: getHexById(configuration.pinkyName.outlineColorId),
                 });
 
                 console.log("[DIAGNOSTIC] 4. Waiting for Babylon render (waitForRender)...");

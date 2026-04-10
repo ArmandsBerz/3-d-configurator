@@ -378,7 +378,7 @@ export const getBuildSummaryRows = (build: BuildConfig, definition: ProductDefin
 
     // 4. Leather (Universal)
     if (build.imageSelection && LEATHER_REGISTRY[build.imageSelection]) {
-        rows.push({ key: "Wood Type", value: LEATHER_REGISTRY[build.imageSelection].label });
+        rows.push({ key: "Material", value: LEATHER_REGISTRY[build.imageSelection].label });
     }
 
     // 5. Web Type (Universal)
