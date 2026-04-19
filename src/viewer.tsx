@@ -439,11 +439,10 @@ const FONT_CONFIG = Object.fromEntries(
     ])
 ) as Record<FontId, { baseName: string; targetLineFactor?: number }>;
 
-// --- NEW: ShellBundle Interface ---
+// --- ShellBundle Interface ---
 interface ShellBundle {
     container: AssetContainer;
-    material: PBRMaterial;
-    plugin: ColorSwapPlugin;
+    plugins: ColorSwapPlugin[]; // CHANGE 3: was `plugin: ColorSwapPlugin`
     // Map of specific parts by role ("shell", "thumbName", "indexHood", etc.)
     parts: Map<string, AbstractMesh>;
 }
@@ -548,7 +547,10 @@ export class SceneManager {
                         enableSdf = 0.0;
                     }
 
-                    this.activeShellBundle.plugin.enableSdf = enableSdf;
+                    // CHANGE 4: loop over all plugins instead of single plugin reference
+                    for (const plugin of this.activeShellBundle.plugins) {
+                        plugin.enableSdf = enableSdf;
+                    }
                     if (this.activeWebPlugin) {
                         this.activeWebPlugin.enableSdf = enableSdf;
                     }
@@ -563,7 +565,8 @@ export class SceneManager {
         this.resizeObserver.observe(canvas);
     }
 
-    private _setupMaterialWithPlugin(material: PBRMaterial, modelName: string): ColorSwapPlugin {
+    // CHANGE 2: added optional skipDetailMap parameter
+    private _setupMaterialWithPlugin(material: PBRMaterial, modelName: string, skipDetailMap = false): ColorSwapPlugin {
         const rootUrl = `${process.env.PUBLIC_URL || ''}/assets/`;
 
         const colorIdTexture = new Texture(`${rootUrl}${modelName}.png`, this.scene, true, false, Constants.TEXTURE_NEAREST_SAMPLINGMODE);
@@ -573,16 +576,19 @@ export class SceneManager {
 
         material.albedoTexture = colorIdTexture;
 
-        const detailTexture = new Texture(`${rootUrl}details.png`, this.scene);
-        detailTexture.coordinatesIndex = 0;
-        detailTexture.uScale = 3;
-        detailTexture.vScale = 3;
-        material.detailMap.isEnabled = true;
-        material.detailMap.normalBlendMethod = 1;
-        material.detailMap.texture = detailTexture;
-        material.detailMap.diffuseBlendLevel = 0;
-        material.detailMap.roughnessBlendLevel = 0;
-        material.detailMap.bumpLevel = .15;
+        // CHANGE 2: skip detail map block entirely when skipDetailMap is true
+        if (!skipDetailMap) {
+            const detailTexture = new Texture(`${rootUrl}details.png`, this.scene);
+            detailTexture.coordinatesIndex = 0;
+            detailTexture.uScale = 3;
+            detailTexture.vScale = 3;
+            material.detailMap.isEnabled = true;
+            material.detailMap.normalBlendMethod = 1;
+            material.detailMap.texture = detailTexture;
+            material.detailMap.diffuseBlendLevel = 0;
+            material.detailMap.roughnessBlendLevel = 0;
+            material.detailMap.bumpLevel = .15;
+        }
 
         const paletteColorsFromLogic: Color3[] =
             COLOR_OPTIONS.map(({ hex }) => Color3.FromHexString(hex).toLinearSpace())
@@ -625,15 +631,27 @@ export class SceneManager {
             return null;
         }
 
-        // Find material
+        // CHANGE 1: find both materials
         const material = container.materials.find(m => m.name === 'gloveMat') as PBRMaterial;
         if (!material) {
             console.error(`Material 'gloveMat' not found for ${modelName}.`);
             return null;
         }
 
-        // Setup plugin (only once per bundle)
+        const propsMaterial = container.materials.find(m => m.name === 'propsMat') as PBRMaterial | undefined;
+
+        // CHANGE 2: setup plugin for gloveMat using modelName (e.g. "openBack" → openBack.png + openBackSDF.png)
         const plugin = this._setupMaterialWithPlugin(material, modelName);
+
+        // CHANGE 3: build plugins array, start with the shell plugin
+        const plugins: ColorSwapPlugin[] = [plugin];
+
+        // CHANGE 1 + 2: if propsMat exists, set it up with its own textures and no detail map
+        if (propsMaterial) {
+            const propsPlugin = this._setupMaterialWithPlugin(propsMaterial, `${modelName}Props`, true);
+            // CHANGE 3: push propsPlugin into the array only if it exists
+            plugins.push(propsPlugin);
+        }
 
         // Index the parts (Optional meshes)
         // We look for them by name. If they exist, we store them.
@@ -659,8 +677,7 @@ export class SceneManager {
 
         return {
             container,
-            material,
-            plugin,
+            plugins, // CHANGE 3: was `plugin`
             parts
         };
     }
@@ -684,8 +701,12 @@ export class SceneManager {
     }
     // --- END NEW CODE ---
 
+    // CHANGE 4: broadcast to all plugins in the bundle
     public updateShellZonePointer(zoneIndex: number, paletteIndex: number): void {
-        this.activeShellBundle?.plugin.updateZonePaletteIndex(zoneIndex, paletteIndex);
+        if (!this.activeShellBundle) return;
+        for (const plugin of this.activeShellBundle.plugins) {
+            plugin.updateZonePaletteIndex(zoneIndex, paletteIndex);
+        }
     }
 
     public updateWebZonePointer(zoneIndex: number, paletteIndex: number): void {
@@ -905,9 +926,11 @@ export class SceneManager {
     };
 
     public dispose() {
-        // Updated dispose logic for bundles
+        // CHANGE 4: loop over all plugins in each bundle for dispose
         this.shellBundles.forEach(bundle => {
-            bundle.plugin.dispose();
+            for (const plugin of bundle.plugins) {
+                plugin.dispose();
+            }
             // Container dispose is optional but good practice if you want to free memory completely
             // bundle.container.dispose(); 
         });
