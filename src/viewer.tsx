@@ -653,6 +653,12 @@ export class SceneManager {
             plugins.push(propsPlugin);
         }
 
+        const logoMaterial = container.materials.find(m => m.name === 'logoMat') as PBRMaterial | undefined;
+        if (logoMaterial) {
+            const logoPlugin = this._setupMaterialWithPlugin(logoMaterial, `${modelName}Logo`, true);
+            plugins.push(logoPlugin);
+        }
+
         // Index the parts (Optional meshes)
         // We look for them by name. If they exist, we store them.
         const parts = new Map<string, AbstractMesh>();
@@ -665,7 +671,8 @@ export class SceneManager {
             'indexHood', 
             'middleHood', 
             'indexPad', 
-            'middlePad'
+            'middlePad',
+            'logo'
         ];
         
         for (const partName of optionalParts) {
@@ -754,6 +761,9 @@ export class SceneManager {
         
         const pinkyName = bundle.parts.get('pinkyName');
         if (pinkyName) pinkyName.setEnabled(true);
+
+        const logoMesh = bundle.parts.get('logo');
+        if (logoMesh) logoMesh.setEnabled(true);
 
         // C. Optional Parts: HIDDEN by default (until UI logic added)
         // This is where we handle the "Index Hood" toggle in the future.
