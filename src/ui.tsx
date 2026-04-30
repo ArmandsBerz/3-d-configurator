@@ -1414,7 +1414,6 @@ const OverviewDesktop = ({ onComplete }: { onComplete: () => void }) => {
 const AccordionDesktop = ({ openAccordion, setOpenAccordion, colorForApplyAll }: {
     openAccordion: string | null;
     setOpenAccordion: (id: string | null) => void;
-    // MODIFICATION: Use colorId
     colorForApplyAll?: ColorId;
 }) => {
     const { state, dispatch } = useGloveConfigurator();
@@ -1426,14 +1425,14 @@ const AccordionDesktop = ({ openAccordion, setOpenAccordion, colorForApplyAll }:
 
     const accordionContainerRef = useRef<HTMLDivElement>(null);
     const desktopAccordionContainerRef = useRef<HTMLDivElement>(null);
+    
+    // We keep the gradients for visual polish, but they no longer drive layout shifts!
     const { isTopGradientVisible, isBottomGradientVisible } = useScrollGradients(accordionContainerRef);
-    const isScrolled = isTopGradientVisible; // Derived state
 
     const closeAccordion = useCallback(() => setOpenAccordion(null), [setOpenAccordion]);
     useEscapeKey(desktopAccordionContainerRef, closeAccordion, !!openAccordion);
 
     const buildGroup = { id: 'build', title: 'Build Options' };
-    // --- MODIFICATION: Define personalization panels separately ---
     const personalizationGroups = [
         { id: 'thumbName' as TextPartId, title: 'Thumb Name' },
         { id: 'pinkyName' as TextPartId, title: 'Pinky Name' },
@@ -1446,7 +1445,6 @@ const AccordionDesktop = ({ openAccordion, setOpenAccordion, colorForApplyAll }:
         setOpenAccordion(openAccordion === accordionId ? null : accordionId);
     };
 
-    // MODIFICATION: Use colorId and lookup map
     const renderHeaderAccessory = (group: UIPartGroup) => {
         const isAccordionOpen = openAccordion === group.id;
         if (group.type === 'single' || group.type === 'gallery') {
@@ -1467,10 +1465,21 @@ const AccordionDesktop = ({ openAccordion, setOpenAccordion, colorForApplyAll }:
 
     return (
         <div ref={desktopAccordionContainerRef} className="absolute top-0 left-0 bottom-0 w-[440px] z-10 bg-[#161616] p-10 pointer-events-none">
-            <div className="absolute z-20 w-[70px] h-[49px] bg-gray-300 bg-opacity-75 flex items-center justify-center pointer-events-auto"><p className="font-bold text-xl text-gray-900">LOGO</p></div>
-            <div className={`absolute ${isScrolled ? 'top-[82px]' : 'top-[142px]'} bottom-4 left-[40px] w-[400px] pointer-events-auto transition-all duration-30 ease-in-out overflow-hidden`}>
+            
+            {/* 1. Static Logo */}
+            <div className="absolute z-20 w-[70px] h-[49px] bg-gray-300 bg-opacity-75 flex items-center justify-center pointer-events-auto">
+                <p className="font-bold text-xl text-gray-900">LOGO</p>
+            </div>
+            
+            {/* 2. Anchored Container: NO transition classes, NO dynamic top-[142px]. Fixed at top-[82px] */}
+            <div className="absolute top-[82px] bottom-4 left-[40px] w-[400px] pointer-events-auto overflow-hidden">
                 <ScrollGradient position={POSITIONS.TOP} isVisible={isTopGradientVisible} />
+                
                 <div ref={accordionContainerRef} className="h-full overflow-y-auto space-y-4 focus:outline-none focus-visible:outline focus-visible:outline-4 focus-visible:outline-white focus-visible:outline-offset-[-4px] show-thin-scrollbar">
+                    
+                    {/* 3. THE FIX: Native 60px physical spacer */}
+                    <div className="h-[60px] w-full shrink-0" aria-hidden="true" />
+
                     <AccordionOptionDesktop
                         key={buildGroup.id}
                         title={buildGroup.title}
@@ -1481,7 +1490,6 @@ const AccordionDesktop = ({ openAccordion, setOpenAccordion, colorForApplyAll }:
                         <BuildOption isDesktop={true} />
                     </AccordionOptionDesktop>
 
-                    {/* MANUALLY INJECTED: Web Gallery Slot 2 */}
                     <AccordionOptionDesktop
                         title="Web"
                         isOpen={openAccordion === 'web'}
@@ -1499,7 +1507,6 @@ const AccordionDesktop = ({ openAccordion, setOpenAccordion, colorForApplyAll }:
                         <WebOptions />
                     </AccordionOptionDesktop>
 
-                    {/* MANUALLY INJECTED: Pad/Hood Slot 3 */}
                     {definition.fingerProtectionPaletteId !== 'noneOnly' && (
                         <AccordionOptionDesktop
                             title="Pad / Hood"
