@@ -460,10 +460,10 @@ export class SceneManager {
     private shellBundles = new Map<string, ShellBundle>();
     private activeShellBundle: ShellBundle | null = null;
     
-    // Web logic remains simpler for now (webs are simpler meshes)
-    private webMaterialsCache = new Map<string, { material: PBRMaterial, plugin: ColorSwapPlugin }>();
-    private webs = new Map<string, Mesh>();
-    private activeWebPlugin: ColorSwapPlugin | null = null;
+    private webMaterialsCache = new Map<string, { container: AssetContainer, plugins: ColorSwapPlugin[] }>();
+    private activeWebContainer: AssetContainer | null = null;
+    private activeWebPlugins: ColorSwapPlugin[] = [];
+    private activeWebName: string | null = null;
 
     private activeShellName: string | null = null;
 
@@ -551,8 +551,9 @@ export class SceneManager {
                     for (const plugin of this.activeShellBundle.plugins) {
                         plugin.enableSdf = enableSdf;
                     }
-                    if (this.activeWebPlugin) {
-                        this.activeWebPlugin.enableSdf = enableSdf;
+                    // Loop over all active web plugins (leather, props, logos)
+                    for (const plugin of this.activeWebPlugins) {
+                        plugin.enableSdf = enableSdf;
                     }
                 }
             }
@@ -717,7 +718,10 @@ export class SceneManager {
     }
 
     public updateWebZonePointer(zoneIndex: number, paletteIndex: number): void {
-        this.activeWebPlugin?.updateZonePaletteIndex(zoneIndex, paletteIndex);
+        // This ensures the Web Leather and Web Props sync to the same color palette click
+        for (const plugin of this.activeWebPlugins) {
+            plugin.updateZonePaletteIndex(zoneIndex, paletteIndex);
+        }
     }
 
     // Add this method inside class SceneManager in viewer.tsx
@@ -780,34 +784,65 @@ export class SceneManager {
     }
 
     public async updateWeb(webModelName: string): Promise<void> {
+        // Prevent unnecessary reloading if clicking the same web twice
+        if (this.activeWebName === webModelName) return;
+
+        // 1. "Clean the Room" - Rip the old web and ALL its props out of the scene entirely
+        if (this.activeWebContainer) {
+            this.activeWebContainer.removeAllFromScene();
+        }
+
+        // If passing an empty string (e.g., removing the web), just clear states and stop
         if (!webModelName) {
-            this.webs.forEach(mesh => mesh.setEnabled(false));
-            this.activeWebPlugin = null;
+            this.activeWebPlugins = [];
+            this.activeWebContainer = null;
+            this.activeWebName = null;
             return;
         }
 
+        // 2. Load or Get from Cache
         if (this.webMaterialsCache.has(webModelName)) {
             const cached = this.webMaterialsCache.get(webModelName)!;
-            this.activeWebPlugin = cached.plugin;
+            
+            // Bring in the cached web and ALL its props
+            cached.container.addAllToScene();
+            
+            this.activeWebPlugins = cached.plugins;
+            this.activeWebContainer = cached.container;
+            this.activeWebName = webModelName;
         } else {
             const container = await this.assetManager.getAsset(webModelName);
-            const mesh = container.meshes.find(m => m.name === webModelName) as Mesh;
-            if (mesh) {
-                container.addAllToScene();
-                this.webs.set(webModelName, mesh);
+            
+            // Bring in the new web and ALL its props
+            container.addAllToScene();
 
-                const webMaterial = container.materials.find(m => m.name === 'webMat') as PBRMaterial;
-                if (webMaterial) {
-                    const webPlugin = this._setupMaterialWithPlugin(webMaterial, webModelName);
-                    this.activeWebPlugin = webPlugin;
-                    this.webMaterialsCache.set(webModelName, { material: webMaterial, plugin: webPlugin });
-                }
+            const webPlugins: ColorSwapPlugin[] = [];
+
+            // 3. Setup Main Leather
+            const webMaterial = container.materials.find(m => m.name === 'webMat') as PBRMaterial;
+            if (webMaterial) {
+                webPlugins.push(this._setupMaterialWithPlugin(webMaterial, webModelName));
             }
-        }
 
-        this.webs.forEach((mesh, name) => {
-            mesh.setEnabled(name === webModelName);
-        });
+            // 4. Setup Props (Laces/Stitching)
+            const webPropsMaterial = container.materials.find(m => m.name === 'webPropsMat') as PBRMaterial | undefined;
+            if (webPropsMaterial) {
+                webPlugins.push(this._setupMaterialWithPlugin(webPropsMaterial, `${webModelName}Props`, true));
+            }
+
+            // 5. Setup Logo
+            const webLogoMaterial = container.materials.find(m => m.name === 'webLogoMat') as PBRMaterial | undefined;
+            if (webLogoMaterial) {
+                webPlugins.push(this._setupMaterialWithPlugin(webLogoMaterial, `${webModelName}Logo`, true));
+            }
+
+            // 6. Update Active State & Cache
+            this.activeWebPlugins = webPlugins;
+            this.activeWebContainer = container;
+            this.activeWebName = webModelName;
+            
+            this.webMaterialsCache.set(webModelName, { container, plugins: webPlugins });
+        }
     }
 
     public updateText = (options: { zone: string; text: string; font: Font; color: string; }) => {
@@ -946,8 +981,14 @@ export class SceneManager {
         });
         this.shellBundles.clear();
         
-        this.webMaterialsCache.forEach(cached => cached.plugin.dispose());
+        // Clean up all nested web plugins to prevent VRAM memory leaks
+        this.webMaterialsCache.forEach(cached => {
+            for (const plugin of cached.plugins) {
+                plugin.dispose();
+            }
+        });
         this.webMaterialsCache.clear();
+
         this.resizeObserver.disconnect();
         this.scene.dispose();
         this.engine.dispose();
