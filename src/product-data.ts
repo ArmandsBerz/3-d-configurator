@@ -724,7 +724,7 @@ export const resolveProduct = (build: BuildConfig): ProductDefinition => {
 
 export const PRESETS = {
     'open-back': {
-        build: { palette: 'universal', imageSelection: 'imgOpt1', position: 'inf', size: '1100', handOpeningSize: 'adt', stiffness: 'std', throwingHand: 'rh', webType: 'mtp', fingerProtection: 'non' },
+        build: { palette: 'universal', imageSelection: 'imgOpt1', position: 'inf', size: '1100', handOpeningSize: 'adt', stiffness: 'std', throwingHand: 'rh', webType: 'sp', fingerProtection: 'non' },
         thumbName: { type: 'text', text: 'Thumb', font: 'LOBSTER', colorId: 'gy' },
         pinkyName: { type: 'text', text: 'Pinky', font: 'ROBOTO', colorId: 'sl' },
         [ZONES.THUMB_INNER]:    { colorId: 'rd' },
