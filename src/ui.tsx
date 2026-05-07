@@ -58,6 +58,7 @@ import { SummaryIcon, BackArrowIcon, CheckmarkIcon, LongArrowRightIcon, CaretRig
 import { Snackbar } from './snackbar'; 
 // @ts-ignore
 import LogoImage from './LVSportsLogo.svg';
+import { SpecGenerator } from './spec-generator';
 
 
 // --- START: NEW SCROLL GRADIENT HOOK ---
@@ -2437,6 +2438,7 @@ const GloveLogicController = () => {
 const GloveAppContent = () => {
     const [sceneManager, setSceneManager] = useState<SceneManager | null>(null);
 
+    // YOU NEED THIS: It's the bridge between the browser window and the 3D Engine
     const isDesktop = useBreakpoint(); 
 
     const { state } = useGloveConfigurator();
@@ -2445,13 +2447,12 @@ const GloveAppContent = () => {
 
     return (
         <SceneContext.Provider value={sceneManager}>
-
             <div id="app-root" className="relative w-full h-[100dvh] bg-[#161616]">
                 <div id="babylon-container" className="absolute z-10 origin-top-left">
                     <BabylonCanvas
                         onSceneReady={setSceneManager}
                         initialModelName={initialShellName} 
-                        isDesktop={isDesktop}
+                        isDesktop={isDesktop} // PASS THE DATA BACK TO THE VIEWER
                     />
                 </div>
                 {state.isLoading && <Loader />}
@@ -2462,7 +2463,7 @@ const GloveAppContent = () => {
 
             <GloveLogicController />
             <URLSyncController />
-
+            <SpecGenerator state={state} />
         </SceneContext.Provider>
     );
 };
