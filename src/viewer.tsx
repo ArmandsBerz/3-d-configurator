@@ -475,6 +475,7 @@ export class SceneManager {
     private _textDTs = new Map<string, DynamicTexture>(); // Single atlas holding ID (RGB) + Cutout (Alpha)
     private _textPlugins = new Map<string, ColorSwapPlugin>(); // Tracks shader instances for text
     private _lastText = new Map<string, string>();
+    private _initToken = 0; // Tracks the current active initialization cycle
 
     // -------------------------------------
 
@@ -662,8 +663,37 @@ hemiLight.intensity = 0.8;
         };
     }
 
+
+    private async _preloadFonts(): Promise<void> {
+        const fontFamilies = FONT_REGISTRY.map(font => font.baseName);
+        try {
+            // Preload all fonts at a standard size in parallel
+            await Promise.all(
+                fontFamilies.map(fontFamily => 
+                    document.fonts.load(`72px ${fontFamily}`)
+                )
+            );
+        } catch (e) {
+            console.warn("[Font Preloader] Failed to preload fonts:", e);
+        }
+    }
+
     private async loadInitialAssets(onReady: (manager: SceneManager) => void, modelName: string) {
+        // 1. Capture the unique token for this specific initialization run
+        const myToken = ++this._initToken;
+
+        // 2. Await the network font downloads
+        await this._preloadFonts(); 
+
+        // 3. THE GUARD: If React remounted while we waited, our token is stale.
+        if (this._initToken !== myToken) return; 
+
+        // 4. Safe to continue loading the massive 3D GLB files
         await this.updateBuild(modelName);
+        
+        // 5. Final safety check
+        if (this._initToken !== myToken) return;
+        
         this.isSceneReady = true;
         onReady(this);
     }
@@ -903,7 +933,7 @@ hemiLight.intensity = 0.8;
         });
     }
 
-    public updateText = async (options: { zone: string; text: string; font: Font; color: string; outlineColor?: string; }) => {
+    public updateText = (options: { zone: string; text: string; font: Font; color: string; outlineColor?: string; }) => {
         const { zone, text, font, color, outlineColor } = options;
         if (!this.activeShellName) return;
         
@@ -919,7 +949,7 @@ hemiLight.intensity = 0.8;
         let texH = 1024;
         if (zone === 'pinkyName') {
             texW = 1024;
-            texH = 415; // Tighter crop for the pinky UV map
+            texH = 415;
         }
 
         if (!textDT) {
@@ -928,14 +958,14 @@ hemiLight.intensity = 0.8;
             this._textDTs.set(zone, textDT);
         }
 
-        // 2. Correct PBR Material Setup (Reacts to light like real print/embroidery)
+        // 2. Correct PBR Material Setup
         textMat.opacityTexture = textDT; 
         textMat.albedoTexture = textDT; 
         textMat.useAlphaFromAlbedoTexture = true;
         textMat.transparencyMode = PBRMaterial.PBRMATERIAL_ALPHABLEND; 
-        textMat.unlit = false; // Let it react to the scene lighting
-        textMat.metallic = 0.1; // Slight metallic for a vinyl/thread sheen
-        textMat.roughness = 0.6; // Rough enough to look like fabric/vinyl
+        textMat.unlit = false; 
+        textMat.metallic = 0.1; 
+        textMat.roughness = 0.6; 
         textMat.albedoColor = new Color3(1, 1, 1);
 
         const signature = `${font}:${text}:${color}:${outlineColor}`;
@@ -943,6 +973,7 @@ hemiLight.intensity = 0.8;
         if (last === signature) return;
         this._lastText.set(zone, signature);
 
+        // 3. Clear canvas and draw immediately (no async pauses!)
         const ctx = textDT.getContext() as CanvasRenderingContext2D;
         ctx.clearRect(0, 0, texW, texH);
 
@@ -954,15 +985,6 @@ hemiLight.intensity = 0.8;
         const fontFamily = FONT_CONFIG[font as FontId]?.baseName || 'AgencyFB'; 
         let fontSize = Math.floor(texH * 0.6); // Start at 60% height
 
-        // ---> THE FONT GUARD <---
-        // This guarantees the browser has the font in memory before Canvas draws it
-        try {
-            await document.fonts.load(`${fontSize}px ${fontFamily}`);
-        } catch (e) {
-            console.warn(`[Font Loader] Failed to await ${fontFamily}, falling back.`, e);
-        }
-
-        // Now it is perfectly safe to draw
         ctx.font = `${fontSize}px ${fontFamily}`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
@@ -970,7 +992,7 @@ hemiLight.intensity = 0.8;
         ctx.miterLimit = 2;
 
         // 4. Dynamic text scaling (shrink long names to fit)
-        const maxWidth = texW * 0.95; // 5% padding
+        const maxWidth = texW * 0.95; 
         while (ctx.measureText(text).width > maxWidth && fontSize > 10) {
             fontSize -= 4;
             ctx.font = `${fontSize}px ${fontFamily}`;
@@ -995,6 +1017,8 @@ hemiLight.intensity = 0.8;
     };
 
     public dispose() {
+        this._initToken++; // Instantly invalidate any pending async loads
+        
         this._textDTs.forEach(dt => dt.dispose());
         this._textDTs.clear();
         this._textPlugins.forEach(plugin => plugin.dispose());
