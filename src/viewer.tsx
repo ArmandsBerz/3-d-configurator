@@ -433,23 +433,6 @@ class AssetManager {
 // --- Bitmap font types & registry ---
 type FontId = Font;
 
-interface BitmapFontGlyph {
-    x: number; y: number; w: number; h: number;
-    xoffset: number; yoffset: number; xadvance: number; page: number;
-}
-
-interface BitmapFontCommon {
-    lineHeight: number; base: number; scaleW: number; scaleH: number;
-    targetLineFactor?: number;
-}
-
-interface BitmapFontData {
-    image: HTMLImageElement;
-    common: BitmapFontCommon;
-    chars: Map<number, BitmapFontGlyph>;
-    kern: Map<string, number>;
-}
-
 const FONT_CONFIG = Object.fromEntries(
     FONT_REGISTRY.map(font => [
         font.id,
@@ -489,16 +472,10 @@ export class SceneManager {
 
     private activeShellName: string | null = null;
 
-    private _bitmapFontReady: Promise<void> | null = null;
-    private _fonts = new Map<FontId, BitmapFontData>();
     private _textDTs = new Map<string, DynamicTexture>(); // Single atlas holding ID (RGB) + Cutout (Alpha)
     private _textPlugins = new Map<string, ColorSwapPlugin>(); // Tracks shader instances for text
     private _lastText = new Map<string, string>();
 
-    // --- ADD THE NEW GETTER RIGHT HERE ---
-    public get fontsReady(): Promise<void> | null {
-        return this._bitmapFontReady;
-    }
     // -------------------------------------
 
     constructor(canvas: HTMLCanvasElement, onReady: (manager: SceneManager) => void, initialModelName: string) {
@@ -538,8 +515,6 @@ hemiLight.intensity = 0.8;
         // 3. Increase the overall lighting strength slightly (Default is 1.0)
         this.scene.environmentIntensity = 1.6;
 
-        
-        this._bitmapFontReady = this._initBitmapFonts();
 
         this.loadInitialAssets(onReady, initialModelName);
 
@@ -928,7 +903,7 @@ hemiLight.intensity = 0.8;
         });
     }
 
-    public updateText = (options: { zone: string; text: string; font: Font; color: string; outlineColor?: string; }) => {
+    public updateText = async (options: { zone: string; text: string; font: Font; color: string; outlineColor?: string; }) => {
         const { zone, text, font, color, outlineColor } = options;
         if (!this.activeShellName) return;
         
@@ -936,29 +911,15 @@ hemiLight.intensity = 0.8;
         const textMat = this.scene.getMaterialByName(materialName) as PBRMaterial;
         
         if (!textMat) return;
-        if (!this._bitmapFontReady) return;
-        if (this._fonts.size === 0) return;
 
-        let fontData = this._fonts.get(font as FontId) || this._fonts.get('LOBSTER' as FontId);
-        if (!fontData && this._fonts.size > 0) {
-            fontData = Array.from(this._fonts.values())[0];
-        }
-        if (!fontData) return;
-
-        const { image: img, common, chars, kern } = fontData;
         let textDT = this._textDTs.get(zone);
 
-        // ==========================================
-        // 1. ZONE-SPECIFIC PROPORTIONS
-        // Change these values to match the actual UV proportions of your meshes!
-        // ==========================================
-       let texW = 2048;
-        let texH = 2048;
-
-        // OVERRIDE: Only change the proportions if the zone is specifically the pinky.
+        // 1. Efficient texture sizes based on zone
+        let texW = 1024;
+        let texH = 1024;
         if (zone === 'pinkyName') {
-            texW = 2048;
-            texH = 831; // Adjust this height specifically for your pinky mesh UVs
+            texW = 1024;
+            texH = 415; // Tighter crop for the pinky UV map
         }
 
         if (!textDT) {
@@ -967,143 +928,69 @@ hemiLight.intensity = 0.8;
             this._textDTs.set(zone, textDT);
         }
 
-        // --- 1. MATERIAL & TRANSPARENCY SETUP ---
-        textMat.opacityTexture = null; 
-        textMat.albedoTexture = null; 
-        textMat.bumpTexture = null; 
-        textMat.useAlphaFromAlbedoTexture = false;
+        // 2. Correct PBR Material Setup (Reacts to light like real print/embroidery)
+        textMat.opacityTexture = textDT; 
+        textMat.albedoTexture = textDT; 
+        textMat.useAlphaFromAlbedoTexture = true;
         textMat.transparencyMode = PBRMaterial.PBRMATERIAL_ALPHABLEND; 
-        textMat.unlit = false;
-        textMat.metallic = 0;
-        textMat.roughness = 0.45;
+        textMat.unlit = false; // Let it react to the scene lighting
+        textMat.metallic = 0.1; // Slight metallic for a vinyl/thread sheen
+        textMat.roughness = 0.6; // Rough enough to look like fabric/vinyl
         textMat.albedoColor = new Color3(1, 1, 1);
-        
-        // --- 2. PLUGIN INITIALIZATION ---
-        let plugin = this._textPlugins.get(zone);
-        if (!plugin) {
-            const paletteColorsFromLogic = COLOR_OPTIONS
-                .map(({ hex }) => Color3.FromHexString(hex).toLinearSpace())
-                .slice(0, 22);
 
-            const textConfig: ColorSwapConfig = {
-                baseColors: [
-                    "#FF0000", "#00FFFF", "#80FF00", "#7F00FF", "#FFBF00", "#0040FF", "#00FF40", "#FF00BF",
-                    "#FF6000", "#009FFF", "#20FF00", "#DF00FF", "#DFFF00", "#2000FF", "#00FF9F", "#FF0060",
-                    "#FF3000", "#00CFFF", "#50FF00", "#AF00FF", "#FFEF00", "#0010FF", "#00FF70", "#FF008F",
-                    "#FF8F00", "#0070FF", "#00FF10", "#FF00EF", "#AFFF00", "#5000FF", "#00FFCF", "#FF0030"
-                ],
-                initialReplacements: paletteColorsFromLogic
-            };
-
-            plugin = new ColorSwapPlugin(textMat, textConfig);
-            plugin.setIDTexture(textDT); 
-            plugin.enableSdf = 2.0; 
-            
-            this._textPlugins.set(zone, plugin);
-        }
-
-        // --- EXACT HEX COLOR CONTROL ---
-        try {
-            plugin.textColor = Color3.FromHexString(color);
-            plugin.outlineColor = outlineColor ? Color3.FromHexString(outlineColor) : Color3.FromHexString(color);
-        } catch {
-            plugin.textColor = new Color3(1, 1, 1);
-            plugin.outlineColor = new Color3(1, 1, 1);
-        }
-
-        const signature = `${font}:${text}`;
+        const signature = `${font}:${text}:${color}:${outlineColor}`;
         const last = this._lastText.get(zone) ?? "";
         if (last === signature) return;
         this._lastText.set(zone, signature);
 
-        const ctxT = textDT.getContext();
-        ctxT.clearRect(0, 0, texW, texH);
+        const ctx = textDT.getContext() as CanvasRenderingContext2D;
+        ctx.clearRect(0, 0, texW, texH);
 
         if (!text) {
             textDT.update(false);
             return;
         }
 
-        // --- 1. PRE-PASS: MEASURE RAW WIDTH ---
-        const tracking = -2; 
-        
-        let rawWidth = 0;
-        let measurePrevCode = -1;
-        for (const ch of text) {
-            const code = ch.codePointAt(0)!;
-            if (measurePrevCode >= 0) {
-                rawWidth += (kern.get(`${measurePrevCode},${code}`) ?? 0);
-            }
-            const g = chars.get(code);
-            if (g) {
-                rawWidth += g.xadvance + tracking;
-            } else {
-                const space = chars.get(32);
-                rawWidth += (space ? space.xadvance : common.lineHeight * 0.35) + tracking;
-            }
-            measurePrevCode = code;
-        }
-        
-        if (text.length > 0) {
-            rawWidth -= tracking; 
+        const fontFamily = FONT_CONFIG[font as FontId]?.baseName || 'AgencyFB'; 
+        let fontSize = Math.floor(texH * 0.6); // Start at 60% height
+
+        // ---> THE FONT GUARD <---
+        // This guarantees the browser has the font in memory before Canvas draws it
+        try {
+            await document.fonts.load(`${fontSize}px ${fontFamily}`);
+        } catch (e) {
+            console.warn(`[Font Loader] Failed to await ${fontFamily}, falling back.`, e);
         }
 
-        // --- 2. SANE, ELEGANT SCALING & CENTERING ---
-        const targetLineFactor = common.targetLineFactor ?? 0.51;
-        const maxScaleY = (texH * targetLineFactor) / Math.max(common.lineHeight, 1);
-        const maxScaleX = (texW * 0.95) / Math.max(rawWidth, 1);
-        
-        const scale = Math.min(maxScaleX, maxScaleY);
-        
-        const totalWidth = rawWidth * scale;
-        const lineAdvance = common.lineHeight * scale;
-        
-        let penX = (texW - totalWidth) * 0.5; 
-        const lineTopY = (texH - lineAdvance) * 0.5;
-        let penY = lineTopY + common.base * scale;
+        // Now it is perfectly safe to draw
+        ctx.font = `${fontSize}px ${fontFamily}`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.lineJoin = 'round';
+        ctx.miterLimit = 2;
 
-        // --- 3. DRAWING LOOP ---
-        let prevCode = -1;
-        for (const ch of text) {
-            if (ch === '\n') {
-                penX = (texW - totalWidth) * 0.5; 
-                penY += lineAdvance;
-                prevCode = -1;
-                continue;
-            }
-            const code = ch.codePointAt(0)!;
-
-            if (prevCode >= 0) {
-                const k = kern.get(`${prevCode},${code}`) ?? 0;
-                penX += k * scale;
-            }
-
-            const g = chars.get(code);
-            if (!g || g.w === 0 || g.h === 0) {
-                const space = chars.get(32);
-                penX += (space ? space.xadvance : common.lineHeight * 0.35) * scale;
-                prevCode = code;
-                continue;
-            }
-
-            const srcX = g.x;
-            const srcY = g.y;
-            const srcW = g.w;
-            const srcH = g.h;
-
-            const dstX = Math.round(penX + g.xoffset * scale);
-            const dstY = Math.round(lineTopY + g.yoffset * scale);
-            const dstW = Math.max(1, Math.round(srcW * scale));
-            const dstH = Math.max(1, Math.round(srcH * scale));
-
-            if (dstX < texW && dstY < texH && dstX + dstW > 0 && dstY + dstH > 0) {
-                ctxT.drawImage(img, srcX, srcY, srcW, srcH, dstX, dstY, dstW, dstH);
-            }
-
-            penX += (g.xadvance + tracking) * scale;
-            prevCode = code;
+        // 4. Dynamic text scaling (shrink long names to fit)
+        const maxWidth = texW * 0.95; // 5% padding
+        while (ctx.measureText(text).width > maxWidth && fontSize > 10) {
+            fontSize -= 4;
+            ctx.font = `${fontSize}px ${fontFamily}`;
         }
 
+        const centerX = texW / 2;
+        const centerY = texH / 2;
+
+        // 5. Draw Outline
+        if (outlineColor && outlineColor.toLowerCase() !== color.toLowerCase()) {
+            ctx.strokeStyle = outlineColor;
+            ctx.lineWidth = fontSize * 0.12; 
+            ctx.strokeText(text, centerX, centerY);
+        }
+
+        // 6. Draw Fill
+        ctx.fillStyle = color;
+        ctx.fillText(text, centerX, centerY);
+
+        // Push to GPU
         textDT.update(false);
     };
 
@@ -1126,115 +1013,6 @@ hemiLight.intensity = 0.8;
         this.resizeObserver.disconnect();
         this.scene.dispose();
         this.engine.dispose();
-    }
-
-    private async _initBitmapFonts(): Promise<void> {
-        const rootUrl = `${process.env.PUBLIC_URL || ''}/assets/`;
-
-        const fontIds = Object.keys(FONT_CONFIG) as FontId[];
-
-        const loadFont = async (fontId: FontId): Promise<void> => {
-            const { baseName, targetLineFactor } = FONT_CONFIG[fontId];
-
-            try {
-                const image = await new Promise<HTMLImageElement>((resolve, reject) => {
-                    const im = new Image();
-                    im.crossOrigin = 'anonymous';
-                    im.onload = () => resolve(im);
-                    im.onerror = reject;
-                    im.src = `${rootUrl}${baseName}.png`;
-                });
-
-                const fntResponse = await fetch(`${rootUrl}${baseName}.fnt`);
-                if (!fntResponse.ok) {
-                    throw new Error(`Failed to load font description for ${baseName}`);
-                }
-                const fntText = await fntResponse.text();
-
-                const num = (s: string | undefined) => Number(s ?? 0);
-                let scaleW = 0, scaleH = 0, lineHeight = 0, base = 0;
-
-                const chars = new Map<number, BitmapFontGlyph>();
-                const kern = new Map<string, number>();
-
-                const parseKV = (line: string) =>
-                    Object.fromEntries(
-                        line.split(/\s+/)
-                            .slice(1)
-                            .filter(Boolean)
-                            .map(pair => {
-                                const [k, vRaw] = pair.split('=');
-                                const v = vRaw?.replace(/^"/, '').replace(/"$/, '');
-                                return [k, v];
-                            })
-                    );
-
-                for (const raw of fntText.split(/\r?\n/)) {
-                    const line = raw.trim();
-                    if (!line) continue;
-
-                    if (line.startsWith('common ')) {
-                        const kv = parseKV(line);
-                        lineHeight = num(kv.lineHeight);
-                        base = num(kv.base);
-                        scaleW = num(kv.scaleW);
-                        scaleH = num(kv.scaleH);
-                        continue;
-                    }
-
-                    if (line.startsWith('char ')) {
-                        const kv = parseKV(line);
-                        const id = num(kv.id);
-                        if (isNaN(id)) continue;
-                        chars.set(id, {
-                            x: num(kv.x),
-                            y: num(kv.y),
-                            w: num(kv.width ?? kv.w),
-                            h: num(kv.height ?? kv.h),
-                            xoffset: num(kv.xoffset),
-                            yoffset: num(kv.yoffset),
-                            xadvance: num(kv.xadvance),
-                            page: num(kv.page),
-                        });
-                        continue;
-                    }
-
-                    if (line.startsWith('kerning ')) {
-                        const kv = parseKV(line);
-                        const first = num(kv.first);
-                        const second = num(kv.second);
-                        const amount = num(kv.amount);
-                        if (!isNaN(first) && !isNaN(second)) {
-                            kern.set(`${first},${second}`, amount);
-                        }
-                        continue;
-                    }
-                }
-
-                const common: BitmapFontCommon = {
-                    lineHeight,
-                    base,
-                    scaleW,
-                    scaleH,
-                    targetLineFactor,
-                };
-
-                const fontData: BitmapFontData = {
-                    image,
-                    common,
-                    chars,
-                    kern,
-                };
-
-                this._fonts.set(fontId, fontData);
-            } catch (error) {
-                if (process.env.NODE_ENV === 'development') {
-                    console.warn(`[BitmapFont] Failed to load font "${fontId}" (${baseName})`, error);
-                }
-            }
-        };
-
-        await Promise.all(fontIds.map(loadFont));
     }
 }
 

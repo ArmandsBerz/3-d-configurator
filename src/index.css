@@ -1,17 +1,23 @@
-/* Tailwind directives */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* --- Layout Rules --- */
+/* --- Custom Fonts --- */
 
-/* This is the main container for the entire application.
-  It establishes a coordinate system for its children and sets the background color.
-*/
+
+@font-face {
+  font-family: 'LOBSTER';
+  src: url('./assets/fonts/Lobster-Regular.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: block;
+}
+
+/* --- Layout Rules --- */
 .app-container {
   position: relative;
   width: 100vw;
-  height: 100dvh; /* Use dvh for better mobile viewport handling */
+  height: 100dvh;
   background-color: #161616;
   overflow: hidden;
 }

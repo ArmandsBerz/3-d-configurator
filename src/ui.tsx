@@ -2398,10 +2398,6 @@ const GloveLogicController = () => {
 
                 sceneManager.syncConfiguration(configuration, definition);
 
-                console.log("[DIAGNOSTIC] 3. Waiting for fontsReady...");
-                await sceneManager.fontsReady; 
-                console.log("[DIAGNOSTIC] 3. SUCCESS");
-
                 sceneManager.updateText({
                     zone: 'thumbName',
                     text: configuration.thumbName.text,
