@@ -7,7 +7,15 @@
 
 @font-face {
   font-family: 'LOBSTER';
-  src: url('./assets/fonts/Lobster-Regular.ttf') format('truetype');
+  src: url('./assets/fonts/lobster.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: block;
+}
+
+@font-face {
+  font-family: 'ROBOTO';
+  src: url('./assets/fonts/roboto.ttf') format('truetype');
   font-weight: normal;
   font-style: normal;
   font-display: block;
