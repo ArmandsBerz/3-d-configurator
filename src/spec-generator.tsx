@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 import { ZONES, getHexById, AppState, FONT_REGISTRY } from './product-data';
 import { jsPDF } from 'jspdf';
 import 'svg2pdf.js';
-import opentype from 'opentype.js'; // <-- ADD THIS IMPORT
+import opentype from 'opentype.js';
 
 export const SpecGenerator = ({ state }: { state: AppState }) => {
     const isGenerating = useRef(false);
@@ -84,18 +84,19 @@ export const SpecGenerator = ({ state }: { state: AppState }) => {
                                 const y = parseFloat(textElement.getAttribute('y') || '0');
                                 const transform = textElement.getAttribute('transform'); // <-- Preserve Affinity's positioning
                                 
-                                let fontSize = 72; 
-                                const styleAttr = textElement.getAttribute('style');
-                                if (styleAttr) {
-                                    const match = styleAttr.match(/font-size:([\d.]+)px/);
-
-                                        if (match) {
-                                            fontSize = parseFloat(match[1]);
-                                        }
-                                }
+                                // ---------------------------------------------------------
+                                // VIRTUAL SAFE BOX SYSTEM (ZONE-SPECIFIC RESOLUTION)
+                                // ---------------------------------------------------------
+                                const isFront = fieldId === 'thumbName';
                                 
+                                // Front is a compact chest zone. Back is a wide shoulder nameplate.
+                                const MAX_WIDTH = isFront ? 1574.12 : 3800.00;
+                                const MAX_HEIGHT = isFront ? 1000.00 : 800.00;
+
+                                // Base font size starts at the maximum allowed height limit
+                                let fontSize = MAX_HEIGHT;
+
                                 const textColorHex = getHexById(textConfig.colorId);
-                                // 1. Grab the outline color from the state
                                 const outlineColorHex = textConfig.outlineColorId ? getHexById(textConfig.outlineColorId) : null;
 
                                 // USE YOUR ACTUAL REGISTRY
@@ -105,8 +106,6 @@ export const SpecGenerator = ({ state }: { state: AppState }) => {
                                     continue;
                                 }
 
-                                // Ensure these filenames match exactly what is in your public/assets/fonts/ folder
-                                // If your file is Lobster-Regular.ttf, change fontMeta.baseName in your registry to match!
                                 const fontFileName = `${fontMeta.baseName}.ttf`; 
                                 const fontUrl = `${process.env.PUBLIC_URL || ''}/assets/fonts/${fontFileName}`;
 
@@ -114,16 +113,76 @@ export const SpecGenerator = ({ state }: { state: AppState }) => {
                                     const fontBuffer = await (await fetch(fontUrl)).arrayBuffer();
                                     const font = opentype.parse(fontBuffer);
 
-                                    const MAX_WIDTH_POINTS = 600; 
-                                    let path = font.getPath(textConfig.text, x, y, fontSize);
+                                    // A. Extract the original placeholder metrics to find its true center
+                                    const originalText = textElement.textContent || 'x';
+                                    let origFontSize = 1678.89; // Fallback to your SVG standard
+                                    
+                                    const styleAttr = textElement.getAttribute('style');
+                                    if (styleAttr) {
+                                        const match = styleAttr.match(/font-size:([\d.]+)px/);
+                                        if (match && match) {
+                                            origFontSize = parseFloat(match[1]);
+                                        }
+                                    }
+                                    const fontSizeAttr = textElement.getAttribute('font-size');
+                                    if (fontSizeAttr) {
+                                        origFontSize = parseFloat(fontSizeAttr);
+                                    }
+
+                                    // Measure original placeholder path
+                                    const origPath = font.getPath(originalText, 0, 0, origFontSize);
+                                    const origBox = origPath.getBoundingBox();
+                                    const origWidth = origBox.x2 - origBox.x1;
+                                    
+                                    // Calculate the absolute geometric center (Cx) of the original placeholder
+                                    const Cx = x + origBox.x1 + (origWidth / 2);
+
+                                    // B. Generate new text path at origin (0,0) to measure physical boundaries
+                                    let path = font.getPath(textConfig.text, 0, 0, fontSize);
                                     let boundingBox = path.getBoundingBox();
                                     let textWidth = boundingBox.x2 - boundingBox.x1;
+                                    let textHeight = boundingBox.y2 - boundingBox.y1;
 
-                                    while (textWidth > MAX_WIDTH_POINTS && fontSize > 10) {
-                                        fontSize -= 4;
-                                        path = font.getPath(textConfig.text, x, y, fontSize);
+                                    // C. O(1) Constant-Time Mathematical Scaling Projection
+                                    const widthRatio = MAX_WIDTH / textWidth;
+                                    const heightRatio = MAX_HEIGHT / textHeight;
+                                    const scaleFactor = Math.min(1, widthRatio, heightRatio);
+
+                                    if (scaleFactor < 1) {
+                                        fontSize = Math.floor(fontSize * scaleFactor);
+                                        path = font.getPath(textConfig.text, 0, 0, fontSize);
                                         boundingBox = path.getBoundingBox();
                                         textWidth = boundingBox.x2 - boundingBox.x1;
+                                        textHeight = boundingBox.y2 - boundingBox.y1;
+                                    }
+
+                                    // D. Align the new text's geometric center EXACTLY with Cx
+                                    const drawX = Cx - (textWidth / 2) - boundingBox.x1;
+
+                                    // E. Generate the final path at the absolute corrected coordinate
+                                    path = font.getPath(textConfig.text, drawX, y, fontSize);
+
+                                    // --- THE HARD-MATH FIX FOR SVG2PDF ---
+                                    // Forces 'Z' on every contour to prevent open gaps during PDF vector compilation
+                                    if (path.commands) {
+                                        const closedCommands: any[] = [];
+                                        for (let i = 0; i < path.commands.length; i++) {
+                                            const cmd = path.commands[i];
+                                            if (cmd.type === 'M' && i > 0) {
+                                                const prev = path.commands[i - 1];
+                                                if (prev.type !== 'Z' && prev.type !== 'M') {
+                                                    closedCommands.push({ type: 'Z' });
+                                                }
+                                            }
+                                            closedCommands.push(cmd);
+                                        }
+                                        if (closedCommands.length > 0) {
+                                            const last = closedCommands[closedCommands.length - 1];
+                                            if (last.type !== 'Z' && last.type !== 'M') {
+                                                closedCommands.push({ type: 'Z' });
+                                            }
+                                        }
+                                        path.commands = closedCommands;
                                     }
 
                                     const pathData = path.toPathData(2); 
@@ -138,28 +197,39 @@ export const SpecGenerator = ({ state }: { state: AppState }) => {
                                     }
                                     
                                     // ---------------------------------------------------------
-                                    // LAYER 1: THE STROKE (Fat outline underneath)
+                                    // LAYER 1: THE STROKE GROUP (Forces independent rendering pass)
                                     // ---------------------------------------------------------
                                     if (outlineColorHex && outlineColorHex.toLowerCase() !== textColorHex.toLowerCase()) {
+                                        const strokeGroup = doc.createElementNS("http://www.w3.org/2000/svg", "g");
+                                        strokeGroup.setAttribute('id', `${fieldId}-stroke-pass`);
+                                        
                                         const strokePath = doc.createElementNS("http://www.w3.org/2000/svg", "path");
                                         strokePath.setAttribute('d', pathData);
-                                        strokePath.setAttribute('fill', 'none'); // Transparent center
+                                        strokePath.setAttribute('fill', 'none'); 
                                         strokePath.setAttribute('stroke', outlineColorHex);
                                         strokePath.setAttribute('stroke-width', (fontSize * 0.12).toString()); 
                                         strokePath.setAttribute('stroke-linejoin', 'round');
-                                        strokePath.setAttribute('stroke-linecap', 'round'); // Smooth ends
-                                        groupElement.appendChild(strokePath);
+                                        strokePath.setAttribute('stroke-linecap', 'round'); 
+                                        
+                                        strokeGroup.appendChild(strokePath);
+                                        groupElement.appendChild(strokeGroup);
                                     }
                                     
                                     // ---------------------------------------------------------
-                                    // LAYER 2: THE FILL (Crisp text on top)
+                                    // LAYER 2: THE FILL GROUP (Forces independent rendering pass)
                                     // ---------------------------------------------------------
+                                    const fillGroup = doc.createElementNS("http://www.w3.org/2000/svg", "g");
+                                    fillGroup.setAttribute('id', `${fieldId}-fill-pass`);
+                                    
                                     const fillPath = doc.createElementNS("http://www.w3.org/2000/svg", "path");
                                     fillPath.setAttribute('d', pathData);
                                     fillPath.setAttribute('fill', textColorHex);
                                     
-                                    // No stroke applied here, so the inward bleed doesn't happen
-                                    groupElement.appendChild(fillPath);
+                                    // THE FIX: Override Affinity's 'evenodd' to close the transparent holes
+                                    fillPath.setAttribute('fill-rule', 'nonzero'); 
+                                    
+                                    fillGroup.appendChild(fillPath);
+                                    groupElement.appendChild(fillGroup);
                                     
                                     // Swap out the vulnerable <text> node for our bulletproof layered group
                                     textElement.parentNode?.replaceChild(groupElement, textElement);
@@ -169,8 +239,6 @@ export const SpecGenerator = ({ state }: { state: AppState }) => {
                                     }
 
                                 } catch (error) {
-                                    // REMOVED THE SILENT FALLBACK. 
-                                    // If it fails now, it will scream at you in the console and you will know exactly why.
                                     console.error(`[Ghost Pipeline] CRITICAL FAIL on ${fieldId}. Check your font path: ${fontUrl}`, error);
                                 }
                             }
