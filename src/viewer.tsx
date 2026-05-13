@@ -968,7 +968,8 @@ hemiLight.intensity = 0.8;
         }
 
         if (!textDT) {
-            textDT = new DynamicTexture(`${zone}_id_map`, { width: texW, height: texH }, this.scene, false);
+            // CHANGED: false -> true to enable MipMap generation for text
+            textDT = new DynamicTexture(`${zone}_id_map`, { width: texW, height: texH }, this.scene, true);
             textDT.hasAlpha = true;
             this._textDTs.set(zone, textDT);
         }
