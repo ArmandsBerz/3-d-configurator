@@ -349,17 +349,32 @@ float fillMask = smoothstep(0.6 - w, 0.6 + w, sd);
   float glen = max(length(uvGrad), 1e-6);
   vec2 uvDir = uvGrad / glen; 
 
+ // 2. Calculate step size 
   float screenPx = max(fwidth(vMainUV1.x) + fwidth(vMainUV1.y), 1e-5);
+  
+  // --- DIRECTIONAL DERIVATIVE FIX ---
+  // Get the actual UV stretch on the screen
+  vec2 dx = dFdx(vMainUV1);
+  vec2 dy = dFdy(vMainUV1);
+  
+  // Project that stretch strictly along the direction we are stepping
+  float directionalPx = abs(dot(dx, uvDir)) + abs(dot(dy, uvDir));
+
+  // Clamp the lookup distance so it never overshoots the color zone
   float minStep = texel * 1.5; 
-  float samplingStep = max(screenPx, minStep); 
+  float maxStep = texel * 3.0; 
+  float samplingStep = clamp(directionalPx, minStep, maxStep); 
+  // ----------------------------------
 
   vec2 duv = uvDir * samplingStep;
+
   vec3 idIn  = srgbToLinear(texture2D(idTex, vMainUV1 + duv).rgb);
   vec3 idOut = srgbToLinear(texture2D(idTex, vMainUV1 - duv).rgb);
 
   vec3 palIn  = zoneToPalette(findZone(idIn));
   vec3 palOut = zoneToPalette(findZone(idOut));
 
+  // 4. Blend it (COMPLETELY RESTORED TO ORIGINAL STATIC MATH)
   float sd_fwidth = fwidth(sd);
   float wMin = 0.8 * screenPx; 
   float w    = max(max(sd_fwidth * blendStrength, 1e-6), wMin);
