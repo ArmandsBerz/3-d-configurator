@@ -57,7 +57,7 @@ import BabylonCanvas from './viewer';
 import { SummaryIcon, BackArrowIcon, CheckmarkIcon, LongArrowRightIcon, CaretRightIcon, CaretDownIcon, CaretUpIcon, ShareIcon, CollapseIcon, ExpandIcon, DragIcon, ZoomIcon, CloseIcon, Loader } from './icons';
 import { Snackbar } from './snackbar'; 
 // @ts-ignore
-import LogoImage from './LVSportsLogo.svg';
+import LogoImage from './SportsLogo.svg';
 import { SpecGenerator } from './spec-generator';
 
 
